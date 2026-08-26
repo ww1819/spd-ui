@@ -240,7 +240,7 @@
                 </el-row>
 
                 <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second apply-modal-row-third" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--grow udi-scan-field">
+                  <el-col class="apply-modal-field apply-modal-field--udi-scan udi-scan-field">
                     <el-form-item label="UDI码" prop="ztm" class="detail-scan-form-item">
                       <div class="udi-scan-inline">
                         <el-input
@@ -291,7 +291,7 @@
                       />
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
+                  <el-col class="apply-modal-field apply-modal-field--grow">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable :disabled="isAudited" />
                     </el-form-item>
