@@ -194,142 +194,115 @@
     <transition name="modal-fade">
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
+          <div v-if="open" class="local-modal-content apply-modal-root-content">
             <div class="modal-header">
               <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
+              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
+            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
+              <div class="form-fields-container list-query-panel apply-modal-query-panel">
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item :label="isOutbound ? '出库单号' : '入库单号'" prop="orderNo" class="form-item-header-billno">
+                      <el-input v-model="form.orderNo" :disabled="true" :title="form.orderNo || ''" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="headerWhDeptLocked" includeWarehouseType="高值"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="科室" prop="departmentId" class="apply-modal-label-required">
+                      <SelectDepartment v-model="form.departmentId" :disabled="headerWhDeptLocked"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="单据状态" prop="orderStatus">
+                      <el-select v-model="form.orderStatus" placeholder="请选择单据状态" :disabled="true" clearable>
+                        <el-option v-for="dict in dict.type.biz_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="制单时间" prop="orderDate" class="apply-modal-label-required">
+                      <el-date-picker clearable v-model="form.orderDate" type="date" :disabled="true" value-format="yyyy-MM-dd" placeholder="请选择制单时间" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="制单人" prop="createBy">
+                      <el-input v-model="form.createBy" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
 
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="headerWhDeptLocked" includeWarehouseType="高值"/>
-            </el-form-item>
-            <el-form-item label="总金额">
-              <el-input :value="getTotalAmount()" :disabled="true" style="width: 140px; background-color: #fff;">
-              </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="科室" prop="departmentId">
-              <SelectDepartment v-model="form.departmentId" :disabled="headerWhDeptLocked"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="单据状态" prop="orderStatus">
-              <el-select v-model="form.orderStatus" placeholder="请选择单据状态"
-                         :disabled="true"
-                         clearable style="width: 140px">
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="制单时间" prop="orderDate">
-              <el-date-picker clearable
-                              v-model="form.orderDate"
-                              type="date"
-                              :disabled="true"
-                              value-format="yyyy-MM-dd"
-                              style="width: 140px"
-                              placeholder="请选择制单时间">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="制单人" prop="createBy">
-              <el-input v-model="form.createBy" :disabled="true" style="width: 140px" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action || isAuditedForm" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4" v-show="false">
-            <el-form-item label="出库类型" prop="orderType">
-              <el-select v-model="form.orderType" placeholder="请选择出库类型"
-                         :disabled="true"
-                         clearable style="width: 140px">
-                <el-option v-for="dict in dict.type.bill_type"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second apply-modal-row-third" type="flex">
+                  <el-col v-if="isOutbound && action" class="apply-modal-field apply-modal-field--udi-scan in-hospital-scan-field">
+                    <el-form-item label="院内码" prop="scanInHospitalCode" class="detail-scan-form-item">
+                      <el-input
+                        v-model="form.scanInHospitalCode"
+                        :placeholder="scanInHospitalPlaceholder"
+                        clearable
+                        :disabled="scanInputDisabled"
+                        @keyup.enter.native="handleScanInHospitalCode"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="总金额">
+                      <el-input :value="getTotalAmount()" :disabled="true" class="input-total-amount-inline" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--grow">
+                    <el-form-item label="备注" prop="remark">
+                      <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action || isAuditedForm" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </div>
 
-        <el-row :gutter="8" v-if="isOutbound && action">
-          <el-col :span="8">
-            <el-form-item label="院内码" prop="scanInHospitalCode" label-width="70px">
-              <el-input
-                v-model="form.scanInHospitalCode"
-                :placeholder="scanInHospitalPlaceholder"
-                clearable
-                style="width: 260px"
-                :disabled="scanInputDisabled"
-                @keyup.enter.native="handleScanInHospitalCode"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
+              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+                <div class="list-toolbar-left">
+                  <span class="apply-modal-detail-title">{{ isOutbound ? '备货出库明细信息' : '高值备货入库明细信息' }}</span>
+                  <template v-if="action">
+                    <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm || !canScanOrAdd" @click="checkMaterialBtn">添加</el-button>
+                    <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzOrderEntry">删除</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
+                    <el-button type="primary" size="small" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
+                    <el-button type="primary" icon="el-icon-printer" size="small" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
+                    <el-tooltip v-if="isOutbound" :content="refAcceptDisabledTip" :disabled="canOpenRefAcceptance" placement="top">
+                      <span style="display:inline-block;">
+                        <el-button type="primary" plain icon="el-icon-link" size="small"
+                          v-hasPermi="['gz:refDoc:query']"
+                          :disabled="!canOpenRefAcceptance"
+                          @click="openRefAcceptance">引用验收单</el-button>
+                      </span>
+                    </el-tooltip>
+                    <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
+                    <el-button size="small" @click="cancel">取 消</el-button>
+                  </template>
+                  <el-button v-if="!action" size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
+                </div>
+              </el-row>
 
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
-            <span>{{ isOutbound ? '备货出库明细信息' : '高值备货入库明细信息' }}</span>
-          </el-col>
-
-          <div v-show="action">
-            <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm || !canScanOrAdd" @click="checkMaterialBtn">添加</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzOrderEntry">删除</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button size="small" @click="cancel">取 消</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="primary" size="small" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="success" size="small" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="primary" icon="el-icon-printer" size="small" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
-            </el-col>
-            <el-col :span="1.5" v-if="isOutbound">
-              <el-tooltip :content="refAcceptDisabledTip" :disabled="canOpenRefAcceptance" placement="top">
-                <span style="display:inline-block;">
-                  <el-button type="primary" plain icon="el-icon-link" size="small"
-                             v-hasPermi="['gz:refDoc:query']"
-                             :disabled="!canOpenRefAcceptance"
-                             @click="openRefAcceptance">引用验收单</el-button>
-                </span>
-              </el-tooltip>
-            </el-col>
-          </div>
-          <el-col :span="1.5">
-            <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
-          </el-col>
-        </el-row>
-        <div class="table-wrapper">
-        <el-table :data="gzOrderEntryList" :row-class-name="rowGzOrderEntryIndex" @selection-change="handleGzOrderEntrySelectionChange" ref="gzOrderEntry" border height="48vh">
-          <el-table-column type="selection" width="50" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材" prop="materialName" width="120" show-overflow-tooltip resizable>
+              <div class="modal-detail-section apply-modal-table-panel">
+                <div class="table-wrapper">
+                <el-table :data="gzOrderEntryList" :row-class-name="applyGzOrderDetailRowClassName"
+                  class="apply-detail-table"
+                  @selection-change="handleGzOrderEntrySelectionChange"
+                  ref="gzOrderEntry"
+                  border
+                  show-summary
+                  :summary-method="getSummariesWithRefresh"
+                  :height="detailTableHeight">
+                  <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
+                  <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
+          <el-table-column label="耗材" prop="materialName" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByDetailMaterialName">
             <template slot-scope="scope">
               <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="规格" prop="speci" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="规格" prop="speci" width="100" show-overflow-tooltip resizable sortable :sort-method="sortByDetailSpeci">
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.speci || '--' }}</span>
             </template>
@@ -356,12 +329,12 @@
               />
             </template>
           </el-table-column>
-          <el-table-column label="价格" prop="price" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="价格" prop="price" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'price')">
             <template slot-scope="scope">
               <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="金额" prop="amt" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'amt')">
             <template slot-scope="scope">
               <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
             </template>
@@ -418,9 +391,12 @@
               <el-input v-model="scope.row.remark" :disabled="isAuditedForm" placeholder="备注" />
             </template>
           </el-table-column>
-        </el-table>
-        </div>
+
+                </el-table>
+                </div>
+              </div>
             </el-form>
+          </div>
           </div>
         </transition>
       </div>

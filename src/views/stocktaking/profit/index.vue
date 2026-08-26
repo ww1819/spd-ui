@@ -1528,7 +1528,7 @@ export default {
             }, 0);
             if (['amt', 'stockAmount', 'profitAmount'].includes(prop)) {
               sums[index] = typeof this.formatAmount === 'function' ? this.formatAmount(total) : total.toFixed(2);
-            } else {
+          } else {
               sums[index] = Number.isInteger(total) ? String(total) : String(total);
             }
           }
