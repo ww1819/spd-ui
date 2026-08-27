@@ -218,42 +218,51 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="总金额">
+                      <el-input :value="getTotalAmount()" :disabled="true" placeholder="总金额" class="input-total-amount-inline" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="单据状态" prop="orderStatus">
-                      <el-select v-model="form.orderStatus" placeholder="请选择单据状态" :disabled="true" clearable>
+                      <el-select v-model="form.orderStatus" placeholder="单据状态" :disabled="true" clearable>
                         <el-option v-for="dict in dict.type.biz_status" :key="dict.value" :label="dict.label" :value="dict.value" />
                       </el-select>
                     </el-form-item>
                   </el-col>
+                </el-row>
+
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
                   <el-col class="apply-modal-field apply-modal-field--date">
                     <el-form-item label="制单时间" prop="orderDate" class="apply-modal-label-required">
-                      <el-date-picker clearable v-model="form.orderDate" type="date" :disabled="true" value-format="yyyy-MM-dd" placeholder="请选择制单时间" />
+                      <el-date-picker clearable v-model="form.orderDate" type="date" :disabled="true" value-format="yyyy-MM-dd" placeholder="制单时间" />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="制单人" prop="createBy">
-                      <el-input v-model="form.createBy" :disabled="true" />
+                      <el-input v-model="form.creatorName" :disabled="true" placeholder="制单人" />
                     </el-form-item>
                   </el-col>
                 </el-row>
 
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second apply-modal-row-third" type="flex">
-                  <el-col v-if="isOutbound && action" class="apply-modal-field apply-modal-field--udi-scan in-hospital-scan-field">
-                    <el-form-item label="院内码" prop="scanInHospitalCode" class="detail-scan-form-item">
+                <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
+                  <el-col v-if="isOutbound && action" :span="8">
+                    <el-form-item label="院内码" prop="scanInHospitalCode" label-width="80px" class="detail-scan-form-item">
                       <el-input
                         v-model="form.scanInHospitalCode"
                         :placeholder="scanInHospitalPlaceholder"
                         clearable
+                        size="small"
+                        class="scan-barcode-input"
                         :disabled="scanInputDisabled"
                         @keyup.enter.native="handleScanInHospitalCode"
-                      />
+                      >
+                        <template slot="prepend">
+                          <i class="el-icon-s-operation"></i>
+                        </template>
+                      </el-input>
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="总金额">
-                      <el-input :value="getTotalAmount()" :disabled="true" class="input-total-amount-inline" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col :span="isOutbound && action ? 5 : 24">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action || isAuditedForm" />
                     </el-form-item>
@@ -265,21 +274,21 @@
                 <div class="list-toolbar-left">
                   <span class="apply-modal-detail-title">{{ isOutbound ? '备货出库明细信息' : '高值备货入库明细信息' }}</span>
                   <template v-if="action">
-                    <el-button type="primary" icon="el-icon-plus" size="small" :disabled="isAuditedForm || !canScanOrAdd" @click="checkMaterialBtn">添加</el-button>
+                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm || !canScanOrAdd" @click="checkMaterialBtn">添加</el-button>
                     <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzOrderEntry">删除</el-button>
-                    <el-button type="primary" icon="el-icon-check" size="small" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
-                    <el-button type="primary" size="small" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
-                    <el-button type="primary" icon="el-icon-printer" size="small" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
-                    <el-tooltip v-if="isOutbound" :content="refAcceptDisabledTip" :disabled="canOpenRefAcceptance" placement="top">
-                      <span style="display:inline-block;">
-                        <el-button type="primary" plain icon="el-icon-link" size="small"
-                          v-hasPermi="['gz:refDoc:query']"
-                          :disabled="!canOpenRefAcceptance"
-                          @click="openRefAcceptance">引用验收单</el-button>
-                      </span>
-                    </el-tooltip>
-                    <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
-                    <el-button size="small" @click="cancel">取 消</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
+                    <el-button
+                      v-if="isOutbound"
+                      type="primary"
+                      size="small"
+                      class="spd-btn spd-btn--secondary"
+                      :disabled="!canOpenRefAcceptance"
+                      v-hasPermi="['gz:refDoc:query']"
+                      @click="openRefAcceptance"
+                    >引用验收单</el-button>
+                    <el-button type="primary" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
+                    <el-button type="primary" icon="el-icon-printer" size="small" class="spd-btn spd-btn--secondary" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
+                    <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
                   </template>
                   <el-button v-if="!action" size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
                 </div>
@@ -296,107 +305,160 @@
                   :summary-method="getSummariesWithRefresh"
                   :height="detailTableHeight">
                   <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
-                  <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材" prop="materialName" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByDetailMaterialName">
-            <template slot-scope="scope">
-              <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="规格" prop="speci" width="100" show-overflow-tooltip resizable sortable :sort-method="sortByDetailSpeci">
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.speci || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
-            </template>
-          </el-table-column>
-          <!-- 库存列已隐藏 -->
-          <!-- <el-table-column label="库存" prop="stockQty" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.stockQty || '--' }}</span>
-            </template>
-          </el-table-column> -->
-          <el-table-column label="数量" prop="qty" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input clearable v-model="scope.row.qty" placeholder="数量"
-                        :disabled="true"
-                        onkeyup="value=value.replace(/\D/g,'')"
-                        onafterpaste="value=value.replace(/\D/g,'')"
-                        @blur="form.result=$event.target.value"
-                        @input="qtyChange(scope.row)"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column label="价格" prop="price" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'price')">
-            <template slot-scope="scope">
-              <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="金额" prop="amt" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'amt')">
-            <template slot-scope="scope">
-              <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="批次号" prop="batchNo" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.batchNo || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="批号" prop="batchNumber" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.batchNumber || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生产日期" prop="beginTime" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.beginTime">{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="有效期" prop="endTime" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生产厂家" prop="factoryName" width="160" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="供应商" prop="supplierName" width="160" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || (scope.row.supplier && scope.row.supplier.name) || scope.row.supplierName || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="院内码" prop="inHospitalCode" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.inHospitalCode || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="UDI码" prop="udiNo" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.udiNo || scope.row.masterBarcode || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="辅条码" prop="secondaryBarcode" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.secondaryBarcode || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" :disabled="isAuditedForm" placeholder="备注" />
-            </template>
-          </el-table-column>
+                  <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
+                  <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable>
+                    <template slot-scope="scope">
+                      <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column
+                    label="名称"
+                    align="left"
+                    header-align="center"
+                    prop="materialName"
+                    width="150"
+                    min-width="140"
+                    :show-overflow-tooltip="false"
+                    class-name="detail-col-text-wrap"
+                    resizable
+                    sortable
+                    :sort-method="sortByDetailMaterialName"
+                  >
+                    <template slot-scope="scope">
+                      <span
+                        class="detail-text-cell-2line"
+                        :title="scope.row.materialName || (scope.row.material && scope.row.material.name) || '--'"
+                      >{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column
+                    label="规格"
+                    align="left"
+                    header-align="center"
+                    prop="speci"
+                    width="130"
+                    min-width="110"
+                    :show-overflow-tooltip="false"
+                    class-name="detail-col-text-wrap"
+                    resizable
+                    sortable
+                    :sort-method="sortByDetailSpeci"
+                  >
+                    <template slot-scope="scope">
+                      <span
+                        class="detail-text-cell-2line"
+                        :title="(scope.row.material && scope.row.material.speci) || scope.row.speci || '--'"
+                      >{{ (scope.row.material && scope.row.material.speci) || scope.row.speci || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="单位" align="center" prop="unit" width="80" min-width="80" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <span v-if="scope.row.unit">{{ typeof scope.row.unit === 'string' ? scope.row.unit : (scope.row.unit.unitName || scope.row.unit.name || '--') }}</span>
+                      <span v-else-if="scope.row.material">{{ (scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
+                      <span v-else>--</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'qty')">
+                    <template slot-scope="scope">
+                      <div class="detail-cell-focus-wrap" :data-detail-row="scope.$index" data-detail-col="qty">
+                        <el-input
+                          v-if="!isAuditedForm && action && !refMode"
+                          clearable
+                          v-model="scope.row.qty"
+                          placeholder="数量"
+                          size="small"
+                          class="detail-input-compact"
+                          onkeyup="value=value.replace(/\D/g,'')"
+                          onafterpaste="value=value.replace(/\D/g,'')"
+                          @input="qtyChange(scope.row)"
+                        />
+                        <span v-else>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--' }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="价格" align="center" prop="price" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'price')">
+                    <template slot-scope="scope">
+                      <div style="text-align: center;">
+                        <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="金额" align="center" prop="amt" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'amt')">
+                    <template slot-scope="scope">
+                      <div style="text-align: center;">
+                        <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
+                      </div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="批次号" align="center" prop="batchNo" width="180" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <span>{{ scope.row.batchNo || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="批号" align="center" prop="batchNumber" width="140" min-width="120" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <span>{{ scope.row.batchNumber || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="生产日期" align="center" prop="beginTime" width="128" min-width="128" show-overflow-tooltip resizable sortable>
+                    <template slot-scope="scope">
+                      <span v-if="scope.row.beginTime">{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
+                      <span v-else>--</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="有效期" align="center" prop="endTime" width="128" min-width="128" show-overflow-tooltip resizable sortable>
+                    <template slot-scope="scope">
+                      <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+                      <span v-else>--</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column
+                    label="生产厂家"
+                    align="left"
+                    header-align="center"
+                    prop="factoryName"
+                    width="160"
+                    min-width="140"
+                    :show-overflow-tooltip="false"
+                    class-name="detail-col-text-wrap"
+                    resizable
+                  >
+                    <template slot-scope="scope">
+                      <span class="detail-text-cell-2line" :title="(scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--'">
+                        {{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--' }}
+                      </span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="院内码" align="center" prop="inHospitalCode" width="200" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <span>{{ scope.row.inHospitalCode || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="UDI码" align="center" prop="udiNo" width="180" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <span>{{ scope.row.udiNo || scope.row.masterBarcode || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="180" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <span>{{ scope.row.secondaryBarcode || '--' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
+                    <template slot-scope="scope">
+                      <el-input v-model="scope.row.remark" :disabled="isAuditedForm" placeholder="备注" size="small" class="detail-input-compact" />
+                    </template>
+                  </el-table-column>
 
                 </el-table>
                 </div>
               </div>
             </el-form>
-          </div>
           </div>
         </transition>
       </div>
@@ -681,7 +743,10 @@ export default {
         content: ''
       },
       dialogSavedSnapshot: '',
-      _lastSidebarNavTick: null
+      _lastSidebarNavTick: null,
+      detailSelectedRowMap: {},
+      detailSelectionTick: 0,
+      detailSummaryTick: 0
     };
   },
   computed: {
@@ -728,6 +793,9 @@ export default {
         return true;
       }
       return this.buildDialogSnapshot() !== this.dialogSavedSnapshot;
+    },
+    detailTableHeight() {
+      return 'max(240px, calc(100vh - 384px))';
     }
   },
   watch: {
@@ -745,6 +813,17 @@ export default {
     },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
+    },
+    open(val) {
+      if (val) {
+        this.$nextTick(() => this.refreshDetailSummary());
+      }
+    },
+    gzOrderEntryList: {
+      deep: true,
+      handler() {
+        this.$nextTick(() => this.refreshDetailSummary());
+      }
     }
   },
   created() {
@@ -886,6 +965,79 @@ export default {
       const va = parseFloat(a && a.totalAmt);
       const vb = parseFloat(b && b.totalAmt);
       return (Number.isFinite(va) ? va : 0) - (Number.isFinite(vb) ? vb : 0);
+    },
+    sortByDetailMaterialName(a, b) {
+      const va = (a.materialName || (a.material && a.material.name) || '').toString();
+      const vb = (b.materialName || (b.material && b.material.name) || '').toString();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByDetailSpeci(a, b) {
+      const va = (a.speci || (a.material && a.material.speci) || '').toString();
+      const vb = (b.speci || (b.material && b.material.speci) || '').toString();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByDetailNumber(a, b, field) {
+      const na = parseFloat(a && a[field]) || 0;
+      const nb = parseFloat(b && b[field]) || 0;
+      return na - nb;
+    },
+    getSummariesWithRefresh(param) {
+      void this.detailSummaryTick;
+      return this.getSummaries(param);
+    },
+    refreshDetailSummary() {
+      this.detailSummaryTick++;
+      this.$nextTick(() => {
+        const t = this.$refs.gzOrderEntry;
+        if (t && typeof t.doLayout === 'function') {
+          t.doLayout();
+        }
+      });
+    },
+    getSummaries(param) {
+      const { columns, data } = param;
+      const sums = columns.map(() => '');
+      let summaryLabelPlaced = false;
+      const sumNum = (prop) => {
+        let t = 0;
+        data.forEach(item => {
+          const v = item[prop];
+          if (v != null && v !== '' && !isNaN(v)) {
+            t += parseFloat(v);
+          }
+        });
+        return t;
+      };
+      columns.forEach((column, index) => {
+        if (column.type === 'selection') {
+          sums[index] = '';
+          return;
+        }
+        const prop = column.property;
+        if (!summaryLabelPlaced && (prop === 'index' || column.label === '序号')) {
+          sums[index] = '合计';
+          summaryLabelPlaced = true;
+          return;
+        }
+        if (!prop) {
+          return;
+        }
+        if (prop === 'qty') {
+          const total = sumNum('qty');
+          sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+          return;
+        }
+        if (prop === 'price') {
+          sums[index] = this.formatPrice(sumNum('price'));
+          return;
+        }
+        if (prop === 'amt') {
+          sums[index] = '￥' + this.formatAmount(sumNum('amt'));
+          return;
+        }
+        sums[index] = '';
+      });
+      return sums;
     },
     resolveBillTypeByOrderType() {
       const orderType = String(this.form.orderType || this.queryParams.orderType || '101');
@@ -1097,6 +1249,16 @@ export default {
       if (!row.createBy) return '';
       return this.resolveSysUserDisplayName(row.createBy);
     },
+    normalizeHeaderDisplayFields(fallbackRow) {
+      const row = fallbackRow || {};
+      const currentWarehouseId = this.form.warehouseId || row.warehouseId || (row.warehouse && row.warehouse.id);
+      if (currentWarehouseId) {
+        this.form.warehouseId = String(currentWarehouseId);
+      }
+      const creatorName = this.getCreatorName(this.form);
+      this.$set(this.form, 'creatorName', creatorName || (this.form.createBy != null && String(this.form.createBy).trim() !== '' ? String(this.form.createBy) : '--'));
+      this.$set(this.form, 'auditorName', this.getAuditorName(this.form) || '');
+    },
     getAuditorName(row) {
       if (!row || row.orderStatus != 2) {
         return '';
@@ -1303,6 +1465,9 @@ export default {
       this.refPickOrderNo = null;
       this.refPickOrder = null;
       this.dialogSavedSnapshot = '';
+      this.detailSelectedRowMap = {};
+      this.detailSelectionTick = 0;
+      this.detailSummaryTick = 0;
       this.resetForm("form");
     },
     //数量改变事件
@@ -1315,6 +1480,7 @@ export default {
         totalAmt = 0;
       }
       row.amt = this.toMoneyStorage(totalAmt);
+      this.refreshDetailSummary();
     },
 /** 搜索按钮操作 */
     handleQuery() {
@@ -1420,6 +1586,7 @@ export default {
             if (entry.materialId && materialMap[entry.materialId]) {
               const material = materialMap[entry.materialId];
               entry.materialName = material.name || "";
+              entry.materialCode = material.code || entry.materialCode || "";
               entry.speci = material.speci || "";
               entry.model = material.model || "";
               entry.factoryName = (material.fdFactory && material.fdFactory.factoryName) || "";
@@ -1509,6 +1676,7 @@ export default {
         }
         this.open = true;
         this.action = false;
+        this.normalizeHeaderDisplayFields(response.data);
         // 不要覆盖从后端获取的 orderStatus，保持原有状态
         // this.form.orderStatus = '1'; // 已注释，使用后端返回的实际状态
         // 确保 orderType 正确设置
@@ -1668,10 +1836,10 @@ export default {
       this.form.orderType = '101';
       }
       this.form.orderStatus = '1';
-      //操作人
-      var userName = this.$store.state.user.name;
-      this.form.createBy = userName;
+      const uid = this.$store.state.user.userId;
+      this.form.createBy = uid != null && uid !== '' ? String(uid) : (this.$store.state.user.name || '');
       this.form.orderDate = this.getOrderDate();
+      this.normalizeHeaderDisplayFields();
       this.action = true;
     },
     /** 审核按钮操作 */
@@ -1815,6 +1983,7 @@ export default {
             if (entry.materialId && materialMap[entry.materialId]) {
               const material = materialMap[entry.materialId];
               entry.materialName = material.name || "";
+              entry.materialCode = material.code || entry.materialCode || "";
               entry.speci = material.speci || "";
               entry.model = material.model || "";
               entry.factoryName = (material.fdFactory && material.fdFactory.factoryName) || "";
@@ -1899,6 +2068,7 @@ export default {
         this.title = "修改高值入库";
         }
         this.action = true;
+        this.normalizeHeaderDisplayFields(response.data);
         this.markDialogSnapshotSaved();
       });
     },
@@ -2270,7 +2440,16 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    /** 高值退货明细序号 */
+    /** 高值备货明细：序号 + 勾选高亮 */
+    applyGzOrderDetailRowClassName({ row, rowIndex }) {
+      void this.detailSelectionTick;
+      row.index = rowIndex + 1;
+      if (this.detailSelectedRowMap && this.detailSelectedRowMap[rowIndex]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    /** @deprecated 保留兼容，请使用 applyGzOrderDetailRowClassName */
     rowGzOrderEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
     },
@@ -2292,19 +2471,36 @@ export default {
     },
     /** 高值退货明细删除按钮操作 */
     handleDeleteGzOrderEntry() {
-      if (this.checkedGzOrderEntry.length == 0) {
+      if (!this.checkedGzOrderEntry || this.checkedGzOrderEntry.length === 0) {
         this.$modal.msgError("请先选择要删除的高值退货明细数据");
       } else {
-        const gzOrderEntryList = this.gzOrderEntryList;
-        const checkedGzOrderEntry = this.checkedGzOrderEntry;
-        this.gzOrderEntryList = gzOrderEntryList.filter(function(item) {
-          return checkedGzOrderEntry.indexOf(item.index) == -1
-        });
+        const selectedRows = this.checkedGzOrderEntry;
+        this.gzOrderEntryList = this.gzOrderEntryList.filter(item => !selectedRows.includes(item));
+        this.checkedGzOrderEntry = [];
+        this.detailSelectedRowMap = {};
+        this.detailSelectionTick++;
+        if (this.$refs.gzOrderEntry) {
+          this.$refs.gzOrderEntry.clearSelection();
+        }
+        this.refreshDetailSummary();
       }
     },
     /** 复选框选中数据 */
     handleGzOrderEntrySelectionChange(selection) {
-      this.checkedGzOrderEntry = selection.map(item => item.index)
+      this.checkedGzOrderEntry = selection;
+      const pageIndices = (this.gzOrderEntryList || []).map((row, idx) => idx);
+      pageIndices.forEach((idx) => {
+        if (this.detailSelectedRowMap[idx]) {
+          this.$delete(this.detailSelectedRowMap, idx);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const idx = this.gzOrderEntryList.indexOf(row);
+        if (idx >= 0) {
+          this.$set(this.detailSelectedRowMap, idx, true);
+        }
+      });
+      this.detailSelectionTick++;
     },
     /** 导出按钮操作 */
     handleExport() {
@@ -3093,6 +3289,129 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
 .app-container.gz-order-audit-page .local-modal-content .modal-detail-section .el-table .el-table__fixed-footer-wrapper {
   z-index: 31 !important;
 }
+
+/* 弹窗查询区白卡片 + 表头 inline-flex + 明细行高（对齐到货验收） */
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel.list-query-panel,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel.form-fields-container {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  padding: 12px 8px !important;
+  background: #fff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan.in-hospital-scan-field {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  max-width: 320px !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan.in-hospital-scan-field .el-form-item {
+  width: 100%;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
+  flex: 1 1 auto !important;
+  min-width: 240px;
+  max-width: none !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item {
+  width: 100%;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content {
+  flex: 1 1 auto !important;
+  min-width: 0;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-input__inner,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+  box-sizing: border-box !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 6px !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-toolbar.list-toolbar {
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.el-table__cell > .cell {
+  line-height: 28px !important;
+  min-height: 28px !important;
+  box-sizing: border-box;
+}
 </style>
 
 <style scoped>
@@ -3114,19 +3433,23 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   background: #fff;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  min-height: 95vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  padding-bottom: 8px;
+  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
+  padding: 6px 8px;
   border-bottom: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  min-height: 48px;
+  background: #EBEEF5;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -3145,8 +3468,8 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   background: rgba(0, 0, 0, 0.1);
 }
 
-/* 查询条件容器框样式 */
-.local-modal-content .form-fields-container {
+/* 弹窗内旧版 form-fields-container 卡片样式不作用于 apply-modal-query-panel */
+.local-modal-content .form-fields-container:not(.apply-modal-query-panel) {
   background: #fff;
   padding: 16px 20px;
   border-radius: 8px;
@@ -3155,32 +3478,18 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   border: 1px solid #EBEEF5;
 }
 
-.modal-body {
-  flex: 1;
-  overflow: auto;
-  padding: 20px;
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  text-align: right;
-  border-top: 1px solid #EBEEF5;
-  background: #F5F7FA;
-}
-
-.modal-footer .el-button {
-  margin-left: 12px;
-}
-
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
-  padding: 24px;
+  padding: 8px 0 8px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  align-content: flex-start;
+  box-sizing: border-box;
 }
 
 
@@ -3221,13 +3530,6 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
 
 .local-modal-content .modal-form-compact .el-form-item {
   margin-bottom: 0;
-}
-
-.local-modal-content .modal-form-compact .el-input,
-.local-modal-content .modal-form-compact .el-select,
-.local-modal-content .modal-form-compact .el-date-picker {
-  width: 140px;
-  max-width: 140px;
 }
 
 /* 缩小所有输入框高度 */
@@ -3500,5 +3802,223 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   border-radius: 0;
   box-shadow: none;
   margin-bottom: 0;
+}
+
+/* 弹窗内三块区域：与到货验收 inWarehouse/apply 一致 */
+.local-modal-content .apply-modal-query-panel,
+.local-modal-content .apply-modal-toolbar.list-toolbar,
+.local-modal-content .apply-modal-table-panel {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel {
+  margin-top: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding: 12px 8px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row {
+  margin-bottom: 8px;
+}
+
+.local-modal-content .apply-modal-query-panel .el-row:last-child {
+  margin-bottom: 0;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+  flex-wrap: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 12px;
+  box-sizing: border-box;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto;
+  max-width: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+  white-space: nowrap;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
+  margin-right: 0 !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
+  width: 140px !important;
+  max-width: 140px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor {
+  width: 150px !important;
+  max-width: 150px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
+  max-width: 162px;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input,
+.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-input {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+
+.local-modal-content .apply-modal-query-panel .form-item-header-billno ::v-deep .el-input__inner {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.local-modal-content .apply-modal-table-panel {
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.local-modal-content .apply-modal-toolbar {
+  flex-shrink: 0;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.local-modal-content .apply-modal-detail-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 4px;
+  line-height: 32px;
+}
+
+.local-modal-content .apply-modal-table-panel .table-wrapper {
+  margin-top: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding-bottom: 0;
+}
+
+.local-modal-content .apply-modal-table-panel .apply-detail-table {
+  margin-bottom: 0 !important;
+  box-shadow: none;
+}
+
+.local-modal-content .apply-modal-row-third .scan-barcode-input .el-input-group__prepend {
+  padding: 0 8px;
+}
+
+.local-modal-content .modal-detail-section .el-table .detail-input-compact {
+  width: 100%;
+}
+
+.local-modal-content .modal-detail-section .el-table .detail-text-cell-2line {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell > .cell {
+  line-height: 28px !important;
+  min-height: 28px !important;
+  box-sizing: border-box;
+}
+
+.local-modal-content .modal-detail-section .el-table ::v-deep .el-input--small .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  min-height: 28px !important;
 }
 </style>
