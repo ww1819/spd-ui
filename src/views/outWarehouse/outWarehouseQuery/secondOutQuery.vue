@@ -379,7 +379,7 @@ export default {
           : `name:${(row.warehouseName || '').trim()}`;
         const code = (row.materialCode || '').trim();
         const priceNum = row.unitPrice == null || row.unitPrice === '' ? NaN : Number(row.unitPrice);
-        const priceKey = Number.isFinite(priceNum) ? priceNum.toFixed(2) : 'null';
+        const priceKey = Number.isFinite(priceNum) ? priceNum.toFixed(6) : 'null';
         const key = `${wh}||${code}||${priceKey}`;
         const exist = map.get(key);
         if (!exist) {
