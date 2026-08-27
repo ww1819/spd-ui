@@ -1078,7 +1078,7 @@ export default {
       const stockQty = parseFloat(row.stockQty || 0);
       const qty = parseFloat(row.qty || 0);
       const profitQty = stockQty - qty;
-      return profitQty > 0 ? '+' + profitQty.toFixed(2) : profitQty.toFixed(2);
+      return this.formatSignedQty(profitQty);
     },
     // 计算盈亏金额
     getProfitAmount(row) {

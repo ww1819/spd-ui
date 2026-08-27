@@ -248,7 +248,7 @@ export default {
       const fmt = this.$options.filters && this.$options.filters.formatCurrency;
       columns.forEach((column, index) => {
         if (column.property === "materialQty") {
-          sums[index] = totalQty.toFixed(2);
+          sums[index] = this.formatQty(totalQty);
         } else if (column.property === "materialAmt") {
           sums[index] = fmt ? fmt(totalAmt) : this.formatAmount(totalAmt);
         }

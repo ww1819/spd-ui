@@ -189,7 +189,7 @@ export default {
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
     },
     formatNum(v) {
-      return formatQuantity(v, 2)
+      return formatQuantity(v)
     },    start() {
       const doPrint = () => {
         this.$nextTick(() => {

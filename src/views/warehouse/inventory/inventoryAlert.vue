@@ -302,8 +302,8 @@ export default {
     },
     formatInventoryAlertMoney(v) {
       const n = parseFloat(v)
-      if (!Number.isFinite(n)) return '0.00'
-      return n.toFixed(2)
+      if (!Number.isFinite(n)) return '0'
+      return this.formatAmount(n)
     },
     getList() {
       this.loading = true

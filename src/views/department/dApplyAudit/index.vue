@@ -772,7 +772,7 @@ export default {
           });
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+            sums[index] = this.formatQty(total);
           }
           return;
         }
@@ -790,7 +790,8 @@ export default {
       if (v === null || v === undefined || v === '') {
         return '—';
       }
-      return v;
+      const s = this.formatQty ? this.formatQty(v) : String(v)
+      return s === '' || s === '-' ? '—' : s
     },
 
     /** 搜索按钮操作 */

@@ -743,14 +743,7 @@ export default {
   },
   methods: {
     formatMoney(value) {
-      const num = Number(value)
-      if (Number.isNaN(num)) {
-        return '0.00'
-      }
-      return num.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
+      return this.formatCurrency(value, '0')
     },
     formatMetricValue(item, field) {
       const val = item[field]
@@ -903,16 +896,13 @@ export default {
       this.categoryTrendLineInstance.setOption({
         tooltip: {
           trigger: 'axis',
-          formatter(params) {
+          formatter: (params) => {
             if (!params || !params.length) {
               return ''
             }
             let html = `${params[0].axisValue}<br/>`
             params.forEach(p => {
-              const val = Number(p.value).toLocaleString('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-              })
+              const val = this.formatCurrency(p.value, '0')
               html += `${p.marker}${p.seriesName}：¥${val}<br/>`
             })
             return html

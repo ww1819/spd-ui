@@ -1202,7 +1202,7 @@ export default {
     formatEntryUnitPriceDisplay(row) {
       const n = this.entryEffectiveUnitPriceNum(row);
       return n > 0 || (row && ((row.unitPrice != null && row.unitPrice !== '') || (row.price != null && row.price !== '')))
-        ? n.toFixed(2)
+        ? this.formatPrice(n)
         : '--';
     },
     /** 加载或提交前补齐单价双字段，避免仅 price 或仅 unitPrice 时前端汇总/保存异常 */
@@ -1335,7 +1335,7 @@ export default {
           data.forEach((item) => {
             t += parseFloat(item.stockQty || 0) - parseFloat(item.qty || 0);
           });
-          sums[index] = t > 0 ? '+' + t.toFixed(2) : t.toFixed(2);
+          sums[index] = this.formatSignedQty(t);
           return;
         }
         if (column.label === '盈亏金额') {
@@ -1541,7 +1541,7 @@ export default {
       const v = this.profitNameSpecStockMap[k];
       if (v == null || !Number.isFinite(v)) return "0";
       const n = Number(v);
-      return Math.abs(n - Math.round(n)) < 1e-6 ? String(Math.round(n)) : n.toFixed(2);
+      return this.formatQty(n);
     },
     async refreshProfitNameSpecStockDept() {
       if (!this.newEntryDialogVisible || !this.form.departmentId) {
@@ -2039,7 +2039,7 @@ export default {
       const stockQty = parseFloat(row.stockQty || 0);
       const qty = parseFloat(row.qty || 0);
       const profitQty = stockQty - qty;
-      return profitQty > 0 ? '+' + profitQty.toFixed(2) : profitQty.toFixed(2);
+      return this.formatSignedQty(profitQty);
     },
     // 计算盈亏金额
     getProfitAmount(row) {
@@ -2446,7 +2446,7 @@ export default {
       const bookOnLine = parseFloat((row && row.detailQty) || 0);
       const v = stockQty - bookOnLine;
       if (!Number.isFinite(v) || !Number.isFinite(stockQty)) return '--';
-      return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
+      return this.formatSignedQty(v);
     },
     formatConfirmProfitAmt(row) {
       const stockQty = parseFloat((row && row.adjustedStockQty) || 0);

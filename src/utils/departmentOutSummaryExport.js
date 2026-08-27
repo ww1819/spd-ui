@@ -3,7 +3,7 @@
  */
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { getAmountExcelNumFmt, getPriceExcelNumFmt } from '@/utils/moneyFormat';
+import { getAmountExcelNumFmt, getPriceExcelNumFmt, getQtyExcelNumFmt } from '@/utils/moneyFormat';
 import {
   hisChargeItemExportCellsFromMaterial,
   hisChargeItemExportCellsFromRow,
@@ -144,7 +144,7 @@ export async function exportDepartmentSummaryStyledXlsx(options) {
 
     const nq = ws.getCell(r, netQtyCol);
     nq.value = Number(row.netQty || 0);
-    nq.numFmt = '#,##0.00';
+    nq.numFmt = getQtyExcelNumFmt();
     nq.font = FONT_BODY;
     nq.alignment = { vertical: 'middle', horizontal: 'right' };
     setCellBorder(nq);
@@ -196,7 +196,7 @@ export async function exportDepartmentSummaryStyledXlsx(options) {
 
   const tNq = ws.getCell(totalRow, netQtyCol);
   tNq.value = totalNetQty;
-  tNq.numFmt = '#,##0.00';
+  tNq.numFmt = getQtyExcelNumFmt();
   tNq.font = RED_NUM;
   tNq.alignment = { vertical: 'middle', horizontal: 'right' };
   setCellBorder(tNq);
@@ -557,7 +557,7 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -581,7 +581,7 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       } else if (c === qtyCol) {
         cell.value = Number(totalQty || 0);
-        cell.numFmt = '#,##0.00';
+        cell.numFmt = getQtyExcelNumFmt();
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else if (c === amtCol) {
@@ -788,7 +788,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
             cell.value = '';
           } else {
             cell.value = 0;
-            cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
+            cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
           }
         } else {
           cell.value = Number(v);
@@ -857,7 +857,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       } else if (c === qtyCol) {
         cell.value = totalQty;
-        cell.numFmt = '#,##0.00';
+        cell.numFmt = getQtyExcelNumFmt();
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else if (c === amtCol) {
@@ -987,7 +987,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1022,7 +1022,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     } else if (c === qtyCol) {
       cell.value = totalQty;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getQtyExcelNumFmt();
       cell.font = RED_NUM;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else if (c === amtCol) {
@@ -1176,7 +1176,7 @@ export async function exportRTHWarehouseDetailStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1211,7 +1211,7 @@ export async function exportRTHWarehouseDetailStyledXlsx(options) {
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     } else if (c === qtyCol) {
       cell.value = totalQty;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getQtyExcelNumFmt();
       cell.font = RED_NUM;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else if (c === amtCol) {
@@ -1338,7 +1338,7 @@ export async function exportRTHSummaryListStyledXlsx(options) {
           cell.value = '';
         } else {
           cell.value = Number(v);
-          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : '#,##0.00');
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1373,7 +1373,7 @@ export async function exportRTHSummaryListStyledXlsx(options) {
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     } else if (c === qtyCol) {
       cell.value = totalQty;
-      cell.numFmt = '#,##0.00';
+      cell.numFmt = getQtyExcelNumFmt();
       cell.font = RED_NUM;
       cell.alignment = { vertical: 'middle', horizontal: 'right' };
     } else if (c === amtCol) {
@@ -1452,7 +1452,7 @@ function psiRowUnitPrice(row) {
  * @param {function(*, number): any[]} options.buildCells
  * @param {number[]} options.numericCols1Based
  * @param {Object<number, function(*): number>} options.sumExtractors 列号(1-based) -> 从行取可汇总数值
- * @param {Object<number, string>} [options.numericNumFmt] 可选，未指定列默认 #,##0.00
+ * @param {Object<number, string>} [options.numericNumFmt] 可选，未指定列默认金额格式（最多三位、不补 0）
  * @param {string[]} [options.filterLines] 可选，导出抬头下方显示筛选条件，每个元素一行
  * @param {number[]|null} [options.columnWidths] 与列数相同；不传则按列序给默认宽度
  * @param {string} options.fileName

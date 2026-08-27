@@ -51,16 +51,24 @@ export function roundMoney(value, scale, mode) {
   return sign * (rounded / factor)
 }
 
+/** 去掉小数末尾 0：0.020 → 0.02，1.000 → 1 */
+export function stripTrailingDecimalZeros(str) {
+  if (str == null || str === '') return str
+  const s = String(str)
+  if (s.indexOf('.') < 0) return s
+  return s.replace(/0+$/, '').replace(/\.$/, '')
+}
+
 export function formatPrice(value, blank = '-') {
   const v = roundMoney(value, getPriceScale(), getMoneyRoundMode())
   if (v === null) return blank
-  return v.toFixed(getPriceScale())
+  return stripTrailingDecimalZeros(v.toFixed(getPriceScale()))
 }
 
 export function formatAmount(value, blank = '-') {
   const v = roundMoney(value, getAmountScale(), getMoneyRoundMode())
   if (v === null) return blank
-  return v.toFixed(getAmountScale())
+  return stripTrailingDecimalZeros(v.toFixed(getAmountScale()))
 }
 
 /** 合计：先加总再按金额位舍入（默认规则；特例页面可自行覆盖） */
@@ -99,10 +107,10 @@ export function toMoneyStorageStr(value) {
   return String(toMoneyStorage(value))
 }
 
-/** Excel 数值格式（按小数位生成 #,##0 / #,##0.000） */
+/** Excel 数值格式：整数位必显，小数位用 # 故不补末尾 0（#,##0.###） */
 export function excelNumFmt(scale) {
   const s = normalizeScale(scale)
-  return s <= 0 ? '#,##0' : `#,##0.${'0'.repeat(s)}`
+  return s <= 0 ? '#,##0' : `#,##0.${'#'.repeat(s)}`
 }
 
 export function getPriceExcelNumFmt() {
@@ -111,6 +119,11 @@ export function getPriceExcelNumFmt() {
 
 export function getAmountExcelNumFmt() {
   return excelNumFmt(getAmountScale())
+}
+
+/** 数量 Excel：最多 3 位，# 不补末尾 0 */
+export function getQtyExcelNumFmt() {
+  return excelNumFmt(3)
 }
 
 export default {
@@ -125,7 +138,9 @@ export default {
   toMoneyStorageStr,
   calcLineAmt,
   STORAGE_MONEY_SCALE,
+  stripTrailingDecimalZeros,
   excelNumFmt,
   getPriceExcelNumFmt,
-  getAmountExcelNumFmt
+  getAmountExcelNumFmt,
+  getQtyExcelNumFmt
 }

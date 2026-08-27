@@ -574,16 +574,9 @@ export default {
   },
   methods: {
     formatIsGzLabel,
-    /** 单价/金额：四位小数（避免 0.025 显示成 0.03） */
+    /** 单价/金额：最多三位小数，末尾 0 不补齐 */
     formatPrice4(value) {
-      if (value === null || value === undefined || value === '') {
-        return '0.0000';
-      }
-      const n = Number(value);
-      if (Number.isNaN(n)) {
-        return value;
-      }
-      return n.toFixed(4);
+      return this.formatPrice(value, '0');
     },
     getSummaries(param) {
       const { columns, data } = param;
@@ -604,14 +597,13 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(index === 3 ? 2 : 4);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
 
           if(index === 5){
             let res = parseFloat(sums[index]);
             if(!isNaN(res)){
-              let parRes = res.toFixed(4);
-              this.form.totalAmount = parRes;
+              this.form.totalAmount = this.toMoneyStorage(res);
             }
           }
         }
@@ -637,7 +629,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });
@@ -676,7 +668,7 @@ export default {
         obj.materialId = item.id;
         obj.orderQty = 1; // 设置默认数量为1，避免空值
         obj.unitPrice = item.price;
-        obj.totalAmount = item.price ? (1 * item.price).toFixed(4) : "0.0000";
+        obj.totalAmount = item.price ? this.calcLineAmt(1, item.price) : 0;
         obj.materialSpec = item.speci;
         obj.materialName = item.name;
         obj.materialCode = item.code;
@@ -809,7 +801,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.totalAmount = totalAmt.toFixed(4);
+      row.totalAmount = this.toMoneyStorage(totalAmt);
     },
     //价格改变事件
     priceChange(row){
@@ -823,7 +815,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.totalAmount = totalAmt.toFixed(4);
+      row.totalAmount = this.toMoneyStorage(totalAmt);
     },
     /** 搜索按钮操作 */
     handleQuery() {

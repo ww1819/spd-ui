@@ -359,8 +359,8 @@
                 clearable
                 v-model="scope.row.qty"
                 placeholder="数量"
-                onkeyup="value=value.replace(/\D/g,'')"
-                onafterpaste="value=value.replace(/\D/g,'')"
+                onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                 @blur="form.result=$event.target.value"
                 @input="qtyChange(scope.row)"
               />
@@ -836,14 +836,13 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
 
           if(index === 5){
             let res = parseFloat(sums[index]);
             if(!isNaN(res)){
-              let parRes = this.formatAmount(res);
-              this.form.totalAmount = parRes;
+              this.form.totalAmount = this.toMoneyStorage(res);
             }
           }
         }
@@ -869,7 +868,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });
@@ -1257,7 +1256,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });

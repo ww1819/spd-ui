@@ -330,8 +330,8 @@
                     <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable>
                       <template slot-scope="scope">
                         <el-input v-if="action" clearable v-model="scope.row.qty" placeholder="数量" size="small" class="detail-input-compact"
-                                  onkeyup="value=value.replace(/\D/g,'')"
-                                  onafterpaste="value=value.replace(/\D/g,'')"
+                                  onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                                  onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                                   @blur="form.result=$event.target.value"
                                   @input="qtyChange(scope.row)"
                         />
@@ -1205,7 +1205,7 @@ export default {
         }
         if (prop === 'qty') {
           const total = sumNum('qty');
-          sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+          sums[index] = this.formatQty(total);
           return;
         }
         if (prop === 'price') {

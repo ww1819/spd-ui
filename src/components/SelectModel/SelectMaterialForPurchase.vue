@@ -110,7 +110,7 @@
             </el-table-column>
             <el-table-column label="单价" align="center" width="100" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span v-if="scope.row.price || scope.row.prince">¥{{ parseFloat(scope.row.price || scope.row.prince).toFixed(4) }}</span>
+                <span v-if="scope.row.price || scope.row.prince">¥{{ formatPrice(scope.row.price || scope.row.prince) }}</span>
                 <span v-else>--</span>
               </template>
             </el-table-column>

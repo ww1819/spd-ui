@@ -451,7 +451,7 @@ export default {
     },
     formatStatQty(val) {
       const num = Number(val || 0);
-      return Number.isFinite(num) ? num.toLocaleString("zh-CN", { maximumFractionDigits: 2 }) : "0";
+      return Number.isFinite(num) ? num.toLocaleString("zh-CN", { maximumFractionDigits: 3 }) : "0";
     },
     buildFinancePieSlices(rows, emptyLabel) {
       const list = (rows || [])

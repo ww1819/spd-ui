@@ -166,7 +166,7 @@
             <SelectJcType v-model="form.jcTypeId" :disabled="!!form.id" />
           </el-form-item>
           <el-form-item label="报量数" prop="reportQty">
-            <el-input-number v-model="form.reportQty" :min="0" :precision="2" controls-position="right" style="width: 100%" />
+            <el-input-number v-model="form.reportQty" :min="0" :step="0.001" controls-position="right" style="width: 100%" />
           </el-form-item>
           <el-form-item label="备注" prop="remark">
             <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />

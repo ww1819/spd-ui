@@ -1302,7 +1302,7 @@ export default {
         }
         if (prop === 'qty') {
           const total = sumNum('qty');
-          sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+          sums[index] = this.formatQty(total);
           return;
         }
         if (prop === 'price') {

@@ -540,16 +540,9 @@ export default {
     this.getList();
   },
   methods: {
-    /** 单价/金额：四位小数（避免 0.025 显示成 0.03） */
+    /** 单价/金额：最多三位小数，末尾 0 不补齐 */
     formatPrice4(value) {
-      if (value === null || value === undefined || value === '') {
-        return '0.0000';
-      }
-      const n = Number(value);
-      if (Number.isNaN(n)) {
-        return value;
-      }
-      return n.toFixed(4);
+      return this.formatPrice(value, '0');
     },
     getSummaries(param) {
       const { columns, data } = param;
@@ -567,7 +560,7 @@ export default {
               if (!isNaN(value)) return prev + curr;
               return prev;
             }, 0);
-            if (column.property !== 'orderQty') sums[index] = Number(sums[index]).toFixed(4);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });
@@ -592,7 +585,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });

@@ -229,7 +229,7 @@ export default {
     formatAmt(v) {
       const n = Number(v || 0)
       const f = this.$options.filters && this.$options.filters.formatCurrency
-      return f ? f(n) : n.toFixed(2)
+      return f ? f(n) : this.formatAmount(n)
     },
     initChart() {
       if (this.$refs.barChart && !this.chart) {

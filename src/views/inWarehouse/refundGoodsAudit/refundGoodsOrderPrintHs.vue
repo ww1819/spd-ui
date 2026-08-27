@@ -278,7 +278,7 @@ export default {
       this.ensureHospitalNameLoaded().then(run).catch(run)
     },
     formatQty(value) {
-      return formatQuantity(value, 2)
+      return formatQuantity(value)
     },    /** 申请/审核/打印日期：yyyy-MM-dd */
     formatPrintDateTime(v) {
       if (!v) return ''

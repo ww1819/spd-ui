@@ -394,8 +394,8 @@
           <el-table-column label="数量" prop="qty" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="数量" size="small" class="detail-input-compact"
-                        onkeyup="value=value.replace(/\D/g,'')"
-                        onafterpaste="value=value.replace(/\D/g,'')"
+                        onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                        onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                         @blur="form.result=$event.target.value"
                         @input="qtyChange(scope.row)"
               />
@@ -759,7 +759,7 @@ export default {
           });
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+            sums[index] = this.formatQty(total);
           }
           return;
         }
@@ -768,8 +768,8 @@ export default {
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
             sums[index] = prop === 'unitPrice'
-              ? (typeof this.formatPrice === 'function' ? this.formatPrice(total) : total.toFixed(2))
-              : (typeof this.formatAmount === 'function' ? this.formatAmount(total) : total.toFixed(2));
+              ? this.formatPrice(total)
+              : this.formatAmount(total);
             if (prop === 'amt') {
               this.form.totalAmount = this.toMoneyStorage(total);
             }
@@ -797,7 +797,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });

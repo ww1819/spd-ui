@@ -421,9 +421,7 @@ export default {
   methods: {
     formatAmt(v) {
       if (v === null || v === undefined || v === '') return ''
-      const n = Number(v)
-      if (Number.isNaN(n)) return v
-      return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      return this.formatCurrency(v, '')
     },
     buildTableRows(data) {
       const rows = []

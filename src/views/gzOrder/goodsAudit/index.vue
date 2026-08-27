@@ -300,8 +300,8 @@
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="数量"
                         :disabled="true"
-                        onkeyup="value=value.replace(/\D/g,'')"
-                        onafterpaste="value=value.replace(/\D/g,'')"
+                        onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                        onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                         @blur="form.result=$event.target.value"
                         @input="qtyChange(scope.row)"
               />

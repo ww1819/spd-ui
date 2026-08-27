@@ -353,8 +353,8 @@
                       clearable
                       v-model="scope.row.qty"
                       placeholder="数量"
-                      onkeyup="value=value.replace(/\D/g,'')"
-                      onafterpaste="value=value.replace(/\D/g,'')"
+                      onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                      onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                       @input="qtyChange(scope.row)"
                     />
                     <span v-else>{{ scope.row.qty || '--' }}</span>
@@ -468,8 +468,7 @@
               v-model="scope.row.reverseQty"
               :min="0"
               :max="Number(scope.row.canReverseQty || 0)"
-              :precision="2"
-              :step="1"
+              :step="0.001"
               controls-position="right"
               style="width: 130px;"
             />

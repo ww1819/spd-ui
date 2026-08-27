@@ -25,7 +25,7 @@
     </el-table-column>
     <el-table-column label="单价" width="110">
       <template slot-scope="{ row }">
-        ¥ {{ row.price.toFixed(2) }}
+        ¥ {{ formatPrice(row.price) }}
       </template>
     </el-table-column>
     <el-table-column label="状态" width="100">

@@ -672,16 +672,9 @@ export default {
       return 0;
     },
     formatIsGzLabel,
-    /** 金额展示：四位小数（与产品单价一致，避免 0.025 显示成 0.03） */
+    /** 金额展示：最多三位小数，末尾 0 不补齐 */
     formatPrice4(value) {
-      if (value === null || value === undefined || value === '') {
-        return '0.0000';
-      }
-      const n = Number(value);
-      if (Number.isNaN(n)) {
-        return value;
-      }
-      return n.toFixed(4);
+      return this.formatPrice(value, '0');
     },
     /** 未提交（0）、待审核（1）状态允许修改/删除 */
     isPlanEditable(row) {
@@ -843,14 +836,14 @@ getSummaries(param) {
           return;
         }
         if (column.property === 'qty') {
-          sums[index] = sumNum('qty').toFixed(2);
+          sums[index] = this.formatQty(sumNum('qty'));
           return;
         }
         if (column.property === 'amt') {
           const t = sumNum('amt');
-          sums[index] = '￥' + t.toFixed(4);
+          sums[index] = '￥' + this.formatAmount(t);
           if (this.form && this.action) {
-            this.form.totalAmount = t.toFixed(4);
+            this.form.totalAmount = this.toMoneyStorage(t);
           }
         }
       });
@@ -1213,7 +1206,7 @@ listPurchasePlan(queryParams).then(response => {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(4);
+      row.amt = this.toMoneyStorage(totalAmt);
 
       // 重新计算总金额
       this.calculateTotalAmount();
@@ -1226,7 +1219,7 @@ listPurchasePlan(queryParams).then(response => {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(4);
+      row.amt = this.toMoneyStorage(totalAmt);
 
       // 重新计算总金额
       this.calculateTotalAmount();
@@ -1577,7 +1570,7 @@ listPurchasePlan(queryParams).then(response => {
           total += parseFloat(item.amt);
         }
       });
-      this.form.totalAmount = total.toFixed(4);
+      this.form.totalAmount = this.toMoneyStorage(total);
     },
     /** 获取用户列表 */
     getUserList() {

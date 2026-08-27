@@ -3,7 +3,7 @@
     <div v-if="row" style="margin-bottom: 20px;">
       <p><strong>计划单号：</strong>{{ row.planNo }}</p>
       <p><strong>仓库：</strong>{{ row.warehouse && row.warehouse.name ? row.warehouse.name : '' }}</p>
-      <p><strong>金额：</strong>{{ row.totalAmount != null && row.totalAmount !== '' ? parseFloat(row.totalAmount).toFixed(4) : '0.0000' }}</p>
+      <p><strong>金额：</strong>{{ row.totalAmount != null && row.totalAmount !== '' ? formatAmount(row.totalAmount, '0') : '0' }}</p>
       <p><strong>单据状态：</strong>
         <dict-tag :options="dict.type.plan_status" :value="row.planStatus"/>
       </p>
