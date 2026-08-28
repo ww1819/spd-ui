@@ -551,6 +551,17 @@
         </div>
         </div>
         </el-form>
+        <SelectInventory
+          :nested="true"
+          v-show="DialogComponentShow"
+          :DialogComponentShow="DialogComponentShow"
+          :warehouseValue="warehouseValue"
+          :supplierValue="supplierValue"
+          :hide-supplier-query="true"
+          modal-title="TH-添加明细"
+          @closeDialog="closeDialog"
+          @selectData="selectData"
+        />
           </div>
         </transition>
       </div>
@@ -600,17 +611,6 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
-    <!-- 3、使用组件 -->
-    <SelectInventory
-      v-if="DialogComponentShow"
-      :DialogComponentShow="DialogComponentShow"
-      :warehouseValue="warehouseValue"
-      :supplierValue="supplierValue"
-      :hide-supplier-query="true"
-      modal-title="TH-添加明细"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
-    ></SelectInventory>
 
     <el-dialog title="明细变更记录" :visible.sync="entryChangeLogDialog.visible" width="980px" append-to-body>
       <el-table v-loading="entryChangeLogDialog.loading" :data="entryChangeLogDialog.list" border stripe max-height="460">

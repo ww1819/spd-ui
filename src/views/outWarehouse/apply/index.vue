@@ -547,6 +547,26 @@
         </div>
         </div>
         </el-form>
+        <SelectDApply
+          :nested="true"
+          v-show="DialogDApplyComponentShow"
+          :DialogComponentShow="DialogDApplyComponentShow"
+          :departmentValue="departmentValue"
+          :warehouseValue="warehouseValue"
+          modal-title="引用仓库申请单"
+          @closeDialog="closeDApplyDialog"
+          @selectWhApplyData="selectWhApplyData"
+        />
+        <SelectDepPurchaseApply
+          :nested="true"
+          v-show="DialogDepPurchaseApplyComponentShow"
+          :DialogComponentShow="DialogDepPurchaseApplyComponentShow"
+          :departmentValue="departmentValue"
+          :warehouseValue="warehouseValue"
+          modal-title="引用科室申购单"
+          @closeDialog="closeDepPurchaseApplyDialog"
+          @selectDepPurchaseApplyData="selectDepPurchaseApplyData"
+        />
           </div>
         </transition>
       </div>
@@ -566,24 +586,6 @@
       @selectData="selectData"
     ></SelectInventory>
 
-    <SelectDApply
-    v-if="DialogDApplyComponentShow"
-    :DialogComponentShow="DialogDApplyComponentShow"
-    :departmentValue="departmentValue"
-    :warehouseValue="warehouseValue"
-    @closeDialog="closeDApplyDialog"
-    @selectWhApplyData="selectWhApplyData"
-    >
-
-    </SelectDApply>
-    <SelectDepPurchaseApply
-      v-if="DialogDepPurchaseApplyComponentShow"
-      :DialogComponentShow="DialogDepPurchaseApplyComponentShow"
-      :departmentValue="departmentValue"
-      :warehouseValue="warehouseValue"
-      @closeDialog="closeDepPurchaseApplyDialog"
-      @selectDepPurchaseApplyData="selectDepPurchaseApplyData"
-    />
     <SelectRkApply
       v-if="DialogRkApplyComponentShow"
       :DialogComponentShow="DialogRkApplyComponentShow"

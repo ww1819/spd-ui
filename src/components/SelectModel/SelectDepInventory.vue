@@ -1,113 +1,147 @@
 <template>
-  <div v-show="show" class="local-modal-mask dep-inventory-select-full-modal">
-    <div class="local-modal-content">
+  <div
+    v-show="show"
+    class="local-modal-mask material-filter-mask dep-inventory-select-mask"
+    :class="{
+      'material-filter-mask--nested': nested,
+      'dep-inventory-select-full-modal': !nested
+    }"
+  >
+    <div
+      class="local-modal-content material-filter-modal"
+      :class="{
+        'material-filter-modal--nested': nested,
+        'apply-inbound-nested-modal': nested
+      }"
+    >
       <div class="modal-header">
-        <div class="modal-title">{{ modalTitle }}</div>
+        <div class="modal-title">{{ displayModalTitle }}</div>
         <el-button size="small" @click="handleClose" class="close-btn">关闭</el-button>
       </div>
-      <div class="modal-body">
-        <!-- 与到货验收「添加明细」SelectMaterialFilter 一致：顶栏查询卡片 + 中间按钮 + 明细表同宽 -->
-        <div class="material-filter-query-card">
-          <el-form
-            :model="queryParams"
-            ref="queryForm"
-            :inline="true"
-            v-show="showSearch"
-            label-width="0"
-            size="small"
-            class="query-form query-form-compact-fields"
-          >
-            <el-row :gutter="12" class="query-form-row">
-              <el-col :span="6">
-                <el-form-item label="科室" prop="departmentId" label-width="100px">
-                  <SelectDepartment v-model="queryParams.departmentId" :value2="isShow" :finance-pick-mode="true" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="耗材" prop="materialId" label-width="100px">
-                  <SelectMaterial v-model="queryParams.materialId" :use-dept-safe-list="true" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="关键字" prop="materialKeyword" label-width="100px">
-                  <el-input
-                    v-model="queryParams.materialKeyword"
-                    placeholder="耗材编码/名称/简码"
-                    clearable
-                    size="small"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6" />
-            </el-row>
-            <el-row v-if="!useMaterialDict" :gutter="12" class="query-form-row">
-              <el-col :span="6">
-                <el-form-item label="批次号" prop="batchNo" label-width="100px">
-                  <el-input
-                    v-model="queryParams.batchNo"
-                    placeholder="批次号"
-                    clearable
-                    size="small"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="财务分类" prop="financeCategoryId" label-width="100px">
-                  <SelectFinanceCategoryLow
-                    v-model="queryParams.financeCategoryId"
-                    placeholder="财务分类"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :span="12" />
-            </el-row>
-          </el-form>
+      <el-form
+        :model="queryParams"
+        ref="queryForm"
+        v-show="showSearch"
+        label-width="70px"
+        size="small"
+        class="modal-form-compact material-filter-form dep-inventory-select-form"
+        hide-required-asterisk
+        @submit.native.prevent
+      >
+        <div class="form-fields-container list-query-panel apply-modal-query-panel">
+          <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
+            <el-col class="apply-modal-field apply-modal-field--standard">
+              <el-form-item label="科室" prop="departmentId">
+                <SelectDepartment v-model="queryParams.departmentId" :value2="isShow" :finance-pick-mode="true" />
+              </el-form-item>
+            </el-col>
+            <el-col class="apply-modal-field apply-modal-field--standard">
+              <el-form-item label="耗材" prop="materialId">
+                <SelectMaterial v-model="queryParams.materialId" :use-dept-safe-list="true" />
+              </el-form-item>
+            </el-col>
+            <el-col class="apply-modal-field apply-modal-field--standard">
+              <el-form-item label="关键字" prop="materialKeyword">
+                <el-input
+                  v-model="queryParams.materialKeyword"
+                  placeholder="耗材编码/名称/简码"
+                  clearable
+                  size="small"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row v-if="!useMaterialDict" :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
+            <el-col class="apply-modal-field apply-modal-field--standard">
+              <el-form-item label="批次号" prop="batchNo">
+                <el-input
+                  v-model="queryParams.batchNo"
+                  placeholder="批次号"
+                  clearable
+                  size="small"
+                  @keyup.enter.native="handleQuery"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col class="apply-modal-field apply-modal-field--standard">
+              <el-form-item label="财务分类" prop="financeCategoryId" label-width="84px">
+                <SelectFinanceCategoryLow
+                  v-model="queryParams.financeCategoryId"
+                  placeholder="财务分类"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col class="apply-modal-field apply-modal-field--standard" />
+          </el-row>
         </div>
 
-        <div class="material-filter-between-actions">
-          <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">搜索</el-button>
-          <el-button icon="el-icon-refresh" size="small" @click="resetQuery">重置</el-button>
-          <el-button size="small" @click="handleClose" style="margin-left: 12px;">取 消</el-button>
-          <el-button type="primary" size="small" @click="checkBtn">确 定</el-button>
-        </div>
+        <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
+          <div class="list-toolbar-left">
+            <span class="apply-modal-detail-title">{{ toolbarTitle }}</span>
+            <el-button
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--primary"
+              icon="el-icon-search"
+              @click="handleQuery"
+            >搜索</el-button>
+            <el-button
+              size="small"
+              class="spd-btn spd-btn--secondary"
+              icon="el-icon-refresh"
+              @click="resetQuery"
+            >重置</el-button>
+            <el-button size="small" @click="handleClose">取 消</el-button>
+            <el-button
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--primary"
+              icon="el-icon-check"
+              @click="checkBtn"
+            >确 定</el-button>
+          </div>
+        </el-row>
 
-        <div class="material-filter-table-section">
+        <div
+          v-if="nested"
+          class="apply-table-panel"
+          ref="filterTablePanel"
+        >
           <el-table
             ref="singleTable"
             v-loading="loading"
-            class="material-filter-detail-table"
+            class="table-compact apply-main-table"
             :data="inventoryList"
             :row-class-name="inventoryIndex"
             @selection-change="handleSelectionChange"
-            height="calc(55vh)"
+            :height="filterTableHeight"
             border
-            :cell-style="{ padding: '8px 4px' }"
+            stripe
           >
-            <el-table-column type="selection" fixed="left" width="50" align="center" resizable />
-            <el-table-column label="序号" fixed="left" align="center" width="60" show-overflow-tooltip resizable>
+            <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" />
+            <el-table-column label="序号" align="center" width="80" min-width="80" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材编码" align="center" width="130" show-overflow-tooltip resizable>
+            <el-table-column label="耗材编码" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.code')">
               <template slot-scope="scope">
                 <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
               </template>
             </el-table-column>
             <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable />
-            <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable />
-            <el-table-column label="型号" align="center" prop="material.model" width="180" show-overflow-tooltip resizable />
-            <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="100" show-overflow-tooltip resizable />
-            <el-table-column label="库存数量" align="center" min-width="100" width="100" show-overflow-tooltip resizable>
+            <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
+            <el-table-column label="规格" align="center" prop="material.speci" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
+            <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable />
+            <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable />
+            <el-table-column label="库存数量" align="center" min-width="100" width="100" show-overflow-tooltip resizable sortable>
               <template slot-scope="scope">
                 <span>{{ useMaterialDict ? '--' : (scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--') }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+            <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable sortable />
+            <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span>{{ useMaterialDict ? '--' : (scope.row.amt != null && scope.row.amt !== '' ? scope.row.amt : '--') }}</span>
               </template>
@@ -119,42 +153,42 @@
             </el-table-column>
             <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable />
             <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="有效期" align="center" prop="endDate" width="140" show-overflow-tooltip resizable>
+            <el-table-column label="有效期" align="center" prop="endDate" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span v-if="scope.row.endDate">{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
                 <span v-else>--</span>
               </template>
             </el-table-column>
-            <el-table-column label="生产日期" align="center" prop="beginDate" width="140" show-overflow-tooltip resizable>
+            <el-table-column label="生产日期" align="center" prop="beginDate" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span v-if="scope.row.beginDate">{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
                 <span v-else>--</span>
               </template>
             </el-table-column>
-            <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable />
-            <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
+            <el-table-column label="批次号" align="center" prop="batchNo" width="160" show-overflow-tooltip resizable />
+            <el-table-column label="生产厂家" align="center" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdFactory.factoryName')">
               <template slot-scope="scope">
                 <span>{{ (scope.row.fdFactory && scope.row.fdFactory.factoryName) || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable />
-            <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable />
-            <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable />
-            <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable />
-            <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable />
-            <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+            <el-table-column label="供应商" align="center" prop="supplier.name" width="150" show-overflow-tooltip resizable />
+            <el-table-column label="注册证号" align="center" prop="material.registerNo" width="160" show-overflow-tooltip resizable />
+            <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable />
+            <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable />
+            <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable />
+            <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <dict-tag v-if="scope.row.material && scope.row.material.isWay" :options="dict.type.way_status" :value="scope.row.material.isWay" />
                 <span v-else>--</span>
               </template>
             </el-table-column>
-            <el-table-column label="耗材日期" align="center" prop="materialDate" width="200" show-overflow-tooltip resizable>
+            <el-table-column label="耗材日期" align="center" prop="materialDate" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span v-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
                 <span v-else>--</span>
               </template>
             </el-table-column>
-            <el-table-column label="入库日期" align="center" prop="warehouseDate" width="180" show-overflow-tooltip resizable>
+            <el-table-column label="入库日期" align="center" prop="warehouseDate" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span v-if="scope.row.warehouseDate">{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
                 <span v-else>--</span>
@@ -162,14 +196,117 @@
             </el-table-column>
           </el-table>
 
-          <pagination
-            :total="total"
-            :page.sync="queryParams.pageNum"
-            :limit.sync="queryParams.pageSize"
-            @pagination="handlePagination"
-          />
+          <div class="apply-pagination-wrap" ref="filterPaginationWrap">
+            <pagination
+              class="modal-entry-pagination"
+              :total="total"
+              :page.sync="queryParams.pageNum"
+              :limit.sync="queryParams.pageSize"
+              :hide-on-single-page="false"
+              @pagination="handlePagination"
+            />
+          </div>
         </div>
-      </div>
+
+        <div v-else class="modal-detail-section apply-modal-table-panel">
+          <div class="table-wrapper">
+            <el-table
+              ref="singleTable"
+              v-loading="loading"
+              class="apply-detail-table material-filter-detail-table"
+              :data="inventoryList"
+              :row-class-name="inventoryIndex"
+              @selection-change="handleSelectionChange"
+              height="calc(55vh)"
+              border
+            >
+              <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" />
+              <el-table-column label="序号" align="center" width="80" min-width="80" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+                </template>
+              </el-table-column>
+              <el-table-column label="耗材编码" align="center" width="130" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
+              <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="型号" align="center" prop="material.model" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="100" show-overflow-tooltip resizable />
+              <el-table-column label="库存数量" align="center" min-width="100" width="100" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ useMaterialDict ? '--' : (scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable />
+              <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ useMaterialDict ? '--' : (scope.row.amt != null && scope.row.amt !== '' ? scope.row.amt : '--') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="归属仓库" align="center" width="120" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable />
+              <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable />
+              <el-table-column label="有效期" align="center" prop="endDate" width="140" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.endDate">{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
+                  <span v-else>--</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="生产日期" align="center" prop="beginDate" width="140" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.beginDate">{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
+                  <span v-else>--</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="批次号" align="center" prop="batchNo" width="200" show-overflow-tooltip resizable />
+              <el-table-column label="生产厂家" align="center" width="180" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span>{{ (scope.row.fdFactory && scope.row.fdFactory.factoryName) || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable />
+              <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <dict-tag v-if="scope.row.material && scope.row.material.isWay" :options="dict.type.way_status" :value="scope.row.material.isWay" />
+                  <span v-else>--</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="耗材日期" align="center" prop="materialDate" width="200" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+                  <span v-else>--</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="入库日期" align="center" prop="warehouseDate" width="180" show-overflow-tooltip resizable>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.warehouseDate">{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
+                  <span v-else>--</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+          <div class="apply-pagination-wrap">
+            <pagination
+              :total="total"
+              :page.sync="queryParams.pageNum"
+              :limit.sync="queryParams.pageSize"
+              @pagination="handlePagination"
+            />
+          </div>
+        </div>
+      </el-form>
     </div>
   </div>
 </template>
@@ -200,6 +337,15 @@ export default {
     useMaterialDict: {
       type: Boolean,
       default: false
+    },
+    modalTitle: {
+      type: String,
+      default: ""
+    },
+    /** 嵌套在父业务弹窗内（退库申请添加明细等，对齐到货验收 RK-添加明细） */
+    nested: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -214,6 +360,7 @@ export default {
       showSearch: true,
       total: 0,
       inventoryList: [],
+      filterTableHeight: 400,
       unitOptions: [],
       title: "",
       open: false,
@@ -240,6 +387,15 @@ export default {
     if (this.show) {
       this.getList();
     }
+    if (this.nested) {
+      window.addEventListener("resize", this.onFilterWindowResize);
+      this.$nextTick(() => this.updateFilterTableHeight());
+    }
+  },
+  beforeDestroy() {
+    if (this.nested) {
+      window.removeEventListener("resize", this.onFilterWindowResize);
+    }
   },
   watch: {
     DialogComponentShow(newVal) {
@@ -253,13 +409,19 @@ export default {
           this.queryParams.warehouseId = this.warehouseValue;
         }
         this.getList();
+        this.$nextTick(() => {
+          if (this.nested) this.updateFilterTableHeight();
+        });
       }
     }
   },
-  created() {},
   computed: {
-    modalTitle() {
+    displayModalTitle() {
+      if (this.modalTitle) return this.modalTitle;
       return this.useMaterialDict ? "添加明细" : "科室库存明细";
+    },
+    toolbarTitle() {
+      return this.useMaterialDict ? "耗材明细信息" : "科室库存明细信息";
     }
   },
   methods: {
@@ -357,7 +519,10 @@ export default {
               : rows;
             this.total = response.total != null ? Number(response.total) : 0;
             this.loading = false;
-            this.$nextTick(() => this.restorePageSelection());
+            this.$nextTick(() => {
+              this.restorePageSelection();
+              if (this.nested) this.updateFilterTableHeight();
+            });
           })
           .catch(() => {
             this.loading = false;
@@ -367,6 +532,7 @@ export default {
       listInventoryPick(this.buildInventoryPickParams())
         .then(response => {
           const rows = response.rows || [];
+          let filteredCount = 0;
           if (this.selectedDetails && this.selectedDetails.length) {
             const existedDepInvIds = new Set(
               this.selectedDetails.flatMap((d) => {
@@ -391,10 +557,12 @@ export default {
             const filtered = rows.filter(it => {
               if (!it) return true;
               if (it.id != null && existedDepInvIds.has(String(it.id))) {
+                filteredCount++;
                 return false;
               }
               const legacyKey = it.materialId != null && it.batchNo ? `${it.materialId}__${it.batchNo}` : null;
               if (legacyKey && existedBatchKeys.has(legacyKey)) {
+                filteredCount++;
                 return false;
               }
               return true;
@@ -407,9 +575,13 @@ export default {
               ? sortInventoryRowsByNameSpecCodeMaterialId(rows)
               : rows;
           }
-          this.total = response.total != null ? Number(response.total) : 0;
+          const serverTotal = response.total != null ? Number(response.total) : 0;
+          this.total = filteredCount > 0 ? Math.max(0, serverTotal - filteredCount) : serverTotal;
           this.loading = false;
-          this.$nextTick(() => this.restorePageSelection());
+          this.$nextTick(() => {
+            this.restorePageSelection();
+            if (this.nested) this.updateFilterTableHeight();
+          });
         })
         .catch(() => {
           this.loading = false;
@@ -465,6 +637,44 @@ export default {
     },
     inventoryIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+    },
+    sortByNested(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return "";
+        const keys = path.split(".");
+        let v = obj;
+        for (let i = 0; i < keys.length; i++) {
+          v = v ? v[keys[i]] : "";
+        }
+        return v == null ? "" : String(v);
+      };
+      return getVal(a).localeCompare(getVal(b), "zh-CN");
+    },
+    onFilterWindowResize() {
+      this.updateFilterTableHeight();
+    },
+    updateFilterTableHeight() {
+      if (!this.nested || !this.show) return;
+      const run = () => {
+        const panel = this.$refs.filterTablePanel;
+        const pagWrap = this.$refs.filterPaginationWrap;
+        if (!panel || !panel.getBoundingClientRect) return;
+        const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+        if (!panelH) return;
+        const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+        const next = Math.floor(panelH - pagH);
+        const height = Math.max(200, next);
+        if (Math.abs(this.filterTableHeight - height) >= 2) {
+          this.filterTableHeight = height;
+        }
+        this.$nextTick(() => {
+          const table = this.$refs.singleTable;
+          if (table && table.doLayout) table.doLayout();
+        });
+      };
+      this.$nextTick(run);
+      requestAnimationFrame(run);
+      ;[50, 120, 300].forEach((ms) => setTimeout(run, ms));
     }
   }
 };
@@ -472,41 +682,51 @@ export default {
 
 <style scoped>
 .local-modal-mask {
-  position: fixed;
+  position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 2000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.dep-inventory-select-full-modal.local-modal-mask {
+  position: fixed;
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.4);
   z-index: 3000;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
   overflow: hidden;
 }
 
 .local-modal-content {
   background: #fff;
   width: 100%;
-  height: 100vh;
-  max-height: 100vh;
+  height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
+.dep-inventory-select-full-modal .local-modal-content {
+  height: 100vh;
+  max-height: 100vh;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid #ebeef5;
-  background: #f5f7fa;
+  padding: 6px 8px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #EBEEF5;
   flex-shrink: 0;
-  min-height: 48px;
+  min-height: 40px;
 }
 
 .modal-title {
@@ -525,133 +745,141 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: auto;
-  padding: 6px 20px 16px;
-  background: #fff;
+::v-deep .apply-modal-field--standard .el-input,
+::v-deep .apply-modal-field--standard .el-select {
+  width: 140px !important;
+  max-width: 140px !important;
 }
 
-.material-filter-table-section {
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-}
-
-.material-filter-detail-table {
-  width: 100% !important;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 12px;
-}
-
-::v-deep .material-filter-detail-table .el-table__body-wrapper {
-  overflow-x: auto;
-  overflow-y: auto;
-}
-
-::v-deep .material-filter-detail-table th {
-  background-color: #ebeef5 !important;
-  color: #606266;
-  font-weight: 600;
-  height: 50px;
-  padding: 8px 0;
-  border-bottom: 1px solid #ebeef5;
-}
-
-::v-deep .material-filter-detail-table td {
-  padding: 12px 0;
-  color: #606266;
-  border-bottom: 1px solid #ebeef5;
-}
-
-::v-deep .material-filter-detail-table tr:hover > td {
-  background-color: #f5f7fa !important;
-  transition: all 0.3s;
-}
-
-.material-filter-query-card {
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-  padding: 8px 16px 8px;
-  margin-bottom: 0;
-  background: #fff;
-  border: 1px solid #c0c4cc;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-}
-
-.material-filter-query-card .query-form-row + .query-form-row {
-  margin-top: 10px;
-}
-
-.material-filter-between-actions {
-  margin-left: -20px;
-  margin-right: -20px;
-  width: calc(100% + 40px);
-  box-sizing: border-box;
-  padding: 8px 16px;
-  margin-top: 0;
-  margin-bottom: 0;
-  text-align: left;
-}
-
-.query-form {
-  background: transparent;
-  padding: 0;
-  margin: 0;
-  border-radius: 0;
-  box-shadow: none;
-}
-
-.query-form .el-form-item {
-  margin-bottom: 0;
-}
-
-.query-form .el-form-item__label {
-  line-height: 36px;
-  padding-right: 8px;
-}
-
-.query-form-row {
-  margin-bottom: 0 !important;
-}
-
-::v-deep .query-form-compact-fields .el-input,
-::v-deep .query-form-compact-fields .el-select {
-  width: 220px !important;
-  max-width: 220px !important;
-}
-
-::v-deep .query-form-compact-fields .el-select .el-input {
+::v-deep .apply-modal-field--standard .el-select .el-input {
   width: 100% !important;
   max-width: 100% !important;
-  min-height: 36px !important;
+}
+</style>
+
+<style lang="scss">
+.dep-inventory-select-mask.material-filter-mask--nested {
+  position: absolute;
+  z-index: 3100;
 }
 
-::v-deep .query-form-compact-fields .el-input__inner,
-::v-deep .query-form-compact-fields .el-select .el-input__inner,
-::v-deep .query-form-compact-fields .el-range-editor.el-input__inner {
-  height: 36px !important;
-  min-height: 36px !important;
-  line-height: 36px !important;
-  font-size: 13px !important;
+.dep-inventory-select-mask.material-filter-mask--nested .local-modal-content.material-filter-modal--nested {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.dep-inventory-select-mask .material-filter-modal--nested {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+  padding: 8px 0 12px !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel {
+  margin-top: 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid #e8ecf1;
+  border-bottom: 1px solid #e8ecf1;
   box-sizing: border-box;
 }
 
-::v-deep .query-form-compact-fields .el-input__icon {
-  line-height: 36px !important;
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
-::v-deep .query-form-compact-fields.el-form--inline .el-form-item {
-  vertical-align: middle;
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row:last-child {
+  margin-bottom: 0;
 }
 
-.dep-inventory-select-full-modal ::v-deep .material-filter-table-section .pagination-container {
-  padding: 8px 16px 12px;
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+}
+
+.dep-inventory-select-mask .local-modal-content .apply-modal-toolbar.list-toolbar {
+  flex: 0 0 auto;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+  box-sizing: border-box;
+}
+
+.dep-inventory-select-mask .local-modal-content .apply-modal-toolbar.list-toolbar .list-toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dep-inventory-select-mask .apply-modal-detail-title {
+  margin-right: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 32px;
+}
+
+.dep-inventory-select-mask.material-filter-mask--nested .material-filter-form.modal-form-compact > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #EBEEF5;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap .pagination-container {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent;
+}
+
+.dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel > .apply-main-table > .el-table__body-wrapper {
+  overflow: auto !important;
 }
 </style>

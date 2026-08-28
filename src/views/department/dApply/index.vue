@@ -295,8 +295,8 @@
                       clearable
                       v-model="scope.row.qty"
                       placeholder="数量"
-                      onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                      onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                      onkeyup="value=value.replace(/\D/g,'')"
+                      onafterpaste="value=value.replace(/\D/g,'')"
                       @blur="form.result=$event.target.value"
                       @input="qtyChange(scope.row)"
                     />
@@ -384,6 +384,14 @@
               </div>
               </div>
             </el-form>
+            <SelectDepartmentApplyAvailableStock
+              :nested="true"
+              v-show="DialogComponentShow && selectTarget === 'apply'"
+              :DialogComponentShow="DialogComponentShow && selectTarget === 'apply'"
+              :selectedDetails="basApplyEntryList"
+              @closeDialog="closeDialog"
+              @selectData="selectData"
+            />
           </div>
         </transition>
       </div>
@@ -707,14 +715,6 @@
       </span>
     </el-dialog>
 
-    <!-- 科室申领：全院聚合可用库存；制单模板：仍按仓库选库存明细 -->
-    <SelectDepartmentApplyAvailableStock
-      v-if="DialogComponentShow && selectTarget === 'apply'"
-      :DialogComponentShow="DialogComponentShow"
-      :selectedDetails="basApplyEntryList"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
-    />
     <SelectInventory
       v-if="DialogComponentShow && selectTarget === 'template'"
       :DialogComponentShow="DialogComponentShow"
@@ -1743,7 +1743,7 @@ export default {
           });
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = this.formatQty(total);
+            sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
           }
           return;
         }
@@ -1773,8 +1773,7 @@ export default {
       if (v === null || v === undefined || v === '') {
         return '—';
       }
-      const s = this.formatQty ? this.formatQty(v) : String(v)
-      return s === '' || s === '-' ? '—' : s
+      return v;
     },
     fmtMinPackageQty(row) {
       const src = row && typeof row === 'object' ? row : {};
@@ -3245,6 +3244,85 @@ export default {
 .app-container.d-apply-page .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
+}
+
+/* 可用库存选择嵌套层：对齐 RK-添加明细 */
+.app-container.d-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
+  position: absolute;
+  left: 0;
+  right: -8px;
+  top: 0;
+  bottom: 0;
+  width: auto;
+  box-sizing: border-box;
+  z-index: 3100;
+}
+
+.app-container.d-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-header {
+  padding: 6px 8px !important;
+  background: #EBEEF5 !important;
+  min-height: 40px !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.app-container.d-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+html body .app-container.d-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+}
+
+.app-container.d-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .material-filter-modal--nested {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container.d-apply-page .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+  padding: 8px 0 12px !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-container.d-apply-page .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.app-container.d-apply-page .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 40px;
+}
+
+.app-container.d-apply-page .apply-inbound-nested-modal .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .app-container.d-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {

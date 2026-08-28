@@ -581,42 +581,40 @@
         </div>
         </div>
         </el-form>
+        <SelectInventory
+          :nested="true"
+          v-show="DialogComponentShow"
+          :DialogComponentShow="DialogComponentShow"
+          :warehouseValue="warehouseValue"
+          :supplierValue="supplierValue"
+          :hide-supplier-query="true"
+          :selectedDetails="stkIoBillEntryList"
+          modal-title="TH-添加明细"
+          @closeDialog="closeDialog"
+          @selectData="selectData"
+        />
+        <SelectRkApply
+          :nested="true"
+          v-show="DialogRkApplyComponentShow"
+          :DialogComponentShow="DialogRkApplyComponentShow"
+          :warehouseValue="warehouseValue"
+          modal-title="采购入库单"
+          @closeDialog="closeRkApplyDialog"
+          @selectData="selectRkApplyData"
+        />
+        <SelectTkApply
+          :nested="true"
+          v-show="DialogTkApplyComponentShow"
+          :DialogComponentShow="DialogTkApplyComponentShow"
+          :warehouseValue="warehouseValue"
+          modal-title="科室退库单"
+          @closeDialog="closeTkApplyDialog"
+          @selectData="selectTkApplyData"
+        />
           </div>
         </transition>
       </div>
     </transition>
-
-    <!-- 3、使用组件 -->
-    <SelectInventory
-      v-if="DialogComponentShow"
-      :DialogComponentShow="DialogComponentShow"
-      :warehouseValue="warehouseValue"
-      :supplierValue="supplierValue"
-      :hide-supplier-query="true"
-      :selectedDetails="stkIoBillEntryList"
-      modal-title="TH-添加明细"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
-    ></SelectInventory>
-
-    <SelectRkApply
-      v-if="DialogRkApplyComponentShow"
-      :DialogComponentShow="DialogRkApplyComponentShow"
-      :warehouseValue="warehouseValue"
-      @closeDialog="closeRkApplyDialog"
-      @selectData="selectRkApplyData"
-    >
-
-    </SelectRkApply>
-    <SelectTkApply
-      v-if="DialogTkApplyComponentShow"
-      :DialogComponentShow="DialogTkApplyComponentShow"
-      :warehouseValue="warehouseValue"
-      @closeDialog="closeTkApplyDialog"
-      @selectData="selectTkApplyData"
-    >
-
-    </SelectTkApply>
 
     <el-dialog title="明细变更记录" :visible.sync="entryChangeLogDialog.visible" width="980px" append-to-body>
       <el-table v-loading="entryChangeLogDialog.loading" :data="entryChangeLogDialog.list" border stripe max-height="460">

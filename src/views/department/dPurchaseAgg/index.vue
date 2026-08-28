@@ -426,19 +426,18 @@
               </div>
               </div>
             </el-form>
+            <SelectMaterialForPurchaseAgg
+              :nested="true"
+              v-show="DialogComponentShow"
+              :DialogComponentShow="DialogComponentShow"
+              :excludePickKeys="entryPickKeys"
+              @closeDialog="closeDialog"
+              @selectData="selectData"
+            />
           </div>
         </transition>
       </div>
     </transition>
-
-    <!-- 耗材选择组件 -->
-    <SelectMaterialForPurchaseAgg
-      v-if="DialogComponentShow"
-      :DialogComponentShow="DialogComponentShow"
-      :excludePickKeys="entryPickKeys"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
-    ></SelectMaterialForPurchaseAgg>
   </div>
 </template>
 
@@ -1914,6 +1913,85 @@ export default {
 .app-container.d-purchase-agg-page .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
+}
+
+/* 选择耗材（仓库定数）嵌套层：对齐 RK-添加明细 */
+.app-container.d-purchase-agg-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
+  position: absolute;
+  left: 0;
+  right: -8px;
+  top: 0;
+  bottom: 0;
+  width: auto;
+  box-sizing: border-box;
+  z-index: 3100;
+}
+
+.app-container.d-purchase-agg-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-header {
+  padding: 6px 8px !important;
+  background: #EBEEF5 !important;
+  min-height: 40px !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.app-container.d-purchase-agg-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+html body .app-container.d-purchase-agg-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+}
+
+.app-container.d-purchase-agg-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .material-filter-modal--nested {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container.d-purchase-agg-page .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+  padding: 8px 0 12px !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-container.d-purchase-agg-page .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.app-container.d-purchase-agg-page .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 40px;
+}
+
+.app-container.d-purchase-agg-page .apply-inbound-nested-modal .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 /* 弹窗内查询区：list-page 卡片容器 form-fields-container list-query-panel（与到货验收一致） */

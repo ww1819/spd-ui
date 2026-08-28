@@ -720,21 +720,22 @@
           @closeDialog="closeDialog"
           @selectData="selectData"
         />
+        <SelectDingdan
+          :nested="true"
+          v-show="DialogDingdanComponentShow"
+          :DialogComponentShow="DialogDingdanComponentShow"
+          :warehouseValue="warehouseValue"
+          :departmentValue="departmentValue"
+          :supplierValue="supplierValue"
+          :materialValue="materialValue"
+          modal-title="引用采购订单"
+          @closeDialog="closeDingdanDialog"
+          @selectData="selectDingdanData"
+        />
           </div>
         </transition>
       </div>
     </transition>
-
-    <SelectDingdan
-      v-show="DialogDingdanComponentShow"
-      :DialogComponentShow="DialogDingdanComponentShow"
-      :warehouseValue="warehouseValue"
-      :departmentValue="departmentValue"
-      :supplierValue="supplierValue"
-      :materialValue="materialValue"
-      @closeDialog="closeDingdanDialog"
-      @selectData="selectDingdanData"
-    ></SelectDingdan>
 
     <!-- 打印对话框 -->
     <el-dialog :visible.sync="modalObj.show" :title="modalObj.title" :width="modalObj.width" @close="handlePrintDialogClose">

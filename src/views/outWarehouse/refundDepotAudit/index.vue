@@ -489,6 +489,14 @@
         </div>
         </div>
             </el-form>
+        <SelectDepInventory
+          :nested="true"
+          v-show="DialogComponentShow"
+          :DialogComponentShow="DialogComponentShow"
+          :departmentValue="departmentValue"
+          @closeDialog="closeDialog"
+          @selectData="selectData"
+        />
           </div>
         </transition>
       </div>
@@ -551,15 +559,6 @@
         <el-button @click=" modalObj.ok " type="primary">确认</el-button>
       </template>
     </el-dialog>
-
-    <!-- 3、使用组件 -->
-    <SelectDepInventory
-      v-if="DialogComponentShow"
-      :DialogComponentShow="DialogComponentShow"
-      :departmentValue="departmentValue"
-      @closeDialog="closeDialog"
-      @selectData="selectData"
-    ></SelectDepInventory>
 
     <el-dialog title="明细变更记录" :visible.sync="entryChangeLogDialog.visible" width="980px" append-to-body>
       <el-table v-loading="entryChangeLogDialog.loading" :data="entryChangeLogDialog.list" border stripe max-height="460">
@@ -2445,6 +2444,84 @@ export default {
   text-align: center;
 }
 
+/* 科室库存明细嵌套层：对齐 RK-添加明细 */
+.app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
+  position: absolute;
+  left: 0;
+  right: -8px;
+  top: 0;
+  bottom: 0;
+  width: auto;
+  box-sizing: border-box;
+  z-index: 3100;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-header {
+  padding: 6px 8px !important;
+  background: #EBEEF5 !important;
+  min-height: 40px !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+html body .app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .material-filter-modal--nested {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+  padding: 8px 0 12px !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 40px;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .apply-inbound-nested-modal .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
 
 .json-viewer-pre {
   max-height: 520px;

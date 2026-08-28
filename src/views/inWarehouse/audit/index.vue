@@ -684,21 +684,23 @@
           @closeDialog="closeDialog"
           @selectData="selectData"
         />
+        <SelectDingdan
+          :nested="true"
+          v-show="DialogDingdanComponentShow"
+          :DialogComponentShow="DialogDingdanComponentShow"
+          :warehouseValue="warehouseValue"
+          :departmentValue="departmentValue"
+          :supplierValue="supplierValue"
+          :materialValue="materialValue"
+          modal-title="引用采购订单"
+          @closeDialog="closeDingdanDialog"
+          @selectData="selectDingdanData"
+        />
           </div>
         </transition>
       </div>
     </transition>
 
-    <SelectDingdan
-      v-show="DialogDingdanComponentShow"
-      :DialogComponentShow="DialogDingdanComponentShow"
-      :warehouseValue="warehouseValue"
-      :departmentValue="departmentValue"
-      :supplierValue="supplierValue"
-      :materialValue="materialValue"
-      @closeDialog="closeDingdanDialog"
-      @selectData="selectDingdanData"
-    ></SelectDingdan>
 
     <el-dialog
       :visible.sync="modalObj.show"
