@@ -193,7 +193,7 @@ export default {
       })
     },
     formatQty(value) {
-      return formatQuantity(value, 2)
+      return formatQuantity(value)
     }
   }
 }

@@ -160,7 +160,7 @@ export default {
             }, 0);
             // 金额类字段保留两位小数
             if (prop.endsWith('JE')) {
-              sums[index] = sums[index].toFixed(2);
+              sums[index] = this.formatSumByProp(sums[index], column.property);
             }
           } else {
             sums[index] = '';

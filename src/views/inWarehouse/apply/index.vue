@@ -501,8 +501,8 @@
                   clearable
                   v-model="scope.row.qty"
                   placeholder="数量"
-                  onkeyup="value=value.replace(/\D/g,'')"
-                  onafterpaste="value=value.replace(/\D/g,'')"
+                  onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                  onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                   @blur="form.result=$event.target.value"
                   @input="qtyChange(scope.row)"
                   size="small"
@@ -1293,7 +1293,7 @@ export default {
           });
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+            sums[index] = this.formatQty(total);
           }
           return;
         }

@@ -261,7 +261,7 @@ export default {
             if(column.property === 'materialAmt') {
               sums[index] = '￥' + this.formatAmount(sums[index]);
             } else {
-              sums[index] = sums[index].toFixed(2);
+              sums[index] = this.formatSumByProp(sums[index], column.property);
             }
           } else {
             sums[index] = '';

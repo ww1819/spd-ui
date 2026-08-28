@@ -493,14 +493,7 @@ export default {
       this.$nextTick(() => this.updateFilterTableHeight());
     },
     formatPrice4(value) {
-      if (value === null || value === undefined || value === '') {
-        return '';
-      }
-      const n = Number(value);
-      if (Number.isNaN(n)) {
-        return value;
-      }
-      return n.toFixed(4);
+      return this.formatPrice(value, '');
     },
     applyDeptSafeClientPage() {
       const filtered = this.applyMaterialClientFilters(this.deptSafeAllRows || []);

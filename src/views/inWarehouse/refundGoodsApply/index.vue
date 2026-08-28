@@ -461,8 +461,8 @@
                 placeholder="数量"
                 size="small"
                 class="detail-cell-fluid-input"
-                onkeyup="value=value.replace(/\D/g,'')"
-                onafterpaste="value=value.replace(/\D/g,'')"
+                onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                 @blur="form.result=$event.target.value"
                 @input="qtyChange(scope.row)"
               />
@@ -918,7 +918,7 @@ export default {
               }
               return prev;
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
           if (prop === 'amt') {
             const res = parseFloat(sums[index]);
@@ -949,7 +949,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });

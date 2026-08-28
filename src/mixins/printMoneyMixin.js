@@ -2,6 +2,7 @@
  * 打印页单价/金额：读租户已生效小数位（覆盖本地写死 toFixed）
  */
 import { formatAmount, formatPrice } from '@/utils/moneyFormat'
+import { formatQuantity } from '@/utils/format-quantity'
 
 export default {
   methods: {
@@ -20,6 +21,10 @@ export default {
     /** 少数模板用 formatAmount 命名 */
     formatAmount(v) {
       return this.formatAmt(v)
+    },
+    formatQty(v) {
+      if (v === null || v === undefined || v === '') return ''
+      return formatQuantity(v)
     }
   }
 }

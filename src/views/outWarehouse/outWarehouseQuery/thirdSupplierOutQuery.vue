@@ -294,19 +294,19 @@ export default {
       columns.forEach((column, index) => {
         switch (column.property) {
           case 'outQty':
-            sums[index] = totalOutQty.toFixed(2);
+            sums[index] = this.formatQty(totalOutQty);
             break;
           case 'outAmt':
             sums[index] = fmt ? fmt(totalOutAmt) : this.formatAmount(totalOutAmt);
             break;
           case 'retQty':
-            sums[index] = totalRetQty.toFixed(2);
+            sums[index] = this.formatQty(totalRetQty);
             break;
           case 'retAmt':
             sums[index] = fmt ? fmt(totalRetAmt) : this.formatAmount(totalRetAmt);
             break;
           case 'netQty':
-            sums[index] = totalNetQty.toFixed(2);
+            sums[index] = this.formatQty(totalNetQty);
             break;
           case 'netAmt':
             sums[index] = fmt ? fmt(totalNetAmt) : this.formatAmount(totalNetAmt);

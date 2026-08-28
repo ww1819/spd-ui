@@ -582,14 +582,8 @@ export default {
           if (!d || typeof d !== "object") {
             return;
           }
-          const money = (v) => {
-            const n = Number(v);
-            return Number.isFinite(n) ? n.toFixed(2) : "0.00";
-          };
-          const qty = (v) => {
-            const n = Number(v);
-            return Number.isFinite(n) ? String(Math.round(n)) : "0";
-          };
+          const money = (v) => this.formatAmount(v, "0");
+          const qty = (v) => this.formatQty(v, "0");
           this.statsData.acceptanceAmount = money(d.acceptanceAmount);
           this.statsData.outboundAmount = money(d.outboundAmount);
           this.statsData.consumptionAmount = money(d.consumptionAmount);

@@ -524,16 +524,9 @@ export default {
       if (va > vb) return 1;
       return 0;
     },
-    /** 单价/金额展示：保留四位小数（与产品档案一致，避免 0.0250 显示成 0.03） */
+    /** 单价/金额展示：最多三位小数，末尾 0 不补齐 */
     formatPrice4(value) {
-      if (value === null || value === undefined || value === '') {
-        return '0.0000';
-      }
-      const n = Number(value);
-      if (Number.isNaN(n)) {
-        return value;
-      }
-      return n.toFixed(4);
+      return this.formatPrice(value, '0');
     },
     // 为主表提供稳定的 row-key，减少 DOM 复用导致的抖动
     planRowKey(row) {
@@ -564,12 +557,12 @@ getSummaries(param) {
           return;
         }
         if (column.property === 'qty') {
-          sums[index] = sumNum('qty').toFixed(2);
+          sums[index] = this.formatQty(sumNum('qty'));
           return;
         }
         if (column.property === 'amt') {
           const t = sumNum('amt');
-          sums[index] = '￥' + t.toFixed(4);
+          sums[index] = '￥' + this.formatAmount(t);
         }
       });
       return sums;
@@ -593,7 +586,7 @@ getSummaries(param) {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });

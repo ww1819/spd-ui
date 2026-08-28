@@ -302,8 +302,8 @@
                           placeholder="数量"
                           size="small"
                           class="detail-input-compact"
-                          onkeyup="value=value.replace(/\D/g,'')"
-                          onafterpaste="value=value.replace(/\D/g,'')"
+                          onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                          onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                           @input="qtyChange(scope.row)"
                         />
                         <span v-else>{{ scope.row.transferQuantity || '--' }}</span>

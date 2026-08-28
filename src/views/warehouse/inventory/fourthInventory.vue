@@ -287,9 +287,10 @@ export default {
       );
     },
     formatNum(v) {
-      if (v == null || v === "") return "0.00";
+      if (v == null || v === "") return "0";
       const n = Number(v);
-      return Number.isFinite(n) ? n.toFixed(2) : "0.00";
+      if (!Number.isFinite(n)) return "0";
+      return this.formatQty(n);
     },
     dataRowIndex(displayIndex) {
       // displayList 末尾是小计/合计，序号只计数据行

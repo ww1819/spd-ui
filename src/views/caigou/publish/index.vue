@@ -781,16 +781,9 @@ export default {
       if (key && this.selectedRowMap && this.selectedRowMap[key]) return 'apply-row-selected';
       return '';
     },
-    /** 单价/金额：四位小数（避免 0.025 显示成 0.03） */
+    /** 单价/金额：最多三位小数，末尾 0 不补齐 */
     formatPrice4(value) {
-      if (value === null || value === undefined || value === '') {
-        return '0.0000';
-      }
-      const n = Number(value);
-      if (Number.isNaN(n)) {
-        return value;
-      }
-      return n.toFixed(4);
+      return this.formatPrice(value, '0');
     },
     /** 明细表嵌套字段排序（名称/规格/型号） */
     sortEntryByNested(a, b, nestedPath, fallbackProp) {
@@ -837,11 +830,11 @@ getSummaries(param) {
           return;
         }
         if (column.property === 'orderQty') {
-          sums[index] = sumNum('orderQty').toFixed(2);
+          sums[index] = this.formatQty(sumNum('orderQty'));
           return;
         }
         if (column.property === 'totalAmount') {
-          sums[index] = '￥' + sumNum('totalAmount').toFixed(4);
+          sums[index] = '￥' + this.formatAmount(sumNum('totalAmount'));
         }
       });
       return sums;
@@ -862,7 +855,7 @@ getSummaries(param) {
               if (!isNaN(value)) return prev + curr;
               return prev;
             }, 0);
-            sums[index] = Number(sums[index]).toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });

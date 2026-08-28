@@ -292,10 +292,10 @@
           <el-input v-model="warningForm.materialName" disabled />
         </el-form-item>
         <el-form-item label="数量少于预警" prop="minQtyWarning">
-          <el-input-number v-model="warningForm.minQtyWarning" :min="0" :precision="0" style="width: 100%" />
+          <el-input-number v-model="warningForm.minQtyWarning" :min="0" :step="0.001" style="width: 100%" />
         </el-form-item>
         <el-form-item label="数量多余预警" prop="maxQtyWarning">
-          <el-input-number v-model="warningForm.maxQtyWarning" :min="0" :precision="0" style="width: 100%" />
+          <el-input-number v-model="warningForm.maxQtyWarning" :min="0" :step="0.001" style="width: 100%" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">

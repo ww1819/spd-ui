@@ -240,7 +240,7 @@ export default {
       return this.formatBillDateTime(date || new Date())
     },
     formatNum(v) {
-      return formatQuantity(v, 2)
+      return formatQuantity(v)
     },    pageSubtotalAmt(pageRows) {
       if (!pageRows || !pageRows.length) return 0
       return pageRows.reduce((sum, item) => {

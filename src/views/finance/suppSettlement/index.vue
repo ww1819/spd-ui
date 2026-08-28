@@ -105,7 +105,7 @@
         <el-table-column prop="speci" label="规格" width="90" show-overflow-tooltip />
         <el-table-column prop="qty" label="数量" width="80" align="right" />
         <el-table-column prop="unitPrice" label="单价" width="90" align="right">
-          <template slot-scope="scope">{{ scope.row.unitPrice != null ? Number(scope.row.unitPrice).toFixed(4) : '--' }}</template>
+          <template slot-scope="scope">{{ scope.row.unitPrice != null ? formatPrice(scope.row.unitPrice) : '--' }}</template>
         </el-table-column>
         <el-table-column prop="amt" label="金额" width="90" align="right">
           <template slot-scope="scope">{{ scope.row.amt != null ? this.formatAmount(scope.row.amt) : '--' }}</template>

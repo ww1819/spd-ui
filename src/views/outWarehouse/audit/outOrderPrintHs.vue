@@ -253,7 +253,7 @@ export default {
       return `${y}-${m}-${day}`
     },
     formatNum(v) {
-      return formatQuantity(v, 2)
+      return formatQuantity(v)
     },    /** 金额四位小数（与采购价一致） */    /** 有效期显示：日期格式 yyyy-MM-dd */
     formatValidDate(v) {
       if (v == null || v === '') return ''

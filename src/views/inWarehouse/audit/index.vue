@@ -464,8 +464,8 @@
                   clearable
                   v-model="scope.row.qty"
                   placeholder="数量"
-                  onkeyup="value=value.replace(/\D/g,'')"
-                  onafterpaste="value=value.replace(/\D/g,'')"
+                  onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                  onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                   @blur="form.result=$event.target.value"
                   @input="qtyChange(scope.row)"
                   size="small"
@@ -1387,7 +1387,7 @@ export default {
           });
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
+            sums[index] = this.formatQty(total);
           }
           return;
         }
@@ -1397,7 +1397,7 @@ export default {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
             sums[index] = prop === 'unitPrice' ? this.formatPrice(total) : this.formatAmount(total);
             if (prop === 'amt') {
-              this.form.totalAmount = this.toMoneyStorage ? this.toMoneyStorage(total) : total.toFixed(2);
+              this.form.totalAmount = this.toMoneyStorage(total);
             }
           }
         }
@@ -1423,7 +1423,7 @@ export default {
                 return prev;
               }
             }, 0);
-            sums[index] = sums[index].toFixed(2);
+            sums[index] = this.formatSumByProp(sums[index], column.property);
           }
         }
       });
@@ -1637,7 +1637,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.refreshDetailSummary();
     },
     //价格改变事件
@@ -1648,7 +1648,7 @@ export default {
       }else{
         totalAmt = 0;
       }
-      row.amt = totalAmt.toFixed(2);
+      row.amt = this.toMoneyStorage(totalAmt);
       this.refreshDetailSummary();
     },
     /** 搜索按钮操作 */
@@ -1824,7 +1824,7 @@ export default {
               totalAmt += parseFloat(item.amt);
             }
           });
-          this.form.totalAmount = totalAmt.toFixed(2);
+          this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
             updateWarehouse(this.form).then(response => {
               this.$modal.msgSuccess("修改成功");
@@ -2075,7 +2075,7 @@ export default {
           const mat = res.data;
           const unitPrice = mat.price != null ? mat.price : "";
           const qty = 1;
-          const amt = (unitPrice && qty) ? (Number(qty) * Number(unitPrice)).toFixed(2) : "";
+          const amt = (unitPrice && qty) ? this.calcLineAmt(qty, unitPrice) : "";
           const row = {
             materialId: mat.id,
             material: mat,

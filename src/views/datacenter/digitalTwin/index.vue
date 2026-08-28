@@ -338,7 +338,7 @@ export default {
       if (v == null || v === '') return '0'
       const n = Number(v)
       if (Number.isNaN(n)) return v
-      return n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
+      return n.toLocaleString('zh-CN', { maximumFractionDigits: 3 })
     },
     tickClock() {
       const d = new Date()

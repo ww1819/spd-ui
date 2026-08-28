@@ -570,7 +570,7 @@ export default {
         }
         if (prop === 'amt') {
           const total = data.reduce((sum, row) => sum + (Number(row.amt) || 0), 0);
-          sums[index] = typeof this.formatAmount === 'function' ? this.formatAmount(total) : total.toFixed(2);
+          sums[index] = this.formatAmount(total);
         }
       });
       return sums;

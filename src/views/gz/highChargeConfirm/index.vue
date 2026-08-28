@@ -255,7 +255,7 @@ export default {
   },
   computed: {
     selectedTotalQty() {
-      return this.selectedRows.reduce((s, r) => s + Number(r.entryQty || 0), 0).toFixed(2)
+      return this.formatQty(this.selectedRows.reduce((s, r) => s + Number(r.entryQty || 0), 0))
     },
     selectedTotalAmt() {
       return this.formatAmount(this.selectedRows.reduce((s, r) => s + Number(r.amt || 0), 0))

@@ -1,6 +1,7 @@
 /**
  * 汇总申购明细：从仓库定数选品结果填充行数据（含 warehouseId、isGz）
  */
+import { calcLineAmt } from '@/utils/moneyFormat'
 export function formatIsGzLabel(isGz) {
   if (isGz === '1' || isGz === 1) return '高值';
   if (isGz === '2' || isGz === 2) return '低值';
@@ -43,7 +44,7 @@ export function fillAggEntryFromFixedNumber(row, material) {
   if (row.qty && row.unitPrice) {
     const q = Number(row.qty) || 0;
     const p = Number(row.unitPrice) || 0;
-    row.amt = (q * p).toFixed(2);
+    row.amt = calcLineAmt(q, p);
   }
   return row;
 }

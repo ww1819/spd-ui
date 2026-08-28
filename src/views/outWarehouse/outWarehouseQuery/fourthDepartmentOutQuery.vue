@@ -319,7 +319,7 @@ export default {
         }
         switch (prop) {
           case 'netQty':
-            sums[index] = totalNetQty.toFixed(2);
+            sums[index] = this.formatQty(totalNetQty);
             break;
           case 'netAmt':
             sums[index] = this.formatNetCurrency(totalNetAmt);

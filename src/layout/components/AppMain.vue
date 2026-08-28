@@ -290,7 +290,7 @@
                         <el-table-column label="型号" prop="materialModel" min-width="100" show-overflow-tooltip />
                         <el-table-column label="数量" prop="qty" width="90" align="right" show-overflow-tooltip>
                           <template slot-scope="scope">
-                            <span>{{ scope.row.qty != null ? Number(scope.row.qty).toFixed(2) : '—' }}</span>
+                            <span>{{ scope.row.qty != null ? formatQty(scope.row.qty) : '—' }}</span>
                           </template>
                         </el-table-column>
                         <el-table-column label="单价" width="100" align="right" show-overflow-tooltip>
@@ -1154,8 +1154,8 @@ export default {
     },
     formatReminderMoney(v) {
       const n = parseFloat(v)
-      if (!Number.isFinite(n)) return '0.00'
-      return n.toFixed(2)
+      if (!Number.isFinite(n)) return '0'
+      return this.formatAmount ? this.formatAmount(n) : String(n)
     },
     formatReminderInt(v) {
       if (v === null || v === undefined || v === '') return '—'

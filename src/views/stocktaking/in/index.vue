@@ -1427,7 +1427,7 @@ export default {
       const v = this.profitNameSpecStockMap[k];
       if (v == null || !Number.isFinite(v)) return "0";
       const n = Number(v);
-      return Math.abs(n - Math.round(n)) < 1e-6 ? String(Math.round(n)) : n.toFixed(2);
+      return this.formatQty(n);
     },
     async refreshProfitNameSpecStockWh() {
       if (!this.newEntryDialogVisible || !this.form.warehouseId) {
@@ -1593,7 +1593,7 @@ export default {
       if (this.isWarehouseProfitEntryReadyForList(profitEntry)) {
         this.stockQtyChangeWh(profitEntry);
         this.stkIoStocktakingEntryList.push(profitEntry);
-        this.$modal.msgSuccess(`实盘多于账面，已自动拆出盘盈明细 ${surplusNum.toFixed(2)}`);
+        this.$modal.msgSuccess(`实盘多于账面，已自动拆出盘盈明细 ${this.formatQty(surplusNum)}`);
         this.attemptAutoSaveAfterStocktakingDetailChange(true);
         return;
       }
@@ -1612,7 +1612,7 @@ export default {
         this.$nextTick(() => this.refreshProfitNameSpecStockWh());
       }
       this.$modal.msgWarning(
-        `实盘多于账面 ${surplusNum.toFixed(2)}，库存行已按账面持平；请补全盘盈明细的批号、有效期、供应商。`
+        `实盘多于账面 ${this.formatQty(surplusNum)}，库存行已按账面持平；请补全盘盈明细的批号、有效期、供应商。`
       );
     },
     copyDetailToProfitDialog(detailRow) {
@@ -1839,7 +1839,7 @@ export default {
       const qty = parseFloat((row && row.qty) || 0);
       const profitQty = stockQty - qty;
       if (!Number.isFinite(profitQty)) return '--';
-      return profitQty > 0 ? '+' + profitQty.toFixed(2) : profitQty.toFixed(2);
+      return this.formatSignedQty(profitQty);
     },
     formatProfitLossFlag(row) {
       const flag = (row && row.profitLossFlag ? String(row.profitLossFlag) : '').toUpperCase();
@@ -2462,7 +2462,7 @@ export default {
       const bookOnLine = parseFloat((row && row.detailQty) || 0);
       const v = stockQty - bookOnLine;
       if (!Number.isFinite(v) || !Number.isFinite(stockQty)) return '--';
-      return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2);
+      return this.formatSignedQty(v);
     },
     confirmWhSaveQtyAndSubmit() {
       const unconfirmed = (this.saveQtyConfirmList || []).some((r) => !r.confirmed);

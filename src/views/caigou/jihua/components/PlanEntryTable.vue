@@ -238,9 +238,7 @@ export default {
       return `m-${row.materialId != null ? row.materialId : ''}`
     },
     formatPrice4(val) {
-      if (val == null || val === '') return '0.0000'
-      const n = parseFloat(val)
-      return Number.isFinite(n) ? n.toFixed(4) : '0.0000'
+      return this.formatPrice(val, '0')
     },
     wayStatusLabel(row) {
       const v = row && row.material && row.material.isWay

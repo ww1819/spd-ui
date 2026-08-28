@@ -94,7 +94,7 @@ export default {
         const qty = Number(item.totalQty) || 0;
         return sum + qty;
       }, 0);
-      return totalQty.toFixed(2);
+      return this.formatQty(totalQty);
     },
     calculateTotalAmt() {
       const totalAmt = this.summaryList.reduce((sum, item) => {

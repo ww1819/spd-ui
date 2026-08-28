@@ -200,6 +200,7 @@ import { listMaterialUsageRank } from "@/api/warehouse/outWarehouse";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import RightToolbar from "@/components/RightToolbar";
 import { formatAmount as formatAmountByTenant, formatPrice as formatPriceByTenant } from "@/utils/moneyFormat";
+import { formatQuantity } from "@/utils/format-quantity";
 
 export default {
   name: "MaterialUsageRankReport",
@@ -382,8 +383,8 @@ export default {
     },
     formatQty(v) {
       if (v == null || v === "") return "--";
-      const n = this.toNum(v);
-      return Number.isInteger(n) ? String(n) : n.toFixed(2);
+      const s = formatQuantity(this.toNum(v));
+      return s === "" ? "--" : s;
     },
     formatPercent(v) {
       if (v == null || v === "") return "--";

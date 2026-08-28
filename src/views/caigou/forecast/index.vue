@@ -76,7 +76,7 @@
               <el-input-number
                 v-model="scope.row.confirmQty"
                 :min="0"
-                :precision="2"
+                :step="0.001"
                 :controls="false"
                 size="mini"
                 style="width: 100px"
@@ -189,10 +189,7 @@ export default {
   },
   methods: {
     formatNum(v) {
-      if (v === null || v === undefined || v === '') return ''
-      const n = Number(v)
-      if (Number.isNaN(n)) return v
-      return n.toFixed(2).replace(/\.?0+$/, '') === '' ? '0' : parseFloat(n.toFixed(6)).toString()
+      return this.formatQty(v, '')
     },
     formatIsGz(v) {
       if (v === '1') return '高值'

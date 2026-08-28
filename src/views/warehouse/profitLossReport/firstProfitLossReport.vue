@@ -280,7 +280,7 @@ export default {
       if (val == null || val === '') return '--'
       const n = Number(val)
       if (isNaN(n)) return '--'
-      return n % 1 === 0 ? String(n) : Number(n).toFixed(2)
+      return this.formatQty(n)
     },
     dataListIndex({ row, rowIndex }) {
       const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));

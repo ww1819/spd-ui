@@ -206,7 +206,7 @@ export default {
       return `${y}-${m}-${day}`
     },
     formatQty(v) {
-      return formatQuantity(v, 2)
+      return formatQuantity(v)
     },    removeMirrorNode(m) {
       try {
         if (m && m.parentNode) m.parentNode.removeChild(m)

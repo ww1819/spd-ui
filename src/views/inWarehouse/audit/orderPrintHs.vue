@@ -220,7 +220,7 @@ export default {
       return `${y}-${m}-${day}`
     },
     formatNum(v) {
-      return formatQuantity(v, 2)
+      return formatQuantity(v)
     },    loadPrintSetting() {
       const billType = this.billType || (this.row && this.row.billType) || 101
       getDefaultTemplate(billType).then(response => {

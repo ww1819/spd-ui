@@ -202,7 +202,7 @@ import { listPurchaseSummaryBySupplier } from "@/api/warehouse/outWarehouse";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import { formatAmount as formatAmountByTenant } from "@/utils/moneyFormat";
+import { formatAmount as formatAmountByTenant, getAmountExcelNumFmt } from "@/utils/moneyFormat";
 
 export default {
   name: "PurchaseSummaryReport",
@@ -494,11 +494,11 @@ export default {
           const row = ws.getRow(i);
           row.getCell(1).alignment = { vertical: "top", horizontal: "center", wrapText: true };
           row.getCell(2).alignment = { vertical: "top", horizontal: "left", wrapText: true };
-          row.getCell(3).numFmt = "#,##0.00";
-          row.getCell(4).numFmt = "#,##0.00";
-          row.getCell(5).numFmt = "#,##0.00";
-          row.getCell(6).numFmt = "#,##0.00";
-          row.getCell(7).numFmt = "#,##0.00";
+          row.getCell(3).numFmt = getAmountExcelNumFmt();
+          row.getCell(4).numFmt = getAmountExcelNumFmt();
+          row.getCell(5).numFmt = getAmountExcelNumFmt();
+          row.getCell(6).numFmt = getAmountExcelNumFmt();
+          row.getCell(7).numFmt = getAmountExcelNumFmt();
           row.getCell(3).alignment = { vertical: "top", horizontal: "right", wrapText: true };
           row.getCell(4).alignment = { vertical: "top", horizontal: "right", wrapText: true };
           row.getCell(5).alignment = { vertical: "top", horizontal: "right", wrapText: true };

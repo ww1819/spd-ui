@@ -1216,7 +1216,7 @@ export default {
     /** 格式化金额 */
     formatCurrency(value) {
       if (!value && value !== 0) return '--';
-      return parseFloat(value).toFixed(2);
+      return this.formatAmount(value);
     },
   }
 };

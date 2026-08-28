@@ -109,12 +109,12 @@
               <el-table-column label="科室" align="center" prop="department.name" min-width="100" show-overflow-tooltip resizable />
               <el-table-column label="已关联出库" align="center" prop="linkedCkTotal" width="100" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
-                  <span>{{ scope.row.linkedCkTotal != null ? Number(scope.row.linkedCkTotal).toFixed(2) : '—' }}</span>
+                  <span>{{ scope.row.linkedCkTotal != null ? formatQty(scope.row.linkedCkTotal) : '—' }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="待出库数量" align="center" prop="pendingOutboundTotal" width="110" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
-                  <span>{{ scope.row.pendingOutboundTotal != null ? Number(scope.row.pendingOutboundTotal).toFixed(2) : '—' }}</span>
+                  <span>{{ scope.row.pendingOutboundTotal != null ? formatQty(scope.row.pendingOutboundTotal) : '—' }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="领用人" align="center" prop="auditPersonName" min-width="90" show-overflow-tooltip resizable>
@@ -173,7 +173,7 @@
         <el-table-column label="申请数量" prop="qty" width="90" align="right" />
         <el-table-column label="可出库" prop="pendingOutboundQty" width="90" align="right">
           <template slot-scope="scope">
-            <span>{{ scope.row.pendingOutboundQty != null ? Number(scope.row.pendingOutboundQty).toFixed(2) : '—' }}</span>
+            <span>{{ scope.row.pendingOutboundQty != null ? formatQty(scope.row.pendingOutboundQty) : '—' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="批次" prop="batchNo" width="120" show-overflow-tooltip>

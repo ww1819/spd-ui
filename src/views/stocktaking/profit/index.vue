@@ -346,8 +346,8 @@
                 placeholder="盘点数量"
                 size="small"
                 class="detail-input-compact"
-                onkeyup="value=value.replace(/\D/g,'')"
-                onafterpaste="value=value.replace(/\D/g,'')"
+                onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                 @blur="handleStockQtyBlur(scope.row)"
                 @input="stockQtyChange(scope.row)"
               />
@@ -1458,7 +1458,7 @@ export default {
       const bq = parseFloat(row.qty);
       const pr = parseFloat(row.price) || 0;
       const totalProfitQty = (Number.isFinite(sq) && Number.isFinite(bq)) ? sq - bq : 0;
-      row.profitQty = Number.isFinite(totalProfitQty) ? totalProfitQty.toFixed(2) : '0.00';
+      row.profitQty = Number.isFinite(totalProfitQty) ? this.formatQty(totalProfitQty, '0') : '0';
       row.profitAmount = this.toMoneyStorage(Number.isFinite(totalProfitQty) ? totalProfitQty * pr : 0);
       row.stockAmount = this.toMoneyStorage(Number.isFinite(sq) ? sq * pr : 0);
       if (Number.isFinite(sq) && Number.isFinite(bq)) {
@@ -1527,7 +1527,7 @@ export default {
               return !isNaN(value) ? prev + value : prev;
             }, 0);
             if (['amt', 'stockAmount', 'profitAmount'].includes(prop)) {
-              sums[index] = typeof this.formatAmount === 'function' ? this.formatAmount(total) : total.toFixed(2);
+              sums[index] = this.formatAmount(total);
           } else {
               sums[index] = Number.isInteger(total) ? String(total) : String(total);
             }

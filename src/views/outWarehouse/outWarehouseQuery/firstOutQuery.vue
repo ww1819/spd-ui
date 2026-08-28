@@ -441,7 +441,7 @@ export default {
       return num.toFixed(scale);
     },
     formatQty(value) {
-      return formatQuantity(value, 2)
+      return formatQuantity(value)
     },
     formatPrice(value) {
       return formatPriceByTenant(value, '0');

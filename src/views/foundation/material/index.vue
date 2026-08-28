@@ -3937,18 +3937,9 @@ export default {
         this.$modal.msgSuccess('图片已删除');
       }).catch(() => {});
     },
-    /**
-     * 单价显示：保留四位小数（前端展示用；后端导出保持原逻辑）
-     */
+    /** 单价显示：最多三位小数，末尾 0 不补齐 */
     formatPrice4(value) {
-      if (value === null || value === undefined || value === '') {
-        return '';
-      }
-      const n = Number(value);
-      if (Number.isNaN(n)) {
-        return value;
-      }
-      return n.toFixed(4);
+      return this.formatPrice(value, '');
     },
     openChargeItemDialog() {
       this.chargeItemDialog.visible = true;
