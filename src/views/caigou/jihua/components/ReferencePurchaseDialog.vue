@@ -87,6 +87,7 @@
                   row-key="id"
                   :cell-style="{ padding: '8px 4px' }"
                   @selection-change="onListSelectionChange"
+                  @row-click="onListRowClick"
                   :height="listTableHeight"
                 >
                   <el-table-column type="selection" width="50" align="center" fixed="left" :reserve-selection="true" />
@@ -191,19 +192,17 @@
 </template>
 
 <script>
-import { listPurchase, getPurchase, rejectPurchase } from '@/api/department/purchase'
+import { listPurchase, rejectPurchase } from '@/api/department/purchase'
 import { fetchReferenceApplyEntries } from '@/api/caigou/purchasePlan'
 import { listWarehouseAll } from '@/api/foundation/warehouse'
 import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 import {
-  normalizePurchaseEntry,
   buildPlanRowsFromPurchaseEntries,
   mapReferenceApplyEntriesFromApi,
   purchasePlanRefLabel,
   purchasePlanRefTagType,
   outboundRefLabel,
   outboundRefTagType,
-  runPool,
   formatReferenceBillNo,
   yieldToMain
 } from '../utils/planEntryUtils'
@@ -211,7 +210,6 @@ import { formatIsGzLabel } from '@/utils/purchaseAggEntry'
 
 const ENTRY_PAGE_SIZE = 200
 const RELOAD_DEBOUNCE_MS = 320
-const FETCH_CONCURRENCY = 5
 
 export default {
   name: 'ReferencePurchaseDialog',
@@ -469,6 +467,12 @@ export default {
       this.selectedEntryIds = []
       this.scheduleReloadEntries()
     },
+    onListRowClick(row, column) {
+      if (!row || row.id == null) return
+      if (column && column.type === 'selection') return
+      const table = this.$refs.purchaseListTable
+      if (table) table.toggleRowSelection(row)
+    },
     scheduleReloadEntries() {
       if (this.reloadTimer) clearTimeout(this.reloadTimer)
       this.reloadTimer = setTimeout(() => {
@@ -482,26 +486,29 @@ export default {
         this.selectedEntryList = []
         return
       }
+      const applyIds = selection.map((r) => r.id).filter((id) => id != null)
+      if (!applyIds.length) {
+        this.selectedEntryList = []
+        return
+      }
       this.entryLoading = true
       try {
-        const tasks = selection.map((row) => () => getPurchase(row.id).then(res => ({ row, data: res.data })))
-        const responses = await runPool(tasks, FETCH_CONCURRENCY)
-        const allEntries = []
-        responses.forEach(({ row, data }) => {
-          if (!data || !data.depPurchaseApplyEntryList) return
-          const departmentName = (row.department && row.department.name) || '引用申购单'
-          const purchaseBillNo = row.purchaseBillNo || ''
-          const departmentId = row.departmentId != null ? row.departmentId : (row.department && row.department.id)
-          data.depPurchaseApplyEntryList.forEach((entry) => {
-            const entryId = entry.id != null ? String(entry.id) : ''
-            if (entryId && this.referencedEntryIdSet && this.referencedEntryIdSet.has(entryId)) return
-            allEntries.push(normalizePurchaseEntry(entry, { departmentName, purchaseBillNo, departmentId }))
-          })
-        })
-        this.selectedEntryList = allEntries
+        const excludeEntryIds = this.referencedEntryIdSet
+          ? [...this.referencedEntryIdSet].map((id) => String(id))
+          : []
+        const res = await fetchReferenceApplyEntries(
+          applyIds,
+          excludeEntryIds.length ? excludeEntryIds : undefined
+        )
+        const rawList = (res && res.data) ? (Array.isArray(res.data) ? res.data : []) : []
+        this.selectedEntryList = mapReferenceApplyEntriesFromApi(rawList)
         this.entryPageNum = 1
+        if (!this.selectedEntryList.length) {
+          this.$modal.msgWarning('所选申购单暂无可引用明细（可能均已加入当前计划）')
+        }
       } catch (e) {
         this.selectedEntryList = []
+        this.$modal.msgError((e && e.message) || '加载申购明细失败，请稍后重试')
       } finally {
         this.entryLoading = false
       }
