@@ -1942,7 +1942,8 @@ export default {
     handleDelete(row) {
       const ids = row.id || this.ids
       if (row && (Number(row.billStatus) === 2 || row.auditDate)) {
-        this.$modal.msgWarning('已审核单据不能删除，请走退库/退货流程')
+        this.$modal.msgWarning('已审核单据不能删除，请走退库/退货流程；请刷新列表后查看')
+        this.getList();
         return
       }
       this.$modal.confirm('是否确认删除出库编号为"' + ids + '"的数据项？').then(function() {
@@ -1950,7 +1951,9 @@ export default {
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("删除成功");
-      }).catch(() => {});
+      }).catch(() => {
+        this.getList();
+      });
     },
     /** 打印按钮操作 */
     handlePrint(row, print) {

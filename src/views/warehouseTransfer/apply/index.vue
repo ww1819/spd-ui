@@ -1038,8 +1038,9 @@ export default {
 
     // 删除调拨单
     deleteTransfer(row) {
-      if (row.status == 2 || row.status == '2') {
-        this.$modal.msgError('只能删除未审核的调拨单');
+      if (row.status == 2 || row.status == '2' || row.auditDate || row.audit_date) {
+        this.$modal.msgError('单据已审核或已有审核时间，不能删除；请刷新列表后查看');
+        this.getTransferList();
         return;
       }
 
@@ -1054,6 +1055,7 @@ export default {
         } catch (error) {
           this.$modal.msgError('删除失败：' + (error.message || '未知错误'));
           console.error('删除调拨单失败', error);
+          this.getTransferList();
         } finally {
           this.loading = false;
         }
