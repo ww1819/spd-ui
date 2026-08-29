@@ -1571,7 +1571,11 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      const ids = row.id || this.ids;
+      const ids = row.id || this.ids
+      if (row && (Number(row.billStatus) === 2 || row.auditDate)) {
+        this.$modal.msgWarning('已审核单据不能删除，请走退库/退货流程')
+        return
+      }
       this.$modal.confirm('是否确认删除出库编号为"' + ids + '"的数据项？').then(function() {
         return delOutWarehouse(ids);
       }).then(() => {
