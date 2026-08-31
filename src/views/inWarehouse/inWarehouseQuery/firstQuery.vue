@@ -9,6 +9,8 @@
           :storage-key="moreSearchStorageKey"
           :default-types="builtInMoreSearchDefaults"
           :auto-load="false"
+          :show-picker="false"
+          :show-save="false"
           @change="onMoreSearchTypesChange"
           @search="handleQuery"
           @reset="resetQuery"
@@ -99,7 +101,7 @@
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
+    <el-row :gutter="0" class="list-toolbar">
       <div class="list-toolbar-left">
         <el-button
           size="small"
@@ -108,16 +110,57 @@
         >导出</el-button>
       </div>
       <div class="list-toolbar-right">
+        <div
+          class="toolbar-more-search"
+          @mouseenter="onToolbarMoreEnter"
+          @mouseleave="onToolbarMoreLeave"
+        >
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            filterable
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option
+              v-for="opt in moreSearchOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </div>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary more-search-save-btn"
+          @click="saveMoreSearchDefaults"
+        >保存为默认显示查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
       </div>
     </el-row>
 
     <div class="table-container">
-      <el-table v-loading="loading" :data="displayData"
-                height="60vh"
-                border
-                stripe
-                style="width: 100%">
+      <el-table
+        ref="rthDetailTable"
+        class="rth-detail-main-table"
+        v-loading="loading"
+        :data="displayData"
+        :row-key="getDetailRowKey"
+        :row-class-name="rthDetailRowClassName"
+        @selection-change="handleSelectionChange"
+        height="60vh"
+        border
+        stripe
+        style="width: 100%"
+      >
+      <el-table-column type="selection" width="55" align="center" header-align="center" class-name="rth-select-col col-serial-center" />
       <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
@@ -237,6 +280,9 @@ export default {
         isShow: true,
         // 选中数组
         ids: [],
+        selectedRowKeys: [],
+        toolbarMoreHover: false,
+        toolbarMoreCloseTimer: null,
         // 子表选中数据
         checkedStkIoBillEntry: [],
         // 非单个禁用
@@ -375,6 +421,9 @@ export default {
     this.onMoreSearchTypesChange(this.moreSearchTypes);
     this.getList();
   },
+  beforeDestroy() {
+    this.clearToolbarMoreCloseTimer();
+  },
   methods: {
     /** 查询入/退货列表 */
     getList() {
@@ -384,12 +433,18 @@ export default {
         this.warehouseList = response.rows || [];
         this.total = response.total != null ? Number(response.total) : 0;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0 };
-        this.displayData = this.warehouseList.map(item => ({
-          ...item,
-          unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
-          materialQty: item.materialQty != null ? Number(item.materialQty) : 0,
-          materialAmt: item.materialAmt != null ? Number(item.materialAmt) : 0
-        }));
+        this.displayData = this.warehouseList.map((item, idx) => {
+          const pageBase = ((this.queryParams.pageNum || 1) - 1) * (this.queryParams.pageSize || 10);
+          return {
+            ...item,
+            unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+            materialQty: item.materialQty != null ? Number(item.materialQty) : 0,
+            materialAmt: item.materialAmt != null ? Number(item.materialAmt) : 0,
+            _rowKey: `${pageBase + idx}_${item.id || ''}_${item.billNo || ''}_${item.materialCode || ''}`
+          };
+        });
+        this.selectedRowKeys = [];
+        this.ids = [];
         this.loading = false;
       }).catch(() => {
         this.warehouseList = [];
@@ -588,6 +643,58 @@ export default {
       this.ids = selection.map(item => item.id)
       this.single = selection.length!==1
       this.multiple = !selection.length
+      this.selectedRowKeys = (selection || []).map(row => this.getDetailRowKey(row))
+    },
+    getDetailRowKey(row) {
+      return (row && row._rowKey) || (row && row.id) || '';
+    },
+    /** 勾选行高亮 class；与悬停样式独立 */
+    rthDetailRowClassName({ row }) {
+      const key = this.getDetailRowKey(row);
+      if (key && this.selectedRowKeys.indexOf(key) !== -1) {
+        return 'rth-row-selected';
+      }
+      return '';
+    },
+    saveMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.saveDefaults === 'function') {
+        bar.saveDefaults();
+      }
+    },
+    clearToolbarMoreCloseTimer() {
+      if (this.toolbarMoreCloseTimer) {
+        clearTimeout(this.toolbarMoreCloseTimer);
+        this.toolbarMoreCloseTimer = null;
+      }
+    },
+    setToolbarMoreVisible(visible) {
+      const sel = this.$refs.toolbarMoreSelect;
+      if (!sel) return;
+      if (sel.visible === visible) return;
+      sel.visible = visible;
+      if (!visible && typeof sel.blur === 'function') {
+        sel.blur();
+      }
+    },
+    onToolbarMoreEnter() {
+      this.toolbarMoreHover = true;
+      this.clearToolbarMoreCloseTimer();
+      this.setToolbarMoreVisible(true);
+    },
+    onToolbarMoreLeave() {
+      this.toolbarMoreHover = false;
+      this.clearToolbarMoreCloseTimer();
+      this.toolbarMoreCloseTimer = setTimeout(() => {
+        if (!this.toolbarMoreHover) {
+          this.setToolbarMoreVisible(false);
+        }
+      }, 120);
+    },
+    onToolbarMoreVisibleChange(visible) {
+      if (!visible) {
+        this.toolbarMoreHover = false;
+      }
     },
     /** 复选框选中数据 */
     handleStkIoBillEntrySelectionChange(selection) {
@@ -738,11 +845,136 @@ export default {
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
   padding: 2px 0 !important;
 }
+
+/* 工具栏：更多检索在导出后 */
+.first-inventory-page .list-toolbar-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.first-inventory-page .list-toolbar-right {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.first-inventory-page .toolbar-more-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.first-inventory-page .toolbar-more-search .more-search-type,
+.first-inventory-page .toolbar-more-search .more-search-type.el-select,
+.first-inventory-page .toolbar-more-search .el-select {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+}
+.first-inventory-page .toolbar-more-search .el-select > .el-input,
+.first-inventory-page .toolbar-more-search .el-select .el-input__inner {
+  width: 160px !important;
+  max-width: 160px !important;
+}
+.first-inventory-page .toolbar-more-search .el-select-dropdown {
+  z-index: 30;
+  min-width: 160px !important;
+}
+
+/* 搜索区：上下内边距一致；两行之间留一点间隙 */
+.first-inventory-page .list-query-panel.form-fields-container {
+  padding: 10px 14px !important;
+  /* 上提，压紧与顶部 tab 的间隙（约 4px，与工具栏上间隙一致） */
+  margin-top: -12px !important;
+  margin-bottom: 0 !important;
+  box-sizing: border-box;
+}
+.first-inventory-page .list-query-panel .more-search-bar {
+  margin-bottom: 6px;
+}
+.first-inventory-page .list-query-panel .query-row-second {
+  margin-top: 0;
+  margin-bottom: 0 !important;
+}
+.first-inventory-page .list-query-panel .query-row-second-inner {
+  padding-bottom: 0 !important;
+}
+.first-inventory-page .list-query-panel .el-form {
+  margin-bottom: 0 !important;
+}
+.first-inventory-page .list-query-panel .el-form-item {
+  margin-bottom: 0 !important;
+}
+
+/* 工具栏与搜索容器的上间隙 = 顶部 tab 留白（4px）；下间隙同理 */
+.first-inventory-page .list-toolbar {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+}
+.first-inventory-page .table-container {
+  margin-top: 0 !important;
+}
+
+/* 明细表：悬停 / 勾选高亮 */
+.first-inventory-page .rth-detail-main-table .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+.first-inventory-page .rth-detail-main-table .el-table__body tr.rth-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+.first-inventory-page .rth-detail-main-table .el-table__body tr.rth-row-selected:hover > td {
+  background-color: #A0CBFF !important;
+}
+.first-inventory-page .rth-detail-main-table th.rth-select-col,
+.first-inventory-page .rth-detail-main-table td.rth-select-col,
+.first-inventory-page .rth-detail-main-table th.el-table-column--selection,
+.first-inventory-page .rth-detail-main-table td.el-table-column--selection {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-shadow: 2px 0 0 0 #e2e8f0;
+}
+.first-inventory-page .rth-detail-main-table th.rth-select-col,
+.first-inventory-page .rth-detail-main-table th.el-table-column--selection {
+  z-index: 3;
+  background-color: #f1f5f9;
+}
+.first-inventory-page .rth-detail-main-table td.rth-select-col,
+.first-inventory-page .rth-detail-main-table td.el-table-column--selection {
+  background-color: #fff;
+}
+.first-inventory-page .rth-detail-main-table .el-table__body tr.el-table__row--striped td.rth-select-col,
+.first-inventory-page .rth-detail-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa;
+}
+.first-inventory-page .rth-detail-main-table .el-table__body tr:hover > td.rth-select-col,
+.first-inventory-page .rth-detail-main-table .el-table__body tr:hover > td.el-table-column--selection {
+  background-color: #D6EBFF;
+}
+.first-inventory-page .rth-detail-main-table .el-table__body tr.rth-row-selected > td.rth-select-col,
+.first-inventory-page .rth-detail-main-table .el-table__body tr.rth-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF;
+}
+.first-inventory-page .rth-detail-main-table .el-table__body tr.rth-row-selected:hover > td.rth-select-col,
+.first-inventory-page .rth-detail-main-table .el-table__body tr.rth-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF;
+}
+.first-inventory-page .rth-detail-main-table td.rth-select-col .cell,
+.first-inventory-page .rth-detail-main-table td.el-table-column--selection .cell,
+.first-inventory-page .rth-detail-main-table th.rth-select-col .cell,
+.first-inventory-page .rth-detail-main-table th.el-table-column--selection .cell {
+  text-align: center !important;
+  justify-content: center !important;
+  background: transparent;
+}
 </style>
 
 <style scoped>
 .app-container {
-  margin-top: -10px;
+  margin-top: 0;
 }
 
 .query-row-left {
@@ -801,9 +1033,9 @@ export default {
   white-space: nowrap;
 }
 .more-search-type {
-  min-width: 220px;
-  width: auto;
-  max-width: 360px;
+  width: 190px;
+  min-width: 190px;
+  max-width: 190px;
 }
 .more-search-input {
   width: 200px;
@@ -829,7 +1061,8 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 2px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 .query-row-second-inner {
   display: flex;
@@ -838,7 +1071,7 @@ export default {
   overflow: visible;
   width: 100%;
   gap: 4px;
-  padding-bottom: 2px;
+  padding-bottom: 0;
 }
 .query-row-second-inner .el-form-item {
   flex: 0 0 auto;
@@ -890,8 +1123,8 @@ export default {
 }
 
 .form-fields-container {
-  margin-bottom: 8px;
-  margin-top: -20px;
+  margin-bottom: 0;
+  margin-top: -12px;
   margin-left: 0;
   margin-right: 0;
 }
@@ -920,7 +1153,7 @@ export default {
 }
 
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
   overflow-x: auto;
   overflow-y: visible;

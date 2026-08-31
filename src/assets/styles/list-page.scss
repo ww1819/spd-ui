@@ -177,11 +177,16 @@ $spd-control-h: 32px;
   gap: 8px;
   width: 100%;
   max-width: 100%;
+  overflow: visible;
 }
 
 .app-container .more-search-picker-row > .el-button {
   margin-left: 0 !important;
   flex-shrink: 0;
+}
+
+.app-container .more-search-bar {
+  overflow: visible;
 }
 
 .app-container .more-search-label {
@@ -198,11 +203,28 @@ $spd-control-h: 32px;
   padding: 0;
 }
 
-.app-container .more-search-type {
-  width: 340px;
-  min-width: 280px;
-  max-width: 420px;
+.app-container .more-search-type-wrap {
+  width: 190px;
+  min-width: 190px;
+  max-width: 190px;
   flex-shrink: 0;
+}
+
+/* 与财务分类多选（more-search-select-wrap）同宽 */
+.app-container .more-search-type {
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+  flex-shrink: 0;
+}
+
+.app-container .more-search-fields-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .app-container .query-row-fields {

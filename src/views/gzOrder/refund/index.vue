@@ -208,12 +208,12 @@
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || warehouseDeptLocked" includeWarehouseType="高值" placeholder="仓库"/>
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || warehouseDeptLocked" includeWarehouseType="高值"/>
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="科室" prop="departmentId" class="apply-modal-label-required">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action || warehouseDeptLocked" field-placeholder="科室"/>
+                      <SelectDepartment v-model="form.departmentId" :disabled="!action || warehouseDeptLocked"/>
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
@@ -241,8 +241,11 @@
                       <el-input v-model="form.creatorName" :disabled="true" placeholder="制单人" />
                     </el-form-item>
                   </el-col>
-                  <el-col v-if="action" class="apply-modal-field apply-modal-field--udi-scan in-hospital-scan-field">
-                    <el-form-item label="扫院内码" class="detail-scan-form-item">
+                </el-row>
+
+                <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
+                  <el-col v-if="action" :span="8">
+                    <el-form-item label="扫院内码" label-width="80px" class="detail-scan-form-item">
                       <el-input
                         v-model="scanCodeInput"
                         placeholder="请先选择仓库与科室，扫码后回车"
@@ -258,7 +261,7 @@
                       </el-input>
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col :span="action ? 5 : 24">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" :placeholder="(action && !isAuditedForm) ? '备注' : ''" clearable :disabled="!action || isAuditedForm" />
                     </el-form-item>
@@ -2011,8 +2014,8 @@ export default {
   flex: 0 0 auto;
   text-align: left;
   padding-right: 6px;
-  line-height: 32px;
-  height: 32px;
+  line-height: 28px;
+  height: 28px;
   font-size: 13px;
 }
 
@@ -2020,7 +2023,7 @@ export default {
 .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
-  line-height: 32px;
+  line-height: 28px;
 }
 
 .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
@@ -2135,16 +2138,16 @@ export default {
 }
 
 .local-modal-content .modal-form-compact .el-input__inner {
-  height: 32px !important;
-  line-height: 32px !important;
+  height: 28px !important;
+  line-height: 28px !important;
   font-size: 13px !important;
 }
 
 .local-modal-content .modal-form-compact .el-form-item__label {
   text-align: left;
   padding-right: 6px;
-  line-height: 32px;
-  height: 32px;
+  line-height: 28px;
+  height: 28px;
   font-size: 13px;
 }
 
@@ -2263,8 +2266,8 @@ export default {
   flex: 0 0 auto;
   text-align: left;
   padding-right: 6px;
-  line-height: 32px;
-  height: 32px;
+  line-height: 28px;
+  height: 28px;
   font-size: 13px;
 }
 
@@ -2272,37 +2275,7 @@ export default {
 .app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
-  line-height: 32px;
-}
-
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan.in-hospital-scan-field {
-  flex: 0 0 auto !important;
-  min-width: 0;
-  max-width: 320px !important;
-}
-
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan.in-hospital-scan-field .el-form-item {
-  width: 100%;
-}
-
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
-  flex: 1 1 auto !important;
-  min-width: 200px;
-  max-width: none !important;
-}
-
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item {
-  width: 100%;
-}
-
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content {
-  flex: 1 1 auto !important;
-  min-width: 0;
-}
-
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input {
-  width: 100% !important;
-  max-width: none !important;
+  line-height: 28px;
 }
 
 .app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
@@ -2314,31 +2287,16 @@ export default {
   display: none !important;
 }
 
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-input,
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-select,
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-select .el-input,
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-date-editor,
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-date-editor.el-input {
-  height: 32px !important;
-  min-height: 32px !important;
-  line-height: 32px !important;
-}
-
 .app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-input__inner,
 .app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
 .app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
-  height: 32px !important;
-  min-height: 32px !important;
-  line-height: 32px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  line-height: 28px !important;
   font-size: 13px !important;
   box-sizing: border-box !important;
   border-color: #e2e8f0 !important;
   border-radius: 6px !important;
-}
-
-.app-container.gzOrder-refund-page .local-modal-content .apply-modal-query-panel .el-input__icon {
-  line-height: 32px !important;
-  height: 32px !important;
 }
 
 .app-container.gzOrder-refund-page .local-modal-content .apply-modal-toolbar.list-toolbar {

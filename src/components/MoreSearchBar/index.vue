@@ -4,24 +4,37 @@
       <el-col :span="24">
         <el-form-item class="query-item-inline more-search-item">
           <div class="more-search-row more-search-picker-row">
-            <span class="more-search-label">{{ label }}</span>
-            <el-select
-              :value="value"
-              multiple
-              collapse-tags
-              filterable
-              :placeholder="placeholder"
-              class="more-search-type"
-              @input="onTypesInput"
-              @change="onTypesChange"
+            <span v-if="showPicker" class="more-search-label">{{ label }}</span>
+            <div
+              v-if="showPicker"
+              class="more-search-type-wrap"
+              @mouseenter="onTypeMouseEnter"
+              @mouseleave="onTypeMouseLeave"
             >
-              <el-option
-                v-for="opt in options"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
-              />
-            </el-select>
+              <el-select
+                ref="moreSearchSelect"
+                :value="value"
+                multiple
+                collapse-tags
+                filterable
+                :popper-append-to-body="false"
+                :placeholder="placeholder"
+                class="more-search-type"
+                @input="onTypesInput"
+                @change="onTypesChange"
+                @visible-change="onVisibleChange"
+              >
+                <el-option
+                  v-for="opt in options"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+            </div>
+            <div v-if="$slots.default" class="more-search-fields-inline">
+              <slot :types="value" />
+            </div>
             <el-button
               v-if="showSave"
               size="small"
@@ -46,19 +59,13 @@
         </el-form-item>
       </el-col>
     </el-row>
-
-    <el-row v-if="$slots.default" class="query-row-fields">
-      <el-col :span="24" class="query-row-fields-inner">
-        <slot :types="value" />
-      </el-col>
-    </el-row>
   </div>
 </template>
 
 <script>
 /**
  * 更多检索壳：维度多选 + 可选保存默认 + 搜索/重置 + 条件字段插槽
- * 字段渲染由各页通过默认插槽自行配置
+ * 字段渲染由各页通过默认插槽自行配置（与「更多检索」同一行）
  */
 export default {
   name: 'MoreSearchBar',
@@ -97,6 +104,11 @@ export default {
       type: Boolean,
       default: true
     },
+    /** 是否显示「更多检索」标签与维度下拉（可挪到工具栏） */
+    showPicker: {
+      type: Boolean,
+      default: true
+    },
     showSearchActions: {
       type: Boolean,
       default: true
@@ -107,6 +119,12 @@ export default {
       default: true
     }
   },
+  data() {
+    return {
+      hoverOpen: false,
+      closeTimer: null
+    };
+  },
   mounted() {
     if (!this.autoLoad) return;
     if (Array.isArray(this.value) && this.value.length) return;
@@ -115,6 +133,9 @@ export default {
       this.$emit('input', loaded);
       this.$emit('change', loaded);
     }
+  },
+  beforeDestroy() {
+    this.clearCloseTimer();
   },
   methods: {
     onTypesInput(val) {
@@ -154,7 +175,61 @@ export default {
       } catch (e) {
         this.$modal && this.$modal.msgError('保存失败，请检查浏览器是否禁用本地存储');
       }
+    },
+    clearCloseTimer() {
+      if (this.closeTimer) {
+        clearTimeout(this.closeTimer);
+        this.closeTimer = null;
+      }
+    },
+    setSelectVisible(visible) {
+      const sel = this.$refs.moreSearchSelect;
+      if (!sel) return;
+      if (sel.visible === visible) return;
+      sel.visible = visible;
+      if (!visible && typeof sel.blur === 'function') {
+        sel.blur();
+      }
+    },
+    onTypeMouseEnter() {
+      this.hoverOpen = true;
+      this.clearCloseTimer();
+      this.setSelectVisible(true);
+    },
+    onTypeMouseLeave() {
+      this.hoverOpen = false;
+      this.clearCloseTimer();
+      // 稍延时，避免移入下拉选项时闪关（下拉挂在 wrap 内）
+      this.closeTimer = setTimeout(() => {
+        if (!this.hoverOpen) {
+          this.setSelectVisible(false);
+        }
+      }, 120);
+    },
+    onVisibleChange(visible) {
+      // 点击外部关闭时同步 hover 状态
+      if (!visible) {
+        this.hoverOpen = false;
+      }
     }
   }
 };
 </script>
+
+<style scoped>
+.more-search-type-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 190px;
+  overflow: visible;
+}
+
+.more-search-type-wrap >>> .el-select {
+  width: 100%;
+}
+
+.more-search-type-wrap >>> .el-select-dropdown {
+  z-index: 30;
+  min-width: 190px !important;
+}
+</style>

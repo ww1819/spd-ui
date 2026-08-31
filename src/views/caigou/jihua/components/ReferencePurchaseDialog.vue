@@ -82,26 +82,15 @@
                 <el-table
                   ref="purchaseListTable"
                   v-loading="loading"
-                  class="apply-main-table ref-purchase-list-table"
                   :data="purchaseList"
                   border
                   row-key="id"
                   :cell-style="{ padding: '8px 4px' }"
-                  :row-class-name="purchaseListRowClassName"
                   @selection-change="onListSelectionChange"
                   @row-click="onListRowClick"
-                  @row-dblclick="onListRowDblClick"
                   :height="listTableHeight"
                 >
-                  <el-table-column
-                    type="selection"
-                    width="60"
-                    min-width="60"
-                    align="center"
-                    :reserve-selection="true"
-                    class-name="apply-select-col"
-                    header-cell-class-name="apply-select-col"
-                  />
+                  <el-table-column type="selection" width="50" align="center" fixed="left" :reserve-selection="true" />
                   <el-table-column label="序号" align="center" width="70">
                     <template slot-scope="scope">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</template>
                   </el-table-column>
@@ -252,8 +241,6 @@ export default {
         purchaseBillStatus: 2
       },
       selectedRowMap: {},
-      activeRowId: null,
-      listSelectionTick: 0,
       selectionRestoring: false,
       selectedEntryList: [],
       selectedEntryIds: [],
@@ -291,24 +278,11 @@ export default {
       const entryPager = this.entryTotal > this.entryPageSize ? m.entryPagerH : 0
       return Math.max(120, m.contentH - entryPager - 2)
     },
-    entryDisplayList() {
-      let list = this.selectedEntryList || []
-      if (this.activeRowId) {
-        const activeRow = this.selectedRowMap[this.activeRowId]
-        const billNo = activeRow && activeRow.purchaseBillNo
-        list = list.filter((entry) => {
-          if (entry.parentId != null && String(entry.parentId) === this.activeRowId) return true
-          if (billNo && (entry.purchaseBillNo === billNo || entry._purchaseBillNo === billNo)) return true
-          return false
-        })
-      }
-      return list
-    },
     entryTotal() {
-      return (this.entryDisplayList || []).length
+      return (this.selectedEntryList || []).length
     },
     entryPageList() {
-      const list = this.entryDisplayList || []
+      const list = this.selectedEntryList || []
       const start = (this.entryPageNum - 1) * this.entryPageSize
       return list.slice(start, start + this.entryPageSize)
     },
@@ -414,28 +388,9 @@ export default {
     },
     clearCache() {
       this.selectedRowMap = {}
-      this.activeRowId = null
-      this.listSelectionTick = 0
       this.selectedEntryList = []
       this.selectedEntryIds = []
       this.entryPageNum = 1
-    },
-    purchaseListRowClassName({ row }) {
-      void this.listSelectionTick
-      const key = row && row.id != null ? String(row.id) : ''
-      const classes = []
-      if (key && this.selectedRowMap[key]) classes.push('apply-row-selected')
-      if (key && this.activeRowId === key) classes.push('apply-row-active')
-      return classes.join(' ')
-    },
-    syncActiveRowAfterSelection() {
-      const keys = Object.keys(this.selectedRowMap || {})
-      if (!keys.length) {
-        this.activeRowId = null
-        return
-      }
-      if (this.activeRowId && this.selectedRowMap[this.activeRowId]) return
-      this.activeRowId = keys[keys.length - 1]
     },
     handleClose() {
       this.innerVisible = false
@@ -503,38 +458,20 @@ export default {
     onListSelectionChange(selection) {
       if (this.selectionRestoring) return
       const pageKeys = (this.purchaseList || []).map(r => (r && r.id != null ? String(r.id) : '')).filter(Boolean)
-      const prevOnPage = new Set(pageKeys.filter(k => this.selectedRowMap[k]))
       pageKeys.forEach(key => {
         if (this.selectedRowMap[key]) this.$delete(this.selectedRowMap, key)
       })
       ;(selection || []).forEach(row => {
         if (row && row.id != null) this.$set(this.selectedRowMap, String(row.id), row)
       })
-      const newlySelected = pageKeys.find(k => this.selectedRowMap[k] && !prevOnPage.has(k))
-      if (newlySelected) this.activeRowId = newlySelected
-      this.listSelectionTick++
-      this.syncActiveRowAfterSelection()
       this.selectedEntryIds = []
-      this.entryPageNum = 1
       this.scheduleReloadEntries()
     },
     onListRowClick(row, column) {
       if (!row || row.id == null) return
       if (column && column.type === 'selection') return
-      this.activeRowId = String(row.id)
-      this.listSelectionTick++
-      this.entryPageNum = 1
-    },
-    onListRowDblClick(row, column) {
-      if (!row || row.id == null) return
-      if (column && column.type === 'selection') return
-      const key = String(row.id)
-      this.activeRowId = key
-      this.listSelectionTick++
       const table = this.$refs.purchaseListTable
-      if (!table) return
-      const isSelected = !!this.selectedRowMap[key]
-      table.toggleRowSelection(row, !isSelected)
+      if (table) table.toggleRowSelection(row)
     },
     scheduleReloadEntries() {
       if (this.reloadTimer) clearTimeout(this.reloadTimer)
@@ -831,25 +768,23 @@ export default {
   min-height: 0;
   height: var(--ref-content-h, 58vh);
   max-height: var(--ref-content-h, 58vh);
-  width: 100%;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
   overflow: hidden;
-  box-sizing: border-box;
-  padding: 0 4px;
 }
 
 .purchase-list-container {
-  flex: 0 0 620px;
+  flex: 0 0 600px;
   display: flex;
   flex-direction: column;
   border: 1px solid #EBEEF5;
   border-radius: 4px;
+  margin-left: -20px;
   min-height: 0;
   height: 100%;
   max-height: 100%;
   overflow: hidden;
-  box-sizing: border-box;
-  padding-left: 6px;
-  padding-right: 2px;
 }
 
 .purchase-list-table-wrap {
@@ -926,90 +861,4 @@ export default {
   color: #409eff;
   line-height: 36px;
 }
-
-/* 左侧申购单列表：勾选列 sticky（不用 fixed，避免负 margin 容器裁切） */
-.ref-purchase-list-table.el-table {
-  position: relative;
-}
-
-.ref-purchase-list-table ::v-deep th.apply-select-col,
-.ref-purchase-list-table ::v-deep td.apply-select-col,
-.ref-purchase-list-table ::v-deep th.el-table-column--selection,
-.ref-purchase-list-table ::v-deep td.el-table-column--selection {
-  position: sticky !important;
-  left: 0 !important;
-  z-index: 3;
-  box-sizing: border-box !important;
-  min-width: 60px !important;
-  width: 60px !important;
-  max-width: 60px !important;
-  padding-left: 10px !important;
-  padding-right: 10px !important;
-}
-
-.ref-purchase-list-table ::v-deep th.el-table-column--selection .cell,
-.ref-purchase-list-table ::v-deep td.el-table-column--selection .cell,
-.ref-purchase-list-table ::v-deep th.apply-select-col .cell,
-.ref-purchase-list-table ::v-deep td.apply-select-col .cell {
-  overflow: visible !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-}
-
-.ref-purchase-list-table ::v-deep th.el-table-column--selection .el-checkbox,
-.ref-purchase-list-table ::v-deep td.el-table-column--selection .el-checkbox {
-  display: inline-flex !important;
-  visibility: visible !important;
-  margin: 0 !important;
-}
-
-.ref-purchase-list-table ::v-deep td.apply-select-col,
-.ref-purchase-list-table ::v-deep td.el-table-column--selection {
-  background-color: #fff !important;
-  border-right: 1px solid #e2e8f0;
-}
-
-.ref-purchase-list-table ::v-deep th.apply-select-col,
-.ref-purchase-list-table ::v-deep th.el-table-column--selection {
-  z-index: 4;
-  background-color: #f1f5f9 !important;
-  border-right: 1px solid #e2e8f0;
-}
-
-/* 左侧申购单列表：悬停 / 选中 / 当前预览行高亮 */
-.ref-purchase-list-table ::v-deep .el-table__body tr {
-  cursor: pointer;
-}
-
-.ref-purchase-list-table ::v-deep .el-table__body tr:hover > td,
-.ref-purchase-list-table ::v-deep .el-table__body tr:hover > td .cell,
-.ref-purchase-list-table ::v-deep .el-table__body tr:hover > td.apply-select-col,
-.ref-purchase-list-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection {
-  background-color: #D6EBFF !important;
-}
-
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-selected > td,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection {
-  background-color: #B8DAFF !important;
-}
-
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-active > td,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-active > td .cell,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-active > td.apply-select-col,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-active > td.el-table-column--selection {
-  background-color: #91C4FF !important;
-}
-
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-active:hover > td,
-.ref-purchase-list-table ::v-deep .el-table__body tr.apply-row-active:hover > td .cell {
-  background-color: #A0CBFF !important;
-}
-
 </style>

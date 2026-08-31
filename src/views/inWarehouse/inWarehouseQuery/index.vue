@@ -61,5 +61,13 @@ body.inWarehouse-query-fixed .main-container {
 }
 .inWarehouse-query-tabs-compact {
   margin-top: 0;
+  margin-bottom: 0;
+}
+/* 压紧标签栏与搜索区：与改前紧凑效果一致 */
+.inWarehouse-query-tabs-compact >>> .el-tabs__header {
+  margin: 0 0 0 !important;
+}
+.inWarehouse-query-tabs-compact >>> .el-tabs__content {
+  display: none;
 }
 </style>
