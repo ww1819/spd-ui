@@ -242,11 +242,8 @@
                       <el-input v-model="form.creatorName" :disabled="true" placeholder="制单人" />
                     </el-form-item>
                   </el-col>
-                </el-row>
-
-                <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
-                  <el-col v-if="isOutbound && action" :span="8">
-                    <el-form-item label="院内码" prop="scanInHospitalCode" label-width="80px" class="detail-scan-form-item">
+                  <el-col v-if="isOutbound && action" class="apply-modal-field apply-modal-field--udi-scan in-hospital-scan-field">
+                    <el-form-item label="院内码" prop="scanInHospitalCode" class="detail-scan-form-item">
                       <el-input
                         v-model="form.scanInHospitalCode"
                         :placeholder="scanInHospitalPlaceholder"
@@ -262,7 +259,7 @@
                       </el-input>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="isOutbound && action ? 5 : 24">
+                  <el-col class="apply-modal-field apply-modal-field--grow">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action || isAuditedForm" />
                     </el-form-item>
@@ -3325,8 +3322,8 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   flex: 0 0 auto;
   text-align: left;
   padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
+  line-height: 32px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -3334,7 +3331,7 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
-  line-height: 28px;
+  line-height: 32px;
 }
 
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
@@ -3380,16 +3377,33 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   display: none !important;
 }
 
+/* 弹窗表头控件：与到货验收一致，使用 list-page 标准高度 32px */
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-input,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-select,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-autocomplete,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor,
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor.el-input {
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+}
+
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-input__inner,
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
-  height: 28px !important;
-  min-height: 28px !important;
-  line-height: 28px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
   font-size: 13px !important;
   box-sizing: border-box !important;
   border-color: #e2e8f0 !important;
   border-radius: 6px !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-input__icon {
+  line-height: 32px !important;
+  height: 32px !important;
 }
 
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-toolbar.list-toolbar {
@@ -3532,29 +3546,29 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   margin-bottom: 0;
 }
 
-/* 缩小所有输入框高度 */
+/* 表头输入框高度：与到货验收一致，使用 list-page 标准 32px */
 .local-modal-content .modal-form-compact .el-input__inner {
-  height: 28px !important;
-  line-height: 28px !important;
+  height: 32px !important;
+  line-height: 32px !important;
   font-size: 13px !important;
 }
 
 .local-modal-content .modal-form-compact .el-input__icon {
-  line-height: 28px !important;
+  line-height: 32px !important;
 }
 
 .local-modal-content .modal-form-compact .el-select .el-input__inner {
-  height: 28px !important;
-  line-height: 28px !important;
+  height: 32px !important;
+  line-height: 32px !important;
 }
 
 .local-modal-content .modal-form-compact .el-date-editor.el-input {
-  height: 28px !important;
+  height: 32px !important;
 }
 
 .local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
-  height: 28px !important;
-  line-height: 28px !important;
+  height: 32px !important;
+  line-height: 32px !important;
 }
 
 .local-modal-content .modal-form-compact .el-form-item {
@@ -3563,14 +3577,14 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
 
 .local-modal-content .modal-form-compact .el-form-item__content {
   margin-left: 0 !important;
-  line-height: 28px;
+  line-height: 32px;
 }
 
 .local-modal-content .modal-form-compact .el-form-item__label {
   text-align: left;
   padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
+  line-height: 32px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -3882,8 +3896,8 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   flex: 0 0 auto;
   text-align: left;
   padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
+  line-height: 32px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -3891,7 +3905,7 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
 .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
-  line-height: 28px;
+  line-height: 32px;
 }
 
 .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
