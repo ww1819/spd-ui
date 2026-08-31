@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     v-show="show"
     class="local-modal-mask material-filter-mask tk-apply-select-mask"

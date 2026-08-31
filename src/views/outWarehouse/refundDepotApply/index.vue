@@ -1198,20 +1198,13 @@ export default {
     },
     /** 删除按钮操作 */
     handleDelete(row) {
-      if (row && (Number(row.billStatus) === 2 || row.auditDate)) {
-        this.$modal.msgError('单据已审核或已有审核时间，不能删除；请刷新列表后查看');
-        this.getList();
-        return;
-      }
       const ids = row.id || this.ids;
       this.$modal.confirm('是否确认删除退库编号为"' + ids + '"的数据项？').then(function() {
         return delTkInventory(ids);
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("删除成功");
-      }).catch(() => {
-        this.getList();
-      });
+      }).catch(() => {});
     },
     /** 打印按钮操作 */
     handlePrint(row) {

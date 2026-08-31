@@ -330,8 +330,8 @@
                     <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable>
                       <template slot-scope="scope">
                         <el-input v-if="action" clearable v-model="scope.row.qty" placeholder="数量" size="small" class="detail-input-compact"
-                                  onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                                  onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                                  onkeyup="value=value.replace(/\D/g,'')"
+                                  onafterpaste="value=value.replace(/\D/g,'')"
                                   @blur="form.result=$event.target.value"
                                   @input="qtyChange(scope.row)"
                         />
@@ -1205,7 +1205,7 @@ export default {
         }
         if (prop === 'qty') {
           const total = sumNum('qty');
-          sums[index] = this.formatQty(total);
+          sums[index] = Number.isInteger(total) ? String(total) : total.toFixed(2);
           return;
         }
         if (prop === 'price') {
@@ -1662,14 +1662,14 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗：与到货验收 inWarehouse/audit 弹窗一致 */
+/* 内部弹窗样式 - 占满整个遮罩层 */
 .local-modal-mask {
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0,0,0,0.3);
   z-index: 1000;
   display: flex;
   align-items: stretch;
@@ -1681,23 +1681,20 @@ export default {
   width: 100%;
   height: 100%;
   min-height: 95vh;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding-bottom: 16px;
-  box-sizing: border-box;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
+  padding: 12px 20px;
   border-bottom: 1px solid #EBEEF5;
-  background: #EBEEF5;
+  background: #F5F7FA;
   flex-shrink: 0;
-  min-height: 40px;
+  min-height: 48px;
 }
 
 .modal-title {
@@ -1719,276 +1716,65 @@ export default {
 .local-modal-content .el-form {
   flex: 1;
   overflow: visible;
-  padding: 8px 0 8px;
+  padding: 6px 20px 4px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  box-sizing: border-box;
 }
 
-.local-modal-content .form-fields-container:not(.apply-modal-query-panel) {
+/* 弹窗内顶部字段区：与到货验收一致 */
+.local-modal-content .form-fields-container {
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 8px;
-  border: 1px solid #EBEEF5;
-  flex-shrink: 0;
-}
-
-/* 弹窗内三块区域：与到货验收一致 */
-.local-modal-content .apply-modal-query-panel,
-.local-modal-content .apply-modal-toolbar.list-toolbar,
-.local-modal-content .apply-modal-table-panel {
-  margin-left: 0;
-  margin-right: 0;
-  width: 100%;
-  max-width: 100%;
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
   box-sizing: border-box;
+  border: 1px solid #ebeef5;
 }
 
-.local-modal-content .apply-modal-query-panel {
-  margin-top: 0;
-  margin-bottom: 0;
-  flex-shrink: 0;
-  padding: 12px 8px;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-}
-
-.local-modal-content .apply-modal-query-panel .el-row {
-  margin-bottom: 8px;
-}
-
-.local-modal-content .apply-modal-query-panel .el-row:last-child {
+.local-modal-content .form-fields-container .el-row:last-child {
   margin-bottom: 0;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 12px;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding-left: 12px;
+/* 弹窗内明细区：高度随内容，避免分页下方被 flex 撑出大块留白 */
+.local-modal-content .modal-detail-section {
+  margin-left: -20px;
+  margin-right: -20px;
+  width: calc(100% + 40px);
   box-sizing: border-box;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
-  width: auto !important;
-  flex: 0 0 auto;
-  max-width: none;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
-  margin-bottom: 0;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  vertical-align: top;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
-  float: none;
-  width: auto !important;
-  flex: 0 0 auto;
-  text-align: left;
-  padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
-  font-size: 13px;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
-  flex: 0 0 auto;
-  margin-left: 0 !important;
-  line-height: 28px;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
-  white-space: nowrap;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
-.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
-  color: #f56c6c !important;
-}
-
-.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
-  content: none !important;
-  display: none !important;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
-  width: 140px !important;
-  max-width: 140px !important;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor {
-  width: 150px !important;
-  max-width: 150px !important;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
-  max-width: 162px;
-}
-
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input {
-  width: 162px !important;
-  max-width: 162px !important;
-}
-.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .header-field-supplier-readonly,
-.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .header-field-select-compact,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .header-field-supplier-readonly,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .header-field-select-compact {
-  width: 162px !important;
-  max-width: 162px !important;
-}
-.local-modal-content .apply-modal-query-panel .form-item-header-billno ::v-deep .el-input__inner,
-.local-modal-content .apply-modal-query-panel .form-item-header-supplier ::v-deep .el-input__inner {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
-  flex-wrap: nowrap;
-}
-
-::v-deep .apply-modal-query-panel .form-item-order-date-no-star.is-required .el-form-item__label::before,
-::v-deep .apply-modal-query-panel .form-item-order-date-no-star.el-form-item--required .el-form-item__label::before {
-  display: none !important;
-  content: none !important;
-}
-
-.local-modal-content .apply-modal-table-panel .modal-entry-pagination {
-  flex-shrink: 0;
-  padding: 8px 12px;
-  border-top: 1px solid #e8ecf1;
-}
-
-
-.local-modal-content .apply-modal-table-panel {
-  margin-top: 0;
-  flex: 1;
+  margin-top: 4px;
+  flex: 0 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border: 1px solid #e8ecf1;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
-  overflow: hidden;
 }
 
-.local-modal-content .apply-modal-toolbar {
-  flex-shrink: 0;
-  margin-top: 4px !important;
-  margin-bottom: 4px !important;
-  padding: 8px 14px !important;
-  background: #fff !important;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-top: 1px solid #e8ecf1 !important;
-  border-bottom: 1px solid #e8ecf1 !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
-}
-
-.local-modal-content .apply-modal-detail-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #334155;
-  margin-right: 4px;
-  line-height: 32px;
-}
-
-.local-modal-content .apply-modal-table-panel .table-wrapper {
+.local-modal-content .modal-detail-section .detail-toolbar-row {
   margin-top: 0;
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
-  width: 100%;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding-bottom: 0;
-}
-
-.local-modal-content .apply-modal-table-panel .apply-detail-table {
-  margin-bottom: 0 !important;
-  box-shadow: none;
-}
-
-.local-modal-content .apply-modal-row-third .scan-barcode-input .el-input-group__prepend {
-  padding: 0 8px;
-}
-
-.local-modal-content .modal-detail-section .el-table .detail-text-cell-2line {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.35;
-  word-break: break-all;
-}
-
-.local-modal-content .modal-form-compact .el-form-item {
   margin-bottom: 0;
-}
-
-.local-modal-content .modal-form-compact .el-input__inner {
-  height: 28px !important;
-  line-height: 28px !important;
-  font-size: 13px !important;
-}
-
-.local-modal-content .modal-form-compact .el-form-item__label {
-  text-align: left;
-  padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
-  font-size: 13px;
-}
-
-.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
-  padding: 4px 0 !important;
-}
-
-.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell > .cell {
-  line-height: 28px !important;
-  min-height: 28px !important;
+  padding-top: 10px;
+  padding-bottom: 6px;
   box-sizing: border-box;
 }
 
-.local-modal-content .modal-detail-section .el-table ::v-deep .el-input--small .el-input__inner {
-  height: 28px !important;
-  line-height: 28px !important;
-  min-height: 28px !important;
+.local-modal-content .modal-detail-section .table-wrapper {
+  margin-top: 4px;
+  flex: 0 1 auto;
+  overflow: hidden;
 }
 
-::v-deep .local-modal-content {
-  min-height: 95vh !important;
+.local-modal-content .modal-detail-section .modal-entry-pagination {
+  flex-shrink: 0;
+  margin-top: -2px;
 }
 
+/* 弹窗动画效果 */
 .modal-fade-enter-active, .modal-fade-leave-active {
   transition: opacity 0.3s ease;
 }
@@ -2012,76 +1798,57 @@ export default {
   transform: scale(0.8);
 }
 
-.el-button--text {
-  padding: 0 4px;
+/* 弹窗内表单紧凑布局 */
+.local-modal-content .modal-form-compact .el-row {
+  margin-bottom: 10px;
 }
 
-.el-button--text:hover {
-  color: #409EFF;
-}
-
-.gzOrder-follow-page > .mb8 .el-col .el-button,
-.gzOrder-follow-page > .mb8 .el-col .el-button--medium,
-.gzOrder-follow-page > .mb8 .el-col .el-button.is-plain {
-  height: 36px !important;
-  padding: 9px 15px !important;
-  font-size: 14px !important;
-  line-height: 18px !important;
-  min-width: auto !important;
-}
-
-.gzOrder-follow-page > .mb8 .el-col .el-button [class*="el-icon"] {
-  font-size: 14px !important;
-}
-</style>
-
-<style>
-/* 弹窗整层加宽：与备货出库页一致 */
-.app-container.gzOrder-follow-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  position: absolute;
-  overflow: hidden;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content.apply-modal-root-content {
-  position: relative;
-  overflow: hidden;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel.list-query-panel,
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel.form-fields-container {
-  flex: 0 0 auto;
-  margin-top: 4px !important;
-  margin-bottom: 0 !important;
-  padding: 12px 8px !important;
-  background: #fff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 0 !important;
-  border-left: none !important;
-  border-right: none !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.04) !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-  overflow: visible !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+.local-modal-content .modal-form-compact .el-form-item {
   margin-bottom: 0;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  vertical-align: top;
 }
 
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
-  float: none;
-  width: auto !important;
-  flex: 0 0 auto;
+.local-modal-content .modal-form-compact .el-input,
+.local-modal-content .modal-form-compact .el-select,
+.local-modal-content .modal-form-compact .el-date-picker {
+  width: 140px;
+  max-width: 140px;
+}
+
+/* 缩小所有输入框高度 */
+.local-modal-content .modal-form-compact .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+}
+
+.local-modal-content .modal-form-compact .el-input__icon {
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-select .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor.el-input {
+  height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  height: 28px !important;
+  line-height: 28px !important;
+}
+
+.local-modal-content .modal-form-compact .el-form-item {
+  margin-bottom: 0;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.local-modal-content .modal-form-compact .el-form-item__label {
   text-align: left;
   padding-right: 6px;
   line-height: 28px;
@@ -2089,258 +1856,36 @@ export default {
   font-size: 13px;
 }
 
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
-  flex: 0 0 auto;
-  margin-left: 0 !important;
-  line-height: 28px;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
-  color: #f56c6c !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
-  content: none !important;
-  display: none !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .el-input__inner,
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
-  height: 28px !important;
-  min-height: 28px !important;
-  line-height: 28px !important;
-  font-size: 13px !important;
-  box-sizing: border-box !important;
-  border-color: #e2e8f0 !important;
-  border-radius: 6px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-toolbar.list-toolbar {
-  flex: 0 0 auto;
-  margin-top: 4px !important;
-  margin-bottom: 4px !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  padding: 8px 14px !important;
-  background: #fff !important;
-  border-radius: 0 !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: 1px solid #e8ecf1 !important;
-  border-bottom: 1px solid #e8ecf1 !important;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-table-panel {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  overflow: visible;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
+/* 弹窗内明细表容器：高度由 el-table :height 控制；分页在外层，勿整块滚动 */
+.local-modal-content .table-wrapper {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  border-bottom: none;
+  margin-top: 10px;
+  padding-bottom: 0;
 }
 
-.app-container.gzOrder-follow-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
-  border-radius: 10px 10px 0 0;
-  box-shadow: none;
-  margin-bottom: 0;
+.local-modal-content .modal-detail-section .el-table {
+  width: 100%;
+}
+</style>
+
+<style>
+/* 列表样式见 department-apply-list-align.scss；以下为页内特例 */
+.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .pagination-container.modal-entry-pagination {
+  padding: 2px 16px 0 !important;
 }
 
-/* 弹窗明细表头：与到货验收一致 */
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.el-table__cell {
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  border-right-color: #e2e8f0 !important;
-  border-bottom-color: #e2e8f0 !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  height: 34px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th .cell {
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  text-align: center !important;
-  line-height: 20px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table thead th:nth-child(2) .cell {
-  white-space: nowrap !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table thead th:nth-child(7) .cell {
-  white-space: nowrap !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.el-table__cell > .cell {
-  line-height: 28px !important;
-  min-height: 28px !important;
-  box-sizing: border-box;
-}
-
-/* 明细表行悬停、勾选高亮 */
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr > td,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr > td .cell {
-  transition: none !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection {
-  background-color: #D6EBFF !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection {
-  background-color: #B8DAFF !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
-.app-container.gzOrder-follow-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection {
-  background-color: #A0CBFF !important;
-}
-
-/* 明细表合计行：与表头同色 */
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  background-color: #f1f5f9 !important;
-  border-bottom: none !important;
-  position: relative;
-  z-index: 30 !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper {
-  z-index: 31 !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr {
-  height: 38px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
-  height: 38px !important;
-  min-height: 38px !important;
-  padding: 6px 0 !important;
-  line-height: 24px !important;
-  box-sizing: border-box !important;
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  border-top: 1px solid #e2e8f0 !important;
-  border-bottom: none !important;
-  border-left: none !important;
-  border-right: none !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  line-height: 24px !important;
-  text-align: center !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr td:first-child,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr td:first-child {
-  border-left: 1px solid #e2e8f0 !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr td:last-child,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr td:last-child {
-  border-right: 1px solid #e2e8f0 !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table-column--selection .cell {
-  font-size: 0;
-}
-
-/* 弹窗明细表滚动条：横向 12px */
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
-  z-index: 2;
-  overflow: auto !important;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
-  width: 8px !important;
-  height: 12px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
-  height: 12px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 3px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
-  background: #a8a8a8 !important;
-  border-radius: 3px !important;
-  border: none !important;
-  min-width: 12px !important;
-  min-height: 12px !important;
-}
-
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
-.app-container.gzOrder-follow-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
-  background: #909090 !important;
-}
-
-.app-container.gzOrder-follow-page .apply-main-table th.plan-creator-col .cell,
-.app-container.gzOrder-follow-page .apply-main-table td.plan-creator-col .cell {
-  white-space: nowrap !important;
+.json-viewer-pre {
+  margin: 0;
+  max-height: 520px;
+  overflow: auto;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>
