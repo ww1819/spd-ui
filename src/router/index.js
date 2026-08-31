@@ -317,7 +317,7 @@ export const dynamicRoutes = [
       {
         path: 'apply',
         component: () => import('@/views/gzOrder/apply/index'),
-        name: 'GzOrderApply',
+        name: 'Apply',
         meta: { title: '入库申请', icon: 'list' }
       },
       {
