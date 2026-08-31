@@ -2234,8 +2234,8 @@ export default {
 
     /**
      * 将「耗材名称」输入转换为后端筛选参数（不改写输入框本身的值）
-     * - 含中文：传 name + nameSearch（后端按名称或拼音简码 OR 匹配）
-     * - 纯字母：只传 nameSearch，按名称简码 referred_name 匹配
+     * - 含中文/混合：只传 name，按名称/编码/规格等模糊匹配（不再附带拼音 OR，避免「稀释液」误命中大量简码含 XSY 的无关品）
+     * - 纯字母：只传 nameSearch，按拼音简码首/尾/包含模糊匹配
      */
     deriveNameSearchParams(keyword) {
       const nameValue = keyword;
@@ -2244,20 +2244,8 @@ export default {
       }
 
       const trimmedValue = String(nameValue).trim();
-      const hasChinese = /[\u4e00-\u9fa5]/.test(trimmedValue);
       const isLetterOnly = /^[A-Za-z]+$/.test(trimmedValue);
 
-      if (hasChinese) {
-        const pinyinCode = pinyin(trimmedValue, {
-          pattern: 'first',
-          toneType: 'none',
-          type: 'array',
-        }).join('').toUpperCase();
-        return {
-          name: trimmedValue,
-          nameSearch: pinyinCode || undefined
-        };
-      }
       if (isLetterOnly) {
         return {
           name: undefined,
@@ -2298,6 +2286,16 @@ export default {
         endDate,
         includeDisabledInList: true
       };
+
+      // 纯字母简码检索：只传 nameSearch，显式去掉 name，避免后端 choose 优先走名称分支
+      if (derived.nameSearch) {
+        delete merged.name;
+        merged.nameSearch = derived.nameSearch;
+        merged.orderByColumn = undefined;
+        merged.isAsc = undefined;
+      } else {
+        delete merged.nameSearch;
+      }
 
       if (!includePagination) {
         delete merged.pageNum;
