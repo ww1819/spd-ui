@@ -121,6 +121,33 @@ export function getAmountExcelNumFmt() {
   return excelNumFmt(getAmountScale())
 }
 
+/** 按舍入后的值选择 Excel 格式：整数用 #,##0，有小数才带 .###，避免 WPS 等显示 1,332. */
+export function getAmountExcelNumFmtForValue(value) {
+  const scale = getAmountScale()
+  if (scale <= 0) return '#,##0'
+  const v = roundMoney(value, scale, getMoneyRoundMode())
+  if (v === null) return excelNumFmt(scale)
+  const frac = Math.abs(v).toFixed(scale).split('.')[1] || ''
+  if (!frac || /^0+$/.test(frac)) return '#,##0'
+  return excelNumFmt(scale)
+}
+
+/** 写入 Excel 金额单元格：按租户舍入，并按是否整数选择 numFmt */
+export function applyAmountExcelCell(cell, value) {
+  if (value === null || value === undefined || value === '') {
+    cell.value = null
+    return
+  }
+  const num = Number(value)
+  if (!Number.isFinite(num)) {
+    cell.value = null
+    return
+  }
+  const rounded = roundMoney(num, getAmountScale(), getMoneyRoundMode())
+  cell.value = rounded
+  cell.numFmt = getAmountExcelNumFmtForValue(rounded)
+}
+
 /** 数量 Excel：最多 3 位，# 不补末尾 0 */
 export function getQtyExcelNumFmt() {
   return excelNumFmt(3)
@@ -142,5 +169,7 @@ export default {
   excelNumFmt,
   getPriceExcelNumFmt,
   getAmountExcelNumFmt,
+  getAmountExcelNumFmtForValue,
+  applyAmountExcelCell,
   getQtyExcelNumFmt
 }
