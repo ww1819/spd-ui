@@ -971,9 +971,9 @@ export default {
   white-space: nowrap;
 }
 .more-search-type {
-  width: 190px;
-  min-width: 190px;
-  max-width: 190px;
+  min-width: 220px;
+  width: auto;
+  max-width: 360px;
 }
 .more-search-input {
   width: 200px;

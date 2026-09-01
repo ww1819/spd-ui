@@ -6,10 +6,10 @@
           <el-col :span="24" class="query-row-first-inner">
             <el-input
               v-model="queryParams.billNo"
-              placeholder="出库单号"
-              clearable
+                      placeholder="出库单号"
+                      clearable
               class="apply-query-input apply-query-field"
-              @keyup.enter.native="handleQuery"
+                      @keyup.enter.native="handleQuery"
             />
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectDepartment v-model="queryParams.departmentId" />
@@ -28,49 +28,49 @@
               <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
               <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
-          </el-col>
-        </el-row>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item class="query-date-range-form-item query-item-inline">
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="24" class="query-row-second-inner">
+          <el-form-item class="query-date-range-form-item query-item-inline">
               <el-radio-group v-model="queryParams.dateQueryType" size="small" class="apply-date-type-group">
-                <el-radio-button label="bill">制单日期</el-radio-button>
-                <el-radio-button label="audit">审核日期</el-radio-button>
-              </el-radio-group>
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="起始日期"
-                clearable
+              <el-radio-button label="bill">制单日期</el-radio-button>
+              <el-radio-button label="audit">审核日期</el-radio-button>
+            </el-radio-group>
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="起始日期"
+              clearable
                 class="query-date-picker apply-query-date"
-              />
+            />
               <span class="query-date-sep">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="截止日期"
-                clearable
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="截止日期"
+              clearable
                 class="query-date-picker apply-query-date"
-              />
-            </el-form-item>
-            <el-form-item prop="billStatus" class="query-item-inline query-item-status">
-              <el-select v-model="queryParams.billStatus" placeholder="单据状态"
+            />
+          </el-form-item>
+          <el-form-item prop="billStatus" class="query-item-inline query-item-status">
+            <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                          clearable class="apply-query-field">
-                <el-option :label="'未审核'" :value="1" />
-                <el-option :label="'已审核'" :value="2" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
+              <el-option :label="'未审核'" :value="1" />
+              <el-option :label="'已审核'" :value="2" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
               <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="apply-query-field">
-                <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+              <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
     </div>
 
     <el-row :gutter="0" class="mb8 list-toolbar">
@@ -98,7 +98,7 @@
         >导出</el-button>
       </div>
       <div class="list-toolbar-right">
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
@@ -434,9 +434,9 @@
                   style="width: 100%"
                   onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                   onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                  @blur="form.result=$event.target.value"
-                  @input="qtyChange(scope.row)"
-                />
+                        @blur="form.result=$event.target.value"
+                        @input="qtyChange(scope.row)"
+              />
               </div>
             </template>
           </el-table-column>
@@ -464,10 +464,10 @@
               <div class="detail-cell-edit-wrap detail-begin-date-wrap detail-cell-fluid-wrap">
                 <el-date-picker
                   clearable
-                  v-model="scope.row.beginTime"
-                  type="date"
-                  :disabled="true"
-                  value-format="yyyy-MM-dd"
+                              v-model="scope.row.beginTime"
+                              type="date"
+                              :disabled="true"
+                              value-format="yyyy-MM-dd"
                   placeholder="请选择生产日期"
                   size="small"
                   class="detail-cell-fluid-input detail-date-begin"
@@ -481,10 +481,10 @@
               <div class="detail-cell-edit-wrap detail-cell-fluid-wrap">
                 <el-date-picker
                   clearable
-                  v-model="scope.row.endTime"
-                  type="date"
-                  :disabled="true"
-                  value-format="yyyy-MM-dd"
+                              v-model="scope.row.endTime"
+                              type="date"
+                              :disabled="true"
+                              value-format="yyyy-MM-dd"
                   placeholder="请选择有效期"
                   size="small"
                   class="detail-cell-fluid-input detail-date-expiry"

@@ -6,10 +6,10 @@
           <el-col :span="24" class="query-row-first-inner">
             <el-input
               v-model="queryParams.billNo"
-              placeholder="退货单号"
-              clearable
+                      placeholder="退货单号"
+                      clearable
               class="apply-query-input apply-query-field"
-              @keyup.enter.native="handleQuery"
+                      @keyup.enter.native="handleQuery"
             />
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectSupplier v-model="queryParams.supplerId"/>
@@ -28,53 +28,53 @@
               <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
               <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
-          </el-col>
-        </el-row>
+        </el-col>
+      </el-row>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item class="query-date-range-form-item query-item-inline">
+      <el-row :gutter="16" class="query-row-second">
+        <el-col :span="24" class="query-row-second-inner">
+          <el-form-item class="query-date-range-form-item query-item-inline">
               <el-radio-group v-model="queryParams.dateQueryType" size="small" class="apply-date-type-group">
-                <el-radio-button label="bill">制单日期</el-radio-button>
-                <el-radio-button label="audit">审核日期</el-radio-button>
-              </el-radio-group>
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="起始日期"
-                clearable
+              <el-radio-button label="bill">制单日期</el-radio-button>
+              <el-radio-button label="audit">审核日期</el-radio-button>
+            </el-radio-group>
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="起始日期"
+              clearable
                 class="query-date-picker apply-query-date"
-              />
+            />
               <span class="query-date-sep">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="截止日期"
-                clearable
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="截止日期"
+              clearable
                 class="query-date-picker apply-query-date"
-              />
-            </el-form-item>
-            <el-form-item prop="billStatus" class="query-item-inline query-item-status">
-              <el-select v-model="queryParams.billStatus" placeholder="单据状态"
+            />
+          </el-form-item>
+          <el-form-item prop="billStatus" class="query-item-inline query-item-status">
+            <el-select v-model="queryParams.billStatus" placeholder="单据状态"
                          clearable class="apply-query-field">
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                           v-if="dict.label !== '待审核'"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
+              <el-option v-for="dict in dict.type.biz_status"
+                         :key="dict.value"
+                         :label="dict.label"
+                         :value="dict.value"
+                         v-if="dict.label !== '待审核'"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="被引用状态" label-width="88px" class="query-item-inline query-item-doc-ref">
               <el-select v-model="queryParams.params.docRefStatus" clearable placeholder="全部" class="apply-query-field">
-                <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
+              <el-option v-for="o in docRefStatusOptions" :key="o.value" :label="o.label" :value="o.value" />
+            </el-select>
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
     </div>
 
     <el-row :gutter="0" class="mb8 list-toolbar">
@@ -89,7 +89,7 @@
         >审核</el-button>
       </div>
       <div class="list-toolbar-right">
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
@@ -216,10 +216,10 @@
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
           <div v-if="open" class="local-modal-content apply-modal-root-content">
-        <div class="modal-header">
-          <div class="modal-title">{{ title }}</div>
-          <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-        </div>
+            <div class="modal-header">
+              <div class="modal-title">{{ title }}</div>
+              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
+            </div>
         <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
 
         <div class="form-fields-container list-query-panel apply-modal-query-panel">
@@ -314,9 +314,9 @@
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" placeholder="备注" clearable disabled />
             </el-form-item>
-          </el-col>
+            </el-col>
         </el-row>
-        </div>
+          </div>
 
         <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
           <div class="list-toolbar-left">
@@ -433,8 +433,8 @@
                 class="detail-cell-fluid-input"
                 onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                 onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                @blur="form.result=$event.target.value"
-                @input="qtyChange(scope.row)"
+                        @blur="form.result=$event.target.value"
+                        @input="qtyChange(scope.row)"
               />
             </template>
           </el-table-column>
@@ -977,7 +977,7 @@ export default {
       if (queryParams.endDate && queryParams.endDate.length === 10 && !queryParams.endDate.includes(' ')) {
         queryParams.endDate = queryParams.endDate + ' 23:59:59';
       }
-
+      
       listThInventory(queryParams).then(response => {
         this.warehouseList = response.rows;
         this.total = response.total;
