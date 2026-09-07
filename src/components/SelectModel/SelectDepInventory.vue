@@ -65,7 +65,7 @@
               </el-form-item>
             </el-col>
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="财务分类" prop="financeCategoryId" label-width="84px">
+              <el-form-item label="财务分类" prop="financeCategoryId">
                 <SelectFinanceCategoryLow
                   v-model="queryParams.financeCategoryId"
                   placeholder="财务分类"
@@ -131,17 +131,17 @@
               </template>
             </el-table-column>
             <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
-            <el-table-column label="规格" align="center" prop="material.speci" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
-            <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable />
+            <el-table-column label="名称" align="center" prop="material.name" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
+            <el-table-column label="规格" align="center" prop="material.speci" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
+            <el-table-column label="型号" align="center" prop="material.model" width="100" show-overflow-tooltip resizable />
+            <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdUnit.unitName')" />
             <el-table-column label="库存数量" align="center" min-width="100" width="100" show-overflow-tooltip resizable sortable>
               <template slot-scope="scope">
                 <span>{{ useMaterialDict ? '--' : (scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--') }}</span>
               </template>
             </el-table-column>
             <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable sortable />
-            <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
+            <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable sortable>
               <template slot-scope="scope">
                 <span>{{ useMaterialDict ? '--' : (scope.row.amt != null && scope.row.amt !== '' ? scope.row.amt : '--') }}</span>
               </template>
@@ -198,11 +198,9 @@
 
           <div class="apply-pagination-wrap" ref="filterPaginationWrap">
             <pagination
-              class="modal-entry-pagination"
               :total="total"
               :page.sync="queryParams.pageNum"
               :limit.sync="queryParams.pageSize"
-              :hide-on-single-page="false"
               @pagination="handlePagination"
             />
           </div>
@@ -412,6 +410,11 @@ export default {
         this.$nextTick(() => {
           if (this.nested) this.updateFilterTableHeight();
         });
+      }
+    },
+    total() {
+      if (this.nested && this.show) {
+        this.$nextTick(() => this.updateFilterTableHeight());
       }
     }
   },
@@ -807,28 +810,25 @@ export default {
   overflow: hidden !important;
 }
 
+/* 与 SelectMaterialFilter 嵌套层一致：定位由父页 left/right/top/bottom 控制（含 right:-8px） */
 .dep-inventory-select-mask.material-filter-mask--nested {
   position: absolute;
   z-index: 3100;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
 }
 
 .dep-inventory-select-mask.material-filter-mask--nested .local-modal-content.material-filter-modal--nested {
-  width: 100% !important;
-  max-width: none !important;
-  min-width: 0 !important;
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
   overflow: hidden !important;
 }
 
 .dep-inventory-select-mask .material-filter-modal--nested {
   width: 100%;
-  max-width: none;
   height: 100%;
   max-height: 100%;
   min-height: 0;
@@ -836,6 +836,14 @@ export default {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+}
+
+.dep-inventory-select-mask .material-filter-form.modal-form-compact {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
@@ -847,6 +855,7 @@ export default {
   overflow: hidden;
 }
 
+/* 查询区：与 RK-添加明细同一套（勿强行清掉全局卡片阴影，避免内区高度/观感不一致） */
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel {
   margin-top: 0;
   margin-bottom: 0;
@@ -861,16 +870,52 @@ export default {
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 6px;
   margin-bottom: 4px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0;
+  box-sizing: border-box;
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row:last-child {
   margin-bottom: 0;
 }
 
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto;
+  max-width: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
   margin-bottom: 0;
+  vertical-align: top;
+}
+
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-toolbar.list-toolbar {
@@ -889,17 +934,18 @@ export default {
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-toolbar.list-toolbar .list-toolbar-left {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .dep-inventory-select-mask .apply-modal-detail-title {
   margin-right: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
-  line-height: 32px;
+  color: #334155;
+  line-height: 28px;
 }
 
 .dep-inventory-select-mask.material-filter-mask--nested .material-filter-form.modal-form-compact > .apply-table-panel {
@@ -927,11 +973,6 @@ export default {
   flex: 0 0 auto;
   padding: 0;
   border-top: 1px solid #e2e8f0;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  box-sizing: border-box;
 }
 
 .dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap .pagination-container {
@@ -956,8 +997,60 @@ export default {
   right: auto !important;
 }
 
-.dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel > .apply-main-table > .el-table__body-wrapper {
+/* 横向滚动条与 RK-添加明细完全一致（高度 12px，影响表体可视高度） */
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper {
+  z-index: 2;
   overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-track,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
 }
 
 /* 选中行高亮：与 RK-添加明细 / 列表页 apply-row-selected 一致 */

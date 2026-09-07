@@ -1,0 +1,11 @@
+const fs = require('fs');
+const a = fs.readFileSync('src/views/department/batchConsume/index.vue', 'utf8');
+const b = fs.readFileSync('src/components/SelectModel/SelectDepInventory.vue', 'utf8');
+console.log('batch chinese', a.includes('科室批量'), a.includes('横向滚动条'));
+console.log('batch leftover local query', (a.match(/\.local-modal-content \.apply-modal-query-panel/g) || []).length);
+console.log('batch root>el-form query', (a.match(/\.apply-modal-root-content > \.el-form \.apply-modal-query-panel/g) || []).length);
+console.log('dep chinese', b.includes('科室库存'), b.includes('财务分类'));
+console.log('dep scrollbar', b.includes('height: 12px !important'));
+console.log('dep query no box-shadow clear', !b.includes('box-shadow: none !important;\n  border: none'));
+console.log('dep highlight', b.includes('apply-row-selected'));
+console.log('dep col widths', b.includes('width="150"') && b.includes('width="100"'));
