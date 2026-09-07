@@ -251,7 +251,7 @@
                     @click="openOutboundRefDialog(null)"
                   >关联出库单一览</el-button>
                   <template v-if="action">
-                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="nameBtn">添加</el-button>
+                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="!form.departmentId" @click="nameBtn">添加</el-button>
                     <el-button type="success" size="small" class="spd-btn spd-btn--secondary" @click="handleRefTemplate">引用模板</el-button>
                     <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteBasApplyEntry">删除</el-button>
                     <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
@@ -907,14 +907,15 @@ export default {
         || (this.basApplyEntryList && this.basApplyEntryList.length > 0)
         || !!(this.form && this.form.id);
     },
-    /** 制单人：已保存单据显示后端姓名；新增显示当前登录用户 */
+    /** 制单人：已保存单据显示后端姓名；新增显示当前登录用户姓名（nickName），不显示账号 */
     creatorDisplayName() {
       const n = this.form && this.form.createrNmae;
       if (n) {
         return n;
       }
       if (!this.form || !this.form.id) {
-        return (this.$store.state.user && this.$store.state.user.name) ? this.$store.state.user.name : '';
+        const u = this.$store.state.user || {};
+        return u.nickName || u.name || '';
       }
       return '—';
     },
@@ -1127,6 +1128,10 @@ export default {
       });
     },
     nameBtn() {
+      if (!this.form.departmentId) {
+        this.$modal.msgError("请先选择科室");
+        return;
+      }
       this.selectTarget = 'apply'
       this.DialogComponentShow = true
     },
