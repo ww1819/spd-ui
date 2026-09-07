@@ -605,6 +605,7 @@ export default {
       ids: [],
       // 子表选中数据
       checkedConsumeEntry: [],
+      detailSelectedRowMap: {},
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -922,6 +923,10 @@ export default {
     /** 明细序号 */
     rowDeptBatchConsumeEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1;
+      if (this.detailSelectedRowMap && this.detailSelectedRowMap[rowIndex]) {
+        return 'apply-row-selected';
+      }
+      return '';
     },
     /** 明细表合计 */
     getSummaries(param) {
@@ -1092,6 +1097,8 @@ export default {
       };
       this.deptBatchConsumeEntryList = [];
       this.originalEntryCount = 0;
+      this.checkedConsumeEntry = [];
+      this.detailSelectedRowMap = {};
       this.calculateTotals();
       this.resetForm("form");
     },
@@ -1318,7 +1325,19 @@ export default {
     },
     /** 复选框选中数据 */
     handleConsumeEntrySelectionChange(selection) {
-      this.checkedConsumeEntry = selection.map(item => item.index)
+      this.checkedConsumeEntry = selection.map(item => item.index);
+      const pageIndices = (this.deptBatchConsumeEntryList || []).map((row, idx) => idx);
+      pageIndices.forEach((idx) => {
+        if (this.detailSelectedRowMap[idx]) {
+          this.$delete(this.detailSelectedRowMap, idx);
+        }
+      });
+      (selection || []).forEach((row) => {
+        const idx = this.deptBatchConsumeEntryList.indexOf(row);
+        if (idx >= 0) {
+          this.$set(this.detailSelectedRowMap, idx, true);
+        }
+      });
     },
     canReverseConsumeRow(row) {
       if (!row) return false;
@@ -2213,6 +2232,35 @@ html body .app-container.batch-consume-page .apply-inbound-nested-modal .apply-t
 
 .app-container.batch-consume-page .local-modal-content .modal-detail-section .el-table tbody td {
   vertical-align: middle;
+}
+
+/* 弹窗明细：悬停 / 勾选高亮 */
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-action-col,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr:hover > td,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.apply-row-selected > td,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.batch-consume-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
 }
 
 .app-container.batch-consume-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
