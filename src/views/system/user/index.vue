@@ -1,6 +1,6 @@
 <template>
-  <div class="app-container list-page">
-    <el-row :gutter="20">
+  <div class="app-container list-page system-user-page">
+    <el-row :gutter="8">
       <!--工作组数据-->
       <el-col :span="5" :xs="24">
         <div class="dept-panel">
@@ -37,45 +37,35 @@
       <el-col :span="19" :xs="24">
         <div class="form-fields-container list-query-panel" v-show="showSearch">
           <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
-            <more-search-bar
-              ref="moreSearchBar"
-              v-model="moreSearchTypes"
-              :options="moreSearchOptions"
-              :storage-key="moreSearchStorageKey"
-              :default-types="builtInMoreSearchDefaults"
-              :auto-load="false"
-              @change="onMoreSearchTypesChange"
-              @search="handleQuery"
-              @reset="resetQuery"
-            >
-              <div
-                v-for="t in moreSearchTypes"
-                :key="t"
-                class="more-search-dynamic-field more-search-field--text"
-              >
+            <el-row :gutter="16" class="query-row-first">
+              <el-col :span="24" class="query-row-first-inner">
                 <el-input
-                  v-if="t === 'phonenumber'"
-                  v-model="queryParams.phonenumber"
-                  placeholder="手机号码"
-                  clearable
-                  class="more-search-input more-search-input--dynamic"
-                  @keyup.enter.native="handleQuery"
-                />
-                <el-input
-                  v-else
                   v-model="queryParams.userName"
                   placeholder="用户账户/用户姓名"
                   clearable
-                  class="more-search-input more-search-input--dynamic"
+                  class="user-query-control"
                   @keyup.enter.native="handleQuery"
                 />
-              </div>
-            </more-search-bar>
-
+                <el-input
+                  v-model="queryParams.phonenumber"
+                  placeholder="手机号码"
+                  clearable
+                  class="user-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <div class="user-query-control user-query-dept">
+                  <SelectDepartment
+                    v-model="queryParams.departmentId"
+                    field-placeholder="科室"
+                    :finance-pick-mode="true"
+                  />
+                </div>
+              </el-col>
+            </el-row>
             <el-row :gutter="16" class="query-row-second">
               <el-col :span="24" class="query-row-second-inner">
                 <el-form-item prop="status" class="query-item-inline">
-                  <el-select v-model="queryParams.status" placeholder="用户状态" clearable class="more-search-select-wrap">
+                  <el-select v-model="queryParams.status" placeholder="用户状态" clearable class="user-query-control">
                     <el-option
                       v-for="dict in dict.type.sys_normal_disable"
                       :key="dict.value"
@@ -98,6 +88,10 @@
                     class="query-date-picker"
                   />
                 </el-form-item>
+                <div class="query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
               </el-col>
             </el-row>
           </el-form>
@@ -129,15 +123,15 @@
           </div>
         </el-row>
 
-        <div class="table-wrapper">
-          <el-table ref="userTable" v-loading="loading" :data="userList" :row-key="getUserRowKey" stripe @selection-change="handleSelectionChange" height="66vh" border>
+        <div class="apply-table-panel table-wrapper">
+          <el-table ref="userTable" v-loading="loading" :data="userList" :row-key="getUserRowKey" class="apply-main-table" stripe @selection-change="handleSelectionChange" height="66vh" border>
           <el-table-column type="selection" width="50" align="center" :reserve-selection="true" />
           <el-table-column type="index" label="序号" align="center" width="80" v-if="columns[0].visible" :index="indexMethod" />
-          <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" :show-overflow-tooltip="true" />
-          <el-table-column label="用户姓名" align="center" key="nickName" prop="nickName" v-if="columns[2].visible" :show-overflow-tooltip="true" />
-          <el-table-column label="工作组" align="center" key="deptName" prop="postName" v-if="columns[3].visible" :show-overflow-tooltip="true" />
+          <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" min-width="110" :show-overflow-tooltip="true" />
+          <el-table-column label="用户姓名" align="center" key="nickName" prop="nickName" v-if="columns[2].visible" min-width="100" :show-overflow-tooltip="true" />
+          <el-table-column label="工作组" align="center" key="deptName" prop="postName" v-if="columns[3].visible" min-width="120" :show-overflow-tooltip="true" />
           <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns[4].visible" width="120" />
-          <el-table-column label="用户所属科室" align="center" key="departmentNames" v-if="columns[5].visible" :show-overflow-tooltip="true">
+          <el-table-column label="科室" align="center" key="departmentNames" v-if="columns[5].visible" min-width="120" :show-overflow-tooltip="true">
             <template slot-scope="scope">
               <span>{{ scope.row.departmentNames || (scope.row.dept && scope.row.dept.deptName) || '--' }}</span>
             </template>
@@ -209,13 +203,15 @@
           </el-table-column>
           </el-table>
 
-        <pagination
-          v-show="total>0"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
+          <div class="apply-pagination-wrap">
+            <pagination
+              v-show="total>0"
+              :total="total"
+              :page.sync="queryParams.pageNum"
+              :limit.sync="queryParams.pageSize"
+              @pagination="getList"
+            />
+          </div>
         </div>
       </el-col>
     </el-row>
@@ -649,12 +645,13 @@ import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import MenuAuthDualTree from "@/components/MenuAuthDualTree";
 import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
+import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import { mapGetters } from 'vuex';
 
 export default {
   name: "User",
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
-  components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton },
+  components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton, SelectDepartment },
   computed: {
     ...mapGetters(['isZqTcmTenant']),
     /** 是否机构管理员（super 账号） */
@@ -717,12 +714,6 @@ export default {
     },
     crossPageSelectedCount() {
       return Object.keys(this.selectedRowMap || {}).length;
-    },
-    moreSearchStorageKey() {
-      return 'spd.system.user.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
     }
   },
   data() {
@@ -743,11 +734,6 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '用户账户/用户姓名', value: 'userName' },
-        { label: '手机号码', value: 'phonenumber' }
-      ],
       // 总条数
       total: 0,
       // 用户表格数据
@@ -826,6 +812,7 @@ export default {
         userName: undefined,
         phonenumber: undefined,
         status: undefined,
+        departmentId: undefined,
         deptId: undefined,
         /** 耗材工作组筛选（sys_user_post.post_id），勿与 deptId 混用 */
         sysPostId: undefined
@@ -837,7 +824,7 @@ export default {
         { key: 2, label: `用户姓名`, visible: true },
         { key: 3, label: `工作组`, visible: true },
         { key: 4, label: `手机号码`, visible: true },
-        { key: 5, label: `用户所属科室`, visible: true },
+        { key: 5, label: `科室`, visible: true },
         { key: 6, label: `状态`, visible: true },
         { key: 7, label: `解锁时间`, visible: true },
         { key: 8, label: `创建时间`, visible: true }
@@ -913,8 +900,6 @@ export default {
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
     this.getWorkgroupTree();
     this.getWorkgroupList();
@@ -953,7 +938,6 @@ export default {
     },
     buildUserQueryParams(includePagination = true) {
       const q = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(q);
       if (this.onlyWithoutWorkgroup) {
         q.withoutWorkgroup = true;
       }
@@ -1580,43 +1564,15 @@ export default {
     resetQuery() {
       this.dateRange = [];
       this.resetForm("queryForm");
+      this.queryParams.userName = undefined;
+      this.queryParams.phonenumber = undefined;
+      this.queryParams.status = undefined;
+      this.queryParams.departmentId = undefined;
       this.queryParams.deptId = undefined;
       this.queryParams.sysPostId = undefined;
       this.onlyWithoutWorkgroup = false;
       this.currentWorkgroupId = undefined;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = { userName: 'userName', phonenumber: 'phonenumber' };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 序号计算方法
     indexMethod(index) {
@@ -1865,7 +1821,6 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       const q = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(q);
       if (this.onlyWithoutWorkgroup) {
         q.withoutWorkgroup = true;
       }
@@ -1934,7 +1889,7 @@ export default {
 
 <style scoped>
 .list-query-panel {
-  margin-top: -20px;
+  margin-top: 0;
 }
 .pwd-lock-text {
   color: #e6a23c;
@@ -2063,62 +2018,95 @@ export default {
   transform: scale(0.8);
 }
 
-/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
-.app-container {
+/* 与到货验收一致：顶/左/右 8px（见 department-apply-list-align） */
+.system-user-page.app-container {
   position: relative;
   min-height: 95vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-}
-
-/* 隐藏页面滚动条 */
-.app-container::-webkit-scrollbar {
-  display: none !important;
-}
-
-.app-container {
+  padding-top: 8px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 14px !important;
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
 
-/* 左侧部门树区域 */
-.app-container > .el-row {
+.system-user-page.app-container::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* 左右栏顶对齐，不再叠一层内边距 */
+.system-user-page.app-container > .el-row {
   flex: 1;
   overflow: hidden;
   display: flex;
-  padding: 10px;
+  padding: 0;
+  width: 100%;
 }
 
-.app-container > .el-row > .el-col {
+.system-user-page.app-container > .el-row > .el-col {
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 /* 右侧用户数据区域 */
-.app-container > .el-row > .el-col:last-child {
+.system-user-page.app-container > .el-row > .el-col:last-child {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-left: 0;
 }
 
-/* 表格包装器 - 占据剩余空间 */
-.app-container > .el-row > .el-col:last-child > .table-wrapper {
-  flex: 1;
+/* 表格包装器 - 对齐到货验收明细框：表格+分页同一白卡片 */
+.system-user-page.app-container > .el-row > .el-col:last-child > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
 }
 
-/* 表格区域 - 占据剩余空间 */
-.app-container > .el-row > .el-col:last-child > .table-wrapper > .el-table {
-  /* 这里如果 flex:1 会强制表格撑满剩余高度，导致 el-table 的 height 属性不生效 */
+.system-user-page.app-container > .el-row > .el-col:last-child > .apply-table-panel > .apply-main-table {
   flex: 0 0 auto;
   overflow: hidden;
+  margin: 0;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+}
+
+.system-user-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.system-user-page .apply-pagination-wrap ::v-deep .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.system-user-page .apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
 }
 
 /* 左侧部门面板样式 - 参照定数监测 */
@@ -2354,6 +2342,39 @@ export default {
   margin-right: 0;
 }
 
+/* 查询首行：账号/手机/科室同一行，宽度与用户状态一致 */
+.query-form .query-row-first-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.query-form .user-query-control {
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+  flex-shrink: 0;
+}
+
+.query-form .user-query-dept {
+  display: inline-flex;
+  align-items: center;
+}
+
+.query-form .user-query-dept > .el-select,
+.query-form .user-query-control.el-select,
+.query-form .user-query-control.el-input {
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+}
+
+.query-form .user-query-dept > .el-select .el-input {
+  width: 100% !important;
+}
+
 /* 统一控制查询条件输入框宽度 */
 .query-form-card .query-item-inline .el-input {
   width: 180px;
@@ -2367,19 +2388,25 @@ export default {
   width: 240px;
 }
 
-/* 表格样式优化 - 参照定数监测 */
+/* 表格样式优化 - 表头/行；卡片阴影改由 apply-table-panel 承担 */
 .table-wrapper .el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .table-wrapper .el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: bold !important;
+  background-color: #f1f5f9 !important;
+  color: #334155;
+  font-weight: 600 !important;
   height: 42px;
   padding: 4px 0;
   border-bottom: 1px solid #EBEEF5;
+}
+
+.table-wrapper .el-table th .cell {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  line-height: 20px;
 }
 
 .table-wrapper .el-table td {
