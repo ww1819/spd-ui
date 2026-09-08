@@ -1,9 +1,9 @@
 <template>
   <div class="app-container list-page material-compare-page">
     <!-- 左右分栏布局：左边供应商列表，右边耗材明细 -->
-    <el-row :gutter="10" style="margin-top: -10px;">
-      <!-- 左边：供应商列表 -->
-      <el-col :span="5">
+    <el-row :gutter="8" class="compare-layout-row">
+      <!-- 左边：供应商列表（在 span6 基础上收窄 1/4 → 约 18.75%） -->
+      <el-col class="supplier-col">
         <div class="supplier-container">
           <div class="supplier-header">
             <span class="supplier-title">供应商列表</span>
@@ -29,70 +29,76 @@
         </div>
       </el-col>
       
-      <!-- 右边：耗材明细信息 -->
-      <el-col :span="19">
-        <div class="material-container">
-          <div class="material-header">
-            <span class="material-title">耗材明细</span>
-            <span v-if="selectedSupplier" class="selected-supplier">当前供应商：{{ selectedSupplier.name }}</span>
-            <span v-else class="selected-supplier">当前供应商：全部</span>
-          </div>
-          
-          <div class="query-container" v-show="showSearch">
-            <div class="form-fields-container list-query-panel">
-              <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-                <more-search-bar
-                  ref="moreSearchBar"
-                  v-model="moreSearchTypes"
-                  :options="moreSearchOptions"
-                  :storage-key="moreSearchStorageKey"
-                  :default-types="builtInMoreSearchDefaults"
-                  :auto-load="false"
-                  @change="onMoreSearchTypesChange"
-                  @search="handleQuery"
-                  @reset="resetQuery"
+      <!-- 右边：耗材明细（承接左侧收窄后的宽度） -->
+      <el-col class="material-col">
+        <div class="material-main">
+          <div class="form-fields-container list-query-panel" v-show="showSearch">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <div class="compare-query-row">
+                <el-input
+                  v-model="queryParams.code"
+                  placeholder="项目编码"
+                  clearable
+                  class="compare-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.name"
+                  placeholder="名称"
+                  clearable
+                  class="compare-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.supplierName"
+                  placeholder="供应商搜索"
+                  clearable
+                  class="compare-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.speci"
+                  placeholder="规格"
+                  clearable
+                  class="compare-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-select
+                  v-model="queryParams.isBilling"
+                  placeholder="是否收费"
+                  clearable
+                  class="compare-query-control"
                 >
-                  <div
-                    v-for="t in moreSearchTypes"
-                    :key="t"
-                    class="more-search-dynamic-field"
-                    :class="moreSearchFieldClass(t)"
-                  >
-                    <el-select
-                      v-if="t === 'hisBindStatus'"
-                      v-model="queryParams.hisBindStatus"
-                      placeholder="是否对照"
-                      clearable
-                      class="more-search-short-select"
-                    >
-                      <el-option label="已对照" value="1" />
-                      <el-option label="未对照" value="0" />
-                    </el-select>
-                    <el-select
-                      v-else-if="t === 'isBilling'"
-                      v-model="queryParams.isBilling"
-                      placeholder="是否收费"
-                      clearable
-                      class="more-search-short-select"
-                    >
-                      <el-option label="是" value="1" />
-                      <el-option label="否" value="2" />
-                    </el-select>
-                    <el-input
-                      v-else
-                      v-model="queryParams[t]"
-                      :placeholder="moreSearchPlaceholderFor(t)"
-                      clearable
-                      class="more-search-input more-search-input--dynamic"
-                      @keyup.enter.native="handleQuery"
-                    />
-                  </div>
-                </more-search-bar>
-              </el-form>
-            </div>
+                  <el-option label="是" value="1" />
+                  <el-option label="否" value="2" />
+                </el-select>
+                <div class="compare-query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
+              </div>
+              <div class="compare-query-row compare-query-row--second">
+                <el-input
+                  v-model="queryParams.hisChargeItemId"
+                  placeholder="收费项目ID"
+                  clearable
+                  class="compare-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-select
+                  v-model="queryParams.hisBindStatus"
+                  placeholder="是否对照"
+                  clearable
+                  class="compare-query-control"
+                >
+                  <el-option label="已对照" value="1" />
+                  <el-option label="未对照" value="0" />
+                </el-select>
+              </div>
+            </el-form>
           </div>
 
-          <el-row :gutter="0" class="mb8 list-toolbar">
+          <el-row :gutter="0" class="list-toolbar compare-toolbar">
             <div class="list-toolbar-left">
               <el-button
                 size="small"
@@ -102,16 +108,28 @@
             </div>
           </el-row>
 
-          <div class="table-container">
-            <el-table v-loading="loading" :data="materialCompareList" border height="calc(100vh - 340px)" :cell-style="{whiteSpace: 'nowrap'}" stripe>
-              <el-table-column type="selection" width="55" align="center" fixed="left" />
+          <div class="apply-table-panel table-container" ref="tablePanel">
+            <el-table
+              ref="compareTable"
+              v-loading="loading"
+              :data="materialCompareList"
+              class="apply-main-table"
+              border
+              :height="mainTableHeight"
+              :cell-style="{whiteSpace: 'nowrap'}"
+              stripe
+              :row-class-name="compareRowClassName"
+              @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
+            >
+              <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
               <el-table-column type="index" label="序号" align="center" width="80" />
-              <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip />
+              <el-table-column label="耗材编码" align="center" prop="code" width="120" sortable="custom" show-overflow-tooltip />
               <el-table-column label="收费项目ID" align="center" prop="hisChargeItemId" width="120" show-overflow-tooltip />
-              <el-table-column label="耗材名称" align="center" prop="name" min-width="200" show-overflow-tooltip />
+              <el-table-column label="耗材名称" align="center" prop="name" min-width="200" sortable="custom" show-overflow-tooltip />
               <el-table-column label="收费名称" align="center" prop="hisChargeItemName" min-width="180" show-overflow-tooltip />
               <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip />
-              <el-table-column label="收费规格" align="center" prop="hisChargeItemSpeci" width="120" show-overflow-tooltip />
+              <el-table-column label="收费规格" align="center" prop="hisChargeItemSpeci" width="120" sortable="custom" show-overflow-tooltip />
               <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip />
               <el-table-column label="单位" align="center" width="80" show-overflow-tooltip>
                 <template slot-scope="scope">
@@ -139,7 +157,7 @@
                   <span>{{ (scope.row.fdFactory && scope.row.fdFactory.factoryName) || scope.row.factoryName || '--' }}</span>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" align="center" width="150" fixed="right">
+              <el-table-column label="操作" align="center" width="120" class-name="apply-action-col">
                 <template slot-scope="scope">
                   <el-button
                     size="small"
@@ -155,13 +173,15 @@
               </el-table-column>
             </el-table>
 
-            <pagination
-              v-show="total > 0"
-              :total="total"
-              :page.sync="queryParams.pageNum"
-              :limit.sync="queryParams.pageSize"
-              @pagination="getList"
-            />
+            <div class="apply-pagination-wrap">
+              <pagination
+                v-show="total > 0"
+                :total="total"
+                :page.sync="queryParams.pageNum"
+                :limit.sync="queryParams.pageSize"
+                @pagination="getList"
+              />
+            </div>
           </div>
         </div>
       </el-col>
@@ -369,14 +389,6 @@ import { listSupplierAll } from "@/api/foundation/supplier";
 
 export default {
   name: "MaterialCompare",
-  computed: {
-    moreSearchStorageKey() {
-      return "spd.foundation.materialCompare.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return ["code", "name", "referredName", "hisBindStatus", "isBilling", "speci", "hisChargeItemId"];
-    }
-  },
   data() {
     return {
       // 遮罩层
@@ -384,22 +396,14 @@ export default {
       supplierLoading: false,
       // 选中数组
       ids: [],
+      // 触发行高亮重算（勾选后 el-table 不会自动刷新 row-class-name）
+      rowHighlightTick: 0,
       // 非单个禁用
       single: true,
       // 非多个禁用
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { value: "code", label: "项目编码" },
-        { value: "name", label: "名称" },
-        { value: "referredName", label: "拼音简码" },
-        { value: "hisBindStatus", label: "是否对照" },
-        { value: "isBilling", label: "是否收费" },
-        { value: "speci", label: "规格" },
-        { value: "hisChargeItemId", label: "收费项目ID" }
-      ],
       // 总条数
       total: 0,
       // 供应商列表
@@ -414,12 +418,14 @@ export default {
         pageSize: 10,
         code: null,
         name: null,
-        referredName: null,
+        supplierName: null,
         hisBindStatus: null,
         isBilling: null,
         speci: null,
         hisChargeItemId: null,
-        supplierId: null
+        supplierId: null,
+        orderByColumn: null,
+        isAsc: null
       },
       // HIS弹窗相关
       hisDialogVisible: false,
@@ -446,57 +452,41 @@ export default {
         name: null,
         speci: null
       },
-      currentMaterialRow: null
+      currentMaterialRow: null,
+      // 明细表高度（占满明细框剩余空间，减少底部留白）
+      mainTableHeight: 400
     };
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getSupplierList();
     // 默认显示全部供应商的产品
     this.handleShowAll();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      setTimeout(() => this.updateMainTableHeight(), 80);
+    });
+    window.addEventListener('resize', this.updateMainTableHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight);
+  },
   methods: {
-    moreSearchPlaceholderFor(t) {
-      const map = {
-        code: "项目编码",
-        name: "名称",
-        referredName: "拼音简码",
-        speci: "规格",
-        hisChargeItemId: "收费项目ID"
-      };
-      return map[t] || "请输入";
-    },
-    moreSearchFieldClass(t) {
-      if (t === "hisBindStatus" || t === "isBilling") return "more-search-field--short";
-      return "more-search-field--text";
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      ["code", "name", "referredName", "hisBindStatus", "isBilling", "speci", "hisChargeItemId"].forEach((k) => {
-        if (!set.has(k)) target[k] = null;
+    /** 明细表高度：填满明细框，分页区除外 */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagEl = panel.querySelector('.apply-pagination-wrap');
+      const pagH = (pagEl && pagEl.offsetHeight) ? pagEl.offsetHeight : 52;
+      this.mainTableHeight = Math.max(240, Math.floor(panelH - pagH));
+      this.$nextTick(() => {
+        if (this.$refs.compareTable && this.$refs.compareTable.doLayout) {
+          this.$refs.compareTable.doLayout();
+        }
       });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     /** 查询供应商列表 */
     getSupplierList() {
@@ -536,12 +526,13 @@ export default {
     /** 查询耗材对照列表 */
     getList() {
       this.loading = true;
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      listMaterial(params).then(response => {
+      this.ids = [];
+      this.rowHighlightTick += 1;
+      listMaterial({ ...this.queryParams }).then(response => {
         this.materialCompareList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.$nextTick(() => this.updateMainTableHeight());
       }).catch(() => {
         this.loading = false;
       });
@@ -572,23 +563,49 @@ export default {
     resetQuery() {
       const supplierId = this.selectedSupplier ? this.selectedSupplier.id : null;
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.queryParams.code = null;
       this.queryParams.name = null;
-      this.queryParams.referredName = null;
+      this.queryParams.supplierName = null;
       this.queryParams.hisBindStatus = null;
       this.queryParams.isBilling = null;
       this.queryParams.speci = null;
       this.queryParams.hisChargeItemId = null;
+      this.queryParams.orderByColumn = null;
+      this.queryParams.isAsc = null;
       this.queryParams.supplierId = supplierId;
-      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
-    // 多选框选中数据
+    /** 表头排序：服务端分页排序 */
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        code: 'm.code',
+        name: 'm.name',
+        hisChargeItemSpeci: 'hci.specModel'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = null;
+        this.queryParams.isAsc = null;
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
+    // 多选框选中数据（勾选高亮，与耗材产品维护一致）
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id);
+      this.ids = (selection || []).map(item => item.id);
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
+      this.rowHighlightTick += 1;
+    },
+    /** 勾选行高亮 class */
+    compareRowClassName({ row }) {
+      void this.rowHighlightTick;
+      if (row && row.id != null && this.ids.indexOf(row.id) !== -1) {
+        return 'apply-row-selected';
+      }
+      return '';
     },
     /** HIS按钮操作：明细列表默认按当前耗材名称匹配，仅用户点击「搜索」后随条件变化 */
     handleHis(row) {
@@ -760,12 +777,17 @@ export default {
 </script>
 
 <style scoped>
-/* 页面根作为弹窗定位容器（与 layout 中 app-main 留白一致：顶栏+标签约 84px） */
+/* 页面根：顶/底留白均为 8px，内容区撑满，消除底部多余空隙 */
 .material-compare-page {
   position: relative;
-  min-height: calc(100vh - 84px);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  min-height: 0;
   width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 遮罩层与到货验收 local-modal-mask 一致：铺满定位容器、拉伸对齐 */
@@ -855,6 +877,35 @@ export default {
   flex-shrink: 0;
 }
 
+/* 左供应商在原 span6(25%) 基础上收窄 1/4 → 18.75%；右侧承接剩余宽度 */
+.compare-layout-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.compare-layout-row > .supplier-col {
+  width: 18.75% !important;
+  max-width: 18.75% !important;
+  flex: 0 0 18.75% !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.compare-layout-row > .material-col {
+  width: calc(81.25% - 8px) !important;
+  max-width: calc(81.25% - 8px) !important;
+  flex: 1 1 auto !important;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 /* 供应商容器 */
 .supplier-container {
   background: #fff;
@@ -864,7 +915,9 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 120px);
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
 }
 
 .supplier-header {
@@ -879,37 +932,268 @@ export default {
   color: #303133;
 }
 
-/* 耗材容器 */
-.material-container {
+/* 左侧供应商列表：悬停 / 当前选中高亮（对齐右侧明细） */
+.supplier-container ::v-deep .el-table__body tr > td {
+  transition: none !important;
+  cursor: pointer;
+}
+
+.supplier-container ::v-deep .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+
+.supplier-container ::v-deep .el-table__body tr.current-row > td {
+  background-color: #B8DAFF !important;
+}
+
+.supplier-container ::v-deep .el-table__body tr.current-row:hover > td {
+  background-color: #A0CBFF !important;
+}
+
+/* 右侧明细区：无外层父框，查询区/工具栏/表格各自独立；区块间距收紧 */
+.material-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  gap: 4px;
+}
+
+.material-compare-page .material-main > .list-query-panel,
+.material-compare-page .material-main > .compare-toolbar,
+.material-compare-page .material-main > .apply-table-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.material-compare-page .material-main > .compare-toolbar.list-toolbar {
+  margin: 0 !important;
+  padding: 6px 12px !important;
+}
+
+.apply-table-panel.table-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid #EBEEF5;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
   overflow: hidden;
 }
 
-.material-header {
-  padding: 12px 16px;
-  background: #f5f7fa;
-  border-bottom: 1px solid #EBEEF5;
+.apply-table-panel.table-container > .apply-main-table {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 明细表：对齐耗材产品维护 — 表头/行高、悬停蓝、勾选高亮 */
+.material-compare-page .apply-main-table ::v-deep th {
+  border-right-color: #eef2f7 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding: 4px 0 !important;
+  height: 34px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__header-wrapper th,
+.material-compare-page .apply-main-table ::v-deep .el-table__header-wrapper th.el-table__cell,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th.el-table__cell,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__header-wrapper th .cell,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th .cell,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep td .cell {
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr > td,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.material-compare-page .apply-main-table ::v-deep .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.material-compare-page .apply-main-table ::v-deep .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.material-compare-page .apply-main-table ::v-deep .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container {
+  height: auto !important;
+  min-height: 44px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 8px 14px !important;
+  background: #fff;
+  border: none;
+  box-shadow: none;
+}
+
+.compare-query-row {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
-.material-title {
-  font-weight: bold;
-  font-size: 14px;
-  color: #303133;
+.compare-query-row--second {
+  margin-top: 8px;
 }
 
-.selected-supplier {
-  font-size: 13px;
-  color: #409EFF;
+.compare-query-control {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  flex-shrink: 0;
 }
 
-.query-container {
-  margin: 16px 16px 8px;
+.compare-query-control.el-select,
+.compare-query-control.el-input {
+  width: 160px !important;
+}
+
+.compare-query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 勾选列 / 操作列用 sticky（不用 fixed），悬停整行可同色高亮 */
+.material-compare-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.material-compare-page .apply-main-table ::v-deep th.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep td.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep th.el-table-column--selection,
+.material-compare-page .apply-main-table ::v-deep td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep td.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep td.el-table-column--selection {
+  background-color: #fff;
+  border-right: 1px solid #e2e8f0;
+}
+
+.material-compare-page .apply-main-table ::v-deep th.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep th.el-table-column--selection {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+.material-compare-page .apply-main-table ::v-deep th.apply-action-col,
+.material-compare-page .apply-main-table ::v-deep td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff;
+  border-left: 1px solid #e2e8f0;
+}
+
+.material-compare-page .apply-main-table ::v-deep th.apply-action-col {
+  right: 0 !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped td.apply-select-col,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped td.el-table-column--selection,
+.material-compare-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped td.apply-action-col {
+  background-color: #fafafa;
+}
+
+.material-compare-page .apply-main-table ::v-deep td.apply-select-col .cell,
+.material-compare-page .apply-main-table ::v-deep td.el-table-column--selection .cell,
+.material-compare-page .apply-main-table ::v-deep td.apply-action-col .cell,
+.material-compare-page .apply-main-table ::v-deep th.apply-select-col .cell,
+.material-compare-page .apply-main-table ::v-deep th.el-table-column--selection .cell,
+.material-compare-page .apply-main-table ::v-deep th.apply-action-col .cell {
+  background-color: transparent !important;
 }
 
 .app-container > .el-form .el-row {
@@ -939,7 +1223,7 @@ export default {
 }
 
 .table-container {
-  padding: 16px;
+  padding: 0;
 }
 
 /* 表格单元格不换行 */
@@ -1071,7 +1355,45 @@ export default {
   white-space: nowrap !important;
 }
 
-/* 表格滚动条样式 */
+/* 表格滚动条：横向加粗便于拖动 */
+.material-compare-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.material-compare-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+.material-compare-page .apply-main-table ::v-deep .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #888 !important;
+}
+
+/* 弹窗等其它表格沿用较细滚动条 */
 .el-table__body-wrapper::-webkit-scrollbar,
 .el-table__fixed-body-wrapper::-webkit-scrollbar,
 .el-table__fixed-right::-webkit-scrollbar,
@@ -1149,9 +1471,17 @@ export default {
 </style>
 
 <style>
-/* 与到货验收 inWarehouse/audit 页非 scoped 块一致：app-container 左右 8px、弹窗遮罩水平外扩 8px（见 .app-container.inWarehouse-audit-page .local-modal-mask） */
+/* 与到货验收一致：左右/上下均为 8px，底部与搜索区顶部留白对齐 */
 .app-container.material-compare-page {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
 }
