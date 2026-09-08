@@ -395,7 +395,7 @@
           />
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150" fixed="right">
+      <el-table-column label="操作" align="center" class-name="apply-action-col" width="150">
         <template slot-scope="scope">
           <template v-if="queryParams.fixedNumberType === '1'">
             <el-button
@@ -1872,7 +1872,8 @@ export default {
     fixedNumberRowClassName({ row, rowIndex }) {
       void this.rowHighlightTick;
       const classes = ['fixed-number-row-' + rowIndex];
-      if (row && row.id != null && this.ids.indexOf(row.id) !== -1) {
+      const rid = row && row.id != null ? String(row.id) : '';
+      if (rid && this.ids.some(id => String(id) === rid)) {
         classes.push('apply-row-selected');
       }
       return classes.join(' ');
