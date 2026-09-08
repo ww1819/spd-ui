@@ -1,208 +1,223 @@
 <template>
   <div class="app-container list-page finance-category-page">
-    <el-row :gutter="20">
-      <!-- 左侧固定高度树形结构 -->
-      <el-col :span="4">
-        <el-card class="tree-card">
-          <el-tree
-            :data="treeData"
-            :props="treeProps"
-            node-key="financeCategoryId"
-            highlight-current
-            :default-expand-all="true"
-            style="height: calc(100vh - 180px); overflow-y: auto"
-          >
-            <span slot-scope="{ node }" class="custom-tree-node">
-              <i class="el-icon-folder-opened" />
-              <span>{{ node.label }}</span>
-            </span>
-          </el-tree>
-        </el-card>
-      </el-col>
-
-      <!-- 右侧内容区域 -->
-      <el-col :span="20">
-        <div class="query-container" v-show="showSearch">
-          <div class="form-fields-container list-query-panel">
-            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-              <more-search-bar
-                ref="moreSearchBar"
-                v-model="moreSearchTypes"
-                :options="moreSearchOptions"
-                :storage-key="moreSearchStorageKey"
-                :default-types="builtInMoreSearchDefaults"
-                :auto-load="false"
-                @change="onMoreSearchTypesChange"
-                @search="handleQuery"
-                @reset="resetQuery"
-              >
-                <div
-                  v-for="t in moreSearchTypes"
-                  :key="t"
-                  class="more-search-dynamic-field more-search-field--text"
-                >
-                  <el-input
-                    v-model="queryParams[t]"
-                    :placeholder="moreSearchPlaceholderFor(t)"
-                    clearable
-                    class="more-search-input more-search-input--dynamic"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </div>
-              </more-search-bar>
-            </el-form>
+    <el-row :gutter="8" class="fc-layout-row">
+      <!-- 左侧分类树（对齐耗材对照左侧列表） -->
+      <el-col :span="5" class="fc-left-col">
+        <div class="fc-side-panel" ref="leftStack">
+          <div class="fc-side-header">
+            <span>全部分类</span>
+          </div>
+          <div class="fc-side-list">
+            <el-tree
+              ref="categoryTree"
+              :data="treeData"
+              :props="treeProps"
+              node-key="financeCategoryId"
+              highlight-current
+              :default-expand-all="true"
+              :expand-on-click-node="false"
+              @node-click="handleNodeClick"
+            >
+              <span slot-scope="{ node }" class="custom-tree-node">
+                <i class="el-icon-folder-opened" />
+                <span>{{ node.label }}</span>
+              </span>
+            </el-tree>
           </div>
         </div>
+      </el-col>
 
-        <el-row :gutter="0" class="mb8 list-toolbar">
-          <div class="list-toolbar-left">
-            <el-button
-              type="primary"
-              size="small"
-              class="spd-btn spd-btn--primary"
-              @click="handleAdd"
-              v-hasPermi="['foundation:financeCategory:add']"
-            >新增</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="single"
-              @click="handleUpdate"
-              v-hasPermi="['foundation:financeCategory:edit']"
-            >修改</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="single"
-              @click="handleDelete"
-              v-hasPermi="['foundation:financeCategory:remove']"
-            >删除</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="multiple"
-              @click="handleUpdateReferred"
-              v-hasPermi="['foundation:financeCategory:updateReferred']"
-            >更新简码</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              @click="handleExport"
-              v-hasPermi="['foundation:financeCategory:export']"
-            >导出</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              @click="handleImport('add')"
-              v-hasPermi="['foundation:financeCategory:import']"
-            >新增导入</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              @click="handleImport('update')"
-              v-hasPermi="['foundation:financeCategory:import']"
-            >更新导入</el-button>
+      <!-- 右侧：查询 / 工具栏 / 明细框 -->
+      <el-col :span="19" class="fc-right-col">
+        <div class="fc-main">
+          <div class="form-fields-container list-query-panel" v-show="showSearch">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <div class="fc-query-row">
+                <el-input
+                  v-model="queryParams.financeCategoryCode"
+                  placeholder="财务分类编码"
+                  clearable
+                  class="fc-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.financeCategoryName"
+                  placeholder="财务分类名称"
+                  clearable
+                  class="fc-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <div class="fc-query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
+              </div>
+            </el-form>
           </div>
-          <div class="list-toolbar-right">
-            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-          </div>
-        </el-row>
 
-        <!-- 数据表格 -->
-        <el-table v-loading="loading" :data="financeCategoryList" :row-class-name="financeCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 280px)" stripe>
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="120"/>
-          <el-table-column label="财务类别名称" align="center" prop="financeCategoryName" width="180"/>
-          <el-table-column label="HIS系统ID" align="center" prop="hisId" width="120" show-overflow-tooltip/>
-          <el-table-column label="简码" align="center" prop="referredName" width="100" show-overflow-tooltip/>
-          <el-table-column label="地址" align="center" prop="financeCategoryAddress" min-width="120" show-overflow-tooltip/>
-          <el-table-column label="联系方式" align="center" prop="financeCategoryContact" width="120" show-overflow-tooltip/>
-          <el-table-column label="使用状态" align="center" prop="isUse" width="100">
-            <template slot-scope="scope">
-              <dict-tag :options="dict.type.is_use_status" :value="scope.row.isUse"/>
-            </template>
-          </el-table-column>
-          <el-table-column label="组织结构ID" align="center" prop="tenantId" width="110" show-overflow-tooltip/>
-          <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip/>
-          <el-table-column label="创建日期" align="center" prop="createTime" width="100">
-            <template slot-scope="scope">
-              <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
-            <template slot-scope="scope">
+          <el-row :gutter="0" class="list-toolbar fc-toolbar">
+            <div class="list-toolbar-left">
+              <el-button
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                @click="handleAdd"
+                v-hasPermi="['foundation:financeCategory:add']"
+              >新增</el-button>
               <el-button
                 size="small"
-                type="text"
-                @click="handleUpdate(scope.row)"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleUpdate"
                 v-hasPermi="['foundation:financeCategory:edit']"
               >修改</el-button>
               <el-button
                 size="small"
-                type="text"
-                @click="handleDelete(scope.row)"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleDelete"
                 v-hasPermi="['foundation:financeCategory:remove']"
               >删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="multiple"
+                @click="handleUpdateReferred"
+                v-hasPermi="['foundation:financeCategory:updateReferred']"
+              >更新简码</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleExport"
+                v-hasPermi="['foundation:financeCategory:export']"
+              >导出</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('add')"
+                v-hasPermi="['foundation:financeCategory:import']"
+              >新增导入</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('update')"
+                v-hasPermi="['foundation:financeCategory:import']"
+              >更新导入</el-button>
+            </div>
+            <div class="list-toolbar-right">
+              <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+            </div>
+          </el-row>
 
-        <!-- 分页组件 -->
-        <pagination
-          v-show="total>0"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
-
-        <div v-if="upload.open" class="local-modal-mask">
-          <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
-            <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-            <el-alert
-              v-if="factoryImportRequiresHisId"
-              type="warning"
-              :closable="false"
-              show-icon
-              style="margin-bottom:12px;"
-              title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
-            />
-            <p v-if="upload.mode === 'add'" style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-              <strong>新增导入</strong>：与库房分类一致，按<strong>财务分类编码</strong>匹配组织机构数据；仅允许新增（库中已存在相同编码则整单校验不通过）。先校验并确认后写入。
-            </p>
-            <p v-else style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-              <strong>更新导入</strong>：与库房分类一致，Excel 须含<strong>财务分类ID、财务分类名称</strong>；仅更新名称与拼音简码，不改编码与 HIS ID。先校验并确认后写入。
-            </p>
-            <el-upload
-              ref="upload"
-              :limit="1"
-              accept=".xlsx, .xls"
-              :disabled="upload.isUploading"
-              :http-request="noopFinanceUpload"
-              :on-change="handleFinanceImportFileChange"
-              :on-remove="handleFinanceImportFileRemove"
-              :auto-upload="false"
-              drag
+          <div class="apply-table-panel" ref="tablePanel">
+            <el-table
+              ref="financeCategoryTable"
+              v-loading="loading"
+              :data="financeCategoryList"
+              class="apply-main-table"
+              border
+              stripe
+              :height="mainTableHeight"
+              :row-class-name="financeCategoryRowClassName"
+              @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
             >
-              <i class="el-icon-upload"></i>
-              <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-              <div class="el-upload__tip text-center" slot="tip">
-                <div v-if="upload.mode === 'update'" class="el-upload__tip">
-                  <el-checkbox v-model="upload.updateSupport" disabled /> 当前为更新导入（按主键 ID）
-                </div>
-                <span>仅允许 xls、xlsx。</span>
-                <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFinanceTemplate">下载模板</el-link>
-              </div>
-            </el-upload>
-            <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-              <el-button type="primary" :loading="upload.isUploading" @click="submitFinanceImportFlow">校验并导入</el-button>
-              <el-button @click="closeFinanceImport">取 消</el-button>
+              <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+              <el-table-column label="序号" align="center" prop="index" width="70" show-overflow-tooltip />
+              <el-table-column label="财务类别编码" align="center" prop="financeCategoryCode" width="150" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="财务类别名称" align="center" prop="financeCategoryName" min-width="180" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="HIS系统ID" align="center" prop="hisId" width="140" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="简码" align="center" prop="referredName" width="120" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="地址" align="center" prop="financeCategoryAddress" min-width="140" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="联系方式" align="center" prop="financeCategoryContact" width="140" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="使用状态" align="center" prop="isUse" width="120" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <dict-tag :options="dict.type.is_use_status" :value="scope.row.isUse"/>
+                </template>
+              </el-table-column>
+              <el-table-column label="组织结构ID" align="center" prop="tenantId" width="150" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="备注" align="center" prop="remark" min-width="140" show-overflow-tooltip />
+              <el-table-column label="创建日期" align="center" prop="createTime" width="150" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" align="center" class-name="apply-action-col" width="140">
+                <template slot-scope="scope">
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleUpdate(scope.row)"
+                    v-hasPermi="['foundation:financeCategory:edit']"
+                  >修改</el-button>
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleDelete(scope.row)"
+                    v-hasPermi="['foundation:financeCategory:remove']"
+                  >删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div class="apply-pagination-wrap">
+              <pagination
+                v-show="total > 0"
+                :total="total"
+                :page.sync="queryParams.pageNum"
+                :limit.sync="queryParams.pageSize"
+                @pagination="getList"
+              />
             </div>
           </div>
         </div>
       </el-col>
     </el-row>
+
+    <div v-if="upload.open" class="local-modal-mask">
+      <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
+        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
+        <el-alert
+          v-if="factoryImportRequiresHisId"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom:12px;"
+          title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
+        />
+        <p v-if="upload.mode === 'add'" style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+          <strong>新增导入</strong>：与库房分类一致，按<strong>财务分类编码</strong>匹配组织机构数据；仅允许新增（库中已存在相同编码则整单校验不通过）。先校验并确认后写入。
+        </p>
+        <p v-else style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
+          <strong>更新导入</strong>：与库房分类一致，Excel 须含<strong>财务分类ID、财务分类名称</strong>；仅更新名称与拼音简码，不改编码与 HIS ID。先校验并确认后写入。
+        </p>
+        <el-upload
+          ref="upload"
+          :limit="1"
+          accept=".xlsx, .xls"
+          :disabled="upload.isUploading"
+          :http-request="noopFinanceUpload"
+          :on-change="handleFinanceImportFileChange"
+          :on-remove="handleFinanceImportFileRemove"
+          :auto-upload="false"
+          drag
+        >
+          <i class="el-icon-upload"></i>
+          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+          <div class="el-upload__tip text-center" slot="tip">
+            <div v-if="upload.mode === 'update'" class="el-upload__tip">
+              <el-checkbox v-model="upload.updateSupport" disabled /> 当前为更新导入（按主键 ID）
+            </div>
+            <span>仅允许 xls、xlsx。</span>
+            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFinanceTemplate">下载模板</el-link>
+          </div>
+        </el-upload>
+        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
+          <el-button type="primary" :loading="upload.isUploading" @click="submitFinanceImportFlow">校验并导入</el-button>
+          <el-button @click="closeFinanceImport">取 消</el-button>
+        </div>
+      </div>
+    </div>
 
     <el-dialog
       :title="importPreview.title"
@@ -290,7 +305,7 @@
 </template>
 
 <script>
-import { listFinanceCategory, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred, validateFinanceCategoryImportAdd, validateFinanceCategoryImportUpdate, importFinanceCategoryAddData, importFinanceCategoryUpdateData } from "@/api/foundation/financeCategory";
+import { listFinanceCategory, listFinanceCategoryAll, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred, validateFinanceCategoryImportAdd, validateFinanceCategoryImportUpdate, importFinanceCategoryAddData, importFinanceCategoryUpdateData } from "@/api/foundation/financeCategory";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { mapGetters } from "vuex";
 
@@ -301,43 +316,33 @@ export default {
     ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
     isDisabled() {
       return this.form.financeCategoryId != null;
-    },
-    moreSearchStorageKey() {
-      return "spd.foundation.financeCategory.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return ["financeCategoryCode", "financeCategoryName"];
     }
   },
   data() {
     return {
-      // 树形数据配置
       treeData: [],
       treeProps: {
         label: 'financeCategoryName',
         children: 'children'
       },
-      // 表格相关
+      selectedCategoryId: null,
       loading: true,
       financeCategoryList: [],
       total: 0,
       ids: [],
+      rowHighlightTick: 0,
       single: true,
       multiple: true,
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { value: "financeCategoryCode", label: "财务分类编码" },
-        { value: "financeCategoryName", label: "财务分类名称" }
-      ],
-      // 查询参数
+      mainTableHeight: 400,
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         financeCategoryCode: null,
         financeCategoryName: null,
+        orderByColumn: null,
+        isAsc: null
       },
-      // 表单相关
       form: {},
       open: false,
       title: "",
@@ -379,57 +384,88 @@ export default {
       }
     };
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
+    this.getTreeList();
+  },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      setTimeout(() => this.updateMainTableHeight(), 80);
+      setTimeout(() => this.updateMainTableHeight(), 200);
+    });
+    window.addEventListener('resize', this.updateMainTableHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight);
   },
   methods: {
-    moreSearchPlaceholderFor(t) {
-      const map = { financeCategoryCode: "财务分类编码", financeCategoryName: "财务分类名称" };
-      return map[t] || "请输入";
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
+    /** 明细框高度：底边对齐左侧分类面板 */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const left = this.$refs.leftStack;
+      if (!left || !left.getBoundingClientRect) return;
+      const panelTop = panel.getBoundingClientRect().top;
+      const targetBottom = left.getBoundingClientRect().bottom;
+      const pagEl = panel.querySelector('.apply-pagination-wrap');
+      let pagH = pagEl ? pagEl.getBoundingClientRect().height : 52;
+      if (pagH < 40) pagH = 52;
+      const borderY =
+        (parseFloat(window.getComputedStyle(panel).borderTopWidth) || 0) +
+        (parseFloat(window.getComputedStyle(panel).borderBottomWidth) || 0);
+      const next = Math.max(240, Math.floor(targetBottom - panelTop - pagH - borderY));
+      if (Math.abs((this.mainTableHeight || 0) - next) >= 2) {
+        this.mainTableHeight = next;
       }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      ["financeCategoryCode", "financeCategoryName"].forEach((k) => {
-        if (!set.has(k)) target[k] = null;
+      this.$nextTick(() => {
+        if (this.$refs.financeCategoryTable && this.$refs.financeCategoryTable.doLayout) {
+          this.$refs.financeCategoryTable.doLayout();
+        }
+        const overshoot = panel.getBoundingClientRect().bottom - left.getBoundingClientRect().bottom;
+        if (overshoot > 2) {
+          this.mainTableHeight = Math.max(240, Math.floor(this.mainTableHeight - overshoot));
+          this.$nextTick(() => {
+            if (this.$refs.financeCategoryTable && this.$refs.financeCategoryTable.doLayout) {
+              this.$refs.financeCategoryTable.doLayout();
+            }
+          });
+        }
       });
     },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
+    getTreeList() {
+      listFinanceCategoryAll({}).then(response => {
+        const rows = Array.isArray(response) ? response : ((response && response.data) || []);
+        this.treeData = [{
+          financeCategoryId: 'root',
+          financeCategoryName: '全部分类',
+          children: rows || []
+        }];
+        this.$nextTick(() => this.updateMainTableHeight());
+      }).catch(() => {
+        this.treeData = [{
+          financeCategoryId: 'root',
+          financeCategoryName: '全部分类',
+          children: []
+        }];
+      });
     },
-    // 获取数据列表
     getList() {
       this.loading = true;
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
       listFinanceCategory(params)
         .then(response => {
-          this.financeCategoryList = (response && response.rows) || [];
+          const rows = (response && response.rows) || [];
+          this.financeCategoryList = rows.map((item, index) => ({
+            ...item,
+            index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1
+          }));
           this.total = (response && response.total) || 0;
-          this.treeData = [{
-            financeCategoryId: 'root',
-            financeCategoryName: '全部分类',
-            children: this.financeCategoryList
-          }];
         })
         .catch(() => {
           this.financeCategoryList = [];
@@ -437,34 +473,75 @@ export default {
         })
         .finally(() => {
           this.loading = false;
+          this.$nextTick(() => this.updateMainTableHeight());
         });
     },
-    // 树节点点击事件
     handleNodeClick(data) {
-      if (data.financeCategoryId !== 'root') {
-        // 这里可以添加节点筛选逻辑
+      if (!data || data.financeCategoryId === 'root') {
+        this.selectedCategoryId = null;
+        this.queryParams.financeCategoryCode = null;
+        this.queryParams.financeCategoryName = null;
+      } else {
+        this.selectedCategoryId = data.financeCategoryId;
+        this.queryParams.financeCategoryCode = data.financeCategoryCode || null;
+        this.queryParams.financeCategoryName = null;
       }
+      this.handleQuery();
     },
-    // 搜索相关方法
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
     resetQuery() {
-      this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.selectedCategoryId = null;
       this.queryParams.financeCategoryCode = null;
       this.queryParams.financeCategoryName = null;
-      this.onMoreSearchTypesChange();
+      this.queryParams.orderByColumn = null;
+      this.queryParams.isAsc = null;
+      if (this.$refs.financeCategoryTable && this.$refs.financeCategoryTable.clearSort) {
+        this.$refs.financeCategoryTable.clearSort();
+      }
+      if (this.$refs.categoryTree && this.$refs.categoryTree.setCurrentKey) {
+        this.$refs.categoryTree.setCurrentKey('root');
+      }
       this.handleQuery();
     },
-    // 表格多选
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        financeCategoryCode: 'finance_category_code',
+        financeCategoryName: 'finance_category_name',
+        hisId: 'his_id',
+        referredName: 'referred_name',
+        financeCategoryAddress: 'finance_category_address',
+        financeCategoryContact: 'finance_category_contact',
+        isUse: 'is_use',
+        tenantId: 'tenant_id',
+        createTime: 'create_time'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = null;
+        this.queryParams.isAsc = null;
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.financeCategoryId);
+      this.ids = (selection || []).map(item => item.financeCategoryId);
       this.single = selection.length !== 1;
       this.multiple = !selection.length;
+      this.rowHighlightTick += 1;
     },
-    // 新增/修改操作
+    financeCategoryRowClassName({ row }) {
+      void this.rowHighlightTick;
+      const rid = row && row.financeCategoryId != null ? String(row.financeCategoryId) : '';
+      if (rid && this.ids.some(id => String(id) === rid)) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
     handleAdd() {
       this.reset();
       this.form.tenantId = this.customerId || null;
@@ -481,7 +558,6 @@ export default {
         this.title = "修改财务分类";
       });
     },
-    // 表单提交
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
@@ -490,31 +566,29 @@ export default {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
+              this.getTreeList();
             });
           } else {
             addFinanceCategory(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
+              this.getTreeList();
             });
           }
         }
       });
     },
-    // 删除操作
     handleDelete(row) {
       const financeCategoryIds = row.financeCategoryId || this.ids;
       this.$modal.confirm('确认删除选中的数据？').then(() => {
         return delFinanceCategory(financeCategoryIds);
       }).then(() => {
         this.getList();
+        this.getTreeList();
         this.$modal.msgSuccess("删除成功");
       });
     },
-    financeCategoryIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
-    },
-    // 其他辅助方法
     cancel() {
       this.open = false;
       this.reset();
@@ -534,13 +608,10 @@ export default {
       };
       this.resetForm("form");
     },
-    // 导出功能
     handleExport() {
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
       this.download('foundation/financeCategory/export', params, `financeCategory_${new Date().getTime()}.xlsx`);
     },
-    /** 更新财务分类名称简码 */
     handleUpdateReferred() {
       if (!this.ids || this.ids.length === 0) {
         this.$modal.msgWarning("请先选择要更新简码的财务分类");
@@ -626,6 +697,7 @@ export default {
         this.$alert("<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'>" + res2.msg + "</div>", "导入结果", { dangerouslyUseHTMLString: true });
         this.closeFinanceImport();
         this.getList();
+        this.getTreeList();
       } catch (e) {
         if (e !== "cancel" && e !== "close") {
           /* request 已提示 */
@@ -639,21 +711,302 @@ export default {
 </script>
 
 <style scoped>
-.tree-card {
-  height: calc(100vh - 150px);
+.fc-layout-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
-.tree-card ::v-deep .el-card__body {
-  padding: 10px;
+
+.fc-left-col,
+.fc-right-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
 }
+
+.fc-side-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.fc-side-header {
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #EBEEF5;
+  font-weight: bold;
+  font-size: 14px;
+  color: #303133;
+  flex: 0 0 auto;
+}
+
+.fc-side-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
 .custom-tree-node {
   font-size: 14px;
   display: flex;
   align-items: center;
 }
+
 .custom-tree-node i {
   margin-right: 5px;
   color: #409EFF;
 }
+
+.fc-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  gap: 4px;
+}
+
+.finance-category-page .fc-main > .list-query-panel,
+.finance-category-page .fc-main > .fc-toolbar,
+.finance-category-page .fc-main > .apply-table-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.finance-category-page .fc-toolbar.list-toolbar {
+  margin: 0 !important;
+  padding: 6px 12px !important;
+}
+
+.fc-query-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.fc-query-control {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  flex-shrink: 0;
+}
+
+.fc-query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.apply-table-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #e8ecf1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05) !important;
+  overflow: hidden;
+  height: auto !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.apply-table-panel > .apply-main-table {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-bottom: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  overflow: visible !important;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
+.finance-category-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__header-wrapper th,
+.finance-category-page .apply-main-table ::v-deep .el-table__header-wrapper th.el-table__cell,
+.finance-category-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th,
+.finance-category-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th.el-table__cell,
+.finance-category-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th,
+.finance-category-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__header-wrapper th .cell,
+.finance-category-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th .cell,
+.finance-category-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep td .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr > td,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-select-col,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-action-col,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.finance-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.finance-category-page .apply-main-table ::v-deep .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.finance-category-page .apply-main-table ::v-deep .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.finance-category-page .apply-main-table ::v-deep .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.finance-category-page .apply-main-table ::v-deep th.apply-select-col,
+.finance-category-page .apply-main-table ::v-deep td.apply-select-col,
+.finance-category-page .apply-main-table ::v-deep th.el-table-column--selection,
+.finance-category-page .apply-main-table ::v-deep td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+}
+
+.finance-category-page .apply-main-table ::v-deep th.apply-action-col,
+.finance-category-page .apply-main-table ::v-deep td.apply-action-col {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 3;
+}
+
+.finance-category-page .apply-main-table ::v-deep td.apply-select-col,
+.finance-category-page .apply-main-table ::v-deep td.el-table-column--selection,
+.finance-category-page .apply-main-table ::v-deep td.apply-action-col {
+  background-color: #fff;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+}
+
+.finance-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399 !important;
+}
+
 .local-modal-mask {
   position: fixed;
   left: 0;
@@ -666,6 +1019,7 @@ export default {
   align-items: center;
   z-index: 1000;
 }
+
 .local-modal-content {
   background-color: #fff;
   padding: 24px;
@@ -676,15 +1030,10 @@ export default {
   overflow: auto;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
+
 .dialog-footer {
   text-align: right;
   margin-top: 16px;
-}
-
-.finance-category-page {
-  position: relative;
-  min-height: calc(100vh - 84px);
-  width: 100%;
 }
 
 .page-drawer-mask {
@@ -750,5 +1099,41 @@ export default {
 
 .page-drawer-footer .el-button {
   margin: 0 8px;
+}
+</style>
+
+<style>
+.app-container.finance-category-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 8px !important;
+}
+
+.app-container.finance-category-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-container.finance-category-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+}
+
+.app-container.finance-category-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.finance-category-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.finance-category-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.finance-category-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
 </style>
