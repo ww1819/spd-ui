@@ -1,167 +1,177 @@
 <!--生产厂家信息维护-->
 <template>
-  <div class="app-container list-page factory-container">
-    <el-row :gutter="20">
-      <!-- 左侧厂家列表 -->
-      <el-col :span="6">
-        <el-card class="factory-card">
-          <div slot="header" class="factory-header">
+  <div class="app-container list-page factory-page">
+    <el-row :gutter="8" class="factory-layout-row">
+      <!-- 左侧厂家列表（对齐耗材对照） -->
+      <el-col :span="5" class="factory-left-col">
+        <div class="factory-side-panel" ref="leftStack">
+          <div class="factory-side-header">
             <span>厂家</span>
           </div>
-          <div class="factory-list">
+          <div class="factory-side-list">
             <div
               v-for="factory in allFactoryList"
               :key="factory.factoryId"
               :class="['factory-item', { 'active': selectedFactoryId === factory.factoryId }]"
-              @click="handleFactoryClick(factory)">
+              @click="handleFactoryClick(factory)"
+            >
               {{ factory.factoryName }}
             </div>
           </div>
-        </el-card>
+        </div>
       </el-col>
 
-      <!-- 右侧表格区域 -->
-      <el-col :span="18">
-    <div class="query-container" v-show="showSearch">
-      <div class="form-fields-container list-query-panel">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-          <more-search-bar
-            ref="moreSearchBar"
-            v-model="moreSearchTypes"
-            :options="moreSearchOptions"
-            :storage-key="moreSearchStorageKey"
-            :default-types="builtInMoreSearchDefaults"
-            :auto-load="false"
-            @change="onMoreSearchTypesChange"
-            @search="handleQuery"
-            @reset="resetQuery"
-          >
-            <div
-              v-for="t in moreSearchTypes"
-              :key="t"
-              class="more-search-dynamic-field more-search-field--text"
+      <!-- 右侧：查询 / 工具栏 / 明细框 -->
+      <el-col :span="19" class="factory-right-col">
+        <div class="factory-main">
+          <div class="form-fields-container list-query-panel" v-show="showSearch">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <div class="factory-query-row">
+                <el-input
+                  v-model="queryParams.factoryCode"
+                  placeholder="厂家编码"
+                  clearable
+                  class="factory-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.factoryName"
+                  placeholder="厂家名称"
+                  clearable
+                  class="factory-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <div class="factory-query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
+              </div>
+            </el-form>
+          </div>
+
+          <el-row :gutter="0" class="list-toolbar factory-toolbar">
+            <div class="list-toolbar-left">
+              <el-button
+                v-if="!isZqTcmTenant"
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                @click="handleAdd"
+                v-hasPermi="['foundation:factory:add']"
+              >新增</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleUpdate"
+                v-hasPermi="['foundation:factory:edit']"
+              >修改</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleDelete"
+                v-hasPermi="['foundation:factory:remove']"
+              >删除</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="multiple"
+                @click="handleUpdateReferred"
+                v-hasPermi="['foundation:factory:updateReferred']"
+              >更新简码</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleExport"
+                v-hasPermi="['foundation:factory:export']"
+              >导出</el-button>
+              <el-button
+                v-if="!isZqTcmTenant"
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('add')"
+                v-hasPermi="['foundation:factory:import']"
+              >新增导入</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('update')"
+                v-hasPermi="['foundation:factory:import']"
+              >更新导入</el-button>
+              <msun-his-sync-button sync-type="producers" label="HIS厂家同步" :inline="true" :refresh="getList" />
+            </div>
+            <div class="list-toolbar-right">
+              <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+            </div>
+          </el-row>
+
+          <div class="apply-table-panel" ref="tablePanel">
+            <el-table
+              ref="factoryTable"
+              v-loading="loading"
+              :data="factoryList"
+              class="apply-main-table"
+              border
+              stripe
+              :height="mainTableHeight"
+              :row-class-name="factoryRowClassName"
+              @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
             >
-              <el-input
-                v-model="queryParams[t]"
-                :placeholder="moreSearchPlaceholderFor(t)"
-                clearable
-                class="more-search-input more-search-input--dynamic"
-                @keyup.enter.native="handleQuery"
+              <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+              <el-table-column label="序号" align="center" prop="index" width="70" show-overflow-tooltip />
+              <el-table-column label="厂家编码" align="center" prop="factoryCode" width="150" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="HIS生产厂家ID" align="center" prop="hisId" width="160" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="厂家名称" align="center" prop="factoryName" min-width="220" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="厂家地址" align="center" prop="factoryAddress" min-width="220" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="厂家联系方式" align="center" prop="factoryContact" width="150" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="状态" align="center" prop="factoryStatus" width="110" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <dict-tag :options="dict.type.is_use_status" :value="scope.row.factoryStatus"/>
+                </template>
+              </el-table-column>
+              <el-table-column label="创建日期" align="center" prop="createTime" width="150" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" align="center" class-name="apply-action-col" width="240">
+                <template slot-scope="scope">
+                  <el-button
+                    size="small"
+                    type="text"
+                    icon="el-icon-document"
+                    @click="openChangeLog(scope.row)"
+                    v-hasPermi="['foundation:factory:list']"
+                  >变更记录</el-button>
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleUpdate(scope.row)"
+                    v-hasPermi="['foundation:factory:edit']"
+                  >修改</el-button>
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleDelete(scope.row)"
+                    v-hasPermi="['foundation:factory:remove']"
+                  >删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div class="apply-pagination-wrap">
+              <pagination
+                v-show="total > 0"
+                :total="total"
+                :page.sync="queryParams.pageNum"
+                :limit.sync="queryParams.pageSize"
+                @pagination="getList"
               />
             </div>
-          </more-search-bar>
-        </el-form>
-      </div>
-    </div>
-
-    <el-row :gutter="0" class="mb8 list-toolbar">
-      <div class="list-toolbar-left">
-        <el-button
-          v-if="!isZqTcmTenant"
-          type="primary"
-          size="small"
-          class="spd-btn spd-btn--primary"
-          @click="handleAdd"
-          v-hasPermi="['foundation:factory:add']"
-        >新增</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['foundation:factory:edit']"
-        >修改</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          :disabled="single"
-          @click="handleDelete"
-          v-hasPermi="['foundation:factory:remove']"
-        >删除</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          :disabled="multiple"
-          @click="handleUpdateReferred"
-          v-hasPermi="['foundation:factory:updateReferred']"
-        >更新简码</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          @click="handleExport"
-          v-hasPermi="['foundation:factory:export']"
-        >导出</el-button>
-        <el-button
-          v-if="!isZqTcmTenant"
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          @click="handleImport('add')"
-          v-hasPermi="['foundation:factory:import']"
-        >新增导入</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          @click="handleImport('update')"
-          v-hasPermi="['foundation:factory:import']"
-        >更新导入</el-button>
-        <msun-his-sync-button sync-type="producers" label="HIS厂家同步" :inline="true" :refresh="getList" />
-      </div>
-      <div class="list-toolbar-right">
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-      </div>
-    </el-row>
-
-    <el-table v-loading="loading" :data="factoryList" :row-class-name="factoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
-      <el-table-column label="厂家编码" align="center" prop="factoryCode" width="150" show-overflow-tooltip />
-      <el-table-column label="HIS生产厂家ID" align="center" prop="hisId" width="120" show-overflow-tooltip />
-      <el-table-column label="厂家名称" align="center" prop="factoryName" min-width="250" show-overflow-tooltip />
-      <el-table-column label="厂家地址" align="center" prop="factoryAddress" min-width="300" show-overflow-tooltip />
-      <el-table-column label="厂家联系方式" align="center" prop="factoryContact" width="150" show-overflow-tooltip />
-      <el-table-column label="状态" align="center" prop="factoryStatus" width="100" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.is_use_status" :value="scope.row.factoryStatus"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="创建日期" align="center" prop="createTime" width="120" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
-        <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-document"
-            @click="openChangeLog(scope.row)"
-            v-hasPermi="['foundation:factory:list']"
-          >变更记录</el-button>
-          <el-button
-            size="small"
-            type="text"
-
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['foundation:factory:edit']"
-          >修改</el-button>
-          <el-button
-            size="small"
-            type="text"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['foundation:factory:remove']"
-          >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+          </div>
+        </div>
       </el-col>
     </el-row>
 
@@ -240,7 +250,7 @@
           <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
           <div class="el-upload__tip text-center" slot="tip">
             <div class="el-upload__tip" slot="tip">
-            <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
+              <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
             </div>
             <span>仅允许 xls、xlsx。</span>
             <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFactoryTemplate">下载模板</el-link>
@@ -279,18 +289,24 @@
       </span>
     </el-dialog>
 
-    <div v-if="changeLog.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 720px; min-width: 400px; min-height: auto; max-width: 92vw;">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">生产厂家变更记录 — {{ changeLog.factoryName }}</div>
-        <el-table v-loading="changeLog.loading" :data="changeLog.rows" max-height="420" size="small">
-          <el-table-column label="时间" prop="changeTime" width="160" />
-          <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
-          <el-table-column label="字段" prop="fieldLabel" width="100" show-overflow-tooltip />
-          <el-table-column label="原值" prop="oldValue" min-width="120" show-overflow-tooltip />
-          <el-table-column label="新值" prop="newValue" min-width="120" show-overflow-tooltip />
-        </el-table>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button @click="changeLog.open = false">关 闭</el-button>
+    <!-- 变更记录：右侧抽屉 -->
+    <div v-if="changeLog.open" class="change-log-drawer-mask" @click.self="closeChangeLog">
+      <div class="change-log-drawer-panel" @click.stop>
+        <div class="change-log-drawer-header">
+          <span class="change-log-drawer-title">生产厂家变更记录 — {{ changeLog.factoryName }}</span>
+          <i class="el-icon-close change-log-drawer-close" @click="closeChangeLog" />
+        </div>
+        <div class="change-log-drawer-body">
+          <el-table v-loading="changeLog.loading" :data="changeLog.rows" height="100%" size="small" border stripe>
+            <el-table-column label="时间" prop="changeTime" width="160" show-overflow-tooltip />
+            <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
+            <el-table-column label="字段" prop="fieldLabel" width="100" show-overflow-tooltip />
+            <el-table-column label="原值" prop="oldValue" min-width="120" show-overflow-tooltip />
+            <el-table-column label="新值" prop="newValue" min-width="120" show-overflow-tooltip />
+          </el-table>
+        </div>
+        <div class="change-log-drawer-footer">
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="closeChangeLog">关 闭</el-button>
         </div>
       </div>
     </div>
@@ -315,43 +331,23 @@ export default {
         return "保存后不可修改";
       }
       return "选填：HIS 生产厂家标识（不填不影响保存）";
-    },
-    moreSearchStorageKey() {
-      return "spd.foundation.factory.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return ["factoryCode", "factoryName"];
     }
   },
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
+      rowHighlightTick: 0,
       isDisabled: false,
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { value: "factoryCode", label: "厂家编码" },
-        { value: "factoryName", label: "厂家名称" }
-      ],
-      // 总条数
       total: 0,
-      // 厂家维护表格数据
       factoryList: [],
-      // 所有厂家列表（用于左侧列表）
       allFactoryList: [],
-      // 选中的厂家ID
       selectedFactoryId: null,
-      // 弹出层标题
+      mainTableHeight: 400,
       title: "",
-      // 是否显示弹出层
       open: false,
       upload: {
         open: false,
@@ -367,14 +363,12 @@ export default {
         factoryName: "",
         rows: []
       },
-      /** 导入解析结果预览（模板 el-dialog 依赖，必须在 data 中声明，否则渲染报错整页空白） */
       importPreview: {
         visible: false,
         title: "导入解析结果",
         rows: [],
         columns: []
       },
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -382,10 +376,10 @@ export default {
         factoryName: null,
         factoryAddress: null,
         factoryContact: null,
+        orderByColumn: null,
+        isAsc: null
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
         factoryName: [
           { required: true, message: "厂家名称不能为空", trigger: "blur" }
@@ -393,62 +387,79 @@ export default {
       }
     };
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
     this.getAllFactoryList();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      setTimeout(() => this.updateMainTableHeight(), 80);
+      setTimeout(() => this.updateMainTableHeight(), 200);
+    });
+    window.addEventListener('resize', this.updateMainTableHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight);
+  },
   methods: {
-    moreSearchPlaceholderFor(t) {
-      const map = { factoryCode: "厂家编码", factoryName: "厂家名称" };
-      return map[t] || "请输入";
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const left = this.$refs.leftStack;
+      if (!left || !left.getBoundingClientRect) return;
+      const panelTop = panel.getBoundingClientRect().top;
+      const targetBottom = left.getBoundingClientRect().bottom;
+      const pagEl = panel.querySelector('.apply-pagination-wrap');
+      let pagH = pagEl ? pagEl.getBoundingClientRect().height : 52;
+      if (pagH < 40) pagH = 52;
+      const borderY =
+        (parseFloat(window.getComputedStyle(panel).borderTopWidth) || 0) +
+        (parseFloat(window.getComputedStyle(panel).borderBottomWidth) || 0);
+      const next = Math.max(240, Math.floor(targetBottom - panelTop - pagH - borderY));
+      if (Math.abs((this.mainTableHeight || 0) - next) >= 2) {
+        this.mainTableHeight = next;
       }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      ["factoryCode", "factoryName"].forEach((k) => {
-        if (!set.has(k)) target[k] = null;
+      this.$nextTick(() => {
+        if (this.$refs.factoryTable && this.$refs.factoryTable.doLayout) {
+          this.$refs.factoryTable.doLayout();
+        }
+        const overshoot = panel.getBoundingClientRect().bottom - left.getBoundingClientRect().bottom;
+        if (overshoot > 2) {
+          this.mainTableHeight = Math.max(240, Math.floor(this.mainTableHeight - overshoot));
+          this.$nextTick(() => {
+            if (this.$refs.factoryTable && this.$refs.factoryTable.doLayout) {
+              this.$refs.factoryTable.doLayout();
+            }
+          });
+        }
       });
     },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
-    /** 获取所有厂家列表（用于左侧列表，与 listAll 一致，避免分页/权限与 list 不一致导致空白） */
     getAllFactoryList() {
       listFactoryAll({})
         .then((response) => {
           this.allFactoryList = Array.isArray(response) ? response : (response && response.rows) || [];
+          this.$nextTick(() => this.updateMainTableHeight());
         })
         .catch(() => {
           this.allFactoryList = [];
         });
     },
-    /** 查询厂家维护列表 */
     getList() {
       this.loading = true;
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
       listFactory(params)
         .then((response) => {
-          this.factoryList = (response && response.rows) || [];
+          const rows = (response && response.rows) || [];
+          this.factoryList = rows.map((item, index) => ({
+            ...item,
+            index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1
+          }));
           this.total = (response && response.total) || 0;
         })
         .catch(() => {
@@ -457,27 +468,23 @@ export default {
         })
         .finally(() => {
           this.loading = false;
+          this.$nextTick(() => this.updateMainTableHeight());
         });
     },
-    /** 厂家列表项点击 */
     handleFactoryClick(factory) {
       if (this.selectedFactoryId === factory.factoryId) {
-        // 如果点击的是已选中的项，则取消选择
         this.selectedFactoryId = null;
         this.queryParams.factoryName = null;
       } else {
-        // 选中新的厂家
         this.selectedFactoryId = factory.factoryId;
         this.queryParams.factoryName = factory.factoryName;
       }
       this.handleQuery();
     },
-    // 取消按钮
     cancel() {
       this.open = false;
       this.reset();
     },
-    // 表单重置
     reset() {
       this.form = {
         factoryId: null,
@@ -497,37 +504,63 @@ export default {
       };
       this.resetForm("form");
     },
-    factoryNameChange(val){
+    factoryNameChange(val) {
       const pinYinCode = pinyin(val, {
         pattern: 'first',
         toneType: 'none',
         type: 'array',
       }).join('').toUpperCase();
-
       this.form.factoryReferredCode = pinYinCode;
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
-      this.resetForm("queryForm");
       this.selectedFactoryId = null;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.queryParams.factoryCode = null;
       this.queryParams.factoryName = null;
-      this.onMoreSearchTypesChange();
+      this.queryParams.orderByColumn = null;
+      this.queryParams.isAsc = null;
+      if (this.$refs.factoryTable && this.$refs.factoryTable.clearSort) {
+        this.$refs.factoryTable.clearSort();
+      }
       this.handleQuery();
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.factoryId)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        factoryCode: 'factory_code',
+        hisId: 'his_id',
+        factoryName: 'factory_name',
+        factoryAddress: 'factory_address',
+        factoryContact: 'factory_contact',
+        factoryStatus: 'factory_status',
+        createTime: 'create_time'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = null;
+        this.queryParams.isAsc = null;
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
     },
-    /** 新增按钮操作 */
+    handleSelectionChange(selection) {
+      this.ids = (selection || []).map(item => item.factoryId);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
+      this.rowHighlightTick += 1;
+    },
+    factoryRowClassName({ row }) {
+      void this.rowHighlightTick;
+      const rid = row && row.factoryId != null ? String(row.factoryId) : '';
+      if (rid && this.ids.some(id => String(id) === rid)) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
     handleAdd() {
       if (this.isZqTcmTenant) {
         this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
@@ -539,10 +572,9 @@ export default {
       this.title = "添加厂家维护";
       this.form.factoryStatus = '1';
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
-      const factoryId = row.factoryId || this.ids
+      const factoryId = row.factoryId || this.ids;
       getFactory(factoryId).then(response => {
         this.form = response.data;
         this.open = true;
@@ -550,19 +582,18 @@ export default {
         this.title = "修改厂家维护";
       });
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.factoryId != null) {
-            updateFactory(this.form).then(response => {
+            updateFactory(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
               this.getAllFactoryList();
             });
           } else {
-            addFactory(this.form).then(response => {
+            addFactory(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -572,7 +603,6 @@ export default {
         }
       });
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const factoryIds = row.factoryId || this.ids;
       this.$modal.confirm('是否确认删除厂家维护编号为"' + factoryIds + '"的数据项？').then(function() {
@@ -583,16 +613,10 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    factoryIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
-    },
-    /** 导出按钮操作 */
     handleExport() {
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('foundation/factory/export', params, `factory_${new Date().getTime()}.xlsx`)
+      this.download('foundation/factory/export', params, `factory_${new Date().getTime()}.xlsx`);
     },
-    /** 更新厂家简码 */
     handleUpdateReferred() {
       if (!this.ids || this.ids.length === 0) {
         this.$modal.msgWarning("请先选择要更新简码的厂家");
@@ -647,6 +671,11 @@ export default {
       }).catch(() => {
         this.changeLog.loading = false;
       });
+    },
+    closeChangeLog() {
+      this.changeLog.open = false;
+      this.changeLog.rows = [];
+      this.changeLog.factoryName = "";
     },
     showImportPreviewFromPayload(payload, title) {
       const rows = (payload && payload.previewRows) || [];
@@ -709,6 +738,311 @@ export default {
 </script>
 
 <style scoped>
+.factory-layout-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.factory-left-col,
+.factory-right-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.factory-side-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.factory-side-header {
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #EBEEF5;
+  font-weight: bold;
+  font-size: 14px;
+  color: #303133;
+  flex: 0 0 auto;
+}
+
+.factory-side-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.factory-item {
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+  border-left: 3px solid transparent;
+}
+
+.factory-item:hover {
+  background-color: #D6EBFF;
+  color: #303133;
+}
+
+.factory-item.active {
+  background-color: #B8DAFF;
+  color: #303133;
+  border-left-color: #2563EB;
+  font-weight: 500;
+}
+
+.factory-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  gap: 4px;
+}
+
+.factory-page .factory-main > .list-query-panel,
+.factory-page .factory-main > .factory-toolbar,
+.factory-page .factory-main > .apply-table-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.factory-page .factory-toolbar.list-toolbar {
+  margin: 0 !important;
+  padding: 6px 12px !important;
+}
+
+.factory-query-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.factory-query-control {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  flex-shrink: 0;
+}
+
+.factory-query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.apply-table-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #e8ecf1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05) !important;
+  overflow: hidden;
+  height: auto !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.apply-table-panel > .apply-main-table {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-bottom: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  overflow: visible !important;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
+.factory-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__header-wrapper th,
+.factory-page .apply-main-table ::v-deep .el-table__header-wrapper th.el-table__cell,
+.factory-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th,
+.factory-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th.el-table__cell,
+.factory-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th,
+.factory-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__header-wrapper th .cell,
+.factory-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th .cell,
+.factory-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
+}
+
+.factory-page .apply-main-table ::v-deep td .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.factory-page .apply-main-table ::v-deep td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body tr > td,
+.factory-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.factory-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell,
+.factory-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-select-col,
+.factory-page .apply-main-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection,
+.factory-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-action-col,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.factory-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.factory-page .apply-main-table ::v-deep .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.factory-page .apply-main-table ::v-deep .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.factory-page .apply-main-table ::v-deep .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.factory-page .apply-main-table ::v-deep .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.factory-page .apply-main-table ::v-deep th.apply-select-col,
+.factory-page .apply-main-table ::v-deep td.apply-select-col,
+.factory-page .apply-main-table ::v-deep th.el-table-column--selection,
+.factory-page .apply-main-table ::v-deep td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+}
+
+.factory-page .apply-main-table ::v-deep th.apply-action-col,
+.factory-page .apply-main-table ::v-deep td.apply-action-col {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 3;
+}
+
+.factory-page .apply-main-table ::v-deep td.apply-select-col,
+.factory-page .apply-main-table ::v-deep td.el-table-column--selection,
+.factory-page .apply-main-table ::v-deep td.apply-action-col {
+  background-color: #fff;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+}
+
+.factory-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399 !important;
+}
+
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -800,94 +1134,107 @@ export default {
   margin: 0 8px;
 }
 
-/* 厂家卡片样式 */
-.factory-card {
-  margin-right: 15px;
-  height: calc(100vh - 180px);
+.change-log-drawer-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
   display: flex;
-  flex-direction: column;
+  justify-content: flex-end;
 }
 
-.factory-card ::v-deep .el-card__header {
-  padding: 18px 20px;
-  border-bottom: 1px solid #EBEEF5;
-  position: sticky;
-  top: 0;
+.change-log-drawer-panel {
+  width: 720px;
+  max-width: 92%;
+  height: 100%;
   background: #fff;
-  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.change-log-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.change-log-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 12px;
+}
+
+.change-log-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
   flex-shrink: 0;
 }
 
-.factory-card ::v-deep .el-card__body {
+.change-log-drawer-close:hover {
+  color: #409EFF;
+}
+
+.change-log-drawer-body {
   flex: 1;
-  padding: 0;
+  min-height: 0;
   overflow: hidden;
+  padding: 12px 16px;
+  box-sizing: border-box;
 }
 
-.factory-header {
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.factory-list {
-  height: 100%;
-  overflow-y: auto;
-  padding: 10px 0;
-}
-
-.factory-item {
-  padding: 12px 20px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #606266;
-  transition: all 0.3s;
-  border-left: 3px solid transparent;
-}
-
-.factory-item:hover {
-  background-color: #f5f7fa;
-  color: #409EFF;
-}
-
-.factory-item.active {
-  background-color: #ecf5ff;
-  color: #409EFF;
-  border-left-color: #409EFF;
-  font-weight: 500;
-}
-
-/* 查询条件容器 */
-.query-container {
+.change-log-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
   background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
-  width: 100%;
 }
+</style>
 
-/* 表格列不换行 */
-.el-table {
-  white-space: nowrap;
-}
-
-.el-table td,
-.el-table th {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 表格横向滚动 */
-.el-table__body-wrapper {
-  overflow-x: auto;
-}
-
-/* 确保厂家容器有相对定位，以便抽屉正确定位在内容区内 */
-.factory-container {
+<style>
+.app-container.factory-page {
   position: relative;
-  min-height: calc(100vh - 84px);
-  width: 100%;
-  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 8px !important;
+}
+
+.app-container.factory-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-container.factory-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+}
+
+.app-container.factory-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.factory-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.factory-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.factory-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
 </style>
