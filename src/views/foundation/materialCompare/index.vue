@@ -466,6 +466,7 @@ export default {
     this.$nextTick(() => {
       this.updateMainTableHeight();
       setTimeout(() => this.updateMainTableHeight(), 80);
+      setTimeout(() => this.updateMainTableHeight(), 200);
     });
     window.addEventListener('resize', this.updateMainTableHeight);
   },
@@ -473,18 +474,44 @@ export default {
     window.removeEventListener('resize', this.updateMainTableHeight);
   },
   methods: {
-    /** 明细表高度：填满明细框，分页区除外 */
+    /** 只改明细框高度：底边对齐左侧供应商框底边（不改左侧） */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
       if (!panel || !panel.getBoundingClientRect) return;
-      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
-      if (!panelH) return;
+      const pageEl = this.$el;
+      if (!pageEl) return;
+      const supplier = pageEl.querySelector('.supplier-container');
+      if (!supplier || !supplier.getBoundingClientRect) return;
+      // 清掉此前误加的左侧内联高度
+      supplier.style.height = '';
+      supplier.style.maxHeight = '';
+      supplier.style.marginBottom = '';
+
+      const panelTop = panel.getBoundingClientRect().top;
+      const targetBottom = supplier.getBoundingClientRect().bottom;
       const pagEl = panel.querySelector('.apply-pagination-wrap');
-      const pagH = (pagEl && pagEl.offsetHeight) ? pagEl.offsetHeight : 52;
-      this.mainTableHeight = Math.max(240, Math.floor(panelH - pagH));
+      let pagH = pagEl ? pagEl.getBoundingClientRect().height : 52;
+      if (pagH < 40) pagH = 52;
+      const borderY =
+        (parseFloat(window.getComputedStyle(panel).borderTopWidth) || 0) +
+        (parseFloat(window.getComputedStyle(panel).borderBottomWidth) || 0);
+      const next = Math.max(240, Math.floor(targetBottom - panelTop - pagH - borderY));
+      if (Math.abs((this.mainTableHeight || 0) - next) >= 2) {
+        this.mainTableHeight = next;
+      }
       this.$nextTick(() => {
         if (this.$refs.compareTable && this.$refs.compareTable.doLayout) {
           this.$refs.compareTable.doLayout();
+        }
+        // 校正：若明细框仍低于左侧底边，再压低表高
+        const overshoot = panel.getBoundingClientRect().bottom - supplier.getBoundingClientRect().bottom;
+        if (overshoot > 2) {
+          this.mainTableHeight = Math.max(240, Math.floor(this.mainTableHeight - overshoot));
+          this.$nextTick(() => {
+            if (this.$refs.compareTable && this.$refs.compareTable.doLayout) {
+              this.$refs.compareTable.doLayout();
+            }
+          });
         }
       });
     },
@@ -881,7 +908,8 @@ export default {
 .compare-layout-row {
   display: flex;
   flex-wrap: nowrap;
-  align-items: stretch;
+  /* 避免右侧明细把左侧一起撑高，导致量到底边失真 */
+  align-items: flex-start;
   flex: 1 1 auto;
   min-height: 0;
   height: 100%;
@@ -892,6 +920,7 @@ export default {
   max-width: 18.75% !important;
   flex: 0 0 18.75% !important;
   height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -901,12 +930,13 @@ export default {
   max-width: calc(81.25% - 8px) !important;
   flex: 1 1 auto !important;
   height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
 
-/* 供应商容器 */
+/* 供应商容器：仅由左侧列高度撑满，不受右侧明细影响 */
 .supplier-container {
   background: #fff;
   border-radius: 8px;
@@ -917,7 +947,10 @@ export default {
   flex-direction: column;
   flex: 1 1 auto;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
+  margin-bottom: 0;
+  box-sizing: border-box;
 }
 
 .supplier-header {
@@ -973,11 +1006,12 @@ export default {
 }
 
 .apply-table-panel.table-container {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   padding: 0;
+  margin-bottom: 0;
   background: #fff;
   border: 1px solid #e8ecf1;
   border-radius: 10px;
@@ -986,7 +1020,7 @@ export default {
 }
 
 .apply-table-panel.table-container > .apply-main-table {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
 }
 
@@ -1084,17 +1118,31 @@ export default {
 .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  background: #fff;
+  /* 翻页上下留白一致 */
+  padding: 12px 14px;
+  box-sizing: border-box;
 }
 
 .apply-pagination-wrap ::v-deep .pagination-container {
+  position: relative !important;
   height: auto !important;
-  min-height: 44px;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 8px 14px !important;
-  background: #fff;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent;
   border: none;
   box-shadow: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  overflow: visible;
+}
+
+/* 取消 ruoyi 绝对定位，否则底边距看不见、看起来像“上有下无” */
+.apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
 }
 
 .compare-query-row {
