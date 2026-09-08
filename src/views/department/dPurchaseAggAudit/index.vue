@@ -328,12 +328,12 @@
               >
                 <el-table-column type="selection" width="60" align="center" resizable class-name="apply-select-col" header-cell-class-name="apply-select-col" />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByEntryMaterialCode">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable>
+                <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'materialName')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialName || '--' }}</span>
                   </template>
@@ -353,27 +353,27 @@
                     <span>{{ scope.row.splitDepPurchaseBillNo || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable>
+                <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'materialSpec')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialSpec || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable>
+                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'model')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.model || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable>
+                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'unit')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.unit || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'qty')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.qty || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'unitPrice')">
                   <template slot-scope="scope">
                     <span v-if="scope.row.unitPrice">¥{{ scope.row.unitPrice | formatPrice }}</span>
                     <span v-else>--</span>
@@ -395,9 +395,9 @@
                     <span>{{ scope.row.supplierName || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="生产厂家" align="center" width="200" show-overflow-tooltip resizable>
+                <el-table-column label="生产厂家" align="center" prop="producer" width="200" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.producer || '--' }}</span>
+                    <span>{{ scope.row.producer || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || (scope.row.material && scope.row.material.factoryName) || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
@@ -610,6 +610,38 @@ export default {
       if (va < vb) return -1;
       if (va > vb) return 1;
       return 0;
+    },
+    sortByNestedNumber(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return NaN;
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        const n = Number(v);
+        return isNaN(n) ? NaN : n;
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return -1;
+      if (isNaN(vb)) return 1;
+      return va - vb;
+    },
+    sortByEntryText(a, b, field) {
+      const pick = (row) => {
+        const v = row && row[field];
+        return v != null && String(v).trim() !== '' ? String(v) : '';
+      };
+      return pick(a).localeCompare(pick(b), 'zh-CN');
+    },
+    sortByEntryMaterialCode(a, b) {
+      const pick = (row) => {
+        if (!row) return '';
+        return row.materialCode || (row.material && row.material.code) || row.code || '';
+      };
+      return String(pick(a)).localeCompare(String(pick(b)), 'zh-CN');
     },
     applyMainRowClassName({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;

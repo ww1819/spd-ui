@@ -354,7 +354,7 @@
                     <span>{{ scope.row.materialSpec || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable>
+                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'model')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.model || '--' }}</span>
                   </template>
@@ -400,9 +400,9 @@
                     <span>{{ scope.row.supplierName }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="生产厂家" align="center" width="200" show-overflow-tooltip resizable>
+                <el-table-column label="生产厂家" align="center" prop="producer" width="200" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.producer || '--' }}</span>
+                    <span>{{ scope.row.producer || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || (scope.row.material && scope.row.material.factoryName) || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
