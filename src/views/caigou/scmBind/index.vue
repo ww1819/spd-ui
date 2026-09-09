@@ -2,24 +2,59 @@
   <div class="app-container list-page">
     <el-card shadow="never" class="mb16">
       <div slot="header" class="clearfix">
-        <span>当前租户 — 云平台医院编码</span>
+        <span>当前机构 — 云平台医院编码</span>
       </div>
       <el-form :model="tenantForm" label-width="140px" size="small">
         <el-form-item label="平台医院编码">
-          <el-input
-            v-model="tenantForm.scmHospitalCode"
-            clearable
-            placeholder="与云平台 hospital_code 一致"
-            style="max-width: 420px"
-          />
+          <div class="tenant-code-row">
+            <el-input
+              :value="tenantForm.scmHospitalCode"
+              readonly
+              placeholder="未绑定"
+              style="max-width: 420px"
+            />
+            <el-button
+              type="primary"
+              plain
+              size="small"
+              class="spd-btn"
+              style="margin-left: 8px"
+              @click="openTenantEdit"
+              v-hasPermi="['caigou:scmBind:edit']"
+            >修改</el-button>
+          </div>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="tenantForm.remark" type="textarea" :rows="2" style="max-width: 520px" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" class="spd-btn spd-btn--primary" @click="saveTenant" v-hasPermi="['caigou:scmBind:edit']">保存</el-button>
+          <span class="tenant-remark-text">{{ tenantForm.remark != null && tenantForm.remark !== '' ? tenantForm.remark : '—' }}</span>
         </el-form-item>
       </el-form>
+      <el-dialog
+        title="修改平台医院编码"
+        :visible.sync="tenantEditVisible"
+        width="520px"
+        append-to-body
+        destroy-on-close
+        @close="resetTenantEditForm"
+      >
+        <el-form ref="tenantEditFormRef" :model="tenantEditForm" :rules="tenantEditRules" label-width="130px" size="small">
+          <el-form-item label="平台医院编码" prop="scmHospitalCode">
+            <el-input
+              v-model="tenantEditForm.scmHospitalCode"
+              clearable
+              placeholder="与云平台 hospital_code 一致"
+              maxlength="64"
+              show-word-limit
+            />
+          </el-form-item>
+          <el-form-item label="备注" prop="remark">
+            <el-input v-model="tenantEditForm.remark" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="选填" />
+          </el-form-item>
+        </el-form>
+        <div slot="footer" class="dialog-footer">
+          <el-button class="spd-btn spd-btn--secondary" @click="tenantEditVisible = false">取消</el-button>
+          <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitTenantEdit">保存</el-button>
+        </div>
+      </el-dialog>
     </el-card>
 
     <el-card shadow="never">
@@ -150,7 +185,7 @@
         </div>
       </el-dialog>
       <p class="text-muted" style="margin-top: 12px; color: #909399; font-size: 13px;">
-        说明：列表为当前租户下已存在的有效绑定（逻辑删除 del_flag=1 的不展示）；同一 SPD 供应商在本租户下仅允许一条对照记录；多家供应商可维护相同的平台供应商编码。新增时请先选择本地供应商并填写平台编码。
+        说明：列表为当前机构下已存在的有效绑定（逻辑删除 del_flag=1 的不展示）；同一 SPD 供应商在本机构下仅允许一条对照记录；多家供应商可维护相同的平台供应商编码。新增时请先选择本地供应商并填写平台编码。
       </p>
     </el-card>
   </div>
@@ -168,6 +203,16 @@ export default {
       tenantForm: {
         scmHospitalCode: '',
         remark: ''
+      },
+      tenantEditVisible: false,
+      tenantEditForm: {
+        scmHospitalCode: '',
+        remark: ''
+      },
+      tenantEditRules: {
+        scmHospitalCode: [
+          { required: true, message: '平台医院编码不能为空', trigger: 'blur' }
+        ]
       },
       supplierList: [],
       supplierLoading: false,
@@ -337,13 +382,45 @@ export default {
         this.loadSuppliers()
       }).catch(() => {})
     },
-    saveTenant() {
-      saveTenantScmBind({
-        scmHospitalCode: this.tenantForm.scmHospitalCode,
-        remark: this.tenantForm.remark
-      }).then(() => {
-        this.$modal.msgSuccess('保存成功')
-        this.loadTenant()
+    openTenantEdit() {
+      this.tenantEditForm = {
+        scmHospitalCode: this.tenantForm.scmHospitalCode || '',
+        remark: this.tenantForm.remark || ''
+      }
+      this.tenantEditVisible = true
+      this.$nextTick(() => {
+        if (this.$refs.tenantEditFormRef) {
+          this.$refs.tenantEditFormRef.clearValidate()
+        }
+      })
+    },
+    resetTenantEditForm() {
+      this.tenantEditForm = {
+        scmHospitalCode: '',
+        remark: ''
+      }
+      if (this.$refs.tenantEditFormRef) {
+        this.$refs.tenantEditFormRef.clearValidate()
+      }
+    },
+    submitTenantEdit() {
+      this.$refs.tenantEditFormRef.validate(valid => {
+        if (!valid) {
+          return
+        }
+        const code = (this.tenantEditForm.scmHospitalCode || '').trim()
+        if (!code) {
+          this.$modal.msgError('平台医院编码不能为空')
+          return
+        }
+        saveTenantScmBind({
+          scmHospitalCode: code,
+          remark: this.tenantEditForm.remark
+        }).then(() => {
+          this.$modal.msgSuccess('保存成功')
+          this.tenantEditVisible = false
+          this.loadTenant()
+        })
       })
     },
     openSupplierEdit(row) {
@@ -434,5 +511,15 @@ export default {
 .list-query-panel {
   margin-top: 0;
   margin-bottom: 8px;
+}
+.tenant-code-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.tenant-remark-text {
+  color: #606266;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

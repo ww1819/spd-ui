@@ -6,7 +6,7 @@
       :closable="false"
       show-icon
       class="mb12"
-      description="左侧为平台在本院可见的供应商；右侧可查看平台档案、选择院内已绑定平台编码的供应商做关联查看、补全或下载 JSON（全量/脱敏由后端根据平台绑定与采购订单判定）。"
+      description="左侧为平台对本院可下载的供应商（含曾绑定后解绑/停用/过期；不含待审）。右侧可查看档案与状态；选择院内已绑平台编码的供应商可补全或下载 JSON，包内会标记 relationStatus。"
     />
 
     <el-row :gutter="16">
@@ -22,10 +22,17 @@
             height="calc(100vh - 260px)"
             @current-change="onScmRowChange"
           >
-            <el-table-column prop="supplierCode" label="平台编码" width="120" show-overflow-tooltip />
-            <el-table-column prop="companyName" label="企业名称" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="companyShortName" label="简称" width="100" show-overflow-tooltip />
-            <el-table-column prop="contactPhone" label="电话" width="110" show-overflow-tooltip />
+            <el-table-column prop="supplierCode" label="平台编码" width="110" show-overflow-tooltip />
+            <el-table-column prop="companyName" label="企业名称" min-width="120" show-overflow-tooltip />
+            <el-table-column prop="companyShortName" label="简称" width="90" show-overflow-tooltip />
+            <el-table-column label="关系状态" width="88" align="center">
+              <template slot-scope="scope">
+                <el-tag :type="relationTagType(scope.row.relationStatus)" size="mini">
+                  {{ scope.row.relationStatusLabel || scope.row.relationStatus || '-' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="contactPhone" label="电话" width="100" show-overflow-tooltip />
           </el-table>
         </el-card>
       </el-col>
@@ -37,9 +44,21 @@
           <div v-else v-loading="profileLoading">
             <el-descriptions :column="2" size="small" border class="mb12">
               <el-descriptions-item label="平台编码">{{ selectedScmCode }}</el-descriptions-item>
-              <el-descriptions-item label="院端供货绑定">
-                <el-tag v-if="profileObj && profileObj.hospitalSupplierBound" type="success" size="mini">已绑定</el-tag>
-                <el-tag v-else type="warning" size="mini">未绑定</el-tag>
+              <el-descriptions-item label="关系状态">
+                <el-tag
+                  v-if="profileObj && profileObj.relationStatus"
+                  :type="relationTagType(profileObj.relationStatus)"
+                  size="mini"
+                >{{ profileObj.relationStatusLabel || profileObj.relationStatus }}</el-tag>
+                <el-tag v-else type="info" size="mini">无可用关系</el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="当前有效绑定">
+                <el-tag v-if="profileObj && profileObj.hospitalSupplierBound" type="success" size="mini">是</el-tag>
+                <el-tag v-else type="info" size="mini">否</el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="允许下载">
+                <el-tag v-if="profileObj && profileObj.downloadable" type="success" size="mini">是</el-tag>
+                <el-tag v-else type="warning" size="mini">否</el-tag>
               </el-descriptions-item>
             </el-descriptions>
             <div class="profile-json-wrap">
@@ -148,6 +167,14 @@ export default {
     this.loadScmList()
   },
   methods: {
+    relationTagType(status) {
+      const s = status ? String(status) : ''
+      if (s === 'ACTIVE') return 'success'
+      if (s === 'EXPIRED') return 'warning'
+      if (s === 'DISABLED') return 'danger'
+      if (s === 'UNBOUND') return 'info'
+      return ''
+    },
     loadScmList() {
       this.scmLoading = true
       listScmSupplierPlatform()
