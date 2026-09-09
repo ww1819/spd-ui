@@ -207,6 +207,11 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="金额" class="head-label-nowrap apply-modal-header-amount">
+                      <el-input :value="headerAmountText" disabled />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="制单人" class="head-label-nowrap">
                       <el-input :value="creatorDisplayName" disabled placeholder="—" />
                     </el-form-item>
@@ -226,8 +231,13 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="操作人" prop="userId" class="head-label-nowrap">
-                      <SelectDeptApplyOperator v-model="form.userId" :department-id="form.departmentId" />
+                    <el-form-item label="审核人" class="head-label-nowrap">
+                      <el-input :value="auditorDisplayName" disabled placeholder="—" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="审核日期" class="head-label-nowrap">
+                      <el-input :value="auditorDateText" disabled placeholder="—" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -734,7 +744,6 @@ import { pinyin } from 'pinyin-pro';
 import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from '@/utils/materialSearch';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectDeptApplyOperator from '@/components/SelectModel/SelectDeptApplyOperator';
 import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
 import SelectDepartmentApplyAvailableStock from '@/components/SelectModel/SelectDepartmentApplyAvailableStock';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
@@ -751,9 +760,10 @@ function buildDefaultDateRange() {
 }
 
 export default {
-  name: "dApply",
+  // 须与菜单 path「dApply」生成的路由 name「DApply」一致，否则 keep-alive 不缓存，顶部切页后操作状态丢失
+  name: "DApply",
   dicts: ['biz_status','way_status'],
-  components: { SelectWarehouse, SelectDepartment, SelectDeptApplyOperator, SelectSupplier, SelectDepartmentApplyAvailableStock, SelectInventory },
+  components: { SelectWarehouse, SelectDepartment, SelectSupplier, SelectDepartmentApplyAvailableStock, SelectInventory },
   data() {
     return {
       // 遮罩层
@@ -919,6 +929,36 @@ export default {
       }
       return '—';
     },
+    /** 弹窗顶部金额（与明细合计一致） */
+    headerAmountText() {
+      const v = this.totalAmount != null && this.totalAmount !== ''
+        ? this.totalAmount
+        : (this.form && this.form.totalAmount);
+      if (typeof this.formatAmount === 'function') {
+        return this.formatAmount(v, '0');
+      }
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(2) : '0';
+    },
+    /** 审核人显示名 */
+    auditorDisplayName() {
+      const n = this.form && this.form.auditPersonName;
+      if (n) {
+        return n;
+      }
+      const p = this.form && this.form.auditPerson;
+      if (p) {
+        return p.nickName || p.userName || '—';
+      }
+      return '—';
+    },
+    /** 审核日期显示 */
+    auditorDateText() {
+      if (!this.form || !this.form.auditDate) {
+        return '—';
+      }
+      return this.parseTime(this.form.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') || '—';
+    },
     /** 关联出库一览（可按申领明细行过滤） */
     filteredOutboundRefList() {
       const list = (this.form && this.form.outboundRefList) || [];
@@ -969,6 +1009,9 @@ export default {
       if (that.templateDialogVisible) that.calcTemplateDetailTableHeight();
     };
     window.addEventListener('resize', this._templateDetailTableResize);
+  },
+  activated() {
+    this.scheduleApplyLayoutRefresh();
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.onApplyWindowResize);
@@ -1694,6 +1737,8 @@ export default {
         userId: null,
         applyBillStatus: null,
         billType: 1,
+        auditDate: null,
+        auditPersonName: null,
         createTime: null,
         updateBy: null,
         updateTime: null,
@@ -1720,6 +1765,11 @@ export default {
       
       this.totalQty = totalQty;
       this.totalAmount = totalAmount;
+      if (this.form) {
+        this.form.totalAmount = typeof this.toMoneyStorage === 'function'
+          ? this.toMoneyStorage(totalAmount)
+          : totalAmount;
+      }
     },
     // 表格合计方法
     getSummaries(param) {
@@ -3414,6 +3464,16 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
 .app-container.d-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-input {
   width: 162px !important;
   max-width: 162px !important;
+}
+
+/* 顶部金额：标签与数字均为红色 */
+.app-container.d-apply-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
+  color: #f56c6c !important;
+}
+.app-container.d-apply-page .local-modal-content .apply-modal-header-amount .el-input__inner {
+  color: #f56c6c !important;
+  font-weight: 600;
+  -webkit-text-fill-color: #f56c6c !important;
 }
 
 .app-container.d-apply-page .local-modal-content .apply-modal-detail-title {

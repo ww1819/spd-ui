@@ -461,7 +461,8 @@ function buildListDefaultDateRange() {
 }
 
 export default {
-  name: "dPurchaseAgg",
+  // 须与菜单 path「dPurchaseAgg」→ 路由 name「DPurchaseAgg」一致，keep-alive 才能保留操作状态
+  name: "DPurchaseAgg",
   dicts: ['purchase_status', 'urgency_level'],
   components: {SelectWarehouse, SelectDepartment, SelectMaterialForPurchaseAgg},
   data() {
@@ -546,6 +547,9 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  activated() {
     this.scheduleApplyLayoutRefresh();
   },
   beforeDestroy() {

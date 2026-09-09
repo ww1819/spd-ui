@@ -214,32 +214,47 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="科室" prop="departmentId" class="head-label-nowrap">
+                    <el-form-item label="科室" prop="departmentId" class="head-label-nowrap apply-modal-header-dept">
                       <SelectDepartment v-model="form.departmentId" :disabled="true"/>
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="金额" class="head-label-nowrap apply-modal-header-amount">
+                      <el-input :value="headerAmountText" disabled />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
                   <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="申请日期" prop="applyBillDate" class="head-label-nowrap">
+                    <el-form-item label="制单日期" prop="applyBillDate" class="head-label-nowrap">
                       <el-date-picker
                         clearable
                         v-model="form.applyBillDate"
                         type="date"
                         value-format="yyyy-MM-dd"
                         :disabled="true"
-                        placeholder="请选择申请日期"
+                        placeholder="—"
                       />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="操作人" prop="userId" class="head-label-nowrap">
-                      <SelectUser v-model="form.userId" :disabled="true"/>
+                    <el-form-item label="制单人" class="head-label-nowrap">
+                      <el-input :value="creatorDisplayName" disabled placeholder="—" />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="审核人" class="head-label-nowrap">
+                      <el-input :value="auditorDisplayName" disabled placeholder="—" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="审核日期" class="head-label-nowrap">
+                      <el-input :value="auditorDateText" disabled placeholder="—" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -377,7 +392,6 @@
 import { listApplyAudit, getApplyAudit, auditApply, rejectApply } from "@/api/department/applyAudit";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectUser from '@/components/SelectModel/SelectUser';
 import { parseTime } from '@/utils/ruoyi';
 
 function buildListDefaultDateRange() {
@@ -390,9 +404,10 @@ function buildListDefaultDateRange() {
 }
 
 export default {
-  name: "dApplyAudit",
+  // 须与菜单 path「dApplyAudit」→ 路由 name「DApplyAudit」一致，keep-alive 才能保留筛选/弹窗状态
+  name: "DApplyAudit",
   dicts: ['biz_status','way_status'],
-  components: {SelectWarehouse,SelectDepartment,SelectUser},
+  components: {SelectWarehouse,SelectDepartment},
   data() {
     return {
       // 遮罩层
@@ -475,6 +490,48 @@ export default {
       if (v === 2 || v === '2') return '2';
       return '1';
     },
+    /** 弹窗顶部金额（与明细合计一致） */
+    headerAmountText() {
+      const v = this.totalAmount != null && this.totalAmount !== ''
+        ? this.totalAmount
+        : (this.form && this.form.totalAmount);
+      if (typeof this.formatAmount === 'function') {
+        return this.formatAmount(v, '0');
+      }
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(2) : '0';
+    },
+    /** 制单人 */
+    creatorDisplayName() {
+      const n = this.form && this.form.createrNmae;
+      if (n) {
+        return n;
+      }
+      const c = this.form && this.form.creater;
+      if (c) {
+        return c.nickName || c.userName || '—';
+      }
+      return '—';
+    },
+    /** 审核人 */
+    auditorDisplayName() {
+      const n = this.form && this.form.auditPersonName;
+      if (n) {
+        return n;
+      }
+      const p = this.form && this.form.auditPerson;
+      if (p) {
+        return p.nickName || p.userName || '—';
+      }
+      return '—';
+    },
+    /** 审核日期 */
+    auditorDateText() {
+      if (!this.form || !this.form.auditDate) {
+        return '—';
+      }
+      return this.parseTime(this.form.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') || '—';
+    },
     /** 弹窗明细表高度：按额外表单行与审核底栏动态扣减，避免合计行被裁切 */
     detailTableHeight() {
       let offset = 384;
@@ -492,6 +549,9 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  activated() {
     this.scheduleApplyLayoutRefresh();
   },
   beforeDestroy() {
@@ -1826,6 +1886,17 @@ export default {
 .app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input {
   width: 162px !important;
   max-width: 162px !important;
+}
+
+/* 科室、金额：标签红色；金额数值也红色 */
+.app-container.d-apply-audit-page .local-modal-content .apply-modal-header-dept .el-form-item__label,
+.app-container.d-apply-audit-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
+  color: #f56c6c !important;
+}
+.app-container.d-apply-audit-page .local-modal-content .apply-modal-header-amount .el-input__inner {
+  color: #f56c6c !important;
+  font-weight: 600;
+  -webkit-text-fill-color: #f56c6c !important;
 }
 
 .app-container.d-apply-audit-page .local-modal-content .apply-modal-detail-title {
