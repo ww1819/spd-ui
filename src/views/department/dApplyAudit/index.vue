@@ -1814,8 +1814,8 @@ export default {
   flex: 0 0 auto;
   text-align: left;
   padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
+  line-height: 32px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -1829,7 +1829,7 @@ export default {
 .app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
-  line-height: 28px;
+  line-height: 32px;
 }
 
 .app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-reject .el-form-item__content {
@@ -1853,12 +1853,21 @@ export default {
   min-width: 0;
 }
 
+.app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .el-input,
+.app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .el-select,
+.app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input,
+.app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor {
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+}
+
 .app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .el-input__inner,
 .app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
 .app-container.d-apply-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
-  height: 28px !important;
-  min-height: 28px !important;
-  line-height: 28px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
   font-size: 13px !important;
   box-sizing: border-box !important;
   border-color: #e2e8f0 !important;

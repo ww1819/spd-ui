@@ -242,6 +242,11 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="金额" class="apply-modal-header-amount">
+                      <el-input :value="headerAmountText" disabled />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="制单人" prop="userId">
                       <el-input v-model="form.userName" :disabled="true" />
                     </el-form-item>
@@ -288,6 +293,16 @@
                         :disabled="!action"
                         placeholder="请选择期望到货日期"
                       />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="审核人">
+                      <el-input :value="auditorDisplayName" disabled placeholder="—" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="审核日期">
+                      <el-input :value="auditorDateText" disabled placeholder="—" />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
@@ -540,6 +555,34 @@ export default {
       return (this.entryList || [])
         .map(item => buildAggEntryPickKey(item))
         .filter(k => k);
+    },
+    /** 弹窗顶部金额（与明细合计一致） */
+    headerAmountText() {
+      const v = this.form && this.form.totalAmount;
+      if (typeof this.formatAmount === 'function') {
+        return this.formatAmount(v, '0');
+      }
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(2) : '0';
+    },
+    /** 审核人显示名 */
+    auditorDisplayName() {
+      const n = this.form && this.form.auditPersonName;
+      if (n) {
+        return n;
+      }
+      const p = this.form && this.form.auditPerson;
+      if (p) {
+        return p.nickName || p.userName || '—';
+      }
+      return '—';
+    },
+    /** 审核日期显示 */
+    auditorDateText() {
+      if (!this.form || !this.form.auditDate) {
+        return '—';
+      }
+      return this.parseTime(this.form.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') || '—';
     }
   },
   created() {
@@ -828,6 +871,9 @@ export default {
         totalAmount: null,
         urgencyLevel: null,
         expectedDeliveryDate: null,
+        auditPersonName: null,
+        auditPerson: null,
+        auditDate: null,
         createBy: null,
         createTime: null,
         updateBy: null,
@@ -2044,8 +2090,8 @@ html body .app-container.d-purchase-agg-page .apply-modal-root-content > .materi
   flex: 0 0 auto;
   text-align: left;
   padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
+  line-height: 32px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -2053,7 +2099,7 @@ html body .app-container.d-purchase-agg-page .apply-modal-root-content > .materi
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
-  line-height: 28px;
+  line-height: 32px;
 }
 
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
@@ -2070,17 +2116,36 @@ html body .app-container.d-purchase-agg-page .apply-modal-root-content > .materi
   display: none !important;
 }
 
-/* 弹窗内表头输入：28px 高度（覆盖 list-page 32px），边框沿用 list-page */
+/* 弹窗内表头输入：与科室申领一致 32px */
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-input,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-select,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-select .el-input,
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-date-editor {
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+}
+
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-input__inner,
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
-  height: 28px !important;
-  min-height: 28px !important;
-  line-height: 28px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
   font-size: 13px !important;
   box-sizing: border-box !important;
   border-color: #e2e8f0 !important;
   border-radius: 6px !important;
+}
+
+/* 顶部金额：标签与数字均为红色 */
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
+  color: #f56c6c !important;
+}
+.app-container.d-purchase-agg-page .local-modal-content .apply-modal-header-amount .el-input__inner {
+  color: #f56c6c !important;
+  font-weight: 600;
+  -webkit-text-fill-color: #f56c6c !important;
 }
 
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-detail-title {
