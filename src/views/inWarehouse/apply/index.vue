@@ -410,6 +410,16 @@
                 v-hasPermi="['inWarehouse:apply:audit']"
               >审核</el-button>
             </template>
+            <!-- 枣强：审核完成后可打印（审核后 action=false，故放在 action 模板外） -->
+            <el-button
+              v-if="isZqTenant"
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--secondary"
+              icon="el-icon-printer"
+              :disabled="!form.id || String(form.billStatus) !== '2'"
+              @click="handleModalPrint"
+            >打印</el-button>
           </div>
         </el-row>
 
@@ -2146,6 +2156,18 @@ export default {
           this.$nextTick(() => this.refreshDetailSummary());
         }).catch(() => {});
       }).catch(() => {});
+    },
+    /** 枣强：弹窗内打印（仅已审核单据） */
+    handleModalPrint() {
+      if (!this.form || !this.form.id) {
+        this.$modal.msgWarning('缺少单据信息，无法打印');
+        return;
+      }
+      if (String(this.form.billStatus) !== '2') {
+        this.$modal.msgWarning('请先完成审核后再打印');
+        return;
+      }
+      this.handlePrint(this.form, true);
     },
     /** 删除按钮操作 */
     handleDelete(row) {

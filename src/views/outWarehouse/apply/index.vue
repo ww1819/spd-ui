@@ -261,13 +261,18 @@
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
+            <el-form-item label="总金额" prop="totalAmount" class="apply-modal-header-amount">
+              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
+            </el-form-item>
+          </el-col>
+          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="制单人" prop="createrName">
               <SelectUser v-model="form.createrName" :disabled="true"/>
             </el-form-item>
           </el-col>
-          <el-col class="apply-modal-field apply-modal-field--standard">
-            <el-form-item label="总金额" prop="totalAmount">
-              <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
+          <el-col class="apply-modal-field apply-modal-field--date">
+            <el-form-item label="制单日期">
+              <el-input :value="billDateText" disabled placeholder="—" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -282,9 +287,19 @@
               <el-input v-model="form.recipientName" :disabled="true" placeholder="领用人" />
             </el-form-item>
           </el-col>
-          <el-col class="apply-modal-field apply-modal-field--grow" style="flex: 1 1 auto; min-width: 200px;">
+          <el-col class="apply-modal-field apply-modal-field--standard">
+            <el-form-item label="审核人">
+              <el-input :value="auditorDisplayName" disabled placeholder="—" />
+            </el-form-item>
+          </el-col>
+          <el-col class="apply-modal-field apply-modal-field--date">
+            <el-form-item label="审核日期">
+              <el-input :value="auditorDateText" disabled placeholder="—" />
+            </el-form-item>
+          </el-col>
+          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" style="width: 100%; max-width: none;" />
+              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -329,6 +344,15 @@
                 v-hasPermi="['outWarehouse:apply:audit']"
               >审核</el-button>
             </template>
+            <!-- 审核完成后显示打印（全局；放在审核按钮后） -->
+            <el-button
+              v-if="form.id && String(form.billStatus) === '2'"
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--secondary"
+              icon="el-icon-printer"
+              @click="handleModalPrint"
+            >打印</el-button>
           </div>
         </el-row>
 
@@ -860,6 +884,32 @@ export default {
     isZqTenant() {
       const cid = this.$store.getters.customerId;
       return cid != null && String(cid).trim() === ZQ_TCM_TENANT;
+    },
+    /** 制单日期 */
+    billDateText() {
+      if (!this.form || !this.form.billDate) {
+        return '—';
+      }
+      return this.parseTime(this.form.billDate, '{y}-{m}-{d}') || '—';
+    },
+    /** 审核人 */
+    auditorDisplayName() {
+      const n = this.form && this.form.auditPersonName;
+      if (n) {
+        return n;
+      }
+      const p = this.form && this.form.auditPerson;
+      if (p) {
+        return p.nickName || p.userName || '—';
+      }
+      return '—';
+    },
+    /** 审核日期 */
+    auditorDateText() {
+      if (!this.form || !this.form.auditDate) {
+        return '—';
+      }
+      return this.parseTime(this.form.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') || '—';
     }
   },
   created() {
@@ -1749,8 +1799,9 @@ export default {
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = false;
-        this.form.billStatus = '1';
-        this.form.billType = '201';
+        // 保留实际单据状态，已审核才显示弹窗内打印
+        this.form.billStatus = response.data.billStatus != null ? String(response.data.billStatus) : '1';
+        this.form.billType = response.data.billType != null ? String(response.data.billType) : '201';
         this.title = "查看出库";
         this.$nextTick(() => this.refreshEntryStockQty());
       });
@@ -1937,6 +1988,18 @@ export default {
       } catch (e) {
         // 用户取消确认或请求失败
       }
+    },
+    /** 弹窗内打印：仅已审核单据（全局） */
+    handleModalPrint() {
+      if (!this.form || !this.form.id) {
+        this.$modal.msgWarning('缺少单据信息，无法打印');
+        return;
+      }
+      if (String(this.form.billStatus) !== '2') {
+        this.$modal.msgWarning('请先完成审核后再打印');
+        return;
+      }
+      this.handlePrint(this.form, true);
     },
     /** 删除按钮操作 */
     handleDelete(row) {
@@ -3990,6 +4053,15 @@ export default {
 .app-container.outWarehouse-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
   content: none !important;
   display: none !important;
+}
+/* 总金额：标签与数值红色 */
+.app-container.outWarehouse-apply-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
+  color: #f56c6c !important;
+}
+.app-container.outWarehouse-apply-page .local-modal-content .apply-modal-header-amount .el-input__inner {
+  color: #f56c6c !important;
+  font-weight: 600;
+  -webkit-text-fill-color: #f56c6c !important;
 }
 
 .json-viewer-pre {

@@ -361,6 +361,14 @@
         <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
           <div class="list-toolbar-left">
             <span class="apply-modal-detail-title">入库明细信息</span>
+            <el-button
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--secondary"
+              icon="el-icon-printer"
+              :disabled="!form.id || String(form.billStatus) !== '2'"
+              @click="handleModalPrint"
+            >打印</el-button>
             <template v-if="action">
               <el-button
                 type="primary"
@@ -1865,6 +1873,18 @@ export default {
           window.location.href = resolved.href
         }
       })
+    },
+    /** 弹窗内打印：仅已审核单据 */
+    handleModalPrint() {
+      if (!this.form || !this.form.id) {
+        this.$modal.msgWarning('缺少单据信息，无法打印')
+        return
+      }
+      if (String(this.form.billStatus) !== '2') {
+        this.$modal.msgWarning('请先完成审核后再打印')
+        return
+      }
+      this.handlePrint(this.form)
     },
     doPrintOut(row, print) {
       this.getInWarehouseDetail(row).then(result => {
