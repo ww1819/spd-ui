@@ -24,9 +24,10 @@
             <template v-if="t === 'warehouse'">
               <div class="query-select-wrapper more-search-select-wrap">
                 <SelectWarehouse
-                  v-model="queryParams.warehouseId"
+                  v-model="queryParams.warehouseIds"
+                  :multiple="true"
                   excludeWarehouseType="高值"
-                  placeholder="仓库编码/名称/简码搜索"
+                  placeholder="仓库多选"
                 />
               </div>
             </template>
@@ -339,7 +340,7 @@ export default {
         supplierKeyword: null,
         batchNo: null,
         batchNumberKeyword: null,
-        warehouseId: null,
+        warehouseIds: [],
         departmentId: null,
         billStatus: null,
         userId: null,
@@ -551,7 +552,7 @@ export default {
       this.queryParams.supplierKeyword = null;
       this.queryParams.batchNo = null;
       this.queryParams.batchNumberKeyword = null;
-      this.queryParams.warehouseId = null;
+      this.queryParams.warehouseIds = [];
       this.queryParams.financeCategoryIds = [];
       this.queryParams.warehouseCategoryIds = [];
       this.queryParams.financeCategoryKeyword = null;
@@ -591,7 +592,7 @@ export default {
     onMoreSearchTypesChange(val) {
       const set = new Set(val || []);
       if (!set.has("warehouse")) {
-        this.queryParams.warehouseId = null;
+        this.queryParams.warehouseIds = [];
       }
       Object.keys(this.moreSearchKeywords).forEach(k => {
         if (!set.has(k)) {
@@ -755,9 +756,13 @@ export default {
       if (Array.isArray(queryParams.warehouseCategoryIds) && queryParams.warehouseCategoryIds.length === 0) {
         queryParams.warehouseCategoryIds = null;
       }
+      if (Array.isArray(queryParams.warehouseIds) && queryParams.warehouseIds.length === 0) {
+        queryParams.warehouseIds = null;
+      }
+      queryParams.warehouseId = null;
       const types = this.moreSearchTypes || [];
       if (!types.includes("warehouse")) {
-        queryParams.warehouseId = null;
+        queryParams.warehouseIds = null;
       }
       types.forEach(t => {
         if (t === "warehouse") {
