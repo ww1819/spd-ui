@@ -1,20 +1,19 @@
-﻿<template>
-  <div class="sidebar-logo-container" :class="{'collapse':collapse}" :style="{ backgroundColor: sideTheme === 'theme-dark' ? variables.menuBackground : variables.menuLightBackground }">
+<template>
+  <div
+    class="sidebar-logo-container"
+    :class="{'collapse': collapse, 'is-dark': isDark}"
+    :style="{ backgroundColor: isDark ? variables.menuBackground : variables.menuLightBackground }"
+  >
     <transition name="sidebarLogoFade">
-      <router-link v-if="collapse" key="collapse" class="sidebar-logo-link" to="/">
-        <img v-if="logo" :src="logo" class="sidebar-logo" />
-        <h1 v-else class="sidebar-title" :style="{ color: sideTheme === 'theme-dark' ? variables.logoTitleColor : variables.logoLightTitleColor }">{{ title }} </h1>
-      </router-link>
-      <router-link v-else key="expand" class="sidebar-logo-link" to="/">
-        <img v-if="logo" :src="logo" class="sidebar-logo" />
-        <h1 class="sidebar-title" :style="{ color: sideTheme === 'theme-dark' ? variables.logoTitleColor : variables.logoLightTitleColor }">{{ title }} </h1>
+      <router-link :key="collapse ? 'collapse' : 'expand'" class="sidebar-logo-link" to="/">
+        <img :src="logo" class="sidebar-logo" alt="艾思普特" />
       </router-link>
     </transition>
   </div>
 </template>
 
 <script>
-import logoImg from '@/assets/logo/logo.jpg'
+import logoImg from '@/assets/logo/aisipute.jpg'
 import variables from '@/assets/styles/variables.scss'
 
 export default {
@@ -27,20 +26,18 @@ export default {
   },
   computed: {
     variables() {
-      return variables;
+      return variables
     },
-    sideTheme() {
-      return this.$store.state.settings.sideTheme
-    }
+    isDark() {
+      return this.$store.state.settings.sideTheme === 'theme-dark'
+    },
   },
   data() {
     return {
-      title: process.env.VUE_APP_TITLE,
       logo: logoImg
-      // logo: ''
     }
   }
-} 
+}
 </script>
 
 <style lang="scss" scoped>
@@ -56,38 +53,42 @@ export default {
 .sidebar-logo-container {
   position: relative;
   width: 100%;
-  height: 50px;
-  line-height: 50px;
-  background: #2b2f3a;
+  height: 84px;
+  line-height: 84px;
+  flex-shrink: 0;
   text-align: center;
   overflow: hidden;
+  border: none;
+  border-bottom: 1px solid #d8dce5;
+
+  &.is-dark {
+    border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
 
   & .sidebar-logo-link {
     height: 100%;
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    box-sizing: border-box;
 
     & .sidebar-logo {
-      width: 32px;
-      height: 32px;
-      vertical-align: middle;
-      margin-right: 12px;
-    }
-
-    & .sidebar-title {
-      display: inline-block;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
       margin: 0;
-      color: #fff;
-      font-weight: 600;
-      line-height: 50px;
-      font-size: 14px;
-      font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
-      vertical-align: middle;
+      border-radius: 0;
     }
   }
 
   &.collapse {
     .sidebar-logo {
-      margin-right: 0px;
+      object-fit: cover;
+      object-position: left center;
     }
   }
 }

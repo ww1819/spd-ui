@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <el-drawer size="280px" :visible="visible" :with-header="false" :append-to-body="true" :show-close="false">
     <div class="drawer-container">
       <div>
@@ -38,10 +38,23 @@
         <el-divider/>
 
         <h3 class="drawer-title">系统布局配置</h3>
-      
-        <div class="drawer-item">
-          <span>开启 TopNav</span>
-          <el-switch v-model="topNav" class="drawer-switch" />
+
+        <div class="drawer-item drawer-item--block">
+          <span>菜单位置</span>
+          <div class="nav-position-options">
+            <button
+              type="button"
+              class="nav-position-card"
+              :class="{ 'is-active': navPosition === 'side' }"
+              @click="navPosition = 'side'"
+            >侧边菜单</button>
+            <button
+              type="button"
+              class="nav-position-card"
+              :class="{ 'is-active': navPosition === 'top' }"
+              @click="navPosition = 'top'"
+            >顶部菜单</button>
+          </div>
         </div>
 
         <div class="drawer-item">
@@ -101,19 +114,15 @@ export default {
         })
       }
     },
-    topNav: {
+    navPosition: {
       get() {
-        return this.$store.state.settings.topNav
+        return this.$store.state.settings.navPosition
       },
       set(val) {
         this.$store.dispatch('settings/changeSetting', {
-          key: 'topNav',
+          key: 'navPosition',
           value: val
         })
-        if (!val) {
-          this.$store.dispatch('app/toggleSideBarHide', false);
-          this.$store.commit("SET_SIDEBAR_ROUTERS", this.$store.state.permission.defaultRoutes);
-        }
       }
     },
     tagsView: {
@@ -170,7 +179,8 @@ export default {
       this.$cache.local.set(
         "layout-setting",
         `{
-            "topNav":${this.topNav},
+            "navPosition":"${this.navPosition}",
+            "layoutStyleVer":2,
             "tagsView":${this.tagsView},
             "fixedHeader":${this.fixedHeader},
             "sidebarLogo":${this.sidebarLogo},
@@ -255,6 +265,34 @@ export default {
 
     .drawer-switch {
       float: right
+    }
+
+    .drawer-item--block {
+      display: block;
+    }
+
+    .nav-position-options {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .nav-position-card {
+      flex: 1;
+      height: 36px;
+      border: 1px solid #d9d9d9;
+      background: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      color: rgba(0, 0, 0, .65);
+      font-size: 13px;
+    }
+
+    .nav-position-card.is-active {
+      border-color: #2563eb;
+      color: #1d4ed8;
+      background: #eff6ff;
+      font-weight: 600;
     }
   }
 </style>

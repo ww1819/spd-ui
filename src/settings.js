@@ -2,7 +2,12 @@ module.exports = {
   /**
    * 侧边栏主题 深色主题theme-dark，浅色主题theme-light
    */
-  sideTheme: 'theme-dark',
+  sideTheme: 'theme-light',
+
+  /**
+   * 主题颜色（与列表页主按钮一致）
+   */
+  theme: '#2563eb',
 
   /**
    * 是否系统布局配置
@@ -10,9 +15,9 @@ module.exports = {
   showSettings: false,
 
   /**
-   * 是否显示顶部导航
+   * 菜单位置：侧边 side / 顶部 top
    */
-  topNav: false,
+  navPosition: 'side',
 
   /**
    * 是否显示 tagsView

@@ -147,6 +147,34 @@ $spd-control-h: 32px;
   gap: 8px;
 }
 
+.app-container .toolbar-more-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.app-container .toolbar-more-search .more-search-type,
+.app-container .toolbar-more-search .more-search-type.el-select,
+.app-container .toolbar-more-search .el-select {
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+}
+
+.app-container .toolbar-more-search .el-select > .el-input,
+.app-container .toolbar-more-search .el-select .el-input__inner {
+  width: 190px !important;
+  max-width: 190px !important;
+}
+
+.app-container .toolbar-more-search .el-select-dropdown {
+  z-index: 30;
+  min-width: 190px !important;
+}
+
 .app-container .list-toolbar .el-button,
 .app-container .material-toolbar-row .el-button {
   margin-left: 0 !important;

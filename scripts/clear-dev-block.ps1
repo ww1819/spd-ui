@@ -10,7 +10,7 @@ $ErrorActionPreference = 'Continue'
 $uiRoot = Split-Path -Parent $PSScriptRoot
 $ports = @(8100, 8101)
 $killed = @{}
-$CleanNodeOptions = '--max-old-space-size=4096 --openssl-legacy-provider'
+$CleanNodeOptions = '--max-old-space-size=4096 --openssl-legacy-provider --disable-warning=DEP0060'
 
 function Stop-PidSafe {
   param(

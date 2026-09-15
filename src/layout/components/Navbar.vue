@@ -1,9 +1,9 @@
 <template>
   <div class="navbar">
-    <hamburger id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
+    <hamburger v-if="navPosition === 'side'" id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
 
-    <breadcrumb id="breadcrumb-container" class="breadcrumb-container" v-if="!topNav"/>
-    <top-nav id="topmenu-container" class="topmenu-container" v-if="topNav"/>
+    <breadcrumb id="breadcrumb-container" class="breadcrumb-container" v-if="navPosition === 'side'"/>
+    <top-nav id="topmenu-container" class="topmenu-container" v-if="navPosition === 'top'"/>
 
     <div class="right-menu">
       <template v-if="device!=='mobile'">
@@ -158,9 +158,9 @@ export default {
         })
       }
     },
-    topNav: {
+    navPosition: {
       get() {
-        return this.$store.state.settings.topNav
+        return this.$store.state.settings.navPosition
       }
     },
     frontendVersion() {
@@ -245,12 +245,15 @@ export default {
   overflow: hidden;
   position: relative;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0,21,41,.08);
+  box-shadow: 0 1px 0 #e8ecf1;
+  display: flex;
+  align-items: stretch;
 
   .hamburger-container {
     line-height: 46px;
     height: 100%;
-    float: left;
+    float: none;
+    flex-shrink: 0;
     cursor: pointer;
     transition: background .3s;
     -webkit-tap-highlight-color:transparent;
@@ -261,12 +264,19 @@ export default {
   }
 
   .breadcrumb-container {
-    float: left;
+    float: none;
+    flex: 1;
+    min-width: 0;
   }
 
   .topmenu-container {
-    position: absolute;
-    left: 50px;
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    flex: 1;
+    min-width: 0;
+    height: 50px;
   }
 
   .errLog-container {
@@ -275,21 +285,29 @@ export default {
   }
 
   .right-menu {
-    float: right;
-    height: 100%;
-    line-height: 50px;
+    display: flex;
+    align-items: center;
+    float: none;
+    margin-left: auto;
+    flex-shrink: 0;
+    height: 50px;
+    line-height: 1;
+    padding-right: 16px;
 
     &:focus {
       outline: none;
     }
 
     .right-menu-item {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       padding: 0 8px;
-      height: 100%;
+      height: 50px;
       font-size: 18px;
       color: #5a5e66;
-      vertical-align: text-bottom;
+      line-height: 1;
+      vertical-align: middle;
 
       &.hover-effect {
         cursor: pointer;
@@ -299,17 +317,29 @@ export default {
           background: rgba(0, 0, 0, .025)
         }
       }
+
+      ::v-deep .header-search,
+      ::v-deep .svg-icon {
+        display: inline-flex;
+        align-items: center;
+        line-height: 1;
+      }
     }
 
     .avatar-container {
-      margin-right: 30px;
+      display: inline-flex !important;
+      align-items: center;
+      height: 50px;
+      margin-right: 0;
+      line-height: 1;
 
       .avatar-wrapper {
-        margin-top: 5px;
+        margin-top: 0;
         position: relative;
         display: flex;
         align-items: center;
-        gap: 8px;
+        height: 50px;
+        gap: 6px;
         cursor: pointer;
 
         .user-nickname {
@@ -319,7 +349,7 @@ export default {
           white-space: nowrap;
           font-size: 14px;
           color: #303133;
-          line-height: 40px;
+          line-height: 1;
           cursor: pointer;
         }
 
@@ -329,37 +359,43 @@ export default {
           right: auto;
           top: auto;
           font-size: 12px;
+          line-height: 1;
         }
       }
     }
 
     .organization-wrapper {
-      display: inline-block;
-      margin-right: 8px;
-      vertical-align: middle;
-      position: relative;
-      top: -16px;
-      
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      height: 50px;
+      margin-right: 4px;
+      padding: 0 8px;
+      line-height: 1;
+
       .organization-label {
         font-weight: bold;
-        font-size: 15px;
+        font-size: 14px;
         color: #303133;
+        line-height: 1;
         white-space: nowrap;
       }
-      
+
       .organization-name {
         font-weight: normal;
         font-size: 14px;
         color: #303133;
+        line-height: 1;
         white-space: nowrap;
       }
     }
 
     .version-button {
-      margin-right: 8px;
-      
+      margin-right: 0;
+
       i {
         font-size: 18px;
+        line-height: 1;
         transform: rotate(90deg);
         display: inline-block;
       }

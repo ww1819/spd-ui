@@ -1,8 +1,8 @@
-﻿<template>
+<template>
   <div :class="classObj" class="app-wrapper" :style="{'--current-color': theme}">
     <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside"/>
-    <sidebar v-if="!sidebar.hide" class="sidebar-container"/>
-    <div :class="{hasTagsView:needTagsView,sidebarHide:sidebar.hide}" class="main-container">
+    <sidebar v-if="showSidebar" class="sidebar-container"/>
+    <div :class="{hasTagsView:needTagsView,sidebarHide: !showSidebar}" class="main-container">
       <div :class="{'fixed-header':fixedHeader}">
         <navbar/>
         <tags-view v-if="needTagsView"/>
@@ -37,24 +37,47 @@ export default {
     ...mapState({
       theme: state => state.settings.theme,
       sideTheme: state => state.settings.sideTheme,
+      navPosition: state => state.settings.navPosition,
       sidebar: state => state.app.sidebar,
       device: state => state.app.device,
       needTagsView: state => state.settings.tagsView,
       fixedHeader: state => state.settings.fixedHeader
     }),
+    showSidebar() {
+      return this.navPosition !== 'top' && !this.sidebar.hide
+    },
     classObj() {
       return {
         hideSidebar: !this.sidebar.opened,
         openSidebar: this.sidebar.opened,
         withoutAnimation: this.sidebar.withoutAnimation,
-        mobile: this.device === 'mobile'
+        mobile: this.device === 'mobile',
+        navTop: this.navPosition === 'top'
       }
     },
     variables() {
       return variables;
     }
   },
+  watch: {
+    navPosition: {
+      immediate: true,
+      handler() {
+        this.syncNavLayout()
+      }
+    }
+  },
   methods: {
+    syncNavLayout() {
+      const isTop = this.navPosition === 'top'
+      this.$store.dispatch('app/toggleSideBarHide', isTop)
+      if (!isTop) {
+        const defaults = this.$store.state.permission.defaultRoutes
+        if (defaults && defaults.length) {
+          this.$store.commit('SET_SIDEBAR_ROUTERS', defaults)
+        }
+      }
+    },
     handleClickOutside() {
       this.$store.dispatch('app/closeSideBar', { withoutAnimation: false })
     }
@@ -102,6 +125,10 @@ export default {
   }
 
   .sidebarHide .fixed-header {
+    width: 100%;
+  }
+
+  .navTop .fixed-header {
     width: 100%;
   }
 

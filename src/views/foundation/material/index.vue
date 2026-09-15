@@ -10,6 +10,8 @@
             :storage-key="moreSearchStorageKey"
             :default-types="builtInMoreSearchDefaults"
             :auto-load="false"
+            :show-picker="false"
+            :show-save="false"
             @change="onMoreSearchTypesChange"
             @search="handleQuery"
             @reset="resetQuery"
@@ -143,8 +145,40 @@
         />
       </div>
 
-      <!-- 右侧：更多操作 + 工具图标 -->
+      <!-- 右侧：更多检索 + 保存默认 + 更多操作 + 工具图标 -->
       <div class="list-toolbar-right material-toolbar-right">
+        <div
+          class="toolbar-more-search"
+          @mouseenter="onToolbarMoreEnter"
+          @mouseleave="onToolbarMoreLeave"
+        >
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            filterable
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option
+              v-for="opt in moreSearchOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </div>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary more-search-save-btn"
+          @click="saveMoreSearchDefaults"
+        >保存为默认显示条件</el-button>
         <el-dropdown trigger="click" class="material-more-ops" @command="handleMoreOpsCommand">
           <el-button size="small" class="spd-btn spd-btn--secondary">
             更多操作<i class="el-icon-arrow-down el-icon--right"></i>
@@ -2058,7 +2092,9 @@ export default {
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
       activeTab: 'form',
       /** 主列表表格高度（按可视区动态计算，保证翻页完整显示） */
-      mainTableHeight: 420
+      mainTableHeight: 420,
+      toolbarMoreHover: false,
+      toolbarMoreCloseTimer: null
     };
   },
   created() {
@@ -2092,6 +2128,7 @@ export default {
     this.clearMaterialLayoutRefreshTimers();
   },
   beforeDestroy() {
+    this.clearToolbarMoreCloseTimer();
     this.clearMaterialLayoutRefreshTimers();
     window.removeEventListener('resize', this.onMaterialWindowResize);
     if (this._materialLayoutObserver) {
@@ -2792,6 +2829,46 @@ export default {
       this.queryParams.pageNum = 1;
       this.clearCrossPageSelection();
       this.getList();
+    },
+    saveMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.saveDefaults === 'function') {
+        bar.saveDefaults();
+      }
+    },
+    clearToolbarMoreCloseTimer() {
+      if (this.toolbarMoreCloseTimer) {
+        clearTimeout(this.toolbarMoreCloseTimer);
+        this.toolbarMoreCloseTimer = null;
+      }
+    },
+    setToolbarMoreVisible(visible) {
+      const sel = this.$refs.toolbarMoreSelect;
+      if (!sel) return;
+      if (sel.visible === visible) return;
+      sel.visible = visible;
+      if (!visible && typeof sel.blur === 'function') {
+        sel.blur();
+      }
+    },
+    onToolbarMoreEnter() {
+      this.toolbarMoreHover = true;
+      this.clearToolbarMoreCloseTimer();
+      this.setToolbarMoreVisible(true);
+    },
+    onToolbarMoreLeave() {
+      this.toolbarMoreHover = false;
+      this.clearToolbarMoreCloseTimer();
+      this.toolbarMoreCloseTimer = setTimeout(() => {
+        if (!this.toolbarMoreHover) {
+          this.setToolbarMoreVisible(false);
+        }
+      }, 120);
+    },
+    onToolbarMoreVisibleChange(visible) {
+      if (!visible) {
+        this.toolbarMoreHover = false;
+      }
     },
     /** 工具栏「更多操作」 */
     handleMoreOpsCommand(command) {
