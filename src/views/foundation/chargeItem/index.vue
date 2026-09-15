@@ -94,34 +94,38 @@
       v-loading="loading"
       :data="chargeItemList"
       :row-key="getChargeItemRowKey"
+      class="charge-item-table"
       border
       stripe
+      :cell-style="{ whiteSpace: 'nowrap' }"
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" align="center" fixed="left" :reserve-selection="true" />
-      <el-table-column label="收费项ID" prop="chargeItemId" width="140" show-overflow-tooltip />
+      <el-table-column label="收费项ID" prop="chargeItemId" width="130" show-overflow-tooltip />
       <el-table-column label="收费编码" prop="chargeCode" width="120" show-overflow-tooltip />
-      <el-table-column label="收费名称" prop="chargeName" min-width="180" show-overflow-tooltip />
-      <el-table-column label="规格型号" prop="chargeSpeci" min-width="120" show-overflow-tooltip />
-      <el-table-column label="单价" prop="chargePrice" width="100" />
-      <el-table-column label="拼音简码" prop="referredCode" width="120" />
+      <el-table-column label="收费名称" prop="chargeName" min-width="200" show-overflow-tooltip />
+      <el-table-column label="规格型号" prop="chargeSpeci" min-width="140" show-overflow-tooltip />
+      <el-table-column label="单价" prop="chargePrice" width="90" show-overflow-tooltip />
+      <el-table-column label="拼音简码" prop="referredCode" min-width="160" show-overflow-tooltip />
       <el-table-column label="高低值属性" width="200">
         <template slot-scope="scope">
-          <el-select
-            v-model="scope.row.valueLevel"
-            size="mini"
-            style="width: 110px; margin-right: 8px;"
-            :disabled="scope.row._saving"
-          >
-            <el-option v-for="opt in valueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-          </el-select>
-          <el-button
-            type="text"
-            size="mini"
-            :disabled="scope.row._saving"
-            v-hasPermi="['foundation:chargeItem:edit','foundation:material:edit']"
-            @click="saveValueLevel(scope.row)"
-          >保存</el-button>
+          <div class="value-level-cell">
+            <el-select
+              v-model="scope.row.valueLevel"
+              size="mini"
+              class="value-level-select"
+              :disabled="scope.row._saving"
+            >
+              <el-option v-for="opt in valueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </el-select>
+            <el-button
+              type="text"
+              size="mini"
+              :disabled="scope.row._saving"
+              v-hasPermi="['foundation:chargeItem:edit','foundation:material:edit']"
+              @click="saveValueLevel(scope.row)"
+            >保存</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -397,5 +401,28 @@ export default {
   font-size: 13px;
   color: #606266;
   margin-right: 4px;
+}
+
+.value-level-cell {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.value-level-select {
+  width: 110px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.charge-item-table ::v-deep .el-table__header-wrapper th .cell,
+.charge-item-table ::v-deep .el-table__fixed-header-wrapper th .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
+}
+
+.charge-item-table ::v-deep td .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
 }
 </style>

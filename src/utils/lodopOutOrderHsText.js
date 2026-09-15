@@ -215,19 +215,20 @@ function printOnePage(LODOP, ctx) {
   const widths = buildColWidths(CONTENT_W)
   const lefts = buildColLefts(left0, widths)
 
-  // —— 标题区（对齐屏上 doc-header：左右 92px≈24mm 占位）——
+  // —— 标题区（对齐屏上 doc-header：左右占位；页码再内收，避免针式右不可打区裁掉）——
   const titleTop = MARGIN_T
   const titleH = 7
   const sideW = 24
+  const pageRightInset = 6 // mm，与浏览器打印 page-meta padding-right 同量级
   addText(LODOP, titleTop, left0 + sideW, CONTENT_W - sideW * 2, titleH, str(hospitalName) + '物资出库单', {
     fontName: FONT_DOT_MATRIX,
     fontSize: 13,
     align: 2,
     bold: 0
   })
-  addText(LODOP, titleTop + 1, left0 + CONTENT_W - sideW, sideW, 5, pageIndex + 1 + '/' + pageCount, {
+  addText(LODOP, titleTop + 1, left0 + CONTENT_W - sideW - pageRightInset, sideW, 5, pageIndex + 1 + '/' + pageCount, {
     fontName: FONT_DOT_MATRIX,
-    fontSize: 9,
+    fontSize: 10,
     align: 3,
     bold: 0
   })

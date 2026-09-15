@@ -65,7 +65,7 @@
               </el-form-item>
             </el-col>
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="财务分类" prop="financeCategoryId" label-width="84px">
+              <el-form-item label="财务分类" prop="financeCategoryId">
                 <SelectFinanceCategoryLow
                   v-model="queryParams.financeCategoryId"
                   placeholder="财务分类"
@@ -131,17 +131,17 @@
               </template>
             </el-table-column>
             <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
-            <el-table-column label="规格" align="center" prop="material.speci" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
-            <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable />
+            <el-table-column label="名称" align="center" prop="material.name" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
+            <el-table-column label="规格" align="center" prop="material.speci" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
+            <el-table-column label="型号" align="center" prop="material.model" width="100" show-overflow-tooltip resizable />
+            <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdUnit.unitName')" />
             <el-table-column label="库存数量" align="center" min-width="100" width="100" show-overflow-tooltip resizable sortable>
               <template slot-scope="scope">
                 <span>{{ useMaterialDict ? '--' : (scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--') }}</span>
               </template>
             </el-table-column>
             <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable sortable />
-            <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
+            <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable sortable>
               <template slot-scope="scope">
                 <span>{{ useMaterialDict ? '--' : (scope.row.amt != null && scope.row.amt !== '' ? scope.row.amt : '--') }}</span>
               </template>
@@ -198,11 +198,9 @@
 
           <div class="apply-pagination-wrap" ref="filterPaginationWrap">
             <pagination
-              class="modal-entry-pagination"
               :total="total"
               :page.sync="queryParams.pageNum"
               :limit.sync="queryParams.pageSize"
-              :hide-on-single-page="false"
               @pagination="handlePagination"
             />
           </div>
@@ -413,6 +411,11 @@ export default {
           if (this.nested) this.updateFilterTableHeight();
         });
       }
+    },
+    total() {
+      if (this.nested && this.show) {
+        this.$nextTick(() => this.updateFilterTableHeight());
+      }
     }
   },
   computed: {
@@ -610,13 +613,13 @@ export default {
         .filter(Boolean);
       pageKeys.forEach(key => {
         if (this.selectedRowMap[key]) {
-          delete this.selectedRowMap[key];
+          this.$delete(this.selectedRowMap, key);
         }
       });
       (val || []).forEach(row => {
         const key = this.getRowKey(row);
         if (key) {
-          this.selectedRowMap[key] = row;
+          this.$set(this.selectedRowMap, key, row);
         }
       });
       this.selectRow = Object.values(this.selectedRowMap);
@@ -637,6 +640,11 @@ export default {
     },
     inventoryIndex({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
+      const key = this.getRowKey(row);
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) {
+        return "apply-row-selected";
+      }
+      return "";
     },
     sortByNested(a, b, path) {
       const getVal = (obj) => {
@@ -696,11 +704,17 @@ export default {
 
 .dep-inventory-select-full-modal.local-modal-mask {
   position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.4);
   z-index: 3000;
   overflow: hidden;
+  justify-content: flex-start;
+  align-items: stretch;
 }
 
 .local-modal-content {
@@ -714,8 +728,15 @@ export default {
 }
 
 .dep-inventory-select-full-modal .local-modal-content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
   height: 100vh;
   max-height: 100vh;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .modal-header {
@@ -758,9 +779,45 @@ export default {
 </style>
 
 <style lang="scss">
+/* 压过 global.scss / department-apply-list-align 对 .local-modal-* 的限制 */
+.dep-inventory-select-full-modal.local-modal-mask {
+  position: fixed !important;
+  left: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  z-index: 3000 !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  overflow: hidden !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.dep-inventory-select-full-modal.local-modal-mask > .local-modal-content {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+/* 与 SelectMaterialFilter 嵌套层一致：定位由父页 left/right/top/bottom 控制（含 right:-8px） */
 .dep-inventory-select-mask.material-filter-mask--nested {
   position: absolute;
   z-index: 3100;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
 }
 
 .dep-inventory-select-mask.material-filter-mask--nested .local-modal-content.material-filter-modal--nested {
@@ -781,6 +838,14 @@ export default {
   flex-direction: column;
 }
 
+.dep-inventory-select-mask .material-filter-form.modal-form-compact {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
   padding: 8px 0 12px !important;
   flex: 1;
@@ -790,6 +855,7 @@ export default {
   overflow: hidden;
 }
 
+/* 查询区：与 RK-添加明细同一套（勿强行清掉全局卡片阴影，避免内区高度/观感不一致） */
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel {
   margin-top: 0;
   margin-bottom: 0;
@@ -804,16 +870,52 @@ export default {
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: 6px;
   margin-bottom: 4px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0;
+  box-sizing: border-box;
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row:last-child {
   margin-bottom: 0;
 }
 
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto;
+  max-width: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
 .dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
   margin-bottom: 0;
+  vertical-align: top;
+}
+
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+}
+
+.dep-inventory-select-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-toolbar.list-toolbar {
@@ -832,25 +934,30 @@ export default {
 }
 
 .dep-inventory-select-mask .local-modal-content .apply-modal-toolbar.list-toolbar .list-toolbar-left {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: 8px;
 }
 
 .dep-inventory-select-mask .apply-modal-detail-title {
   margin-right: 12px;
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
-  line-height: 32px;
+  color: #334155;
+  line-height: 28px;
 }
 
 .dep-inventory-select-mask.material-filter-mask--nested .material-filter-form.modal-form-compact > .apply-table-panel {
   flex: 1 1 auto;
   min-height: 0;
-  margin-bottom: 0;
+  margin-bottom: 40px;
   display: flex;
   flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
   overflow: hidden;
 }
 
@@ -864,22 +971,106 @@ export default {
 
 .dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap {
   flex: 0 0 auto;
-  border-top: 1px solid #EBEEF5;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 4px 8px;
-  box-sizing: border-box;
+  padding: 0;
+  border-top: 1px solid #e2e8f0;
 }
 
 .dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap .pagination-container {
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent;
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
 }
 
-.dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel > .apply-main-table > .el-table__body-wrapper {
+.dep-inventory-select-mask.material-filter-mask--nested .apply-table-panel .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+/* 横向滚动条与 RK-添加明细完全一致（高度 12px，影响表体可视高度） */
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper {
+  z-index: 2;
   overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-track,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+html body .dep-inventory-select-mask.material-filter-mask--nested .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+}
+
+/* 选中行高亮：与 RK-添加明细 / 列表页 apply-row-selected 一致 */
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected > td,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected > td .cell,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF !important;
+}
+
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected:hover > td,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF !important;
+}
+
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.apply-select-col,
+.dep-inventory-select-mask .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF !important;
 }
 </style>

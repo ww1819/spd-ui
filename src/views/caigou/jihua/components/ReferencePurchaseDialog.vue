@@ -81,16 +81,19 @@
               <div class="purchase-list-table-wrap">
                 <el-table
                   ref="purchaseListTable"
+                  class="ref-purchase-list-table"
                   v-loading="loading"
                   :data="purchaseList"
                   border
+                  stripe
                   row-key="id"
+                  :row-class-name="listRowClassName"
                   :cell-style="{ padding: '8px 4px' }"
                   @selection-change="onListSelectionChange"
                   @row-click="onListRowClick"
                   :height="listTableHeight"
                 >
-                  <el-table-column type="selection" width="50" align="center" fixed="left" :reserve-selection="true" />
+                  <el-table-column type="selection" width="50" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" :reserve-selection="true" />
                   <el-table-column label="序号" align="center" width="70">
                     <template slot-scope="scope">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</template>
                   </el-table-column>
@@ -141,7 +144,7 @@
                 @selection-change="onEntrySelectionChange"
                 :height="entryTableHeight"
               >
-                <el-table-column type="selection" width="50" align="center" fixed="left" :selectable="isEntrySelectable" />
+                <el-table-column type="selection" width="50" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" :selectable="isEntrySelectable" />
                 <el-table-column label="耗材编码" width="120" show-overflow-tooltip>
                   <template slot-scope="scope">{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</template>
                 </el-table-column>
@@ -467,6 +470,11 @@ export default {
       this.selectedEntryIds = []
       this.scheduleReloadEntries()
     },
+    listRowClassName({ row }) {
+      const key = row && row.id != null ? String(row.id) : ''
+      if (key && this.selectedRowMap && this.selectedRowMap[key]) return 'apply-row-selected'
+      return ''
+    },
     onListRowClick(row, column) {
       if (!row || row.id == null) return
       if (column && column.type === 'selection') return
@@ -780,7 +788,7 @@ export default {
   flex-direction: column;
   border: 1px solid #EBEEF5;
   border-radius: 4px;
-  margin-left: -20px;
+  margin-left: 0;
   min-height: 0;
   height: 100%;
   max-height: 100%;
@@ -791,6 +799,35 @@ export default {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+/* 勾选列可见：不依赖 el-table fixed 层，避免被 overflow/负 margin 裁切 */
+.purchase-list-table-wrap ::v-deep .el-table .el-table-column--selection .cell,
+.purchase-detail-table-wrap ::v-deep .el-table .el-table-column--selection .cell {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.purchase-list-table-wrap ::v-deep .el-checkbox,
+.purchase-detail-table-wrap ::v-deep .el-checkbox {
+  display: inline-block;
+}
+
+.purchase-list-table-wrap ::v-deep .el-table__body tr.apply-row-selected > td,
+.purchase-list-table-wrap ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.purchase-list-table-wrap ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
+.purchase-list-table-wrap ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection {
+  background-color: #ecf5ff !important;
+}
+
+.purchase-list-table-wrap ::v-deep .el-table__body tr.el-table__row--striped.apply-row-selected > td,
+.purchase-list-table-wrap ::v-deep .el-table__body tr.el-table__row--striped.apply-row-selected > td .cell {
+  background-color: #ecf5ff !important;
+}
+
+.purchase-list-table-wrap ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.purchase-list-table-wrap ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell {
+  background-color: #d9ecff !important;
 }
 
 .purchase-detail-container {

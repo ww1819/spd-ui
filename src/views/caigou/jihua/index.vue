@@ -2557,11 +2557,11 @@ listPurchasePlan(queryParams).then(response => {
     flex-direction: column;
     border: 1px solid #EBEEF5;
     border-radius: 4px;
-    margin-left: -20px;
+    margin-left: 0;
     min-height: 0;
     height: 100%;
     max-height: 100%;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .purchase-list-table-wrap {

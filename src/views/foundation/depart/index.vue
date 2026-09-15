@@ -1,13 +1,13 @@
 <template>
-  <div class="app-container list-page department-container">
-    <el-row :gutter="20">
-      <!-- 左侧科室列表 -->
-      <el-col :span="6">
-        <el-card class="department-card">
-          <div slot="header" class="department-header">
+  <div class="app-container list-page depart-page">
+    <el-row :gutter="8" class="depart-layout-row">
+      <!-- 左侧科室树（对齐耗材对照左侧列表） -->
+      <el-col :span="5" class="depart-left-col">
+        <div class="depart-side-panel" ref="leftStack">
+          <div class="depart-side-header">
             <span>科室</span>
           </div>
-          <div class="department-tree-wrap">
+          <div class="depart-side-list">
             <el-tree
               ref="deptTree"
               :data="deptTreeData"
@@ -19,149 +19,172 @@
               @node-click="handleDeptTreeNodeClick"
             />
           </div>
-        </el-card>
+        </div>
       </el-col>
 
-      <!-- 右侧表格区域 -->
-      <el-col :span="18">
-    <div class="query-container" v-show="showSearch">
-      <div class="form-fields-container list-query-panel">
-        <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-          <more-search-bar
-            ref="moreSearchBar"
-            v-model="moreSearchTypes"
-            :options="moreSearchOptions"
-            :storage-key="moreSearchStorageKey"
-            :default-types="builtInMoreSearchDefaults"
-            :auto-load="false"
-            @change="onMoreSearchTypesChange"
-            @search="handleQuery"
-            @reset="resetQuery"
-          >
-            <div
-              v-for="t in moreSearchTypes"
-              :key="t"
-              class="more-search-dynamic-field more-search-field--text"
+      <!-- 右侧：查询 / 工具栏 / 明细框 -->
+      <el-col :span="19" class="depart-right-col">
+        <div class="depart-main">
+          <div class="form-fields-container list-query-panel" v-show="showSearch">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <div class="depart-query-row">
+                <el-input
+                  v-model="queryParams.code"
+                  placeholder="科室编码"
+                  clearable
+                  class="depart-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.name"
+                  placeholder="科室名称"
+                  clearable
+                  class="depart-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.referredName"
+                  placeholder="拼音简码"
+                  clearable
+                  class="depart-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.deptRemark"
+                  placeholder="备注模糊查询"
+                  clearable
+                  class="depart-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <div class="depart-query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
+              </div>
+            </el-form>
+          </div>
+
+          <el-row :gutter="0" class="list-toolbar depart-toolbar">
+            <div class="list-toolbar-left">
+              <el-button
+                v-if="!isZqTcmTenant"
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                @click="handleAdd"
+                v-hasPermi="['foundation:depart:add']"
+              >新增</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleUpdate"
+                v-hasPermi="['foundation:depart:edit']"
+              >修改</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleDelete"
+                v-hasPermi="['foundation:depart:remove']"
+              >删除</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="multiple"
+                @click="handleUpdateReferred"
+                v-hasPermi="['foundation:depart:updateReferred']"
+              >更新简码</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleExport"
+                v-hasPermi="['foundation:depart:export']"
+              >导出</el-button>
+              <el-button
+                v-if="!isZqTcmTenant"
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('add')"
+                v-hasPermi="['foundation:depart:import']"
+              >新增导入</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('update')"
+                v-hasPermi="['foundation:depart:import']"
+              >更新导入</el-button>
+              <msun-his-sync-button sync-type="depts" label="HIS科室同步" :inline="true" :refresh="getList" />
+              <el-button
+                v-if="showMsunProbe"
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                icon="el-icon-connection"
+                @click="goMsunProbe"
+              >众阳接口联调</el-button>
+            </div>
+            <div class="list-toolbar-right">
+              <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+            </div>
+          </el-row>
+
+          <div class="apply-table-panel" ref="tablePanel">
+            <el-table
+              ref="departTable"
+              v-loading="loading"
+              :data="departList"
+              class="apply-main-table"
+              border
+              stripe
+              :height="mainTableHeight"
+              :row-class-name="departRowClassName"
+              @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
             >
-              <el-input
-                v-model="queryParams[t]"
-                :placeholder="moreSearchPlaceholderFor(t)"
-                clearable
-                class="more-search-input more-search-input--dynamic"
-                @keyup.enter.native="handleQuery"
+              <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+              <el-table-column label="序号" align="center" prop="index" width="70" show-overflow-tooltip />
+              <el-table-column label="科室编码" align="center" prop="code" width="140" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="科室名称" align="center" prop="name" min-width="180" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="简码" align="center" prop="referredName" width="120" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="备注" align="center" prop="deptRemark" min-width="140" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="HIS科室编码" align="center" prop="hisId" width="150" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="院区" align="center" prop="campus" width="130" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="操作" align="center" class-name="apply-action-col" width="240">
+                <template slot-scope="scope">
+                  <el-button
+                    size="small"
+                    type="text"
+                    icon="el-icon-document"
+                    @click="openChangeLog(scope.row)"
+                    v-hasPermi="['foundation:depart:list']"
+                  >变更记录</el-button>
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleUpdate(scope.row)"
+                    v-hasPermi="['foundation:depart:edit']"
+                  >修改</el-button>
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleDelete(scope.row)"
+                    v-hasPermi="['foundation:depart:remove']"
+                  >删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div class="apply-pagination-wrap">
+              <pagination
+                v-show="total > 0"
+                :total="total"
+                :page.sync="queryParams.pageNum"
+                :limit.sync="queryParams.pageSize"
+                @pagination="getList"
               />
             </div>
-          </more-search-bar>
-        </el-form>
-      </div>
-    </div>
-
-    <el-row :gutter="0" class="mb8 list-toolbar">
-      <div class="list-toolbar-left">
-        <el-button
-          v-if="!isZqTcmTenant"
-          type="primary"
-          size="small"
-          class="spd-btn spd-btn--primary"
-          @click="handleAdd"
-          v-hasPermi="['foundation:depart:add']"
-        >新增</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['foundation:depart:edit']"
-        >修改</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          :disabled="single"
-          @click="handleDelete"
-          v-hasPermi="['foundation:depart:remove']"
-        >删除</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          :disabled="multiple"
-          @click="handleUpdateReferred"
-          v-hasPermi="['foundation:depart:updateReferred']"
-        >更新简码</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          @click="handleExport"
-          v-hasPermi="['foundation:depart:export']"
-        >导出</el-button>
-        <el-button
-          v-if="!isZqTcmTenant"
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          @click="handleImport('add')"
-          v-hasPermi="['foundation:depart:import']"
-        >新增导入</el-button>
-        <el-button
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          @click="handleImport('update')"
-          v-hasPermi="['foundation:depart:import']"
-        >更新导入</el-button>
-        <msun-his-sync-button sync-type="depts" label="HIS科室同步" :inline="true" :refresh="getList" />
-        <el-button
-          v-if="showMsunProbe"
-          size="small"
-          class="spd-btn spd-btn--secondary"
-          icon="el-icon-connection"
-          @click="goMsunProbe"
-        >众阳接口联调</el-button>
-      </div>
-      <div class="list-toolbar-right">
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-      </div>
-    </el-row>
-
-    <el-table v-loading="loading" :data="departList" :row-class-name="departIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" style="width: 100%" stripe>
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip />
-      <el-table-column label="科室编码" align="center" prop="code" width="150" show-overflow-tooltip />
-      <el-table-column label="科室名称" align="center" prop="name" min-width="200" show-overflow-tooltip />
-      <el-table-column label="简码" align="center" prop="referredName" width="120" show-overflow-tooltip />
-      <el-table-column label="备注" align="center" prop="deptRemark" min-width="140" show-overflow-tooltip />
-      <el-table-column label="HIS科室编码" align="center" prop="hisId" width="140" show-overflow-tooltip />
-      <el-table-column label="院区" align="center" prop="campus" width="120" show-overflow-tooltip />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220" fixed="right">
-        <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            icon="el-icon-document"
-            @click="openChangeLog(scope.row)"
-            v-hasPermi="['foundation:depart:list']"
-          >变更记录</el-button>
-          <el-button
-            size="small"
-            type="text"
-            
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['foundation:depart:edit']"
-          >修改</el-button>
-          <el-button
-            size="small"
-            type="text"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['foundation:depart:remove']"
-          >删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+          </div>
+        </div>
       </el-col>
     </el-row>
 
@@ -339,46 +362,25 @@ export default {
         return "必填：第三方系统科室编码（与 HIS 一致）";
       }
       return "本组织机构手工新增不维护此项";
-    },
-    moreSearchStorageKey() {
-      return "spd.foundation.depart.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return ["code", "name", "referredName", "deptRemark"];
     }
   },
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
+      rowHighlightTick: 0,
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { value: "code", label: "科室编码" },
-        { value: "name", label: "科室名称" },
-        { value: "referredName", label: "拼音简码" },
-        { value: "deptRemark", label: "备注" }
-      ],
-      // 总条数
       total: 0,
-      // 科室表格数据
       departList: [],
       deptTreeData: [],
       deptFlatForSelect: [],
       parentTreeselectOptions: [],
       treeSelectedKey: "root",
-      // 弹出层标题
+      mainTableHeight: 400,
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -387,6 +389,8 @@ export default {
         referredName: null,
         deptRemark: null,
         treeParentId: null,
+        orderByColumn: null,
+        isAsc: null
       },
       upload: {
         open: false,
@@ -408,9 +412,7 @@ export default {
         deptName: "",
         rows: []
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
         code: [
           { required: true, message: "科室编码不能为空", trigger: "blur" }
@@ -435,46 +437,62 @@ export default {
       }
     };
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.treeSelectedKey = "root";
     this.queryParams.treeParentId = null;
     this.refreshDeptTree().then(() => {
       this.getList();
     });
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      setTimeout(() => this.updateMainTableHeight(), 80);
+      setTimeout(() => this.updateMainTableHeight(), 200);
+    });
+    window.addEventListener('resize', this.updateMainTableHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight);
+  },
   methods: {
-    moreSearchPlaceholderFor(t) {
-      const map = { code: "科室编码", name: "科室名称", referredName: "拼音简码", deptRemark: "备注模糊查询" };
-      return map[t] || "请输入";
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
+    /** 明细框高度：底边对齐左侧科室树 */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const left = this.$refs.leftStack;
+      if (!left || !left.getBoundingClientRect) return;
+      const panelTop = panel.getBoundingClientRect().top;
+      const targetBottom = left.getBoundingClientRect().bottom;
+      const pagEl = panel.querySelector('.apply-pagination-wrap');
+      let pagH = pagEl ? pagEl.getBoundingClientRect().height : 52;
+      if (pagH < 40) pagH = 52;
+      const borderY =
+        (parseFloat(window.getComputedStyle(panel).borderTopWidth) || 0) +
+        (parseFloat(window.getComputedStyle(panel).borderBottomWidth) || 0);
+      const next = Math.max(240, Math.floor(targetBottom - panelTop - pagH - borderY));
+      if (Math.abs((this.mainTableHeight || 0) - next) >= 2) {
+        this.mainTableHeight = next;
       }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      ["code", "name", "referredName", "deptRemark"].forEach((k) => {
-        if (!set.has(k)) target[k] = null;
+      this.$nextTick(() => {
+        if (this.$refs.departTable && this.$refs.departTable.doLayout) {
+          this.$refs.departTable.doLayout();
+        }
+        const overshoot = panel.getBoundingClientRect().bottom - left.getBoundingClientRect().bottom;
+        if (overshoot > 2) {
+          this.mainTableHeight = Math.max(240, Math.floor(this.mainTableHeight - overshoot));
+          this.$nextTick(() => {
+            if (this.$refs.departTable && this.$refs.departTable.doLayout) {
+              this.$refs.departTable.doLayout();
+            }
+          });
+        }
       });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     refreshDeptTree() {
       return departTree().then(res => {
@@ -489,6 +507,7 @@ export default {
           if (this.$refs.deptTree && this.treeSelectedKey) {
             this.$refs.deptTree.setCurrentKey(this.treeSelectedKey);
           }
+          this.updateMainTableHeight();
         });
       });
     },
@@ -576,26 +595,31 @@ export default {
     goMsunProbe() {
       this.$router.push({ path: '/foundation/msun-probe/index' });
     },
-    /** 查询科室列表 */
     getList() {
       this.loading = true;
       const q = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(q);
       if (q.treeParentId == null) {
         delete q.treeParentId;
       }
       listdepart(q).then(response => {
-        this.departList = response.rows;
+        const rows = response.rows || [];
+        this.departList = rows.map((item, index) => ({
+          ...item,
+          index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1
+        }));
         this.total = response.total;
         this.loading = false;
+        this.$nextTick(() => this.updateMainTableHeight());
+      }).catch(() => {
+        this.loading = false;
+        this.departList = [];
+        this.total = 0;
       });
     },
-    // 取消按钮
     cancel() {
       this.open = false;
       this.reset();
     },
-    // 表单重置
     reset() {
       this.form = {
         id: null,
@@ -614,22 +638,22 @@ export default {
       };
       this.resetForm("form");
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
-      this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.queryParams.code = null;
       this.queryParams.name = null;
       this.queryParams.referredName = null;
       this.queryParams.deptRemark = null;
+      this.queryParams.orderByColumn = null;
+      this.queryParams.isAsc = null;
       this.treeSelectedKey = "root";
       this.queryParams.treeParentId = null;
-      this.onMoreSearchTypesChange();
+      if (this.$refs.departTable && this.$refs.departTable.clearSort) {
+        this.$refs.departTable.clearSort();
+      }
       this.$nextTick(() => {
         if (this.$refs.deptTree) {
           this.$refs.deptTree.setCurrentKey("root");
@@ -637,13 +661,39 @@ export default {
       });
       this.handleQuery();
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        code: 'code',
+        name: 'name',
+        referredName: 'referred_name',
+        deptRemark: 'remark',
+        hisId: 'his_id',
+        campus: 'campus'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = null;
+        this.queryParams.isAsc = null;
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
     },
-    /** 新增按钮操作 */
+    handleSelectionChange(selection) {
+      this.ids = (selection || []).map(item => item.id);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
+      this.rowHighlightTick += 1;
+    },
+    departRowClassName({ row }) {
+      void this.rowHighlightTick;
+      const rid = row && row.id != null ? String(row.id) : '';
+      if (rid && this.ids.some(id => String(id) === rid)) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
     handleAdd() {
       if (this.isZqTcmTenant) {
         this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
@@ -654,7 +704,6 @@ export default {
       this.title = "添加科室";
       this.$nextTick(() => this.rebuildParentTreeselectOptions());
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
       const rawId = row && row.id != null ? row.id : this.ids;
@@ -672,19 +721,18 @@ export default {
         this.$nextTick(() => this.rebuildParentTreeselectOptions());
       });
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.id != null) {
-            updatedepart(this.form).then(response => {
+            updatedepart(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
               this.refreshDeptTree();
             });
           } else {
-            adddepart(this.form).then(response => {
+            adddepart(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -694,7 +742,6 @@ export default {
         }
       });
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const ids = row.id || this.ids;
       this.$modal.confirm('是否确认删除科室编号为"' + ids + '"的数据项？').then(function() {
@@ -705,14 +752,9 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    departIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
-    },
-    /** 导出按钮操作 */
     handleExport() {
       const q = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(q);
-      this.download('foundation/depart/export', q, `depart_${new Date().getTime()}.xlsx`)
+      this.download('foundation/depart/export', q, `depart_${new Date().getTime()}.xlsx`);
     },
     handleImport(mode) {
       if (this.isZqTcmTenant && mode === 'add') {
@@ -742,7 +784,7 @@ export default {
     },
     importTemplate() {
       const api = this.upload.mode === "update" ? 'foundation/depart/importUpdateTemplate' : 'foundation/depart/importAddTemplate';
-      this.download(api, {}, `fd_department_template_${new Date().getTime()}.xlsx`)
+      this.download(api, {}, `fd_department_template_${new Date().getTime()}.xlsx`);
     },
     openChangeLog(row) {
       if (!row || !row.id) return;
@@ -813,7 +855,6 @@ export default {
         this.upload.isUploading = false;
       }
     },
-    /** 更新科室名称简码 */
     handleUpdateReferred() {
       if (!this.ids || this.ids.length === 0) {
         this.$modal.msgWarning("请先选择要更新简码的科室");
@@ -831,6 +872,295 @@ export default {
 </script>
 
 <style scoped>
+.depart-layout-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.depart-left-col,
+.depart-right-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.depart-side-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.depart-side-header {
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #EBEEF5;
+  font-weight: bold;
+  font-size: 14px;
+  color: #303133;
+  flex: 0 0 auto;
+}
+
+.depart-side-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 12px 12px;
+}
+
+.depart-side-list ::v-deep .el-tree-node__content {
+  height: 34px;
+}
+
+.depart-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  gap: 4px;
+}
+
+.depart-page .depart-main > .list-query-panel,
+.depart-page .depart-main > .depart-toolbar,
+.depart-page .depart-main > .apply-table-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.depart-page .depart-toolbar.list-toolbar {
+  margin: 0 !important;
+  padding: 6px 12px !important;
+}
+
+.depart-query-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.depart-query-control {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  flex-shrink: 0;
+}
+
+.depart-query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.apply-table-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #e8ecf1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05) !important;
+  overflow: hidden;
+  height: auto !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.apply-table-panel > .apply-main-table {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-bottom: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  overflow: visible !important;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
+.depart-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__header-wrapper th,
+.depart-page .apply-main-table ::v-deep .el-table__header-wrapper th.el-table__cell,
+.depart-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th,
+.depart-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th.el-table__cell,
+.depart-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th,
+.depart-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__header-wrapper th .cell,
+.depart-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th .cell,
+.depart-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
+}
+
+.depart-page .apply-main-table ::v-deep td .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.depart-page .apply-main-table ::v-deep td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body tr > td,
+.depart-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.depart-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell,
+.depart-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-select-col,
+.depart-page .apply-main-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection,
+.depart-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-action-col,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.depart-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.depart-page .apply-main-table ::v-deep .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.depart-page .apply-main-table ::v-deep .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.depart-page .apply-main-table ::v-deep .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.depart-page .apply-main-table ::v-deep .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.depart-page .apply-main-table ::v-deep th.apply-select-col,
+.depart-page .apply-main-table ::v-deep td.apply-select-col,
+.depart-page .apply-main-table ::v-deep th.el-table-column--selection,
+.depart-page .apply-main-table ::v-deep td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+}
+
+.depart-page .apply-main-table ::v-deep th.apply-action-col,
+.depart-page .apply-main-table ::v-deep td.apply-action-col {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 3;
+}
+
+.depart-page .apply-main-table ::v-deep td.apply-select-col,
+.depart-page .apply-main-table ::v-deep td.el-table-column--selection,
+.depart-page .apply-main-table ::v-deep td.apply-action-col {
+  background-color: #fff;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+}
+
+.depart-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399 !important;
+}
+
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -921,78 +1251,40 @@ export default {
 .page-drawer-footer .el-button {
   margin: 0 8px;
 }
+</style>
 
-/* 科室卡片样式 */
-.department-card {
-  margin-right: 15px;
-  height: calc(100vh - 180px);
+<style>
+.app-container.depart-page {
+  position: relative;
   display: flex;
   flex-direction: column;
-}
-
-.department-card ::v-deep .el-card__header {
-  padding: 18px 20px;
-  border-bottom: 1px solid #EBEEF5;
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 10;
-  flex-shrink: 0;
-}
-
-.department-card ::v-deep .el-card__body {
-  flex: 1;
-  padding: 0;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
   overflow: hidden;
+  box-sizing: border-box;
+  padding: 8px !important;
 }
 
-.department-header {
-  font-weight: bold;
-  font-size: 14px;
+.app-container.depart-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-.department-tree-wrap {
-  height: 100%;
-  overflow: auto;
-  padding: 8px 12px 12px;
+.app-container.depart-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
 }
 
-.department-tree-wrap ::v-deep .el-tree-node__content {
-  height: 34px;
+.app-container.depart-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.depart-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.depart-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
 }
 
-/* 查询条件容器 */
-.query-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  margin-bottom: 20px;
-  width: 100%;
-}
-
-/* 表格列不换行 */
-.el-table {
-  white-space: nowrap;
-}
-
-.el-table td,
-.el-table th {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 表格横向滚动 */
-.el-table__body-wrapper {
-  overflow-x: auto;
-}
-
-/* 确保科室容器有相对定位，以便抽屉正确定位在内容区内 */
-.department-container {
-  position: relative;
-  min-height: calc(100vh - 84px);
-  width: 100%;
-  overflow: visible;
+.app-container.depart-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
 </style>

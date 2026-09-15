@@ -22,7 +22,7 @@
             />
           </el-form-item>
           <el-form-item label="仓库">
-            <SelectWarehouse v-model="searchForm.warehouseId" clearable />
+            <SelectWarehouse v-model="searchForm.warehouseIds" :multiple="true" clearable style="width: 240px" />
           </el-form-item>
           <el-form-item label="供应商">
             <el-input
@@ -122,7 +122,7 @@
               />
             </el-form-item>
             <el-form-item label="仓库">
-              <SelectWarehouse v-model="searchForm.warehouseId" clearable />
+              <SelectWarehouse v-model="searchForm.warehouseIds" :multiple="true" clearable style="width: 240px" />
             </el-form-item>
             <el-form-item label="供应商">
               <el-input
@@ -221,7 +221,7 @@ export default {
       searchForm: {
         beginDate: "",
         endDate: "",
-        warehouseId: null,
+        warehouseIds: [],
         supplierKeyword: "",
         excludeZeroNoBiz: false,
       },
@@ -280,9 +280,19 @@ export default {
       const q = this.queryParams || {};
       this.searchForm.beginDate = q.beginDate ? String(q.beginDate) : this.defaultBeginDateTime();
       this.searchForm.endDate = q.endDate ? String(q.endDate) : this.defaultEndDateTime();
-      this.searchForm.warehouseId = q.warehouseId != null ? q.warehouseId : null;
+      this.searchForm.warehouseIds = this.parseWarehouseIds(q);
       this.searchForm.supplierKeyword = q.supplierKeyword ? String(q.supplierKeyword) : "";
       this.searchForm.excludeZeroNoBiz = q.excludeZeroNoBiz === 1 || q.excludeZeroNoBiz === true;
+    },
+    parseWarehouseIds(q) {
+      const src = q || {};
+      if (Array.isArray(src.warehouseIds) && src.warehouseIds.length > 0) {
+        return src.warehouseIds.filter((id) => id != null && id !== "");
+      }
+      if (src.warehouseId != null && src.warehouseId !== "") {
+        return [src.warehouseId];
+      }
+      return [];
     },
     handleQuery() {
       this.loadReport();
@@ -290,7 +300,7 @@ export default {
     resetQuery() {
       this.searchForm.beginDate = this.defaultBeginDateTime();
       this.searchForm.endDate = this.defaultEndDateTime();
-      this.searchForm.warehouseId = null;
+      this.searchForm.warehouseIds = [];
       this.searchForm.supplierKeyword = "";
       this.searchForm.excludeZeroNoBiz = false;
       this.loadReport();
@@ -327,7 +337,11 @@ export default {
       const q = { ...(this.queryParams || {}) };
       q.beginDate = this.searchForm.beginDate || this.defaultBeginDateTime();
       q.endDate = this.searchForm.endDate || this.defaultEndDateTime();
-      q.warehouseId = this.searchForm.warehouseId != null ? this.searchForm.warehouseId : null;
+      const warehouseIds = Array.isArray(this.searchForm.warehouseIds)
+        ? this.searchForm.warehouseIds.filter((id) => id != null && id !== "")
+        : [];
+      q.warehouseIds = warehouseIds.length > 0 ? warehouseIds : null;
+      q.warehouseId = null;
       q.supplerId = null;
       q.supplierKeyword = this.searchForm.supplierKeyword ? String(this.searchForm.supplierKeyword).trim() : null;
       q.excludeZeroNoBiz = this.searchForm.excludeZeroNoBiz ? 1 : 0;

@@ -1,159 +1,176 @@
 <template>
-  <div class="app-container list-page">
-    <el-row :gutter="20">
-      <!-- 左侧树形菜单 -->
-      <el-col :span="4">
-        <el-card class="tree-card">
-          <el-tree
-            :data="treeData"
-            :props="treeProps"
-            node-key="locationId"
-            highlight-current
-            @node-click="handleNodeClick"
-            :indent="20"
-            :default-expand-all="true"
-        >
-            <span slot-scope="{ node }" class="custom-tree-node">
-              <i class="el-icon-folder-opened" />
-              <span>{{ node.label }}</span>
-            </span>
-          </el-tree>
-        </el-card>
-      </el-col>
-
-      <!-- 右侧表格区域 -->
-      <el-col :span="20">
-        <div class="query-container" v-show="showSearch">
-          <div class="form-fields-container list-query-panel">
-            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-              <more-search-bar
-                ref="moreSearchBar"
-                v-model="moreSearchTypes"
-                :options="moreSearchOptions"
-                :storage-key="moreSearchStorageKey"
-                :default-types="builtInMoreSearchDefaults"
-                :auto-load="false"
-                @change="onMoreSearchTypesChange"
-                @search="handleQuery"
-                @reset="resetQuery"
-              >
-                <div
-                  v-for="t in moreSearchTypes"
-                  :key="t"
-                  class="more-search-dynamic-field more-search-field--text"
-                >
-                  <el-input
-                    v-model="queryParams[t]"
-                    :placeholder="moreSearchPlaceholderFor(t)"
-                    clearable
-                    class="more-search-input more-search-input--dynamic"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </div>
-              </more-search-bar>
-            </el-form>
+  <div class="app-container list-page location-page">
+    <el-row :gutter="8" class="location-layout-row">
+      <!-- 左侧货位树（对齐耗材对照左侧列表） -->
+      <el-col :span="5" class="location-left-col">
+        <div class="location-side-panel" ref="leftStack">
+          <div class="location-side-header">
+            <span>全部货位</span>
+          </div>
+          <div class="location-side-list">
+            <el-tree
+              ref="locationTree"
+              :data="treeData"
+              :props="treeProps"
+              node-key="locationId"
+              highlight-current
+              :indent="20"
+              :default-expand-all="true"
+              :expand-on-click-node="false"
+              @node-click="handleNodeClick"
+            >
+              <span slot-scope="{ node }" class="custom-tree-node">
+                <i class="el-icon-folder-opened" />
+                <span>{{ node.label }}</span>
+              </span>
+            </el-tree>
           </div>
         </div>
+      </el-col>
 
-        <el-row :gutter="0" class="mb8 list-toolbar">
-          <div class="list-toolbar-left">
-            <el-button
-              type="primary"
-              size="small"
-              class="spd-btn spd-btn--primary"
-              @click="handleAdd"
-              v-hasPermi="['foundation:location:add']"
-            >新增</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="single"
-              @click="handleUpdate"
-              v-hasPermi="['foundation:location:edit']"
-            >修改</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="single"
-              @click="handleDelete"
-              v-hasPermi="['foundation:location:remove']"
-            >删除</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              @click="handleExport"
-              v-hasPermi="['foundation:location:export']"
-            >导出</el-button>
+      <!-- 右侧：查询 / 工具栏 / 明细框 -->
+      <el-col :span="19" class="location-right-col">
+        <div class="location-main">
+          <div class="form-fields-container list-query-panel" v-show="showSearch">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <div class="location-query-row">
+                <el-input
+                  v-model="queryParams.locationCode"
+                  placeholder="货位编码"
+                  clearable
+                  class="location-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.locationName"
+                  placeholder="货位名称"
+                  clearable
+                  class="location-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <div class="location-query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
+              </div>
+            </el-form>
           </div>
-          <div class="list-toolbar-right">
-            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-          </div>
-        </el-row>
 
-        <el-table v-loading="loading" :data="locationList" :row-class-name="locationIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="货位编码" align="center" prop="locationCode" width="120"/>
-          <el-table-column label="货位名称" align="center" prop="locationName" width="180"/>
-          <el-table-column label="五区" align="center" prop="zoneType" width="100">
-            <template slot-scope="scope">
-              <span>{{ zoneTypeLabel(scope.row.zoneType) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="货架" align="center" prop="shelfCode" width="90"/>
-          <el-table-column label="层/格" align="center" width="80">
-            <template slot-scope="scope">
-              <span v-if="scope.row.layerNo != null || scope.row.slotNo != null">{{ scope.row.layerNo || '-' }}/{{ scope.row.slotNo || '-' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="仓库" align="center" prop="warehouseName" width="150"/>
-          <el-table-column label="组织机构ID" align="center" prop="tenantId" width="120" show-overflow-tooltip />
-          <el-table-column label="备注" align="center" prop="remark" min-width="100" show-overflow-tooltip />
-          <el-table-column label="上级货位" align="center" width="150">
-            <template slot-scope="scope">
-              <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentLocationName(scope.row.parentId) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="创建日期" align="center" prop="createTime" width="100">
-            <template slot-scope="scope">
-              <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="启用" align="center" width="100">
-            <template slot-scope="scope">
-              <el-switch
-                v-model="scope.row.delFlag"
-                :active-value="0"
-                :inactive-value="1"
-                @change="handleStatusChange(scope.row)"
-              ></el-switch>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
-            <template slot-scope="scope">
+          <el-row :gutter="0" class="list-toolbar location-toolbar">
+            <div class="list-toolbar-left">
+              <el-button
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                @click="handleAdd"
+                v-hasPermi="['foundation:location:add']"
+              >新增</el-button>
               <el-button
                 size="small"
-                type="text"
-                @click="handleUpdate(scope.row)"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleUpdate"
                 v-hasPermi="['foundation:location:edit']"
               >修改</el-button>
               <el-button
                 size="small"
-                type="text"
-                @click="handleDelete(scope.row)"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleDelete"
                 v-hasPermi="['foundation:location:remove']"
               >删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleExport"
+                v-hasPermi="['foundation:location:export']"
+              >导出</el-button>
+            </div>
+            <div class="list-toolbar-right">
+              <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+            </div>
+          </el-row>
 
-        <pagination
-          v-show="total>0"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
+          <div class="apply-table-panel" ref="tablePanel">
+            <el-table
+              ref="locationTable"
+              v-loading="loading"
+              :data="locationList"
+              class="apply-main-table"
+              border
+              stripe
+              :height="mainTableHeight"
+              :row-class-name="locationRowClassName"
+              @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
+            >
+              <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+              <el-table-column label="序号" align="center" prop="index" width="70" show-overflow-tooltip />
+              <el-table-column label="货位编码" align="center" prop="locationCode" width="140" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="货位名称" align="center" prop="locationName" min-width="160" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="五区" align="center" prop="zoneType" width="120" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span>{{ zoneTypeLabel(scope.row.zoneType) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="货架" align="center" prop="shelfCode" width="110" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="层/格" align="center" width="100" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.layerNo != null || scope.row.slotNo != null">{{ scope.row.layerNo || '-' }}/{{ scope.row.slotNo || '-' }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="仓库" align="center" prop="warehouseName" min-width="140" show-overflow-tooltip />
+              <el-table-column label="组织机构ID" align="center" prop="tenantId" width="150" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
+              <el-table-column label="上级货位" align="center" width="140" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentLocationName(scope.row.parentId) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="创建日期" align="center" prop="createTime" width="150" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="启用" align="center" width="100">
+                <template slot-scope="scope">
+                  <el-switch
+                    v-model="scope.row.delFlag"
+                    :active-value="0"
+                    :inactive-value="1"
+                    @change="handleStatusChange(scope.row)"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" align="center" class-name="apply-action-col" width="140">
+                <template slot-scope="scope">
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleUpdate(scope.row)"
+                    v-hasPermi="['foundation:location:edit']"
+                  >修改</el-button>
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleDelete(scope.row)"
+                    v-hasPermi="['foundation:location:remove']"
+                  >删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div class="apply-pagination-wrap">
+              <pagination
+                v-show="total > 0"
+                :total="total"
+                :page.sync="queryParams.pageNum"
+                :limit.sync="queryParams.pageSize"
+                @pagination="getList"
+              />
+            </div>
+          </div>
+        </div>
       </el-col>
     </el-row>
 
@@ -189,7 +206,7 @@
                     :label="item.locationName"
                     :value="item.locationId"
                     :disabled="form.locationId && item.locationId === form.locationId"
-                  ></el-option>
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -276,49 +293,33 @@ export default {
   },
   data() {
     return {
-      // 树形数据
       treeData: [],
       treeProps: {
         label: 'locationName',
         children: 'children'
       },
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
+      rowHighlightTick: 0,
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { value: "locationCode", label: "货位编码" },
-        { value: "locationName", label: "货位名称" }
-      ],
-      // 总条数
       total: 0,
-      // 货位表格数据
       locationList: [],
-      // 弹出层标题
+      mainTableHeight: 400,
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         locationCode: null,
         locationName: null,
+        orderByColumn: null,
+        isAsc: null
       },
-      // 表单参数
       form: {},
-      // 父级货位选项
       parentOptions: [],
-      // 货位映射（用于根据ID快速查找货位名称）
       locationMap: {},
-      // 表单校验
       rules: {
         locationCode: [
           { required: true, message: "货位编码不能为空", trigger: "blur" }
@@ -340,90 +341,97 @@ export default {
     ...mapGetters(['customerId']),
     isDisabled() {
       return this.form.locationId != null;
-    },
-    moreSearchStorageKey() {
-      return "spd.foundation.location.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return ["locationCode", "locationName"];
+    }
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      setTimeout(() => this.updateMainTableHeight(), 80);
+      setTimeout(() => this.updateMainTableHeight(), 200);
+    });
+    window.addEventListener('resize', this.updateMainTableHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight);
+  },
   methods: {
-    moreSearchPlaceholderFor(t) {
-      const map = { locationCode: "货位编码", locationName: "货位名称" };
-      return map[t] || "请输入";
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const left = this.$refs.leftStack;
+      if (!left || !left.getBoundingClientRect) return;
+      const panelTop = panel.getBoundingClientRect().top;
+      const targetBottom = left.getBoundingClientRect().bottom;
+      const pagEl = panel.querySelector('.apply-pagination-wrap');
+      let pagH = pagEl ? pagEl.getBoundingClientRect().height : 52;
+      if (pagH < 40) pagH = 52;
+      const borderY =
+        (parseFloat(window.getComputedStyle(panel).borderTopWidth) || 0) +
+        (parseFloat(window.getComputedStyle(panel).borderBottomWidth) || 0);
+      const next = Math.max(240, Math.floor(targetBottom - panelTop - pagH - borderY));
+      if (Math.abs((this.mainTableHeight || 0) - next) >= 2) {
+        this.mainTableHeight = next;
       }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      ["locationCode", "locationName"].forEach((k) => {
-        if (!set.has(k)) target[k] = null;
+      this.$nextTick(() => {
+        if (this.$refs.locationTable && this.$refs.locationTable.doLayout) {
+          this.$refs.locationTable.doLayout();
+        }
+        const overshoot = panel.getBoundingClientRect().bottom - left.getBoundingClientRect().bottom;
+        if (overshoot > 2) {
+          this.mainTableHeight = Math.max(240, Math.floor(this.mainTableHeight - overshoot));
+          this.$nextTick(() => {
+            if (this.$refs.locationTable && this.$refs.locationTable.doLayout) {
+              this.$refs.locationTable.doLayout();
+            }
+          });
+        }
       });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     zoneTypeLabel(val) {
       const hit = this.zoneOptions.find(z => z.value === val);
       return hit ? hit.label : (val || '合格区');
     },
-    /** 查询货位列表 */
     getList() {
       this.loading = true;
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      // 并行获取列表数据和树形数据
       Promise.all([
         listLocation(params),
         treeselect()
       ]).then(([listResponse, treeResponse]) => {
         const allData = treeResponse.data || [];
-        // 构建货位映射
         this.buildLocationMap(allData);
-        // 设置列表数据
-        this.locationList = listResponse.rows;
-        this.total = listResponse.total;
-        // 构建树形数据
+        const rows = (listResponse && listResponse.rows) || [];
+        this.locationList = rows.map((item, index) => ({
+          ...item,
+          index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1
+        }));
+        this.total = (listResponse && listResponse.total) || 0;
         const tree = this.buildTree(allData, 0);
         this.treeData = [{
           locationId: 'root',
           locationName: '全部货位',
           children: tree
         }];
-        // 构建父级选项（排除当前编辑的项）
         this.parentOptions = this.buildParentOptions(allData, this.form.locationId);
         this.loading = false;
+        this.$nextTick(() => this.updateMainTableHeight());
       }).catch(() => {
         this.loading = false;
+        this.locationList = [];
+        this.total = 0;
       });
     },
-    /** 加载树形数据 */
     loadTreeData() {
       treeselect().then(response => {
         const allData = response.data || [];
-        // 构建货位映射
         this.buildLocationMap(allData);
         const tree = this.buildTree(allData, 0);
         this.treeData = [{
@@ -431,22 +439,19 @@ export default {
           locationName: '全部货位',
           children: tree
         }];
-        // 构建父级选项（排除当前编辑的项）
         this.parentOptions = this.buildParentOptions(allData, this.form.locationId);
+        this.$nextTick(() => this.updateMainTableHeight());
       });
     },
-    /** 构建货位映射 */
     buildLocationMap(data) {
       this.locationMap = {};
       data.forEach(item => {
         this.locationMap[item.locationId] = item.locationName;
       });
     },
-    /** 根据父货位ID获取父货位名称 */
     getParentLocationName(parentId) {
       return this.locationMap[parentId] || '';
     },
-    /** 构建树形结构 */
     buildTree(data, parentId) {
       const tree = [];
       data.forEach(item => {
@@ -460,7 +465,6 @@ export default {
       });
       return tree;
     },
-    /** 构建父级选项 */
     buildParentOptions(data, excludeId) {
       const options = [{ locationId: 0, locationName: '顶级货位' }];
       data.forEach(item => {
@@ -470,19 +474,20 @@ export default {
       });
       return options;
     },
-    /** 树节点点击事件 */
     handleNodeClick(data) {
-      if (data.locationId !== 'root') {
-        console.log('选中节点:', data);
-        // 此处可添加筛选逻辑
+      if (!data || data.locationId === 'root') {
+        this.queryParams.locationCode = null;
+        this.queryParams.locationName = null;
+      } else {
+        this.queryParams.locationCode = data.locationCode || null;
+        this.queryParams.locationName = null;
       }
+      this.handleQuery();
     },
-    // 取消按钮
     cancel() {
       this.open = false;
       this.reset();
     },
-    // 表单重置
     reset() {
       this.form = {
         locationId: null,
@@ -508,27 +513,56 @@ export default {
       };
       this.resetForm("form");
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
-      this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.queryParams.locationCode = null;
       this.queryParams.locationName = null;
-      this.onMoreSearchTypesChange();
+      this.queryParams.orderByColumn = null;
+      this.queryParams.isAsc = null;
+      if (this.$refs.locationTable && this.$refs.locationTable.clearSort) {
+        this.$refs.locationTable.clearSort();
+      }
+      if (this.$refs.locationTree && this.$refs.locationTree.setCurrentKey) {
+        this.$refs.locationTree.setCurrentKey('root');
+      }
       this.handleQuery();
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.locationId)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        locationCode: 'location_code',
+        locationName: 'location_name',
+        zoneType: 'zone_type',
+        shelfCode: 'shelf_code',
+        tenantId: 'tenant_id',
+        createTime: 'create_time'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = null;
+        this.queryParams.isAsc = null;
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
     },
-    /** 新增按钮操作 */
+    handleSelectionChange(selection) {
+      this.ids = (selection || []).map(item => item.locationId);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
+      this.rowHighlightTick += 1;
+    },
+    locationRowClassName({ row }) {
+      void this.rowHighlightTick;
+      const rid = row && row.locationId != null ? String(row.locationId) : '';
+      if (rid && this.ids.some(id => String(id) === rid)) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
     handleAdd() {
       this.reset();
       this.form.tenantId = this.customerId || null;
@@ -536,10 +570,9 @@ export default {
       this.open = true;
       this.title = "添加货位";
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
-      const locationId = row.locationId || this.ids
+      const locationId = row.locationId || this.ids;
       getLocation(locationId).then(response => {
         this.form = response.data;
         this.loadTreeData();
@@ -547,22 +580,20 @@ export default {
         this.title = "修改货位";
       });
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.locationId != null) {
-            updateLocation(this.form).then(response => {
+            updateLocation(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            // 如果没有设置parentId，默认为0（顶级货位）
             if (this.form.parentId === null || this.form.parentId === undefined) {
               this.form.parentId = 0;
             }
-            addLocation(this.form).then(response => {
+            addLocation(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -571,7 +602,6 @@ export default {
         }
       });
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const locationIds = row.locationId || this.ids;
       this.$modal.confirm('是否确认删除货位编号为"' + locationIds + '"的数据项？').then(() => {
@@ -581,12 +611,8 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    locationIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
-    },
-    /** 状态修改 */
     handleStatusChange(row) {
-      let text = row.delFlag === 0 ? "启用" : "禁用";
+      const text = row.delFlag === 0 ? "启用" : "禁用";
       this.$modal.confirm('确认要"' + text + '""' + row.locationName + '"货位吗？').then(() => {
         return updateLocation(row);
       }).then(() => {
@@ -596,22 +622,62 @@ export default {
         row.delFlag = row.delFlag === 0 ? 1 : 0;
       });
     },
-    /** 导出按钮操作 */
     handleExport() {
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('foundation/location/export', params, `location_${new Date().getTime()}.xlsx`)
+      this.download('foundation/location/export', params, `location_${new Date().getTime()}.xlsx`);
     }
   }
 };
 </script>
 
 <style scoped>
-.tree-card {
-  margin-right: 15px;
-  height: calc(100vh - 180px);
-  overflow-y: auto;
+.location-layout-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
+
+.location-left-col,
+.location-right-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.location-side-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.location-side-header {
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #EBEEF5;
+  font-weight: bold;
+  font-size: 14px;
+  color: #303133;
+  flex: 0 0 auto;
+}
+
+.location-side-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
 .custom-tree-node {
   flex: 1;
   display: flex;
@@ -619,14 +685,260 @@ export default {
   font-size: 14px;
   padding: 3px 0;
 }
-.el-tree {
-  background: transparent;
-  padding: 10px;
+
+.custom-tree-node i {
+  margin-right: 5px;
+  color: #409EFF;
 }
+
+.location-side-list ::v-deep .el-tree {
+  background: transparent;
+}
+
+.location-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  gap: 4px;
+}
+
+.location-page .location-main > .list-query-panel,
+.location-page .location-main > .location-toolbar,
+.location-page .location-main > .apply-table-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.location-page .location-toolbar.list-toolbar {
+  margin: 0 !important;
+  padding: 6px 12px !important;
+}
+
+.location-query-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.location-query-control {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  flex-shrink: 0;
+}
+
+.location-query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.apply-table-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #e8ecf1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05) !important;
+  overflow: hidden;
+  height: auto !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.apply-table-panel > .apply-main-table {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-bottom: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  overflow: visible !important;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
+.location-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__header-wrapper th,
+.location-page .apply-main-table ::v-deep .el-table__header-wrapper th.el-table__cell,
+.location-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th,
+.location-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th.el-table__cell,
+.location-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th,
+.location-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__header-wrapper th .cell,
+.location-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th .cell,
+.location-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
+}
+
+.location-page .apply-main-table ::v-deep td .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.location-page .apply-main-table ::v-deep td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body tr > td,
+.location-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.location-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell,
+.location-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-select-col,
+.location-page .apply-main-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection,
+.location-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-action-col,
+.location-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.location-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.location-page .apply-main-table ::v-deep .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.location-page .apply-main-table ::v-deep .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.location-page .apply-main-table ::v-deep .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.location-page .apply-main-table ::v-deep .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.location-page .apply-main-table ::v-deep th.apply-select-col,
+.location-page .apply-main-table ::v-deep td.apply-select-col,
+.location-page .apply-main-table ::v-deep th.el-table-column--selection,
+.location-page .apply-main-table ::v-deep td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+}
+
+.location-page .apply-main-table ::v-deep th.apply-action-col,
+.location-page .apply-main-table ::v-deep td.apply-action-col {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 3;
+}
+
+.location-page .apply-main-table ::v-deep td.apply-select-col,
+.location-page .apply-main-table ::v-deep td.el-table-column--selection,
+.location-page .apply-main-table ::v-deep td.apply-action-col {
+  background-color: #fff;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+}
+
+.location-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399 !important;
+}
+
 .local-modal-mask {
-  position: fixed;
+  position: absolute;
   left: 0;
   top: 0;
+  right: 0;
+  bottom: 0;
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
@@ -654,3 +966,38 @@ export default {
 }
 </style>
 
+<style>
+.app-container.location-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 8px !important;
+}
+
+.app-container.location-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-container.location-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+}
+
+.app-container.location-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.location-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.location-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.location-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+</style>

@@ -222,13 +222,18 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="科室" prop="departmentId">
+                    <el-form-item label="科室" prop="departmentId" class="apply-modal-header-dept">
                       <SelectDepartment v-model="form.departmentId" :disabled="true"/>
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="金额" class="apply-modal-header-amount">
+                      <el-input :value="headerAmountText" disabled />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="制单人" prop="userId">
-                      <el-input v-model="form.userName" :disabled="true" placeholder="—" />
+                      <el-input :value="creatorDisplayName" :disabled="true" placeholder="—" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -263,18 +268,24 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="审核人">
+                      <el-input :value="auditorDisplayName" disabled placeholder="—" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="审核日期">
+                      <el-input :value="auditorDateText" disabled placeholder="—" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
                     </el-form-item>
                   </el-col>
-                </el-row>
-                <el-row
-                  v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
-                  :gutter="0"
-                  class="apply-modal-form-row apply-modal-row-third apply-modal-row-reject"
-                  type="flex"
-                >
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col
+                    v-if="form.purchaseBillStatus == 1 || form.purchaseBillStatus === '1'"
+                    class="apply-modal-field apply-modal-field--reject"
+                  >
                     <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
                       <el-input
                         v-model="form.rejectReason"
@@ -328,12 +339,12 @@
               >
                 <el-table-column type="selection" width="60" align="center" resizable class-name="apply-select-col" header-cell-class-name="apply-select-col" />
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByEntryMaterialCode">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable>
+                <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'materialName')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialName || '--' }}</span>
                   </template>
@@ -353,27 +364,27 @@
                     <span>{{ scope.row.splitDepPurchaseBillNo || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable>
+                <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'materialSpec')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialSpec || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable>
+                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'model')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.model || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable>
+                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByEntryText(a,b,'unit')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.unit || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'qty')">
                   <template slot-scope="scope">
                     <span>{{ scope.row.qty || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'unitPrice')">
                   <template slot-scope="scope">
                     <span v-if="scope.row.unitPrice">¥{{ scope.row.unitPrice | formatPrice }}</span>
                     <span v-else>--</span>
@@ -395,9 +406,9 @@
                     <span>{{ scope.row.supplierName || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="生产厂家" align="center" width="200" show-overflow-tooltip resizable>
+                <el-table-column label="生产厂家" align="center" prop="producer" width="200" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
-                    <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.producer || '--' }}</span>
+                    <span>{{ scope.row.producer || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || (scope.row.material && scope.row.material.factoryName) || '--' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
@@ -434,7 +445,8 @@ function buildListDefaultDateRange() {
 }
 
 export default {
-  name: "dPurchaseAggAudit",
+  // 须与菜单 path「dPurchaseAggAudit」→ 路由 name「DPurchaseAggAudit」一致，keep-alive 才能保留操作状态
+  name: "DPurchaseAggAudit",
   dicts: ['purchase_status', 'urgency_level'],
   components: {SelectWarehouse, SelectDepartment},
   data() {
@@ -484,13 +496,59 @@ export default {
     };
   },
   computed: {
-    /** 弹窗明细表高度：与到货验收 apply-modal 一致；待审核含驳回原因行时额外扣减 */
+    /** 弹窗明细表高度：与到货验收 apply-modal 一致 */
     detailTableHeight() {
-      let offset = 384;
-      if (this.form && (this.form.purchaseBillStatus == 1 || this.form.purchaseBillStatus === '1')) {
-        offset += 44;
+      // 驳回原因已并入第二行，不再单独占行，无需额外偏移
+      return `max(240px, calc(100vh - 384px))`;
+    },
+    /** 弹窗顶部金额（与明细合计一致） */
+    headerAmountText() {
+      let v = this.form && this.form.totalAmount;
+      if (v == null || v === '') {
+        let sum = 0;
+        (this.entryList || []).forEach((item) => {
+          if (item && item.amt) {
+            sum += parseFloat(item.amt) || 0;
+          }
+        });
+        v = sum;
       }
-      return `max(240px, calc(100vh - ${offset}px))`;
+      if (typeof this.formatAmount === 'function') {
+        return this.formatAmount(v, '0');
+      }
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(2) : '0';
+    },
+    /** 制单人：兼容 createrPersonName / user / userName */
+    creatorDisplayName() {
+      const f = this.form || {};
+      if (f.createrPersonName) {
+        return f.createrPersonName;
+      }
+      const u = f.user;
+      if (u) {
+        return u.nickName || u.name || u.userName || '—';
+      }
+      return f.userName || '—';
+    },
+    /** 审核人 */
+    auditorDisplayName() {
+      const n = this.form && this.form.auditPersonName;
+      if (n) {
+        return n;
+      }
+      const p = this.form && this.form.auditPerson;
+      if (p) {
+        return p.nickName || p.userName || '—';
+      }
+      return '—';
+    },
+    /** 审核日期 */
+    auditorDateText() {
+      if (!this.form || !this.form.auditDate) {
+        return '—';
+      }
+      return this.parseTime(this.form.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') || '—';
     }
   },
   created() {
@@ -499,6 +557,9 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  activated() {
     this.scheduleApplyLayoutRefresh();
   },
   beforeDestroy() {
@@ -611,6 +672,38 @@ export default {
       if (va > vb) return 1;
       return 0;
     },
+    sortByNestedNumber(a, b, path) {
+      const getVal = (obj) => {
+        if (!obj) return NaN;
+        const keys = path.split('.');
+        let v = obj;
+        for (const k of keys) {
+          v = v && v[k];
+        }
+        const n = Number(v);
+        return isNaN(n) ? NaN : n;
+      };
+      const va = getVal(a);
+      const vb = getVal(b);
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return -1;
+      if (isNaN(vb)) return 1;
+      return va - vb;
+    },
+    sortByEntryText(a, b, field) {
+      const pick = (row) => {
+        const v = row && row[field];
+        return v != null && String(v).trim() !== '' ? String(v) : '';
+      };
+      return pick(a).localeCompare(pick(b), 'zh-CN');
+    },
+    sortByEntryMaterialCode(a, b) {
+      const pick = (row) => {
+        if (!row) return '';
+        return row.materialCode || (row.material && row.material.code) || row.code || '';
+      };
+      return String(pick(a)).localeCompare(String(pick(b)), 'zh-CN');
+    },
     applyMainRowClassName({ row, rowIndex }) {
       row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
       const key = this.getApplyMainRowKey(row);
@@ -710,10 +803,14 @@ export default {
         departmentId: null,
         userId: null,
         userName: null,
+        createrPersonName: null,
         purchaseBillStatus: null,
         totalAmount: null,
         urgencyLevel: null,
         expectedDeliveryDate: null,
+        auditPersonName: null,
+        auditPerson: null,
+        auditDate: null,
         rejectReason: null,
         createBy: null,
         createTime: null,
@@ -769,6 +866,16 @@ export default {
       const id = row.id
       getPurchaseAggAudit(id).then(response => {
         this.form = response.data;
+        // 制单人：后端常放在 user / createrPersonName，补齐 userName 便于展示
+        if (response.data.user) {
+          this.form.userName =
+            response.data.user.nickName ||
+            response.data.user.name ||
+            response.data.user.userName ||
+            this.form.userName;
+        } else if (!this.form.userName && response.data.createrPersonName) {
+          this.form.userName = response.data.createrPersonName;
+        }
         this.entryList = response.data.entryList || [];
         this.detailSelectedRowMap = {};
         this.open = true;
@@ -1556,8 +1663,8 @@ export default {
   flex: 0 0 auto;
   text-align: left;
   padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
+  line-height: 32px;
+  height: 32px;
   font-size: 13px;
 }
 
@@ -1565,7 +1672,7 @@ export default {
 .app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
-  line-height: 28px;
+  line-height: 32px;
 }
 
 .app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
@@ -1582,30 +1689,48 @@ export default {
   display: none !important;
 }
 
-/* 弹窗内表头输入：28px 高度（覆盖 list-page 32px），边框沿用 list-page */
+/* 弹窗内表头输入：与科室申领一致 32px */
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-input,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-select,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor {
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+}
+
 .app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-input__inner,
 .app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-select .el-input__inner,
 .app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .el-date-editor .el-input__inner {
-  height: 28px !important;
-  min-height: 28px !important;
-  line-height: 28px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
   font-size: 13px !important;
   box-sizing: border-box !important;
   border-color: #e2e8f0 !important;
   border-radius: 6px !important;
 }
 
-
-/* 驳回原因行：全宽输入，与申领单审核一致 */
-.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-reject .el-form-item {
-  align-items: center;
-  white-space: nowrap;
-  width: 100%;
-  display: inline-flex;
+/* 科室、金额：标签红色；金额数值也红色 */
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-header-dept .el-form-item__label,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
+  color: #f56c6c !important;
 }
-.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-reject .el-form-item__content {
-  flex: 1 1 auto;
-  min-width: 0;
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-header-amount .el-input__inner {
+  color: #f56c6c !important;
+  font-weight: 600;
+  -webkit-text-fill-color: #f56c6c !important;
+}
+
+/* 驳回原因：跟在备注后，定宽短输入，不占整行 */
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--reject {
+  flex: 0 0 auto !important;
+  max-width: none !important;
+}
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--reject .el-input,
+.app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--reject .el-form-item__content > * {
+  width: 200px !important;
+  max-width: 200px !important;
 }
 .app-container.d-purchase-agg-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
   flex: 1 1 auto !important;

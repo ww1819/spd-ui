@@ -1,169 +1,185 @@
 <template>
   <div class="app-container list-page warehouse-category-page">
-    <el-row :gutter="20">
-      <!-- 左侧树形菜单 -->
-      <el-col :span="4">
-        <el-card class="tree-card">
-          <el-tree
-            :data="treeData"
-            :props="treeProps"
-            node-key="warehouseCategoryId"
-            highlight-current
-            @node-click="handleNodeClick"
-            :indent="20"
-            :default-expand-all="true"
-        >
-            <span slot-scope="{ node }" class="custom-tree-node">
-              <i class="el-icon-folder-opened" />
-              <span>{{ node.label }}</span>
-            </span>
-          </el-tree>
-        </el-card>
-      </el-col>
-
-      <!-- 右侧表格区域 -->
-      <el-col :span="20">
-        <div class="query-container" v-show="showSearch">
-          <div class="form-fields-container list-query-panel">
-            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-              <more-search-bar
-                ref="moreSearchBar"
-                v-model="moreSearchTypes"
-                :options="moreSearchOptions"
-                :storage-key="moreSearchStorageKey"
-                :default-types="builtInMoreSearchDefaults"
-                :auto-load="false"
-                @change="onMoreSearchTypesChange"
-                @search="handleQuery"
-                @reset="resetQuery"
-              >
-                <div
-                  v-for="t in moreSearchTypes"
-                  :key="t"
-                  class="more-search-dynamic-field more-search-field--text"
-                >
-                  <el-input
-                    v-model="queryParams[t]"
-                    :placeholder="moreSearchPlaceholderFor(t)"
-                    clearable
-                    class="more-search-input more-search-input--dynamic"
-                    @keyup.enter.native="handleQuery"
-                  />
-                </div>
-              </more-search-bar>
-            </el-form>
+    <el-row :gutter="8" class="wc-layout-row">
+      <!-- 左侧库房分类树（对齐耗材对照左侧列表） -->
+      <el-col :span="5" class="wc-left-col">
+        <div class="wc-side-panel" ref="leftStack">
+          <div class="wc-side-header">
+            <span>全部库房</span>
+          </div>
+          <div class="wc-side-list">
+            <el-tree
+              ref="categoryTree"
+              :data="treeData"
+              :props="treeProps"
+              node-key="warehouseCategoryId"
+              highlight-current
+              :default-expand-all="true"
+              :expand-on-click-node="false"
+              @node-click="handleNodeClick"
+            >
+              <span slot-scope="{ node }" class="custom-tree-node">
+                <i class="el-icon-folder-opened" />
+                <span>{{ node.label }}</span>
+              </span>
+            </el-tree>
           </div>
         </div>
+      </el-col>
 
-        <el-row :gutter="0" class="mb8 list-toolbar">
-          <div class="list-toolbar-left">
-            <el-button
-              type="primary"
-              size="small"
-              class="spd-btn spd-btn--primary"
-              @click="handleAdd"
-              v-hasPermi="['foundation:warehouseCategory:add']"
-            >新增</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="single"
-              @click="handleUpdate"
-              v-hasPermi="['foundation:warehouseCategory:edit']"
-            >修改</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="single"
-              @click="handleDelete"
-              v-hasPermi="['foundation:warehouseCategory:remove']"
-            >删除</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              :disabled="multiple"
-              @click="handleUpdateReferred"
-              v-hasPermi="['foundation:warehouseCategory:updateReferred']"
-            >更新简码</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              @click="handleExport"
-              v-hasPermi="['foundation:warehouseCategory:export']"
-            >导出</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              @click="handleImport('add')"
-              v-hasPermi="['foundation:warehouseCategory:import']"
-            >新增导入</el-button>
-            <el-button
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              @click="handleImport('update')"
-              v-hasPermi="['foundation:warehouseCategory:import']"
-            >更新导入</el-button>
-            <msun-his-sync-button sync-type="categories" label="HIS库房分类同步" :refresh="getList" :inline="true" />
+      <!-- 右侧：查询 / 工具栏 / 明细框 -->
+      <el-col :span="19" class="wc-right-col">
+        <div class="wc-main">
+          <div class="form-fields-container list-query-panel" v-show="showSearch">
+            <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
+              <div class="wc-query-row">
+                <el-input
+                  v-model="queryParams.warehouseCategoryCode"
+                  placeholder="分类编码"
+                  clearable
+                  class="wc-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <el-input
+                  v-model="queryParams.warehouseCategoryName"
+                  placeholder="分类名称"
+                  clearable
+                  class="wc-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <div class="wc-query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
+              </div>
+            </el-form>
           </div>
-          <div class="list-toolbar-right">
-            <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-          </div>
-        </el-row>
 
-        <el-table v-loading="loading" :data="warehouseCategoryList" :row-class-name="warehouseCategoryIndex" @selection-change="handleSelectionChange" height="calc(100vh - 330px)" stripe>
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="分类编码" align="center" prop="warehouseCategoryCode" width="120"/>
-          <el-table-column label="分类名称" align="center" prop="warehouseCategoryName" width="180"/>
-          <el-table-column label="HIS系统ID" align="center" prop="hisId" width="120" show-overflow-tooltip/>
-          <el-table-column label="简码" align="center" prop="referredName" width="100" show-overflow-tooltip/>
-          <el-table-column label="上级分类" align="center" width="150">
-            <template slot-scope="scope">
-              <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentCategoryName(scope.row.parentId) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="创建日期" align="center" prop="createTime" width="100">
-            <template slot-scope="scope">
-              <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="组织机构ID" align="center" prop="tenantId" width="120" show-overflow-tooltip/>
-          <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip/>
-          <el-table-column label="启用" align="center" width="100">
-            <template slot-scope="scope">
-              <el-switch
-                v-model="scope.row.delFlag"
-                :active-value="0"
-                :inactive-value="1"
-                @change="handleStatusChange(scope.row)"
-              ></el-switch>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="120">
-            <template slot-scope="scope">
+          <el-row :gutter="0" class="list-toolbar wc-toolbar">
+            <div class="list-toolbar-left">
+              <el-button
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                @click="handleAdd"
+                v-hasPermi="['foundation:warehouseCategory:add']"
+              >新增</el-button>
               <el-button
                 size="small"
-                type="text"
-                @click="handleUpdate(scope.row)"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleUpdate"
                 v-hasPermi="['foundation:warehouseCategory:edit']"
               >修改</el-button>
               <el-button
                 size="small"
-                type="text"
-                @click="handleDelete(scope.row)"
+                class="spd-btn spd-btn--secondary"
+                :disabled="single"
+                @click="handleDelete"
                 v-hasPermi="['foundation:warehouseCategory:remove']"
               >删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                :disabled="multiple"
+                @click="handleUpdateReferred"
+                v-hasPermi="['foundation:warehouseCategory:updateReferred']"
+              >更新简码</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleExport"
+                v-hasPermi="['foundation:warehouseCategory:export']"
+              >导出</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('add')"
+                v-hasPermi="['foundation:warehouseCategory:import']"
+              >新增导入</el-button>
+              <el-button
+                size="small"
+                class="spd-btn spd-btn--secondary"
+                @click="handleImport('update')"
+                v-hasPermi="['foundation:warehouseCategory:import']"
+              >更新导入</el-button>
+              <msun-his-sync-button sync-type="categories" label="HIS库房分类同步" :refresh="getList" :inline="true" />
+            </div>
+            <div class="list-toolbar-right">
+              <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" />
+            </div>
+          </el-row>
 
-        <pagination
-          v-show="total>0"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
+          <div class="apply-table-panel" ref="tablePanel">
+            <el-table
+              ref="warehouseCategoryTable"
+              v-loading="loading"
+              :data="warehouseCategoryList"
+              class="apply-main-table"
+              border
+              stripe
+              :height="mainTableHeight"
+              :row-class-name="warehouseCategoryRowClassName"
+              @selection-change="handleSelectionChange"
+              @sort-change="handleSortChange"
+            >
+              <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+              <el-table-column label="序号" align="center" prop="index" width="70" show-overflow-tooltip />
+              <el-table-column label="分类编码" align="center" prop="warehouseCategoryCode" width="120" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="分类名称" align="center" prop="warehouseCategoryName" min-width="160" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="HIS系统ID" align="center" prop="hisId" width="120" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="简码" align="center" prop="referredName" width="100" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="上级分类" align="center" width="140" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span v-if="scope.row.parentId && scope.row.parentId !== 0">{{ getParentCategoryName(scope.row.parentId) }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="创建日期" align="center" prop="createTime" width="120" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="组织机构ID" align="center" prop="tenantId" width="140" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="备注" align="center" prop="remark" min-width="120" show-overflow-tooltip />
+              <el-table-column label="启用" align="center" width="90">
+                <template slot-scope="scope">
+                  <el-switch
+                    v-model="scope.row.delFlag"
+                    :active-value="0"
+                    :inactive-value="1"
+                    @change="handleStatusChange(scope.row)"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" align="center" class-name="apply-action-col" width="120">
+                <template slot-scope="scope">
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleUpdate(scope.row)"
+                    v-hasPermi="['foundation:warehouseCategory:edit']"
+                  >修改</el-button>
+                  <el-button
+                    size="small"
+                    type="text"
+                    @click="handleDelete(scope.row)"
+                    v-hasPermi="['foundation:warehouseCategory:remove']"
+                  >删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div class="apply-pagination-wrap">
+              <pagination
+                v-show="total > 0"
+                :total="total"
+                :page.sync="queryParams.pageNum"
+                :limit.sync="queryParams.pageSize"
+                @pagination="getList"
+              />
+            </div>
+          </div>
+        </div>
       </el-col>
     </el-row>
 
@@ -302,45 +318,27 @@ export default {
     ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
     isDisabled() {
       return this.form.warehouseCategoryId != null;
-    },
-    moreSearchStorageKey() {
-      return "spd.foundation.warehouseCategory.moreSearchTypes";
-    },
-    builtInMoreSearchDefaults() {
-      return ["warehouseCategoryCode", "warehouseCategoryName"];
     }
   },
   data() {
     return {
-      // 树形数据
       treeData: [],
       treeProps: {
         label: 'warehouseCategoryName',
         children: 'children'
       },
-      // 遮罩层
+      selectedCategoryId: null,
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
+      rowHighlightTick: 0,
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      // 总条数
+      mainTableHeight: 400,
       total: 0,
-      // 库房分类表格数据
       warehouseCategoryList: [],
-      // 弹出层标题
       title: "",
-      // 是否显示弹出层
       open: false,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { value: "warehouseCategoryCode", label: "分类编码" },
-        { value: "warehouseCategoryName", label: "分类名称" }
-      ],
       upload: {
         open: false,
         title: "",
@@ -355,20 +353,17 @@ export default {
         rows: [],
         columns: []
       },
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         warehouseCategoryCode: null,
         warehouseCategoryName: null,
+        orderByColumn: null,
+        isAsc: null
       },
-      // 表单参数
       form: {},
-      // 父级分类选项
       parentOptions: [],
-      // 分类映射（用于根据ID快速查找分类名称）
       categoryMap: {},
-      // 表单校验
       rules: {
         warehouseCategoryCode: [
           { required: true, message: "库房分类编码不能为空", trigger: "blur" }
@@ -393,78 +388,94 @@ export default {
       }
     };
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      setTimeout(() => this.updateMainTableHeight(), 80);
+      setTimeout(() => this.updateMainTableHeight(), 200);
+    });
+    window.addEventListener('resize', this.updateMainTableHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight);
+  },
   methods: {
-    moreSearchPlaceholderFor(t) {
-      const map = { warehouseCategoryCode: "分类编码", warehouseCategoryName: "分类名称" };
-      return map[t] || "请输入";
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
+    /** 明细框高度：底边对齐左侧分类面板 */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const left = this.$refs.leftStack;
+      if (!left || !left.getBoundingClientRect) return;
+      const panelTop = panel.getBoundingClientRect().top;
+      const targetBottom = left.getBoundingClientRect().bottom;
+      const pagEl = panel.querySelector('.apply-pagination-wrap');
+      let pagH = pagEl ? pagEl.getBoundingClientRect().height : 52;
+      if (pagH < 40) pagH = 52;
+      const borderY =
+        (parseFloat(window.getComputedStyle(panel).borderTopWidth) || 0) +
+        (parseFloat(window.getComputedStyle(panel).borderBottomWidth) || 0);
+      const next = Math.max(240, Math.floor(targetBottom - panelTop - pagH - borderY));
+      if (Math.abs((this.mainTableHeight || 0) - next) >= 2) {
+        this.mainTableHeight = next;
       }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      ["warehouseCategoryCode", "warehouseCategoryName"].forEach((k) => {
-        if (!set.has(k)) target[k] = null;
+      this.$nextTick(() => {
+        if (this.$refs.warehouseCategoryTable && this.$refs.warehouseCategoryTable.doLayout) {
+          this.$refs.warehouseCategoryTable.doLayout();
+        }
+        const overshoot = panel.getBoundingClientRect().bottom - left.getBoundingClientRect().bottom;
+        if (overshoot > 2) {
+          this.mainTableHeight = Math.max(240, Math.floor(this.mainTableHeight - overshoot));
+          this.$nextTick(() => {
+            if (this.$refs.warehouseCategoryTable && this.$refs.warehouseCategoryTable.doLayout) {
+              this.$refs.warehouseCategoryTable.doLayout();
+            }
+          });
+        }
       });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     /** 查询库房分类列表 */
     getList() {
       this.loading = true;
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      // 并行获取列表数据和树形数据
       Promise.all([
         listWarehouseCategory(params),
         treeselect()
       ]).then(([listResponse, treeResponse]) => {
         const allData = treeResponse.data || [];
-        // 构建分类映射
         this.buildCategoryMap(allData);
-        // 设置列表数据
-        this.warehouseCategoryList = listResponse.rows;
-        this.total = listResponse.total;
-        // 构建树形数据
+        const rows = (listResponse && listResponse.rows) || [];
+        this.warehouseCategoryList = rows.map((item, index) => ({
+          ...item,
+          index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1
+        }));
+        this.total = (listResponse && listResponse.total) || 0;
         const tree = this.buildTree(allData, 0);
         this.treeData = [{
           warehouseCategoryId: 'root',
           warehouseCategoryName: '全部库房',
           children: tree
         }];
-        // 构建父级选项（排除当前编辑的项）
         this.parentOptions = this.buildParentOptions(allData, this.form.warehouseCategoryId);
-        this.loading = false;
       }).catch(() => {
+        this.warehouseCategoryList = [];
+        this.total = 0;
+      }).finally(() => {
         this.loading = false;
+        this.$nextTick(() => this.updateMainTableHeight());
       });
     },
-    /** 加载树形数据 */
+    /** 加载树形数据（编辑弹窗用） */
     loadTreeData() {
       treeselect().then(response => {
         const allData = response.data || [];
-        // 构建分类映射
         this.buildCategoryMap(allData);
         const tree = this.buildTree(allData, 0);
         this.treeData = [{
@@ -472,22 +483,19 @@ export default {
           warehouseCategoryName: '全部库房',
           children: tree
         }];
-        // 构建父级选项（排除当前编辑的项）
         this.parentOptions = this.buildParentOptions(allData, this.form.warehouseCategoryId);
+        this.$nextTick(() => this.updateMainTableHeight());
       });
     },
-    /** 构建分类映射 */
     buildCategoryMap(data) {
       this.categoryMap = {};
       data.forEach(item => {
         this.categoryMap[item.warehouseCategoryId] = item.warehouseCategoryName;
       });
     },
-    /** 根据父分类ID获取父分类名称 */
     getParentCategoryName(parentId) {
       return this.categoryMap[parentId] || '';
     },
-    /** 构建树形结构 */
     buildTree(data, parentId) {
       const tree = [];
       data.forEach(item => {
@@ -501,7 +509,6 @@ export default {
       });
       return tree;
     },
-    /** 构建父级选项 */
     buildParentOptions(data, excludeId) {
       const options = [{ warehouseCategoryId: 0, warehouseCategoryName: '顶级分类' }];
       data.forEach(item => {
@@ -511,19 +518,22 @@ export default {
       });
       return options;
     },
-    /** 树节点点击事件 */
     handleNodeClick(data) {
-      if (data.warehouseCategoryId !== 'root') {
-        console.log('选中节点:', data);
-        // 此处可添加筛选逻辑
+      if (!data || data.warehouseCategoryId === 'root') {
+        this.selectedCategoryId = null;
+        this.queryParams.warehouseCategoryCode = null;
+        this.queryParams.warehouseCategoryName = null;
+      } else {
+        this.selectedCategoryId = data.warehouseCategoryId;
+        this.queryParams.warehouseCategoryCode = data.warehouseCategoryCode || null;
+        this.queryParams.warehouseCategoryName = null;
       }
+      this.handleQuery();
     },
-    // 取消按钮
     cancel() {
       this.open = false;
       this.reset();
     },
-    // 表单重置
     reset() {
       this.form = {
         warehouseCategoryId: null,
@@ -542,27 +552,57 @@ export default {
       };
       this.resetForm("form");
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
-      this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.selectedCategoryId = null;
       this.queryParams.warehouseCategoryCode = null;
       this.queryParams.warehouseCategoryName = null;
-      this.onMoreSearchTypesChange();
+      this.queryParams.orderByColumn = null;
+      this.queryParams.isAsc = null;
+      if (this.$refs.warehouseCategoryTable && this.$refs.warehouseCategoryTable.clearSort) {
+        this.$refs.warehouseCategoryTable.clearSort();
+      }
+      if (this.$refs.categoryTree && this.$refs.categoryTree.setCurrentKey) {
+        this.$refs.categoryTree.setCurrentKey('root');
+      }
       this.handleQuery();
     },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.warehouseCategoryId)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
+    handleSortChange({ prop, order }) {
+      const columnMap = {
+        warehouseCategoryCode: 'warehouse_category_code',
+        warehouseCategoryName: 'warehouse_category_name',
+        hisId: 'his_id',
+        referredName: 'referred_name',
+        tenantId: 'tenant_id',
+        createTime: 'create_time'
+      };
+      if (!order) {
+        this.queryParams.orderByColumn = null;
+        this.queryParams.isAsc = null;
+      } else {
+        this.queryParams.orderByColumn = columnMap[prop] || prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
     },
-    /** 新增按钮操作 */
+    handleSelectionChange(selection) {
+      this.ids = (selection || []).map(item => item.warehouseCategoryId);
+      this.single = selection.length !== 1;
+      this.multiple = !selection.length;
+      this.rowHighlightTick += 1;
+    },
+    warehouseCategoryRowClassName({ row }) {
+      void this.rowHighlightTick;
+      const rid = row && row.warehouseCategoryId != null ? String(row.warehouseCategoryId) : '';
+      if (rid && this.ids.some(id => String(id) === rid)) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
     handleAdd() {
       this.reset();
       this.form.tenantId = this.customerId || null;
@@ -570,10 +610,9 @@ export default {
       this.open = true;
       this.title = "添加库房分类";
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
-      const warehouseCategoryId = row.warehouseCategoryId || this.ids
+      const warehouseCategoryId = row.warehouseCategoryId || this.ids;
       getWarehouseCategory(warehouseCategoryId).then(response => {
         this.form = response.data;
         this.loadTreeData();
@@ -581,22 +620,20 @@ export default {
         this.title = "修改库房分类";
       });
     },
-    /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.warehouseCategoryId != null) {
-            updateWarehouseCategory(this.form).then(response => {
+            updateWarehouseCategory(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            // 如果没有设置parentId，默认为0（顶级分类）
             if (this.form.parentId === null || this.form.parentId === undefined) {
               this.form.parentId = 0;
             }
-            addWarehouseCategory(this.form).then(response => {
+            addWarehouseCategory(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -605,7 +642,6 @@ export default {
         }
       });
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const warehouseCategoryIds = row.warehouseCategoryId || this.ids;
       this.$modal.confirm('是否确认删除库房分类编号为"' + warehouseCategoryIds + '"的数据项？').then(() => {
@@ -615,10 +651,6 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    warehouseCategoryIndex({ row, rowIndex }) {
-      row.index = (this.queryParams.pageNum - 1) * this.queryParams.pageSize + rowIndex + 1;
-    },
-    /** 状态修改 */
     handleStatusChange(row) {
       let text = row.delFlag === 0 ? "启用" : "禁用";
       this.$modal.confirm('确认要"' + text + '""' + row.warehouseCategoryName + '"库房分类吗？').then(() => {
@@ -630,13 +662,10 @@ export default {
         row.delFlag = row.delFlag === 0 ? 1 : 0;
       });
     },
-    /** 导出按钮操作 */
     handleExport() {
       const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('foundation/warehouseCategory/export', params, `warehouseCategory_${new Date().getTime()}.xlsx`)
+      this.download('foundation/warehouseCategory/export', params, `warehouseCategory_${new Date().getTime()}.xlsx`);
     },
-    /** 更新库房分类名称简码 */
     handleUpdateReferred() {
       if (!this.ids || this.ids.length === 0) {
         this.$modal.msgWarning("请先选择要更新简码的库房分类");
@@ -735,22 +764,302 @@ export default {
 </script>
 
 <style scoped>
-.tree-card {
-  margin-right: 15px;
-  height: calc(100vh - 180px);
-  overflow-y: auto;
+.wc-layout-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
+
+.wc-left-col,
+.wc-right-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.wc-side-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.wc-side-header {
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #EBEEF5;
+  font-weight: bold;
+  font-size: 14px;
+  color: #303133;
+  flex: 0 0 auto;
+}
+
+.wc-side-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px;
+}
+
 .custom-tree-node {
-  flex: 1;
+  font-size: 14px;
   display: flex;
   align-items: center;
-  font-size: 14px;
-  padding: 3px 0;
 }
-.el-tree {
-  background: transparent;
-  padding: 10px;
+
+.custom-tree-node i {
+  margin-right: 5px;
+  color: #409EFF;
 }
+
+.wc-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  gap: 4px;
+}
+
+.warehouse-category-page .wc-main > .list-query-panel,
+.warehouse-category-page .wc-main > .wc-toolbar,
+.warehouse-category-page .wc-main > .apply-table-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.warehouse-category-page .wc-toolbar.list-toolbar {
+  margin: 0 !important;
+  padding: 6px 12px !important;
+}
+
+.wc-query-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.wc-query-control {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  flex-shrink: 0;
+}
+
+.wc-query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.apply-table-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #e8ecf1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05) !important;
+  overflow: hidden;
+  height: auto !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.apply-table-panel > .apply-main-table {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-bottom: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 12px 14px;
+  box-sizing: border-box;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  overflow: visible !important;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
+.warehouse-category-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__header-wrapper th,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__header-wrapper th.el-table__cell,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th.el-table__cell,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__header-wrapper th .cell,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th .cell,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep td .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr > td,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-select-col,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-select-col,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-action-col,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep th.apply-select-col,
+.warehouse-category-page .apply-main-table ::v-deep td.apply-select-col,
+.warehouse-category-page .apply-main-table ::v-deep th.el-table-column--selection,
+.warehouse-category-page .apply-main-table ::v-deep td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep th.apply-action-col,
+.warehouse-category-page .apply-main-table ::v-deep td.apply-action-col {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 3;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep td.apply-select-col,
+.warehouse-category-page .apply-main-table ::v-deep td.el-table-column--selection,
+.warehouse-category-page .apply-main-table ::v-deep td.apply-action-col {
+  background-color: #fff;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+}
+
+.warehouse-category-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909399 !important;
+}
+
 .local-modal-mask {
   position: fixed;
   left: 0;
@@ -778,12 +1087,6 @@ export default {
 .dialog-footer {
   text-align: right;
   margin-top: 16px;
-}
-
-.warehouse-category-page {
-  position: relative;
-  min-height: calc(100vh - 84px);
-  width: 100%;
 }
 
 .page-drawer-mask {
@@ -849,5 +1152,41 @@ export default {
 
 .page-drawer-footer .el-button {
   margin: 0 8px;
+}
+</style>
+
+<style>
+.app-container.warehouse-category-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 8px !important;
+}
+
+.app-container.warehouse-category-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-container.warehouse-category-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+}
+
+.app-container.warehouse-category-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.warehouse-category-page .apply-main-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.warehouse-category-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.warehouse-category-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
 </style>

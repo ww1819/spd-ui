@@ -207,7 +207,8 @@ export default {
     },
     formatQty(v) {
       return formatQuantity(v)
-    },    removeMirrorNode(m) {
+    },
+    removeMirrorNode(m) {
       try {
         if (m && m.parentNode) m.parentNode.removeChild(m)
       } catch (e) {
@@ -390,10 +391,13 @@ $font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
 .doc-header
   display grid
-  grid-template-columns 92px 1fr 92px
+  /* 与入/出库单一致：标题区约 94% 居中，避免页码贴纸边被针式右不可打区裁掉 */
+  width 94%
+  margin 0 auto 6px
+  grid-template-columns 92px 1fr 100px
   align-items center
   column-gap 6px
-  margin-bottom 6px
+  box-sizing border-box
 
 .doc-header-spacer
   width 92px
@@ -401,12 +405,15 @@ $font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 .page-meta
   justify-self end
   align-self center
+  padding-right 8px
+  box-sizing border-box
 
 .page-index
   font-size 12px
   line-height 1
   letter-spacing 0.5px
   color #333
+  white-space nowrap
 
 .doc-title
   font-size 20px
@@ -653,10 +660,12 @@ $font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
 
   .doc-header
     display grid !important
-    grid-template-columns 92px 1fr 92px !important
+    width 94% !important
+    margin 0 auto 2px !important
+    grid-template-columns 92px 1fr 100px !important
     align-items center !important
     column-gap 6px !important
-    margin-bottom 2px !important
+    box-sizing border-box !important
 
   .doc-header-spacer
     width 92px !important
@@ -664,11 +673,14 @@ $font-song = "Microsoft YaHei", "微软雅黑", "PingFang SC", sans-serif
   .page-meta
     justify-self end !important
     align-self center !important
+    padding-right 6mm !important
+    box-sizing border-box !important
 
   .page-index
-    font-size 12px !important
-    line-height 1 !important
+    font-size 13px !important
+    line-height 1.2 !important
     letter-spacing 0.5px !important
+    white-space nowrap !important
 
   .doc-title
     font-size 19px !important

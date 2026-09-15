@@ -1,26 +1,24 @@
 <template>
-  <div class="app-container list-page">
-    <el-row :gutter="20">
+  <div class="app-container list-page system-user-page">
+    <el-row :gutter="8">
       <!--工作组数据-->
-      <el-col :span="5" :xs="24">
+      <el-col :span="4" :xs="24">
         <div class="dept-panel">
-          <div class="dept-panel-header" v-if="hospitalName">
-            {{ hospitalName }}
+          <div class="dept-panel-header" style="cursor: pointer;" @click="handleWorkgroupHeaderClick">
+            工作组
           </div>
           <div class="dept-panel-content">
             <div class="workgroup-list-wrapper">
-              <el-table :data="workgroupList" 
+              <el-table ref="workgroupTable"
+                        :data="workgroupList" 
                         :highlight-current-row="true"
                         @row-click="handleWorkgroupRowClick"
                         :row-class-name="getWorkgroupRowClassName"
                         style="width: 100%;"
-                        :show-header="true"
-                        height="calc(100vh - 220px)"
+                        :show-header="false"
+                        height="100%"
                         border>
                 <el-table-column label="工作组" align="center" prop="postName" show-overflow-tooltip>
-                  <template slot="header">
-                    <span style="cursor: pointer; font-weight: 700;" @click="handleWorkgroupHeaderClick">工作组</span>
-                  </template>
                   <template slot-scope="scope">
                     <span>{{ scope.row.postName }}</span>
                   </template>
@@ -34,48 +32,42 @@
         </div>
       </el-col>
       <!--用户数据-->
-      <el-col :span="19" :xs="24">
+      <el-col :span="20" :xs="24">
         <div class="form-fields-container list-query-panel" v-show="showSearch">
           <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
-            <more-search-bar
-              ref="moreSearchBar"
-              v-model="moreSearchTypes"
-              :options="moreSearchOptions"
-              :storage-key="moreSearchStorageKey"
-              :default-types="builtInMoreSearchDefaults"
-              :auto-load="false"
-              @change="onMoreSearchTypesChange"
-              @search="handleQuery"
-              @reset="resetQuery"
-            >
-              <div
-                v-for="t in moreSearchTypes"
-                :key="t"
-                class="more-search-dynamic-field more-search-field--text"
-              >
+            <el-row :gutter="16" class="query-row-first">
+              <el-col :span="24" class="query-row-first-inner">
                 <el-input
-                  v-if="t === 'phonenumber'"
-                  v-model="queryParams.phonenumber"
-                  placeholder="手机号码"
-                  clearable
-                  class="more-search-input more-search-input--dynamic"
-                  @keyup.enter.native="handleQuery"
-                />
-                <el-input
-                  v-else
                   v-model="queryParams.userName"
                   placeholder="用户账户/用户姓名"
                   clearable
-                  class="more-search-input more-search-input--dynamic"
+                  class="user-query-control"
                   @keyup.enter.native="handleQuery"
                 />
-              </div>
-            </more-search-bar>
-
+                <el-input
+                  v-model="queryParams.phonenumber"
+                  placeholder="手机号码"
+                  clearable
+                  class="user-query-control"
+                  @keyup.enter.native="handleQuery"
+                />
+                <div class="user-query-control user-query-dept">
+                  <SelectDepartment
+                    v-model="queryParams.departmentId"
+                    field-placeholder="科室"
+                    :finance-pick-mode="true"
+                  />
+                </div>
+                <div class="query-actions">
+                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                </div>
+              </el-col>
+            </el-row>
             <el-row :gutter="16" class="query-row-second">
               <el-col :span="24" class="query-row-second-inner">
                 <el-form-item prop="status" class="query-item-inline">
-                  <el-select v-model="queryParams.status" placeholder="用户状态" clearable class="more-search-select-wrap">
+                  <el-select v-model="queryParams.status" placeholder="用户状态" clearable class="user-query-control">
                     <el-option
                       v-for="dict in dict.type.sys_normal_disable"
                       :key="dict.value"
@@ -89,13 +81,21 @@
                 </el-form-item>
                 <el-form-item class="query-item-inline query-item-date-range">
                   <el-date-picker
-                    v-model="dateRange"
+                    v-model="beginDate"
+                    type="date"
                     value-format="yyyy-MM-dd"
-                    type="daterange"
-                    range-separator="至"
-                    start-placeholder="开始日期"
-                    end-placeholder="结束日期"
-                    class="query-date-picker"
+                    placeholder="起"
+                    clearable
+                    class="user-query-date"
+                  />
+                  <span class="date-sep">至</span>
+                  <el-date-picker
+                    v-model="endDate"
+                    type="date"
+                    value-format="yyyy-MM-dd"
+                    placeholder="止"
+                    clearable
+                    class="user-query-date"
                   />
                 </el-form-item>
               </el-col>
@@ -129,20 +129,36 @@
           </div>
         </el-row>
 
-        <div class="table-wrapper">
-          <el-table ref="userTable" v-loading="loading" :data="userList" :row-key="getUserRowKey" stripe @selection-change="handleSelectionChange" height="66vh" border>
+        <div class="apply-table-panel table-wrapper" ref="tablePanel">
+          <el-table
+            ref="userTable"
+            v-loading="loading"
+            :data="userList"
+            :row-key="getUserRowKey"
+            class="apply-main-table"
+            stripe
+            :row-class-name="userRowClassNameFn"
+            @selection-change="handleSelectionChange"
+            :height="mainTableHeight"
+            border
+          >
           <el-table-column type="selection" width="50" align="center" :reserve-selection="true" />
           <el-table-column type="index" label="序号" align="center" width="80" v-if="columns[0].visible" :index="indexMethod" />
-          <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" :show-overflow-tooltip="true" />
-          <el-table-column label="用户姓名" align="center" key="nickName" prop="nickName" v-if="columns[2].visible" :show-overflow-tooltip="true" />
-          <el-table-column label="工作组" align="center" key="deptName" prop="postName" v-if="columns[3].visible" :show-overflow-tooltip="true" />
-          <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns[4].visible" width="120" />
-          <el-table-column label="用户所属科室" align="center" key="departmentNames" v-if="columns[5].visible" :show-overflow-tooltip="true">
+          <el-table-column label="用户账户" align="center" key="userName" prop="userName" v-if="columns[1].visible" min-width="110" :show-overflow-tooltip="true" />
+          <el-table-column label="用户姓名" align="center" key="nickName" prop="nickName" v-if="columns[2].visible" min-width="110" sortable :show-overflow-tooltip="true" />
+          <el-table-column label="性别" align="center" key="sex" prop="sex" v-if="columns[3].visible" width="72">
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.sys_user_sex" :value="scope.row.sex"/>
+            </template>
+          </el-table-column>
+          <el-table-column label="工作组" align="center" key="deptName" prop="postName" v-if="columns[4].visible" min-width="130" sortable :show-overflow-tooltip="true" />
+          <el-table-column label="手机号码" align="center" key="phonenumber" prop="phonenumber" v-if="columns[5].visible" width="120" />
+          <el-table-column label="科室" align="center" key="departmentNames" v-if="columns[6].visible" min-width="120" :show-overflow-tooltip="true">
             <template slot-scope="scope">
               <span>{{ scope.row.departmentNames || (scope.row.dept && scope.row.dept.deptName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" align="center" key="status" v-if="columns[6].visible">
+          <el-table-column label="状态" align="center" key="status" v-if="columns[7].visible">
             <template slot-scope="scope">
               <el-switch
                 v-if="canChangeUserStatus"
@@ -154,7 +170,12 @@
               <dict-tag v-else :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
             </template>
           </el-table-column>
-          <el-table-column label="解锁时间" align="center" key="pwdUnlockTime" v-if="columns[7].visible" width="160">
+          <el-table-column label="邮箱" align="center" key="email" prop="email" v-if="columns[8].visible" min-width="160" :show-overflow-tooltip="true">
+            <template slot-scope="scope">
+              <span>{{ scope.row.email || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="解锁时间" align="center" key="pwdUnlockTime" v-if="columns[9].visible" width="160">
             <template slot-scope="scope">
               <span v-if="scope.row.pwdLocked" class="pwd-lock-text">
                 {{ scope.row.pwdUnlockTime ? parseTime(scope.row.pwdUnlockTime) : '已锁定' }}
@@ -162,7 +183,7 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns[8].visible" width="160">
+          <el-table-column label="创建时间" align="center" prop="createTime" v-if="columns[10].visible" width="160">
             <template slot-scope="scope">
               <span>{{ parseTime(scope.row.createTime) }}</span>
             </template>
@@ -170,38 +191,34 @@
           <el-table-column
             label="操作"
             align="center"
-            width="320"
-            class-name="small-padding fixed-width"
-            fixed="right"
+            width="128"
+            class-name="small-padding fixed-width apply-action-col"
           >
             <template slot-scope="scope" v-if="scope.row.userId !== 1">
-              <span style="white-space: nowrap;">
+              <span class="user-op-btns">
                 <el-button
-                  size="small"
+                  size="mini"
                   type="text"
-                  icon="el-icon-edit"
-                  @click="handleUpdate(scope.row)"
+                  @click.stop="handleUpdate(scope.row)"
                   v-hasPermi="['system:user:edit']"
                 >修改</el-button>
                 <el-button
-                  size="small"
+                  size="mini"
                   type="text"
-                  icon="el-icon-delete"
-                  @click="handleDelete(scope.row)"
+                  @click.stop="handleDelete(scope.row)"
                   v-hasPermi="['system:user:remove']"
                 >删除</el-button>
                 <el-button
-                  size="small"
+                  size="mini"
                   type="text"
-                  @click="handleAuth(scope.row)"
+                  @click.stop="handleAuth(scope.row)"
                   v-hasPermi="['system:user:edit']"
                 >授权</el-button>
                 <el-button
                   v-if="scope.row.pwdLocked"
-                  size="small"
+                  size="mini"
                   type="text"
-                  icon="el-icon-unlock"
-                  @click="handleUnlock(scope.row)"
+                  @click.stop="handleUnlock(scope.row)"
                   v-hasPermi="['system:user:edit']"
                 >解锁</el-button>
               </span>
@@ -209,227 +226,113 @@
           </el-table-column>
           </el-table>
 
-        <pagination
-          v-show="total>0"
-          :total="total"
-          :page.sync="queryParams.pageNum"
-          :limit.sync="queryParams.pageSize"
-          @pagination="getList"
-        />
+          <div class="apply-pagination-wrap" ref="paginationWrap">
+            <pagination
+              v-show="total>0"
+              :total="total"
+              :page.sync="queryParams.pageNum"
+              :limit.sync="queryParams.pageSize"
+              @pagination="getList"
+            />
+          </div>
         </div>
       </el-col>
     </el-row>
 
-    <!-- 添加或修改用户配置对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="formRules" label-width="80px" size="small" class="modal-form-compact">
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="机构单位">
-                    <el-input v-model="organizationUnit" placeholder="机构单位" disabled style="width: 100%;" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="角色">
-                    <el-select 
-                      v-model="form.roleIds" 
-                      multiple 
-                      placeholder="请选择角色" 
-                      style="width: 100%;" 
-                      :disabled="form.userId == undefined"
-                      :allow-create="false"
-                      @change="handleRoleChange"
-                    >
-                      <el-option
-                        v-for="item in roleOptions"
-                        :key="item.roleId"
-                        :label="item.roleName"
-                        :value="item.roleId"
-                        :disabled="item.status == 1"
-                      ></el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="用户性别">
-                    <el-select v-model="form.sex" placeholder="请选择性别" style="width: 100%;">
-                      <el-option
-                        v-for="dict in dict.type.sys_user_sex"
-                        :key="dict.value"
-                        :label="dict.label"
-                        :value="dict.value"
-                      ></el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="用户账户" prop="userName">
-                    <el-input v-model="form.userName" placeholder="用户账户" maxlength="30" :disabled="form.userId != undefined" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="工作组">
-                    <el-select v-model="form.deptId" placeholder="请选择工作组" clearable style="width: 100%;">
-                      <el-option
-                        v-for="item in postOptions"
-                        :key="item.postId"
-                        :label="item.postName"
-                        :value="item.postId"
-                        :disabled="item.status == 1"
-                      ></el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item :label="form.userId != undefined ? '登录密码' : '用户密码'" prop="password">
-                    <el-input
-                      v-model="form.password"
-                      :placeholder="form.userId != undefined ? '留空不修改登录密码' : '用户密码'"
-                      type="password"
-                      maxlength="20"
-                      show-password
-                      autocomplete="new-password"
-                    />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="邮箱" prop="email">
-                    <el-input v-model="form.email" placeholder="邮箱" maxlength="50" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="用户姓名" prop="nickName">
-                    <el-input v-model="form.nickName" placeholder="用户姓名" maxlength="30" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="4">
-                  <el-form-item label="手机号码" prop="phonenumber">
-                    <el-input v-model="form.phonenumber" placeholder="手机号码" maxlength="11" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="状态">
-                    <el-radio-group v-model="form.status">
-                      <el-radio
-                        v-for="dict in dict.type.sys_normal_disable"
-                        :key="dict.value"
-                        :label="dict.value"
-                      >{{dict.label}}</el-radio>
-                    </el-radio-group>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row>
-                <el-col :span="12">
-                  <el-form-item label="备注" prop="remark">
-                    <el-input v-model="form.remark" type="textarea" placeholder="内容" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row></el-row>
-              <el-row></el-row>
-
-              <el-row v-if="false">
-                <el-col :span="24">
-                  <el-form-item label="仓库权限">
-                    <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange">全选</el-checkbox>
-                    <el-checkbox-group v-model="form.warehouseIds">
-                      <el-checkbox v-for="item in userWarehouseOptions"
-                                   :key="item.id"
-                                   :label="item.id">{{item.name}}
-                      </el-checkbox>
-                    </el-checkbox-group>
-
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <el-row v-if="false">
-                <el-col :span="24">
-                  <el-form-item label="科室权限">
-                    <el-checkbox :indeterminate="departmentIndeterminate" v-model="materialCheckAll" @change="handleCheckDepartmentAllChange">全选</el-checkbox>
-                    <el-checkbox-group v-model="form.departmentIds">
-                      <el-checkbox v-for="item in userDepartmentOptions"
-                                   :key="item.id"
-                                   :label="item.id">{{item.name}}
-                      </el-checkbox>
-                    </el-checkbox-group>
-
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row v-if="false">
-                <el-col :span="24">
-                  <el-form-item label="授权菜单">
-                    <el-checkbox :indeterminate="menuIndeterminate" v-model="menuCheckAll" @change="handleCheckMenuAllChange">全选</el-checkbox>
-                    <el-tree
-                      ref="menuTree"
-                      :data="menuOptions"
-                      :props="defaultProps"
-                      node-key="id"
-                      show-checkbox
-                      :check-strictly="false"
-                      :default-expand-all="false"
-                      :expand-on-click-node="false"
-                      :check-on-click-node="true"
-                      @check="handleMenuCheck"
-                      style="margin-top: 10px; max-height: 300px; overflow-y: auto;"
-                    >
-                      <span class="custom-tree-node" slot-scope="{ node, data }">
-                        <span>{{ node.label }}</span>
-                      </span>
-                    </el-tree>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row v-if="false">
-                <el-col :span="24">
-                  <el-form-item label="授权菜单">
-                    <el-checkbox :indeterminate="menuIndeterminate" v-model="menuCheckAll" @change="handleCheckMenuAllChange">全选</el-checkbox>
-                    <el-tree
-                      ref="menuTree"
-                      :data="menuOptions"
-                      :props="defaultProps"
-                      node-key="id"
-                      show-checkbox
-                      :check-strictly="false"
-                      :default-expand-all="false"
-                      :expand-on-click-node="false"
-                      :check-on-click-node="true"
-                      @check="handleMenuCheck"
-                      style="margin-top: 10px; max-height: 300px; overflow-y: auto;"
-                    >
-                      <span class="custom-tree-node" slot-scope="{ node, data }">
-                        <span>{{ node.label }}</span>
-                      </span>
-                    </el-tree>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-            </el-form>
-            <div class="modal-footer">
-              <el-button type="primary" class="spd-btn spd-btn--primary" v-if="canSubmitUserForm" @click="submitForm">确 定</el-button>
-              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-            </div>
-          </div>
-        </transition>
+    <!-- 新增/修改：内容区内右侧抽屉 -->
+    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
+      <div class="page-drawer-panel" @click.stop>
+        <div class="page-drawer-header">
+          <span class="page-drawer-title">{{ title }}</span>
+          <i class="el-icon-close page-drawer-close" @click="cancel" />
+        </div>
+        <div class="page-drawer-body">
+          <el-form ref="form" :model="form" :rules="formRules" label-width="90px" size="small" class="user-drawer-form">
+            <el-form-item label="机构单位">
+              <el-input :value="organizationUnitDisplay" placeholder="机构单位" disabled />
+            </el-form-item>
+            <el-form-item label="角色">
+              <el-select
+                v-model="form.roleIds"
+                multiple
+                placeholder="请选择角色"
+                style="width: 100%;"
+                :disabled="form.userId == undefined"
+                :allow-create="false"
+                @change="handleRoleChange"
+              >
+                <el-option
+                  v-for="item in roleOptions"
+                  :key="item.roleId"
+                  :label="item.roleName"
+                  :value="item.roleId"
+                  :disabled="item.status == 1"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="用户性别">
+              <el-select v-model="form.sex" placeholder="请选择性别" style="width: 100%;" clearable>
+                <el-option
+                  v-for="dict in dict.type.sys_user_sex"
+                  :key="dict.value"
+                  :label="dict.label"
+                  :value="dict.value"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="用户账户" prop="userName">
+              <el-input v-model="form.userName" placeholder="用户账户" maxlength="30" :disabled="form.userId != undefined" />
+            </el-form-item>
+            <el-form-item label="工作组">
+              <el-select v-model="form.deptId" placeholder="请选择工作组" clearable style="width: 100%;">
+                <el-option
+                  v-for="item in postOptions"
+                  :key="item.postId"
+                  :label="item.postName"
+                  :value="item.postId"
+                  :disabled="item.status == 1"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item :label="form.userId != undefined ? '登录密码' : '用户密码'" prop="password">
+              <el-input
+                v-model="form.password"
+                :placeholder="form.userId != undefined ? '留空不修改登录密码' : '用户密码'"
+                type="password"
+                maxlength="20"
+                show-password
+                autocomplete="new-password"
+              />
+            </el-form-item>
+            <el-form-item label="邮箱" prop="email">
+              <el-input v-model="form.email" placeholder="邮箱" maxlength="50" />
+            </el-form-item>
+            <el-form-item label="用户姓名" prop="nickName">
+              <el-input v-model="form.nickName" placeholder="用户姓名" maxlength="30" />
+            </el-form-item>
+            <el-form-item label="手机号码" prop="phonenumber">
+              <el-input v-model="form.phonenumber" placeholder="手机号码" maxlength="11" />
+            </el-form-item>
+            <el-form-item label="状态">
+              <el-radio-group v-model="form.status">
+                <el-radio
+                  v-for="dict in dict.type.sys_normal_disable"
+                  :key="dict.value"
+                  :label="dict.value"
+                >{{dict.label}}</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="备注" prop="remark">
+              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="内容" />
+            </el-form-item>
+          </el-form>
+        </div>
+        <div class="page-drawer-footer">
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" v-if="canSubmitUserForm" @click="submitForm">确 定</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+        </div>
       </div>
-    </transition>
+    </div>
 
     <!-- 用户导入对话框 -->
     <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" append-to-body>
@@ -639,7 +542,7 @@
 import { listUser, getUser, delUser, addUser, updateUser, resetUserPwd, changeUserStatus, unlockUser, deptTreeSelect, updateUserReferred, roleMenuTreeselectUser, batchSetUserWorkgroup, batchResetUserPassword, updateUserMenus, updateUserDepartments, updateUserWarehouses, updateUserMessageReminders } from "@/api/system/user";
 import { workgroupTreeSelect } from "@/api/system/workgroup";
 import { listPost } from "@/api/system/post";
-import { getConfigKey, listConfig } from "@/api/system/config";
+import { getConfigKey } from "@/api/system/config";
 import { treeselect as menuTreeselect } from "@/api/system/menu";
 import { getToken } from "@/utils/auth";
 import { checkPermi } from "@/utils/permission";
@@ -649,14 +552,23 @@ import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import MenuAuthDualTree from "@/components/MenuAuthDualTree";
 import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
+import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import { mapGetters } from 'vuex';
 
 export default {
   name: "User",
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
-  components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton },
+  components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton, SelectDepartment },
   computed: {
-    ...mapGetters(['isZqTcmTenant']),
+    ...mapGetters(['isZqTcmTenant', 'tenant']),
+    /** 抽屉机构单位：优先当前登录租户名称（衡水/枣强等均适用） */
+    organizationUnitDisplay() {
+      const t = this.tenant;
+      if (t && t.customerName) {
+        return t.customerName;
+      }
+      return this.organizationUnit || '';
+    },
     /** 是否机构管理员（super 账号） */
     isTenantSuper() {
       return !!this.$store.state.user.tenantSuper;
@@ -664,6 +576,17 @@ export default {
     /** 列表启停开关：需编辑权限 */
     canChangeUserStatus() {
       return checkPermi(['system:user:edit']);
+    },
+    /** 勾选变化时换新函数，强制 el-table 重算行高亮（仅勾选行高亮，取消勾选即取消） */
+    userRowClassNameFn() {
+      const tick = this.rowHighlightTick;
+      const selectedMap = this.selectedRowMap;
+      return ({ row }) => {
+        void tick;
+        const key = row && row.userId != null ? String(row.userId) : '';
+        if (!key) return '';
+        return selectedMap[key] ? 'apply-row-selected' : '';
+      };
     },
     /** 新增/修改弹窗提交：新增需 add，修改需 edit */
     canSubmitUserForm() {
@@ -717,12 +640,6 @@ export default {
     },
     crossPageSelectedCount() {
       return Object.keys(this.selectedRowMap || {}).length;
-    },
-    moreSearchStorageKey() {
-      return 'spd.system.user.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
     }
   },
   data() {
@@ -743,11 +660,6 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '用户账户/用户姓名', value: 'userName' },
-        { label: '手机号码', value: 'phonenumber' }
-      ],
       // 总条数
       total: 0,
       // 用户表格数据
@@ -762,18 +674,21 @@ export default {
       workgroupList: [],
       // 当前选中的工作组ID
       currentWorkgroupId: undefined,
+      // 触发行高亮重算（勾选后 el-table 不会自动刷新 row-class-name）
+      rowHighlightTick: 0,
       // 是否显示弹出层
       open: false,
       // 部门名称
       deptName: undefined,
       // 默认密码
       initPassword: undefined,
-      // 医院名称
-      hospitalName: undefined,
       // 机构单位
       organizationUnit: undefined,
-      // 日期范围
-      dateRange: [],
+      // 创建日期起止（止非必填）
+      beginDate: undefined,
+      endDate: undefined,
+      // 主表明细高度（随明细框剩余空间计算）
+      mainTableHeight: 400,
       // 岗位选项
       postOptions: [],
       // 角色选项
@@ -826,6 +741,7 @@ export default {
         userName: undefined,
         phonenumber: undefined,
         status: undefined,
+        departmentId: undefined,
         deptId: undefined,
         /** 耗材工作组筛选（sys_user_post.post_id），勿与 deptId 混用 */
         sysPostId: undefined
@@ -835,12 +751,14 @@ export default {
         { key: 0, label: `序号`, visible: true },
         { key: 1, label: `用户账户`, visible: true },
         { key: 2, label: `用户姓名`, visible: true },
-        { key: 3, label: `工作组`, visible: true },
-        { key: 4, label: `手机号码`, visible: true },
-        { key: 5, label: `用户所属科室`, visible: true },
-        { key: 6, label: `状态`, visible: true },
-        { key: 7, label: `解锁时间`, visible: true },
-        { key: 8, label: `创建时间`, visible: true }
+        { key: 3, label: `性别`, visible: true },
+        { key: 4, label: `工作组`, visible: true },
+        { key: 5, label: `手机号码`, visible: true },
+        { key: 6, label: `科室`, visible: true },
+        { key: 7, label: `状态`, visible: true },
+        { key: 8, label: `邮箱`, visible: true },
+        { key: 9, label: `解锁时间`, visible: true },
+        { key: 10, label: `创建时间`, visible: true }
       ],
       // 表单校验
       rules: {
@@ -910,25 +828,75 @@ export default {
       }
       const allow = new Set(keys || []);
       this.authForm.messageReminderPopupKeys = (this.authForm.messageReminderPopupKeys || []).filter(k => allow.has(k));
+    },
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
     this.getWorkgroupTree();
     this.getWorkgroupList();
     this.getConfigKey("sys.user.initPassword").then(response => {
       this.initPassword = response.msg;
     });
-    this.getConfigKey("sys.hospital.name").then(response => {
-      this.hospitalName = response.msg;
-    });
-    // 获取参数设置第七条参数的值
-    this.getOrganizationUnit();
+    this.resolveOrganizationUnit();
 
   },
+  mounted() {
+    this.scheduleMainTableLayout();
+    window.addEventListener('resize', this.onUserPageResize);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onUserPageResize);
+  },
   methods: {
+    onUserPageResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleMainTableLayout() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    /** 按明细框剩余高度计算主表高度，消除表格与翻页间空白 */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 52);
+      const height = Math.max(200, Math.floor(panelH - pagH));
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.userTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+        this.$nextTick(() => this.syncUserTableSticky());
+      });
+    },
+    /** sticky 操作列表头避开纵向滚动条宽度 */
+    syncUserTableSticky() {
+      const table = this.$refs.userTable;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
     handleMoreCommand(command) {
       if (this.isZqTcmTenant && command === 'importAdd') {
         this.$modal.msgWarning('枣强县中医院不允许手工新增，请从HIS系统同步');
@@ -953,11 +921,10 @@ export default {
     },
     buildUserQueryParams(includePagination = true) {
       const q = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(q);
       if (this.onlyWithoutWorkgroup) {
         q.withoutWorkgroup = true;
       }
-      const merged = this.addDateRange(q, this.dateRange);
+      const merged = this.addDateRange(q, [this.beginDate, this.endDate]);
       if (!includePagination) {
         delete merged.pageNum;
         delete merged.pageSize;
@@ -971,7 +938,10 @@ export default {
           this.userList = response.rows;
           this.total = response.total;
           this.loading = false;
-          this.$nextTick(() => this.restorePageSelection());
+          this.$nextTick(() => {
+            this.restorePageSelection();
+            this.updateMainTableHeight();
+          });
         }
       );
     },
@@ -1014,6 +984,7 @@ export default {
     restorePageSelection() {
       const table = this.$refs.userTable;
       if (!table || !this.userList || this.userList.length === 0) {
+        this.rowHighlightTick += 1;
         return;
       }
       this.userList.forEach((row) => {
@@ -1022,12 +993,16 @@ export default {
           table.toggleRowSelection(row, true);
         }
       });
+      this.$nextTick(() => {
+        this.rowHighlightTick += 1;
+      });
     },
     clearCrossPageSelection() {
       this.selectedRowMap = {};
       this.ids = [];
       this.single = true;
       this.multiple = true;
+      this.rowHighlightTick += 1;
       const table = this.$refs.userTable;
       if (table) {
         table.clearSelection();
@@ -1485,6 +1460,11 @@ export default {
       this.currentWorkgroupId = row.postId;
       this.queryParams.sysPostId = row.postId;
       this.queryParams.deptId = undefined;
+      this.$nextTick(() => {
+        if (this.$refs.workgroupTable) {
+          this.$refs.workgroupTable.setCurrentRow(row);
+        }
+      });
       this.handleQuery();
     },
     // 工作组表头点击事件 - 显示租户下全部用户
@@ -1492,6 +1472,9 @@ export default {
       this.currentWorkgroupId = undefined;
       this.queryParams.sysPostId = undefined;
       this.queryParams.deptId = undefined;
+      if (this.$refs.workgroupTable) {
+        this.$refs.workgroupTable.setCurrentRow();
+      }
       this.handleQuery();
     },
     /** 勾选「仅无工作组」时与左侧工作组筛选互斥，避免条件矛盾 */
@@ -1499,29 +1482,41 @@ export default {
       if (val) {
         this.queryParams.sysPostId = undefined;
         this.currentWorkgroupId = undefined;
+        if (this.$refs.workgroupTable) {
+          this.$refs.workgroupTable.setCurrentRow();
+        }
       }
       this.handleQuery();
     },
     // 工作组行样式类名
-    getWorkgroupRowClassName({ row, rowIndex }) {
-      if (this.currentWorkgroupId === row.postId) {
+    getWorkgroupRowClassName({ row }) {
+      if (this.currentWorkgroupId != null && String(this.currentWorkgroupId) === String(row.postId)) {
         return 'workgroup-row-active';
       }
       return '';
+    },
+    getUserRowClassName({ row }) {
+      return this.userRowClassNameFn({ row });
+    },
+    refreshUserRowHighlight() {
+      this.rowHighlightTick += 1;
     },
     // 工作组序号计算
     getWorkgroupIndex(index) {
       return index + 1;
     },
-    /** 获取机构单位（参数设置第七条参数） */
-    getOrganizationUnit() {
-      listConfig({}).then(response => {
-        if (response.rows && response.rows.length >= 7) {
-          // 获取第七条参数的值
-          const seventhConfig = response.rows[6]; // 索引从0开始，第七条是索引6
-          this.organizationUnit = seventhConfig.configValue;
+    /** 机构单位兜底：无登录租户名时再读系统参数（勿用「第 N 条配置」硬下标） */
+    resolveOrganizationUnit() {
+      const t = this.tenant;
+      if (t && t.customerName) {
+        this.organizationUnit = t.customerName;
+        return;
+      }
+      this.getConfigKey("sys.hospital.name").then(response => {
+        if (response && response.msg) {
+          this.organizationUnit = response.msg;
         }
-      });
+      }).catch(() => {});
     },
     // 用户状态修改
     handleStatusChange(row) {
@@ -1578,45 +1573,18 @@ export default {
     },
     /** 重置按钮操作 */
     resetQuery() {
-      this.dateRange = [];
+      this.beginDate = undefined;
+      this.endDate = undefined;
       this.resetForm("queryForm");
+      this.queryParams.userName = undefined;
+      this.queryParams.phonenumber = undefined;
+      this.queryParams.status = undefined;
+      this.queryParams.departmentId = undefined;
       this.queryParams.deptId = undefined;
       this.queryParams.sysPostId = undefined;
       this.onlyWithoutWorkgroup = false;
       this.currentWorkgroupId = undefined;
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = { userName: 'userName', phonenumber: 'phonenumber' };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     // 序号计算方法
     indexMethod(index) {
@@ -1639,6 +1607,7 @@ export default {
         }
       });
       this.syncSelectionStateFromMap();
+      this.refreshUserRowHighlight();
     },
     // 更多操作触发
     handleCommand(command, row) {
@@ -1865,7 +1834,6 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       const q = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(q);
       if (this.onlyWithoutWorkgroup) {
         q.withoutWorkgroup = true;
       }
@@ -1934,7 +1902,7 @@ export default {
 
 <style scoped>
 .list-query-panel {
-  margin-top: -20px;
+  margin-top: 0;
 }
 .pwd-lock-text {
   color: #e6a23c;
@@ -1944,181 +1912,188 @@ export default {
 .auth-menu-tree ::v-deep .el-tree-node:has(.menu-folder-only) > .el-tree-node__content > .el-checkbox {
   display: none;
 }
-/* 内部弹窗样式 - 占满整个遮罩层 */
-.local-modal-mask {
+
+/* 新增/修改右侧抽屉（内容区内，不盖住顶栏侧栏） */
+.page-drawer-mask {
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0, 0, 0, 0.35);
   z-index: 1000;
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  justify-content: flex-end;
 }
 
-.local-modal-content {
-  background: #fff;
-  width: 100%;
+.page-drawer-panel {
+  width: 480px;
+  max-width: 100%;
   height: 100%;
-  min-height: 95vh;
-  overflow: hidden;
+  background: #fff;
   display: flex;
   flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+  animation: user-drawer-in 0.22s ease-out;
 }
 
-.modal-header {
+@keyframes user-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.page-drawer-header {
+  flex-shrink: 0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid #EBEEF5;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
   background: #F5F7FA;
-  min-height: 48px;
 }
 
-.modal-title {
+.page-drawer-title {
   font-size: 16px;
   font-weight: 600;
   color: #303133;
-  line-height: 1.4;
 }
 
-.close-btn {
-  border: none;
-  background: transparent;
+.page-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
 }
 
-.close-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+.page-drawer-close:hover {
+  color: #409EFF;
 }
 
-.modal-footer {
-  padding: 16px 24px;
-  text-align: right;
-  border-top: 1px solid #EBEEF5;
-  background: #F5F7FA;
-  margin-top: 10px;
-}
-
-.modal-footer .el-button {
-  margin-left: 12px;
-}
-
-.local-modal-content .el-form {
+.page-drawer-body {
   flex: 1;
-  overflow-y: auto;
-  padding: 24px;
+  overflow: auto;
+  padding: 16px 16px 8px;
+}
+
+.user-drawer-form .el-form-item {
+  margin-bottom: 14px;
+}
+
+.page-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
   background: #fff;
-  box-shadow: none;
-  margin-bottom: 0;
-  display: flex;
-  flex-direction: column;
 }
 
-/* 弹窗内表单紧凑布局 */
-.local-modal-content .modal-form-compact .el-row {
-  margin-bottom: 10px;
+.page-drawer-footer .el-button {
+  margin: 0 8px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
-  margin-bottom: 0;
-}
-
-.local-modal-content .modal-form-compact .el-form-item__label {
-  text-align: left;
-  padding-right: 6px;
-  line-height: 28px;
-  height: 28px;
-  font-size: 13px;
-}
-
-.local-modal-content .modal-form-compact .el-form-item__content {
-  margin-left: 0 !important;
-  line-height: 28px;
-}
-
-/* 弹窗动画效果 */
-.modal-fade-enter-active, .modal-fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-fade-enter, .modal-fade-leave-to {
-  opacity: 0;
-}
-
-.modal-zoom-enter-active, .modal-zoom-leave-active {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  transform-origin: center center;
-}
-
-.modal-zoom-enter {
-  opacity: 0;
-  transform: scale(0.3) translateY(-50px);
-}
-
-.modal-zoom-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
-}
-
-/* 确保页面容器有相对定位，以便内部弹窗正确定位 */
-.app-container {
+/* 与到货验收一致：顶/左/右 8px（见 department-apply-list-align） */
+.system-user-page.app-container {
   position: relative;
-  min-height: 95vh;
+  height: calc(100vh - 84px);
+  max-height: calc(100vh - 84px);
+  min-height: calc(100vh - 84px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-}
-
-/* 隐藏页面滚动条 */
-.app-container::-webkit-scrollbar {
-  display: none !important;
-}
-
-.app-container {
+  padding-top: 8px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  padding-bottom: 14px !important;
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
 
-/* 左侧部门树区域 */
-.app-container > .el-row {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  padding: 10px;
+.system-user-page.app-container::-webkit-scrollbar {
+  display: none !important;
 }
 
-.app-container > .el-row > .el-col {
+/* 左右栏顶对齐，不再叠一层内边距 */
+.system-user-page.app-container > .el-row {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  padding: 0;
+  width: 100%;
+}
+
+.system-user-page.app-container > .el-row > .el-col {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
+  height: 100%;
 }
 
 /* 右侧用户数据区域 */
-.app-container > .el-row > .el-col:last-child {
+.system-user-page.app-container > .el-row > .el-col:last-child {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding-left: 0;
+  min-height: 0;
 }
 
-/* 表格包装器 - 占据剩余空间 */
-.app-container > .el-row > .el-col:last-child > .table-wrapper {
-  flex: 1;
+/* 表格包装器 - 对齐到货验收明细框：表格+分页同一白卡片 */
+.system-user-page.app-container > .el-row > .el-col:last-child > .list-query-panel,
+.system-user-page.app-container > .el-row > .el-col:last-child > .list-toolbar {
+  flex: 0 0 auto;
+}
+
+.system-user-page.app-container > .el-row > .el-col:last-child > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
 }
 
-/* 表格区域 - 占据剩余空间 */
-.app-container > .el-row > .el-col:last-child > .table-wrapper > .el-table {
-  /* 这里如果 flex:1 会强制表格撑满剩余高度，导致 el-table 的 height 属性不生效 */
+.system-user-page.app-container > .el-row > .el-col:last-child > .apply-table-panel > .apply-main-table {
   flex: 0 0 auto;
   overflow: hidden;
+  margin: 0;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+}
+
+.system-user-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+}
+
+.system-user-page .apply-pagination-wrap ::v-deep .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.system-user-page .apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
 }
 
 /* 左侧部门面板样式 - 参照定数监测 */
@@ -2127,7 +2102,9 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
   overflow: hidden;
-  height: calc(100vh - 180px);
+  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -2188,20 +2165,22 @@ export default {
 }
 
 ::v-deep .dept-panel .el-table tbody tr:hover > td {
-  background-color: #F5F7FA !important;
+  background-color: #D6EBFF !important;
 }
 
-::v-deep .dept-panel .el-table .workgroup-row-active {
-  background-color: #ECF5FF !important;
-}
-
+::v-deep .dept-panel .el-table .workgroup-row-active > td,
 ::v-deep .dept-panel .el-table .workgroup-row-active td {
-  background-color: #ECF5FF !important;
-  color: #409EFF;
+  background-color: #B8DAFF !important;
+  color: #1d4ed8;
+  font-weight: 600;
 }
 
 ::v-deep .dept-panel .el-table tbody tr.workgroup-row-active:hover > td {
-  background-color: #ECF5FF !important;
+  background-color: #A0CBFF !important;
+}
+
+::v-deep .dept-panel .el-table .el-table__body tr.current-row > td {
+  background-color: #B8DAFF !important;
 }
 
 /* 授权菜单树样式 */
@@ -2354,6 +2333,78 @@ export default {
   margin-right: 0;
 }
 
+/* 查询首行：账号/手机/科室同一行，宽度与用户状态一致 */
+.query-form .query-row-first-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.query-form .query-row-second {
+  margin-top: 10px;
+}
+
+.query-form .query-row-second-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.query-form .query-item-date-range {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0;
+}
+
+.query-form .query-item-date-range .date-sep {
+  margin: 0 6px;
+  color: #606266;
+  flex-shrink: 0;
+}
+
+.query-form .user-query-date {
+  width: 140px !important;
+}
+
+.query-form .user-query-date.el-date-editor {
+  width: 140px !important;
+}
+
+.query-form .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.query-form .user-query-control {
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+  flex-shrink: 0;
+}
+
+.query-form .user-query-dept {
+  display: inline-flex;
+  align-items: center;
+}
+
+.query-form .user-query-dept > .el-select,
+.query-form .user-query-control.el-select,
+.query-form .user-query-control.el-input {
+  width: 190px !important;
+  min-width: 190px !important;
+  max-width: 190px !important;
+}
+
+.query-form .user-query-dept > .el-select .el-input {
+  width: 100% !important;
+}
+
 /* 统一控制查询条件输入框宽度 */
 .query-form-card .query-item-inline .el-input {
   width: 180px;
@@ -2367,19 +2418,25 @@ export default {
   width: 240px;
 }
 
-/* 表格样式优化 - 参照定数监测 */
+/* 表格样式优化 - 表头/行；卡片阴影改由 apply-table-panel 承担 */
 .table-wrapper .el-table {
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .table-wrapper .el-table th {
-  background-color: #F5F7FA !important;
-  color: #606266;
-  font-weight: bold !important;
+  background-color: #f1f5f9 !important;
+  color: #334155;
+  font-weight: 600 !important;
   height: 42px;
   padding: 4px 0;
   border-bottom: 1px solid #EBEEF5;
+}
+
+.table-wrapper .el-table th .cell {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  line-height: 20px;
 }
 
 .table-wrapper .el-table td {
@@ -2389,8 +2446,125 @@ export default {
 }
 
 .table-wrapper .el-table tr:hover > td {
-  background-color: #F5F7FA !important;
-  transition: all 0.3s;
+  background-color: #D6EBFF !important;
+  transition: none;
+}
+
+.user-op-btns {
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.user-op-btns .el-button--text {
+  padding: 0 2px !important;
+  margin: 0 !important;
+  font-size: 13px;
+}
+
+/* 明细表横向滚动条加粗；操作列用 sticky，悬停/选中可整行高亮 */
+.system-user-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+.system-user-page .apply-main-table ::v-deep th.apply-action-col,
+.system-user-page .apply-main-table ::v-deep td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.system-user-page .apply-main-table ::v-deep td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff;
+  border-left: 1px solid #e2e8f0;
+}
+
+.system-user-page .apply-main-table ::v-deep th.apply-action-col {
+  right: var(--apply-v-scrollbar, 0px) !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.el-table__row--striped td.apply-action-col {
+  background-color: #fafafa;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #888 !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body tr > td,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr:hover > td.el-table-column--selection,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td .cell,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected > td.apply-action-col,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.current-row > td,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.current-row > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td .cell,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.system-user-page .apply-main-table ::v-deep .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+.system-user-page .apply-main-table ::v-deep .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+}
+
+.system-user-page .apply-main-table ::v-deep .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+}
+
+.system-user-page .apply-main-table ::v-deep .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+
+.system-user-page .apply-main-table ::v-deep .descending .sort-caret.descending {
+  border-top-color: #2563EB;
 }
 </style>
 

@@ -487,7 +487,8 @@ import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 
 export default {
-  name: "dPurchase",
+  // 须与菜单 path「dPurchase」→ 路由 name「DPurchase」一致
+  name: "DPurchase",
   dicts: ['purchase_status', 'urgency_level'],
   components: {SelectWarehouse, SelectDepartment, SelectUser, SelectMaterialForPurchase},
   data() {

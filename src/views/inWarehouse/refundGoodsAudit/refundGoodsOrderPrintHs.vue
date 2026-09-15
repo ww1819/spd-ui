@@ -279,7 +279,8 @@ export default {
     },
     formatQty(value) {
       return formatQuantity(value)
-    },    /** 申请/审核/打印日期：yyyy-MM-dd */
+    },
+    /** 申请/审核/打印日期：yyyy-MM-dd */
     formatPrintDateTime(v) {
       if (!v) return ''
       const d = new Date(v)
@@ -350,10 +351,13 @@ export default {
 
 .doc-header
   display grid
-  grid-template-columns 92px 1fr 92px
+  /* 与入/出库单一致：标题区约 94% 居中，避免页码贴纸边被针式右不可打区裁掉 */
+  width 94%
+  margin 0 auto 2px
+  grid-template-columns 92px 1fr 100px
   align-items center
   column-gap 6px
-  margin-bottom 2px
+  box-sizing border-box
 
 .doc-header-spacer
   width 92px
@@ -361,12 +365,15 @@ export default {
 .page-meta
   justify-self end
   align-self center
+  padding-right 8px
+  box-sizing border-box
 
 .page-index
   font-size 12px
   line-height 1
   letter-spacing 0.5px
   color #333
+  white-space nowrap
 
 .doc-title
   font-size 20px
@@ -574,10 +581,12 @@ export default {
 
   .doc-header
     display grid !important
-    grid-template-columns 92px 1fr 92px !important
+    width 94% !important
+    margin 0 auto 2px !important
+    grid-template-columns 92px 1fr 100px !important
     align-items center !important
     column-gap 6px !important
-    margin-bottom 2px !important
+    box-sizing border-box !important
 
   .doc-header-spacer
     width 92px !important
@@ -585,6 +594,14 @@ export default {
   .page-meta
     justify-self end !important
     align-self center !important
+    padding-right 6mm !important
+    box-sizing border-box !important
+
+  .page-index
+    font-size 13px !important
+    line-height 1.2 !important
+    letter-spacing 0.5px !important
+    white-space nowrap !important
 
   .doc-title
     display block !important

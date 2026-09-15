@@ -414,7 +414,8 @@ import SelectUser from '@/components/SelectModel/SelectUser';
 import { buildDefaultDateRange } from '@/utils/defaultDateRange';
 
 export default {
-  name: "dPurchaseAudit",
+  // 须与菜单 path「dPurchaseAudit」→ 路由 name「DPurchaseAudit」一致
+  name: "DPurchaseAudit",
   dicts: ['purchase_status', 'urgency_level'],
   components: {SelectWarehouse, SelectDepartment, SelectUser},
   data() {
