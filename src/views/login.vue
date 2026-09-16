@@ -273,8 +273,8 @@ export default {
   },
   created() {
     this.getCode();
-    this.initCustomerOptions();
     this.getCookie();
+    this.initCustomerOptions();
     getAppVersion()
       .then(res => {
         this.backendVersionTip = (res && res.version) ? res.version : '—'
@@ -287,17 +287,25 @@ export default {
     initCustomerOptions() {
       getCustomerOptions("hc").then(res => {
         this.customerOptions = res.data || [];
+        const ids = this.customerOptions.map(c => c.customerId);
         const def = res.defaultCustomerId;
-        // 若系统配置了默认租户，则默认带入；否则显示下拉供用户选择
+        const current = this.loginForm.customerId;
+        const currentValid = current && ids.indexOf(current) !== -1;
+        // 记住密码的 customerId 可能来自另一套库（如枣强），当前库没有该客户会报「客户不存在或已删除」
+        if (current && !currentValid) {
+          Cookies.remove("customerId");
+        }
         if (def) {
-          this.loginForm.customerId = def;
+          this.loginForm.customerId = currentValid ? current : def;
           this.showOrgSelector = false;
         } else {
           this.showOrgSelector = true;
+          if (!currentValid) {
+            this.loginForm.customerId = ids.length ? ids[0] : "";
+          }
         }
       }).catch(() => {
         this.customerOptions = [];
-        // 查询失败时按“无默认租户”处理，仍允许用户手动选择
         this.showOrgSelector = true;
       });
     },
