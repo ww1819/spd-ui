@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-card class="box-card">
       <div slot="header" class="clearfix">
@@ -16,19 +16,19 @@
             style="width: 200px"
           />
         </el-form-item>
-        <el-form-item label="耗材名称" prop="hcName">
+        <el-form-item label="产品名称" prop="hcName">
           <el-input
             v-model="queryParams.hcName"
-            placeholder="耗材名称"
+            placeholder="产品名称"
             clearable
             size="small"
             style="width: 200px"
           />
         </el-form-item>
-        <el-form-item label="耗材编码" prop="hcCode">
+        <el-form-item label="产品编码" prop="hcCode">
           <el-input
             v-model="queryParams.hcCode"
-            placeholder="耗材编码"
+            placeholder="产品编码"
             clearable
             size="small"
             style="width: 200px"

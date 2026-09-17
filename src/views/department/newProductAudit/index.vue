@@ -266,7 +266,7 @@
                   border
                   :height="tableHeight">
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材名称" prop="materialName" width="180" show-overflow-tooltip resizable>
+          <el-table-column label="产品名称" prop="materialName" width="180" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.materialName || '--' }}</span>
             </template>

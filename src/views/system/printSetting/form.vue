@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="print-setting-form">
     <!-- 顶部操作按钮行：在左右两个框外面，单独一行 -->
     <div class="form-toolbar">
@@ -962,8 +962,8 @@ export default {
       codeResizeState: null,
       columnList: [],
       defaultColumns: [
-        { field: "materialCode", label: "耗材编码", width: 80, visible: true },
-        { field: "materialName", label: "耗材名称", width: 120, visible: true },
+        { field: "materialCode", label: "产品编码", width: 80, visible: true },
+        { field: "materialName", label: "产品名称", width: 120, visible: true },
         { field: "materialSpeci", label: "规格", width: 100, visible: true },
         { field: "price", label: "单价", width: 80, visible: true },
         { field: "qty", label: "数量", width: 60, visible: true },

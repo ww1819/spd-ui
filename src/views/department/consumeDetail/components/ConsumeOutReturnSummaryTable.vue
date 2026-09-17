@@ -119,7 +119,7 @@
         <el-table-column label="科室" align="center" prop="departmentName" min-width="120" show-overflow-tooltip resizable />
         <el-table-column label="仓库" align="center" prop="warehouseName" min-width="100" show-overflow-tooltip resizable />
         <el-table-column label="帐类名称" align="center" prop="accountKindName" width="90" show-overflow-tooltip resizable />
-        <el-table-column label="耗材名称" align="center" prop="materialName" min-width="160" show-overflow-tooltip resizable />
+        <el-table-column label="产品名称" align="center" prop="materialName" min-width="160" show-overflow-tooltip resizable />
         <el-table-column label="规格" align="center" prop="materialSpeci" min-width="120" show-overflow-tooltip resizable />
         <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable />
         <el-table-column label="数量" align="center" prop="materialQty" width="90" show-overflow-tooltip resizable />

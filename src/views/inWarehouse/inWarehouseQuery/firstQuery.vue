@@ -167,8 +167,8 @@
           <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[0].visible"/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[1].visible"/>
+      <el-table-column label="产品编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[0].visible"/>
+      <el-table-column label="产品名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[1].visible"/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="130" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortByWarehouse" v-if="columns[2].visible"/>
       <el-table-column label="供应商" align="center" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable :sort-method="sortBySupplier" v-if="columns[3].visible"/>
       <el-table-column label="业务单号" align="center" prop="billNo" width="200" min-width="180" show-overflow-tooltip resizable sortable :sort-method="sortByBillNo" v-if="columns[4].visible" />
@@ -373,8 +373,8 @@ export default {
       },
       // 列显隐配置
       columns: [
-        { key: 0, label: `耗材编码`, visible: true },
-        { key: 1, label: `耗材名称`, visible: true },
+        { key: 0, label: `产品编码`, visible: true },
+        { key: 1, label: `产品名称`, visible: true },
         { key: 2, label: `仓库`, visible: true },
         { key: 3, label: `供应商`, visible: true },
         { key: 4, label: `业务单号`, visible: true },
@@ -628,7 +628,7 @@ export default {
       const map = {
         supplier: "供应商编码/名称",
         factory: "生产厂家编码/名称/简码",
-        materialName: "耗材编码/名称/简码",
+        materialName: "产品编码/名称/简码",
         billNo: "业务单号模糊",
         materialSpeci: "规格模糊",
         materialModel: "型号模糊",

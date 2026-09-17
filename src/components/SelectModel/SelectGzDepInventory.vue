@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-dialog title="高值科室库存明细" :visible.sync="show" append-to-body width="1600px" :before-close="handleClose">
       <el-form :model="queryParams" ref="queryForm" :inline="true" v-show="showSearch" label-width="0" class="query-form">
@@ -54,7 +54,7 @@
           </template>
         </el-table-column>
         <el-table-column label="批次号" align="center" prop="batchNo" width="200"/>
-        <el-table-column label="耗材批次号" align="center" prop="materialNo" width="200"/>
+        <el-table-column label="产品批次号" align="center" prop="materialNo" width="200"/>
         <el-table-column label="耗材日期" align="center" prop="materialDate" width="200">
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>

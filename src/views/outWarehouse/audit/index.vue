@@ -394,7 +394,7 @@
             </template>
           </el-table-column>
           <el-table-column
-            label="名称"
+            label="产品名称"
             align="left"
             header-align="center"
             width="180"

@@ -634,7 +634,7 @@ export default {
       }
       return '';
     },
-    /** HIS按钮操作：明细列表默认按当前耗材名称匹配，仅用户点击「搜索」后随条件变化 */
+    /** HIS按钮操作：明细列表默认按当前产品名称匹配，仅用户点击「搜索」后随条件变化 */
     handleHis(row) {
       this.currentMaterialRow = row;
       this.hisDialogVisible = true;

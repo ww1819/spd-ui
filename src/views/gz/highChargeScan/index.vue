@@ -188,7 +188,7 @@
     <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body>
       <el-table v-loading="consumeRecordDialog.loading" :data="consumeRecordDialog.rows" border size="small" max-height="420" empty-text="暂无消耗记录">
         <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
-        <el-table-column label="耗材名称" prop="materialName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="产品名称" prop="materialName" min-width="110" show-overflow-tooltip />
         <el-table-column label="规格" prop="materialSpeci" min-width="90" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ scope.row.materialSpeci || '--' }}</span>

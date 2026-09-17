@@ -300,12 +300,12 @@
                   >
                     <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                     <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
-                    <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable>
+                    <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="名称" align="left" header-align="center" prop="materialName" width="150" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
+                    <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="150" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
                       <template slot-scope="scope">
                         <span class="detail-text-cell-2line" :title="scope.row.materialName || (scope.row.material && scope.row.material.name) || '--'">
                           {{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}

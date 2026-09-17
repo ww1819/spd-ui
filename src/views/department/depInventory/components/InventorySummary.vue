@@ -40,7 +40,7 @@
             <el-input
               v-else
               v-model="queryParams.materialKeyword"
-              placeholder="耗材名称/编码"
+              placeholder="产品名称/编码"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -106,8 +106,8 @@
             {{ scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
+        <el-table-column label="产品编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
+        <el-table-column label="产品名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
         <el-table-column
           v-for="col in hisChargeItemColumnDefs"
           :key="'his-charge-' + col.key"

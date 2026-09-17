@@ -113,8 +113,8 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="150" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="产品编码" align="center" prop="materialCode" width="150" show-overflow-tooltip resizable/>
+      <el-table-column label="产品名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
       <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable/>
       <el-table-column label="类型" align="center" prop="billType" width="100" show-overflow-tooltip resizable>
         <template slot-scope="scope">

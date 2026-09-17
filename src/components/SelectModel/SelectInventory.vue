@@ -144,7 +144,7 @@
                 {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
+            <el-table-column label="产品名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
             <el-table-column label="规格" align="center" prop="material.speci" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
             <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable />
             <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdUnit.unitName')" />
@@ -152,7 +152,7 @@
             <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable sortable />
             <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable />
             <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="耗材批次号" align="center" width="160" show-overflow-tooltip resizable>
+            <el-table-column label="产品批次号" align="center" width="160" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span>{{ scope.row.batchNo || '--' }}</span>
               </template>
@@ -226,7 +226,7 @@
                   {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
                 </template>
               </el-table-column>
-              <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
+              <el-table-column label="产品名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
               <el-table-column label="规格" align="center" prop="material.speci" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
               <el-table-column label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable />
               <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdUnit.unitName')" />
@@ -234,7 +234,7 @@
               <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable sortable />
               <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable />
               <el-table-column label="生产批号" align="center" prop="batchNumber" width="120" show-overflow-tooltip resizable />
-              <el-table-column label="耗材批次号" align="center" width="160" show-overflow-tooltip resizable>
+              <el-table-column label="产品批次号" align="center" width="160" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
                   <span>{{ scope.row.batchNo || '--' }}</span>
                 </template>

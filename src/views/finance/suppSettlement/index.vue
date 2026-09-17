@@ -101,7 +101,7 @@
       <el-table :data="detailRow && detailRow.entryList || []" border size="small" max-height="300">
         <el-table-column type="index" label="序号" width="50" align="center" />
         <el-table-column prop="whSettlementBillNo" label="仓库结算单单号" width="150" show-overflow-tooltip />
-        <el-table-column prop="materialName" label="耗材名称" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="materialName" label="产品名称" min-width="120" show-overflow-tooltip />
         <el-table-column prop="speci" label="规格" width="90" show-overflow-tooltip />
         <el-table-column prop="qty" label="数量" width="80" align="right" />
         <el-table-column prop="unitPrice" label="单价" width="90" align="right">

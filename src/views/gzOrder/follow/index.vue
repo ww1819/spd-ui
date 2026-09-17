@@ -303,12 +303,12 @@
                   >
                     <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                     <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
-                    <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable sortable>
+                    <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable sortable>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="名称" align="left" header-align="center" prop="materialName" width="150" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
+                    <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="150" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
                       <template slot-scope="scope">
                         <span class="detail-text-cell-2line" :title="scope.row.materialName || (scope.row.material && scope.row.material.name) || '--'">
                           {{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}
@@ -753,7 +753,7 @@ export default {
         response.rows.forEach((item, index) => {
           let obj = {};
           obj.materialId = item.id;
-          obj.materialName = item.name || ""; // 保存耗材名称
+          obj.materialName = item.name || ""; // 保存产品名称
           obj.qty = "";
           obj.price = item.price;
           obj.amt = "";
@@ -833,7 +833,7 @@ export default {
       this.selectRow.forEach((item, index) => {
         let obj = {};
         obj.materialId = item.id;
-        obj.materialName = item.name || ""; // 保存耗材名称
+        obj.materialName = item.name || ""; // 保存产品名称
         obj.qty = "1"; // 默认数量为1
         // 设置价格：优先使用item.price
         obj.price = item.price || 0;

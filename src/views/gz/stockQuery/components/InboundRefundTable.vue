@@ -32,14 +32,14 @@
           <span>{{ scope.row.inHospitalCode || '--' }}</span>
         </template>
       </el-table-column>
-      <!-- 6. 耗材编码 -->
-      <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+      <!-- 6. 产品编码 -->
+      <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
         </template>
       </el-table-column>
-      <!-- 7. 耗材名称 -->
-      <el-table-column label="耗材名称" align="center" width="160" show-overflow-tooltip resizable>
+      <!-- 7. 产品名称 -->
+      <el-table-column label="产品名称" align="center" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
         </template>

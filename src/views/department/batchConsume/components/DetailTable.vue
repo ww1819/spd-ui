@@ -12,7 +12,7 @@
     <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
     <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable />
     <el-table-column
-      label="名称"
+      label="产品名称"
       align="left"
       header-align="center"
       width="240"

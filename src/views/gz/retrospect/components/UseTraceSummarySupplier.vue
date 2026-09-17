@@ -26,9 +26,9 @@
 
       </el-table-column>
 
-      <el-table-column label="耗材编码" align="center" prop="material.code" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialCode"/>
+      <el-table-column label="产品编码" align="center" prop="material.code" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialCode"/>
 
-      <el-table-column label="耗材名称" align="center" prop="material.name" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialName"/>
+      <el-table-column label="产品名称" align="center" prop="material.name" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialName"/>
 
       <el-table-column label="规格" align="center" width="130" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortTraceSpeci">
 

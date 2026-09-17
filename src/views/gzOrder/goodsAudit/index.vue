@@ -727,7 +727,7 @@ export default {
         // 确保 materialId 正确获取：优先从 materialId 字段，其次从 material.id，最后从 materialId 属性
         obj.materialId = item.materialId || (item.material && item.material.id) || item.materialId;
         // 优先从material对象获取名称，如果没有则从materialName字段获取
-        obj.materialName = (item.material && item.material.name) || item.materialName || ""; // 保存耗材名称用于显示
+        obj.materialName = (item.material && item.material.name) || item.materialName || ""; // 保存产品名称用于显示
         // 保存规格和型号
         obj.speci = (item.material && item.material.speci) || "";
         obj.model = (item.material && item.material.model) || "";

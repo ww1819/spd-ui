@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="app-container">
     <el-dialog :visible.sync="show" append-to-body width="1600px" :before-close="handleClose" :show-close="false">
       <div slot="title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -72,7 +72,7 @@
         <el-table-column label="单价" align="center" prop="unitPrice" width="120"/>
         <el-table-column label="金额" align="center" prop="amt" width="120"/>
         <el-table-column label="入库批次号" align="center" prop="batchNo" width="200"/>
-        <el-table-column label="耗材批次号" align="center" prop="materialNo" width="200"/>
+        <el-table-column label="产品批次号" align="center" prop="materialNo" width="200"/>
         <el-table-column label="耗材日期" align="center" prop="materialDate" width="140">
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>

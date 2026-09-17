@@ -27,12 +27,12 @@
           <span>{{ scope.row.inHospitalCode || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="center" width="160" show-overflow-tooltip resizable>
+      <el-table-column label="产品名称" align="center" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
         </template>

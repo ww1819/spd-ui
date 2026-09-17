@@ -365,12 +365,12 @@
                     border
                   >
                     <el-table-column label="序号" align="center" type="index" width="50" :index="index => index + 1"/>
-                    <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip resizable>
+                    <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <span>{{ (scope.row.material && scope.row.material.code) || scope.row.materialCode || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="名称" align="center" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortEntryByNested(a,b,'material.name','materialName')">
+                    <el-table-column label="产品名称" align="center" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortEntryByNested(a,b,'material.name','materialName')">
                       <template slot-scope="scope">
                         <span>{{ (scope.row.material && scope.row.material.name) || scope.row.materialName || '--' }}</span>
                       </template>
@@ -485,7 +485,7 @@
       </div>
     </el-dialog>
 
-    <!-- 查看采购计划弹窗：表头 计划单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间；明细 耗材编码等 -->
+    <!-- 查看采购计划弹窗：表头 计划单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间；明细 产品编码等 -->
     <el-dialog title="查看采购计划" :visible.sync="planViewDialogVisible" width="95%" append-to-body>
       <div v-if="planDetail" class="plan-view-header" style="display:flex;flex-wrap:wrap;gap:16px 24px;margin-bottom:12px;">
         <span><strong>计划单号：</strong>{{ planDetail.planNo || '--' }}</span>
@@ -499,12 +499,12 @@
       </div>
       <el-table v-if="planDetail && planDetail.purchasePlanEntryList" :data="planDetail.purchasePlanEntryList" border max-height="420">
         <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column label="耗材编码" width="120" show-overflow-tooltip>
+        <el-table-column label="产品编码" width="120" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="名称" width="140" show-overflow-tooltip>
+        <el-table-column label="产品名称" width="140" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ (scope.row.material && scope.row.material.name) || scope.row.materialName || '--' }}</span>
           </template>

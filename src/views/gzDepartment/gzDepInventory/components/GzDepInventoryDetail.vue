@@ -8,10 +8,10 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <!-- 2. 耗材编码 -->
-      <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
-      <!-- 3. 耗材名称 -->
-      <el-table-column label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable/>
+      <!-- 2. 产品编码 -->
+      <el-table-column label="产品编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable/>
+      <!-- 3. 产品名称 -->
+      <el-table-column label="产品名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable/>
       <el-table-column
         v-for="col in hisChargeItemColumnDefs"
         :key="'his-charge-' + col.key"

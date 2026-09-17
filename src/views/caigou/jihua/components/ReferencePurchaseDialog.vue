@@ -214,6 +214,16 @@ import { formatIsGzLabel } from '@/utils/purchaseAggEntry'
 const ENTRY_PAGE_SIZE = 200
 const RELOAD_DEBOUNCE_MS = 320
 
+/** 止=今天，起=今天往前 5 天 */
+function defaultRefPurchaseDateRange() {
+  const end = new Date()
+  const begin = new Date()
+  begin.setDate(begin.getDate() - 5)
+  const pad = n => (n < 10 ? `0${n}` : `${n}`)
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return { beginDate: fmt(begin), endDate: fmt(end) }
+}
+
 export default {
   name: 'ReferencePurchaseDialog',
   components: { SelectDepartment },
@@ -226,6 +236,7 @@ export default {
     referencedEntryIdSet: { type: Object, default: () => new Set() }
   },
   data() {
+    const defaultRange = defaultRefPurchaseDateRange()
     return {
       loading: false,
       entryLoading: false,
@@ -238,8 +249,8 @@ export default {
         warehouseId: null,
         departmentId: null,
         purchaseBillNo: null,
-        beginDate: null,
-        endDate: null,
+        beginDate: defaultRange.beginDate,
+        endDate: defaultRange.endDate,
         purchasePlanRefStatus: null,
         purchaseBillStatus: 2
       },
@@ -298,13 +309,17 @@ export default {
     }
   },
   watch: {
-    visible(val) {
-      if (val) {
-        this.initOpen()
-        this.$nextTick(() => this.bindLayoutResize())
-      } else {
-        this.clearCache()
-        this.unbindLayoutResize()
+    // 父级 v-if 打开时 visible 已为 true，必须 immediate，否则 initOpen 不会执行、日期空白
+    visible: {
+      immediate: true,
+      handler(val) {
+        if (val) {
+          this.initOpen()
+          this.$nextTick(() => this.bindLayoutResize())
+        } else {
+          this.clearCache()
+          this.unbindLayoutResize()
+        }
       }
     },
     entryTotal() {
@@ -366,17 +381,13 @@ export default {
     },
     /** 日期默认：止=今天，起=今天往前 5 天，缩小首屏查询范围避免卡顿 */
     applyDefaultDateRange() {
-      const end = new Date()
-      const begin = new Date()
-      begin.setDate(begin.getDate() - 5)
-      this.queryParams.beginDate = this.formatDateYmd(begin)
-      this.queryParams.endDate = this.formatDateYmd(end)
+      const range = defaultRefPurchaseDateRange()
+      this.$set(this.queryParams, 'beginDate', range.beginDate)
+      this.$set(this.queryParams, 'endDate', range.endDate)
     },
     formatDateYmd(d) {
-      const y = d.getFullYear()
-      const m = String(d.getMonth() + 1).padStart(2, '0')
-      const day = String(d.getDate()).padStart(2, '0')
-      return `${y}-${m}-${day}`
+      const pad = n => (n < 10 ? `0${n}` : `${n}`)
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
     },
     syncWarehouseFromProp() {
       const wid = this.warehouseId

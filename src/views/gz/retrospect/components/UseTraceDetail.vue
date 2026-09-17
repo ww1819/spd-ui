@@ -7,7 +7,7 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialCode">
+      <el-table-column label="产品编码" align="center" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialCode">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
         </template>
@@ -17,7 +17,7 @@
           <span>{{ scope.row.inHospitalCode || scope.row.masterBarcode || scope.row.mainBarcode || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="center" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialName">
+      <el-table-column label="产品名称" align="center" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialName">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.name) || scope.row.materialName || '--' }}</span>
         </template>

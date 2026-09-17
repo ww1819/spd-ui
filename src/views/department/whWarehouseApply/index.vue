@@ -108,7 +108,7 @@
       </el-descriptions>
       <el-table :data="viewEntryList" border max-height="420" size="small">
         <el-table-column label="行号" prop="lineNo" width="60" align="center" />
-        <el-table-column label="名称" min-width="140" show-overflow-tooltip>
+        <el-table-column label="产品名称" min-width="140" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}</span>
           </template>

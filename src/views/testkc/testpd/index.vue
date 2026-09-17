@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="inventory-management">
     <!-- 左侧树形菜单 -->
     <div class="sidebar">
@@ -15,8 +15,8 @@
               <el-option label="医学检验科试剂室..." value="医学检验科试剂室"></el-option>
             </el-select>
           </el-form-item>
-          <el-form-item label="耗材名称：">
-            <el-input v-model="searchForm.name" placeholder="耗材名称"></el-input>
+          <el-form-item label="产品名称：">
+            <el-input v-model="searchForm.name" placeholder="产品名称"></el-input>
           </el-form-item>
           <el-form-item label="耗材代号：">
             <el-input v-model="searchForm.code" placeholder="耗材代号"></el-input>
@@ -50,7 +50,7 @@
         <el-table :data="tableData" border style="width: 100%" :header-cell-style="{background:'#f5f7fa',color:'#606266'}">
           <el-table-column type="index" label="序" width="50"></el-table-column>
           <el-table-column prop="code" label="耗材代号"></el-table-column>
-          <el-table-column prop="name" label="耗材名称"></el-table-column>
+          <el-table-column prop="name" label="产品名称"></el-table-column>
           <el-table-column prop="batch" label="耗材批号"></el-table-column>
           <el-table-column prop="stock" label="库存数"></el-table-column>
           <el-table-column prop="count" label="盘点数"></el-table-column>

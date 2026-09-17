@@ -117,8 +117,8 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column v-if="queryParams.reportMode === 'PRODUCT'" label="耗材编码" align="center" prop="materialCode" width="130" show-overflow-tooltip />
-      <el-table-column v-if="queryParams.reportMode === 'PRODUCT'" label="耗材名称" align="center" prop="materialName" min-width="160" show-overflow-tooltip />
+      <el-table-column v-if="queryParams.reportMode === 'PRODUCT'" label="产品编码" align="center" prop="materialCode" width="130" show-overflow-tooltip />
+      <el-table-column v-if="queryParams.reportMode === 'PRODUCT'" label="产品名称" align="center" prop="materialName" min-width="160" show-overflow-tooltip />
       <el-table-column v-if="queryParams.reportMode === 'TYPE'" label="类型编码" align="center" prop="jcTypeCode" width="120" show-overflow-tooltip />
       <el-table-column v-if="queryParams.reportMode === 'TYPE'" label="集采类型" align="center" prop="jcTypeName" min-width="140" show-overflow-tooltip />
       <el-table-column label="报量数" align="center" prop="reportQty" width="120" />
@@ -204,7 +204,7 @@ export default {
       moreSearchOptions: [
         { value: "periodId", label: "集采周期" },
         { value: "reportMode", label: "报量模式" },
-        { value: "materialName", label: "耗材名称" },
+        { value: "materialName", label: "产品名称" },
         { value: "jcTypeName", label: "集采类型名称" }
       ],
       queryParams: {
@@ -248,7 +248,7 @@ export default {
   },
   methods: {
     moreSearchPlaceholderFor(t) {
-      const map = { materialName: "耗材名称", jcTypeName: "集采类型名称" };
+      const map = { materialName: "产品名称", jcTypeName: "集采类型名称" };
       return map[t] || "请输入";
     },
     moreSearchFieldClass(t) {

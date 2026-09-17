@@ -309,7 +309,7 @@
     <el-dialog :title="title" :visible.sync="open" append-to-body width="90%" top="4vh" @close="open = false">
       <el-table :data="stkIoBillEntryList" border max-height="520" size="small">
         <el-table-column type="index" label="序号" width="55" align="center" />
-        <el-table-column label="名称" min-width="160" show-overflow-tooltip>
+        <el-table-column label="产品名称" min-width="160" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
           </template>

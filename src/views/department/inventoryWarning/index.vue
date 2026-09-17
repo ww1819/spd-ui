@@ -90,7 +90,7 @@
                 <span style="cursor: pointer;" @dblclick="handleEditWarning(scope.row)">{{ scope.row.material && scope.row.material.code ? scope.row.material.code : '' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="名称" align="center" min-width="200" show-overflow-tooltip>
+            <el-table-column label="产品名称" align="center" min-width="200" show-overflow-tooltip>
               <template slot-scope="scope">
                 <span style="cursor: pointer;" @dblclick="handleEditWarning(scope.row)">{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '' }}</span>
               </template>
@@ -231,7 +231,7 @@
               <span>{{ scope.row.material && scope.row.material.code ? scope.row.material.code : '' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="名称" align="center" min-width="220" show-overflow-tooltip>
+          <el-table-column label="产品名称" align="center" min-width="220" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '' }}</span>
             </template>

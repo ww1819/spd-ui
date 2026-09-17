@@ -273,12 +273,12 @@
                   >
                     <el-table-column v-if="dialogType !== 'view'" type="selection" width="60" align="center" header-align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                     <el-table-column label="序号" align="center" header-align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                    <el-table-column label="耗材编码" align="center" header-align="center" prop="materialCode" width="150" show-overflow-tooltip resizable>
+                    <el-table-column label="产品编码" align="center" header-align="center" prop="materialCode" width="150" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材名称" align="left" header-align="center" prop="materialName" width="180" show-overflow-tooltip resizable>
+                    <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="180" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialName || '--' }}</span>
                       </template>

@@ -295,12 +295,12 @@
                   >
                     <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                     <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
-                    <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable>
+                    <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="名称" align="left" header-align="center" prop="materialName" width="150" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
+                    <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="150" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
                       <template slot-scope="scope">
                         <span class="detail-text-cell-2line" :title="scope.row.materialName || (scope.row.material && scope.row.material.name) || '--'">
                           {{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}
@@ -1079,7 +1079,7 @@ export default {
           item: item
         });
         // 优先从material对象获取名称，如果没有则从materialName字段获取
-        obj.materialName = (item.material && item.material.name) || item.materialName || ""; // 保存耗材名称用于显示
+        obj.materialName = (item.material && item.material.name) || item.materialName || ""; // 保存产品名称用于显示
         // 保存规格和型号
         obj.speci = (item.material && item.material.speci) || "";
         obj.model = (item.material && item.material.model) || "";

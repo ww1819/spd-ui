@@ -462,7 +462,7 @@
                       </el-form-item>
                     </el-col>
                     <el-col :span="8">
-                      <el-form-item label="名称" prop="materialName">
+                      <el-form-item label="产品名称" prop="materialName">
                         <el-input
                           v-model="addQueryParams.materialName"
                           placeholder="名称/编码/简码"

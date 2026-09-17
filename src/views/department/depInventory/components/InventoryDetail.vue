@@ -45,7 +45,7 @@
             <el-input
               v-else
               v-model="queryParams.materialKeyword"
-              placeholder="耗材编码/名称/简码"
+              placeholder="产品编码/名称/简码"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -123,7 +123,7 @@
             {{ scope.$index + 1 }}
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="material.code" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
+        <el-table-column label="产品编码" align="center" prop="material.code" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
         <el-table-column label="耗材" align="center" prop="material.name" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
         <el-table-column label="科室编码" align="center" prop="department.code" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByDepartmentCode"/>
         <el-table-column label="科室" align="center" prop="department.name" width="160" min-width="140" show-overflow-tooltip resizable sortable :sort-method="sortByDepartment"/>
@@ -168,7 +168,7 @@
           </template>
         </el-table-column>
         <el-table-column label="生产批号" align="center" prop="batchNumber" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortByBatchNumber"/>
-        <el-table-column label="耗材批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="产品批次号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.beginDate">{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>

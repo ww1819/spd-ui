@@ -114,8 +114,8 @@
       <el-table v-loading="loading" :data="materialList" @selection-change="handleSelectionChange" stripe>
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column label="编号" align="center" prop="id" width="50"/>
-        <el-table-column label="耗材编码" align="center" prop="code" width="80"/>
-        <el-table-column label="耗材名称" align="center" prop="name" width="180"/>
+        <el-table-column label="产品编码" align="center" prop="code" width="80"/>
+        <el-table-column label="产品名称" align="center" prop="name" width="180"/>
         <el-table-column label="供应商" align="center" prop="supplier.name" width="180"/>
         <el-table-column label="规格" align="center" prop="speci" />
         <el-table-column label="型号" align="center" prop="model" />
@@ -161,13 +161,13 @@
         <el-form ref="form" :model="form" :rules="rules" label-width="80px">
           <el-row>
             <el-col :span="6">
-              <el-form-item label="耗材编码" prop="code" label-width="100px">
-                <el-input v-model="form.code" :disabled="isDisabled" placeholder="耗材编码" />
+              <el-form-item label="产品编码" prop="code" label-width="100px">
+                <el-input v-model="form.code" :disabled="isDisabled" placeholder="产品编码" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
-              <el-form-item label="耗材名称" prop="name" label-width="100px">
-                <el-input v-model="form.name" @input="nameChange" placeholder="耗材名称" />
+              <el-form-item label="产品名称" prop="name" label-width="100px">
+                <el-input v-model="form.name" @input="nameChange" placeholder="产品名称" />
               </el-form-item>
             </el-col>
             <el-col :span="6">
@@ -572,7 +572,7 @@
         showSearch: true,
         moreSearchTypes: [],
         moreSearchOptions: [
-          { value: "name", label: "耗材名称" },
+          { value: "name", label: "产品名称" },
           { value: "supplier", label: "供应商" },
           { value: "dateRange", label: "创建日期" },
           { value: "isGz", label: "是否高值" }
@@ -604,10 +604,10 @@
         // 表单校验
         rules: {
           code: [
-            { required: true, message: "耗材编码不能为空", trigger: "blur" }
+            { required: true, message: "产品编码不能为空", trigger: "blur" }
           ],
           name: [
-            { required: true, message: "耗材名称不能为空", trigger: "blur" }
+            { required: true, message: "产品名称不能为空", trigger: "blur" }
           ],
           supplierId: [
             { required: true, message: "供应商不能为空", trigger: "blur" }
@@ -661,7 +661,7 @@
     },
     methods: {
       moreSearchPlaceholderFor(t) {
-        const map = { name: "耗材名称" };
+        const map = { name: "产品名称" };
         return map[t] || "请输入";
       },
       moreSearchFieldClass(t) {

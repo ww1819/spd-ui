@@ -13,7 +13,7 @@
             />
             <el-input
               v-model="queryParams.materialName"
-              placeholder="耗材名称"
+              placeholder="产品名称"
               clearable
               class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
@@ -251,7 +251,7 @@
                 :height="detailTableHeight"
               >
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ (scope.row.material && scope.row.material.code) || scope.row.materialCode || '--' }}</span>
                   </template>

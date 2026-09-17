@@ -225,7 +225,7 @@ export default {
       moreSearchTypes: [],
       moreSearchOptions: [
         { label: "院内码", value: "inHospitalCode" },
-        { label: "耗材名称", value: "materialKeyword" },
+        { label: "产品名称", value: "materialKeyword" },
         { label: "规格", value: "materialSpeci" },
         { label: "仓库", value: "warehouse" },
         { label: "生产厂家", value: "factoryId" },
@@ -320,7 +320,7 @@ export default {
     moreSearchPlaceholderFor(t) {
       const map = {
         inHospitalCode: '院内码模糊',
-        materialKeyword: '耗材编码/名称/简码',
+        materialKeyword: '产品编码/名称/简码',
         materialSpeci: '规格模糊',
         materialNo: '批号模糊',
         chargeCodeKeyword: '收费编码模糊',

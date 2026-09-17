@@ -211,7 +211,7 @@ export default {
   methods: {
     moreSearchPlaceholderFor(t) {
       const map = {
-        materialKeyword: "耗材编码/名称/规格/首字母",
+        materialKeyword: "产品编码/名称/规格/首字母",
         inHospitalCode: "院内码",
         orderNo: this.activeName === "outbound" ? "出库/退库单号" : "单号"
       };

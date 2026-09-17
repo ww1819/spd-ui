@@ -183,7 +183,7 @@
     >
       <el-table :data="detailRows" size="mini" max-height="420" v-loading="detailLoading">
         <el-table-column label="编码" prop="materialCode" width="110" show-overflow-tooltip />
-        <el-table-column label="名称" prop="materialName" min-width="140" show-overflow-tooltip />
+        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
         <el-table-column label="规格" prop="materialSpeci" width="100" show-overflow-tooltip />
         <el-table-column label="批次" prop="batchNo" width="100" show-overflow-tooltip />
         <el-table-column label="数量" prop="qty" width="80" align="right" />

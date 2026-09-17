@@ -218,8 +218,8 @@
           <span>{{ formatCtkBillTypeLabel(scope.row.billType) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="left" header-align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" class-name="ctk-col-left"/>
-      <el-table-column label="耗材名称" align="left" header-align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" class-name="ctk-col-left"/>
+      <el-table-column label="产品编码" align="left" header-align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" class-name="ctk-col-left"/>
+      <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" class-name="ctk-col-left"/>
       <el-table-column label="规格" align="left" header-align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" class-name="ctk-col-left"/>
       <el-table-column label="型号" align="left" header-align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel" class-name="ctk-col-left"/>
       <el-table-column label="单位" align="left" header-align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName" class-name="ctk-col-left"/>
@@ -809,7 +809,7 @@ export default {
     moreSearchPlaceholderFor(t) {
       const map = {
         factory: '生产厂家编码/名称/简码',
-        materialName: '耗材编码/名称/简码',
+        materialName: '产品编码/名称/简码',
         billNo: '业务单号',
         materialSpeci: '规格模糊',
         materialModel: '型号模糊',

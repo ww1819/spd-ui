@@ -18,10 +18,10 @@
           >
             <el-row :gutter="12" class="query-form-row">
               <el-col :span="6">
-                <el-form-item label="耗材编码" prop="code" label-width="100px">
+                <el-form-item label="产品编码" prop="code" label-width="100px">
                   <el-input
                     v-model="queryParams.code"
-                    placeholder="耗材编码"
+                    placeholder="产品编码"
                     clearable
                     size="small"
                     @keyup.enter.native="handleQuery"
@@ -48,10 +48,10 @@
             </el-row>
             <el-row :gutter="12" class="query-form-row">
               <el-col :span="6">
-                <el-form-item label="耗材名称" prop="name" label-width="100px">
+                <el-form-item label="产品名称" prop="name" label-width="100px">
                   <el-input
                     v-model="queryParams.name"
-                    placeholder="耗材名称"
+                    placeholder="产品名称"
                     clearable
                     size="small"
                     @keyup.enter.native="handleQuery"
@@ -99,8 +99,8 @@
                 {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材编码" align="center" prop="code" width="130" show-overflow-tooltip resizable />
-            <el-table-column label="耗材名称" align="center" prop="name" width="150" show-overflow-tooltip resizable />
+            <el-table-column label="产品编码" align="center" prop="code" width="130" show-overflow-tooltip resizable />
+            <el-table-column label="产品名称" align="center" prop="name" width="150" show-overflow-tooltip resizable />
             <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable />
             <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable />
             <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>

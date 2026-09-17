@@ -46,7 +46,7 @@
             <el-input
               v-else
               v-model="queryParams.materialName"
-              placeholder="耗材名称"
+              placeholder="产品名称"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -150,7 +150,7 @@ export default {
         { label: '条码值', value: 'barcodeValue' },
         { label: '业务类型', value: 'businessTypeCode' },
         { label: '单据号', value: 'billNo' },
-        { label: '耗材名称', value: 'materialName' }
+        { label: '产品名称', value: 'materialName' }
       ],
       total: 0,
       dataList: [],

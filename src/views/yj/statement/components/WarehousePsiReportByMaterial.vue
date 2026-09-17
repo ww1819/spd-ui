@@ -129,8 +129,8 @@
         </el-table-column>
         <el-table-column label="仓库编码" align="center" prop="warehouse_code" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="仓库名称" align="center" prop="warehouse_name" width="140" show-overflow-tooltip resizable/>
-        <el-table-column label="耗材编码" align="center" prop="material_code" width="140" show-overflow-tooltip resizable/>
-        <el-table-column label="耗材名称" align="center" prop="material_name" min-width="160" show-overflow-tooltip resizable/>
+        <el-table-column label="产品编码" align="center" prop="material_code" width="140" show-overflow-tooltip resizable/>
+        <el-table-column label="产品名称" align="center" prop="material_name" min-width="160" show-overflow-tooltip resizable/>
         <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="单位" align="center" prop="unit_name" width="80" show-overflow-tooltip resizable/>

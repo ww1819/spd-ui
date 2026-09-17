@@ -309,13 +309,13 @@
                 :height="detailTableHeight"
               >
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="产品编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材名称" prop="materialId" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')">
+                <el-table-column label="产品名称" prop="materialId" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')">
                   <template slot-scope="scope">
                     <span v-if="scope.row.material">{{ scope.row.material.name || '--' }}</span>
                     <span v-else>--</span>

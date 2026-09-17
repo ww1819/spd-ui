@@ -6,8 +6,8 @@
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="140" show-overflow-tooltip resizable sortable :sort-method="sortSummaryMaterialCode"/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="180" show-overflow-tooltip resizable sortable :sort-method="sortSummaryMaterialName"/>
+      <el-table-column label="产品编码" align="center" prop="materialCode" width="140" show-overflow-tooltip resizable sortable :sort-method="sortSummaryMaterialCode"/>
+      <el-table-column label="产品名称" align="center" prop="materialName" width="180" show-overflow-tooltip resizable sortable :sort-method="sortSummaryMaterialName"/>
       <el-table-column
         v-for="col in hisChargeItemColumnDefs"
         :key="'his-charge-' + col.key"

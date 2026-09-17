@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="consumable-management">
       <!-- 顶部工具栏 -->
       <div class="toolbar">
@@ -36,7 +36,7 @@
           <el-table :data="leftTableData" border style="width: 100%">
             <el-table-column type="selection" width="55" v-model="selectAllLeft"></el-table-column>
             <el-table-column type="index" label="序" width="50"></el-table-column>
-            <el-table-column prop="name" label="耗材名称"></el-table-column>
+            <el-table-column prop="name" label="产品名称"></el-table-column>
             <el-table-column prop="code" label="条码号"></el-table-column>
           </el-table>
         </div>
@@ -54,7 +54,7 @@
             <el-table-column type="selection" width="55" v-model="selectAllMiddle"></el-table-column>
             <el-table-column type="index" label="序" width="50"></el-table-column>
             <el-table-column prop="code" label="子条码号"></el-table-column>
-            <el-table-column prop="name" label="耗材名称"></el-table-column>
+            <el-table-column prop="name" label="产品名称"></el-table-column>
           </el-table>
         </div>
   

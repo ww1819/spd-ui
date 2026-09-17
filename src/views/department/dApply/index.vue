@@ -629,7 +629,7 @@
                     </template>
                   </el-table-column>
                   <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
-                  <el-table-column label="名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
+                  <el-table-column label="产品名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
                   <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
                   <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
                   <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>

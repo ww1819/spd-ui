@@ -334,12 +334,12 @@
                           :height="detailTableHeight">
                   <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                   <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                  <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                  <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="耗材名称" align="center" prop="materialName" width="150" resizable sortable :sort-method="sortByDetailMaterialName">
+                  <el-table-column label="产品名称" align="center" prop="materialName" width="150" resizable sortable :sort-method="sortByDetailMaterialName">
                     <template slot-scope="scope">
                       <el-tooltip effect="dark" placement="top" :enterable="false" :content="(scope.row.materialName || '') || '—'">
                         <span class="gz-detail-line-clip">{{ scope.row.materialName }}</span>
@@ -645,12 +645,12 @@
             empty-text="请点击「解析」自动检索产品；列与单据明细一致，批号/生产日期/有效期可编辑"
             class="udi-scan-preview-table"
           >
-            <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
+            <el-table-column label="产品编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
               <template slot-scope="scope">
                 {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
+            <el-table-column label="产品名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
               <template slot-scope="scope">{{ scope.row.materialName || '--' }}</template>
             </el-table-column>
             <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip>
@@ -1227,7 +1227,7 @@ export default {
       this.$set(this.form, 'creatorName', creatorName || (this.form.createBy != null && String(this.form.createBy).trim() !== '' ? String(this.form.createBy) : '--'));
       this.$set(this.form, 'auditorName', this.getAuditorName(this.form) || '');
     },
-    /** 将 getOrder 返回的 materialList 合并到 this.gzOrderEntryList（后端明细表无耗材名称/编码等展示字段） */
+    /** 将 getOrder 返回的 materialList 合并到 this.gzOrderEntryList（后端明细表无产品名称/编码等展示字段） */
     applyMaterialListToGzOrderEntries(orderData) {
       const materialList = orderData && orderData.materialList;
       const entries = this.gzOrderEntryList || [];
@@ -1789,8 +1789,8 @@ export default {
       let obj = {};
       obj.materialId = item.id;
       obj.material = item; // 保存完整的物料对象，方便访问嵌套属性
-      obj.materialName = item.name || ""; // 保存耗材名称
-      obj.materialCode = item.code || ""; // 保存耗材编码
+      obj.materialName = item.name || ""; // 保存产品名称
+      obj.materialCode = item.code || ""; // 保存产品编码
       obj.speci = item.speci || ""; // 保存规格
       obj.model = item.model || ""; // 保存型号
       obj.unit = item.unit || item.fdUnit || null; // 保存单位
@@ -2041,8 +2041,8 @@ export default {
         let obj = {};
         obj.materialId = item.id;
         obj.material = item; // 保存完整的物料对象，方便访问嵌套属性
-        obj.materialName = item.name || ""; // 保存耗材名称
-        obj.materialCode = item.code || ""; // 保存耗材编码
+        obj.materialName = item.name || ""; // 保存产品名称
+        obj.materialCode = item.code || ""; // 保存产品编码
         obj.speci = item.speci || ""; // 保存规格
         obj.model = item.model || ""; // 保存型号
         obj.unit = item.unit || item.fdUnit || null; // 保存单位

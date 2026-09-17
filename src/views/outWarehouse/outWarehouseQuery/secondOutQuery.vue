@@ -177,8 +177,8 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="left" header-align="center" prop="warehouseName" width="130" min-width="110" show-overflow-tooltip resizable class-name="ctk-col-left"/>
-      <el-table-column label="耗材编码" align="left" header-align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" class-name="ctk-col-left"/>
-      <el-table-column label="耗材名称" align="left" header-align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" class-name="ctk-col-left"/>
+      <el-table-column label="产品编码" align="left" header-align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" class-name="ctk-col-left"/>
+      <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" class-name="ctk-col-left"/>
       <el-table-column label="型号" align="left" header-align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel" class-name="ctk-col-left"/>
       <el-table-column label="规格" align="left" header-align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" class-name="ctk-col-left"/>
       <el-table-column label="单位" align="left" header-align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName" class-name="ctk-col-left"/>
@@ -418,7 +418,7 @@ export default {
       const v = row && row.material ? row.material.isBilling : null;
       return v === '1' || v === 1;
     },
-    /** 同仓库 + 同耗材编码 + 同单价合并；单价不同则分行 */
+    /** 同仓库 + 同产品编码 + 同单价合并；单价不同则分行 */
     mergeSummaryRowsByWarehouseMaterial(rows) {
       if (!rows || !rows.length) return [];
       const map = new Map();
@@ -454,7 +454,7 @@ export default {
       this.loading = true;
       const queryParams = this.buildListQueryParams();
       listCTKWarehouseSummary(queryParams).then(response => {
-        // 同仓库+同耗材编码+同单价兜底合并；单价不同保留分行
+        // 同仓库+同产品编码+同单价兜底合并；单价不同保留分行
         const pageBase = ((this.queryParams.pageNum || 1) - 1) * (this.queryParams.pageSize || 10);
         const rawRows = (response.rows || response || []).map((item, idx) => {
           const row = {
@@ -685,7 +685,7 @@ export default {
       const map = {
         supplier: '供应商编码/名称',
         factory: '生产厂家编码/名称/简码',
-        materialName: '耗材编码/名称/简码',
+        materialName: '产品编码/名称/简码',
         materialSpeci: '规格模糊',
         materialModel: '型号模糊',
         financeCategoryKeyword: '财务分类编码/名称/简拼',

@@ -527,7 +527,7 @@
                 {{ scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材名称" prop="materialName" width="150" show-overflow-tooltip />
+            <el-table-column label="产品名称" prop="materialName" width="150" show-overflow-tooltip />
             <el-table-column label="规格" prop="specification" width="120" show-overflow-tooltip />
             <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip />
             <el-table-column label="数量" prop="quantity" width="80" align="center" />
@@ -1145,7 +1145,7 @@ export default {
               // 如果不存在，添加新记录
               const materialDetail = {
                 billingFollow: false, // 跟台
-                materialName: inventory.material && inventory.material.name ? inventory.material.name : '--', // 耗材名称
+                materialName: inventory.material && inventory.material.name ? inventory.material.name : '--', // 产品名称
                 specification: inventory.material && inventory.material.speci ? inventory.material.speci : '--', // 规格
                 model: inventory.material && inventory.material.model ? inventory.material.model : '--', // 型号
                 quantity: inventory.qty || 1, // 数量

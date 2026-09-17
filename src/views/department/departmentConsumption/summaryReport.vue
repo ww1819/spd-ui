@@ -83,7 +83,7 @@
             <el-input
               v-else
               v-model="searchForm.materialName"
-              placeholder="耗材名称"
+              placeholder="产品名称"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -141,8 +141,8 @@
           </template>
         </el-table-column>
         <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="产品编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="产品名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="规格" align="center" prop="specification" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="型号" align="center" prop="model" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
         <el-table-column label="单位" align="center" prop="unit" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
@@ -218,7 +218,7 @@ export default {
         { label: "单号", value: "consumeBillNo" },
         { label: "HIS收费编码", value: "hisChargeCode" },
         { label: "住院/门诊号", value: "patientId" },
-        { label: "耗材名称", value: "materialName" },
+        { label: "产品名称", value: "materialName" },
         { label: "规格", value: "specification" },
         { label: "型号", value: "model" },
         { label: "耗材分类", value: "warehouseCategoryKeyword" },

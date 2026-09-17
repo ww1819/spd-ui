@@ -449,8 +449,8 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
 
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '仓库',
     '科室',
     '业务单号',
@@ -720,7 +720,7 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
 }
 
 /**
- * 出/退库明细简表（按供应商）：与对账简表一致七列——序号、耗材名称、规格、单位、价格、数量、金额；
+ * 出/退库明细简表（按供应商）：与对账简表一致七列——序号、产品名称、规格、单位、价格、数量、金额；
  * 一供应商一段，标题「供应商名 + 出/退库明细 + 日期」；逐行明细不合并，段末仅合计数量与金额（红色）。
  * @param {Object[]} options.rows listCTKWarehouse 返回行
  * @param {string} [options.beginDate]
@@ -731,7 +731,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   if (!rows.length) return;
 
-  const headers = ['序号', '耗材名称', '规格', '单位', '价格', '数量', '金额'];
+  const headers = ['序号', '产品名称', '规格', '单位', '价格', '数量', '金额'];
   const colCount = 7;
   const priceCol = 5;
   const qtyCol = 6;
@@ -898,8 +898,8 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
 
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '仓库',
     '型号',
     '规格',
@@ -1073,8 +1073,8 @@ export async function exportRTHWarehouseDetailStyledXlsx(options) {
 
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '仓库',
     '供应商',
     '业务单号',
@@ -1251,8 +1251,8 @@ export async function exportRTHSummaryListStyledXlsx(options) {
 
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '仓库',
     '供应商',
     '型号',
@@ -1625,8 +1625,8 @@ export async function exportWarehouseInventoryDetailStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '生产厂家',
@@ -1731,8 +1731,8 @@ export async function exportDeptStocktakingDetailStyledXlsx(options) {
     '制单时间',
     '审核日期',
     '驳回原因',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -1819,8 +1819,8 @@ export async function exportWhStocktakingDetailStyledXlsx(options) {
   const titleBoldText = whTitle ? `仓库盘点明细表（${whTitle}）` : '仓库盘点明细表';
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -1907,8 +1907,8 @@ export async function exportWarehouseInventorySummaryStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '收费项目编码',
     '收费项目名称',
     '收费项目规格',
@@ -1976,8 +1976,8 @@ export async function exportWarehousePsiDetailStyledXlsx(options) {
   const resType = typeof resolveBillType === 'function' ? resolveBillType : () => '';
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '仓库',
     '类型',
     '业务单号',
@@ -2036,8 +2036,8 @@ export async function exportInventoryAlertStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -2112,8 +2112,8 @@ export async function exportHistoryInventoryStyledXlsx(options) {
     '序号',
     '仓库编码',
     '仓库名称',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -2167,8 +2167,8 @@ export async function exportExpiryAlertStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -2228,8 +2228,8 @@ export async function exportProfitLossEntryStyledXlsx(options) {
     '盈亏单号',
     '盘点单号',
     '仓库',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '单位',
     '批次号',
@@ -2285,8 +2285,8 @@ export async function exportProfitLossEntrySummaryStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -2335,8 +2335,8 @@ export async function exportPurchasePlanDetailReportStyledXlsx(options) {
   const headers = [
     '序号',
     '计划单号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '单位',
     '供应商',
@@ -2386,8 +2386,8 @@ export async function exportPurchasePlanSummaryReportStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '单位',
     '供应商',
@@ -2432,8 +2432,8 @@ export async function exportPurchaseOrderDetailReportStyledXlsx(options) {
     '序号',
     '订单单号',
     '计划单号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '单位',
     '供应商',
@@ -2482,8 +2482,8 @@ export async function exportPurchaseOrderSummaryReportStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '单位',
     '供应商',
@@ -2560,7 +2560,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName, includeNearExpiryDays = false } = options;
   const headers = [
     '序号',
-    '耗材编码',
+    '产品编码',
     '耗材',
     '科室编码',
     '科室',
@@ -2572,7 +2572,7 @@ export async function exportDepInventoryDetailStyledXlsx(options) {
     ...(includeNearExpiryDays ? ['近效期天数'] : []),
     '金额',
     '生产批号',
-    '耗材批次号',
+    '产品批次号',
     '生产日期',
     '有效期',
     '批次号',
@@ -2665,8 +2665,8 @@ export async function exportDepInventorySummaryStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '收费项目编码',
     '收费项目名称',
     '收费项目规格',
@@ -2739,8 +2739,8 @@ export async function exportDepartmentInOutDetailStyledXlsx(options) {
     '单据编号',
     '单据类型',
     '制单日期',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '科室',
@@ -2795,8 +2795,8 @@ export async function exportConsumeDetailStyledXlsx(options) {
     '出库单号',
     '仓库',
     '科室',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -2861,8 +2861,8 @@ export async function exportConsumeSummaryStyledXlsx(options) {
   const headers = [
     '序号',
     '科室',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -2925,7 +2925,7 @@ export async function exportConsumeOutReturnSummaryStyledXlsx(options) {
     '科室',
     '仓库',
     '帐类名称',
-    '耗材名称',
+    '产品名称',
     '规格',
     '单位',
     '数量',
@@ -2968,8 +2968,8 @@ export async function exportConsumeRankingStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '排名',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -3192,8 +3192,8 @@ export async function exportGzDepotInventoryDetailStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '规格',
     '型号',
     '单位',
@@ -3284,8 +3284,8 @@ export async function exportGzDepotInventorySummaryStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '收费编码',
     '收费名称',
     '收费规格',
@@ -3336,8 +3336,8 @@ export async function exportGzDepInventoryDetailStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '收费项目编码',
     '收费项目名称',
     '收费项目规格',
@@ -3421,8 +3421,8 @@ export async function exportGzDepInventorySummaryStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;
   const headers = [
     '序号',
-    '耗材编码',
-    '耗材名称',
+    '产品编码',
+    '产品名称',
     '收费项目编码',
     '收费项目名称',
     '收费项目规格',

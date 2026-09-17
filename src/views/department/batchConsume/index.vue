@@ -327,7 +327,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column
-                  label="名称"
+                  label="产品名称"
                   align="left"
                   header-align="center"
                   prop="material.name"
@@ -539,7 +539,7 @@
       />
       <el-table :data="reverseRows" border max-height="420px">
         <el-table-column label="来源单号" prop="srcConsumeBillNo" width="170" />
-        <el-table-column label="名称" prop="materialName" min-width="140" />
+        <el-table-column label="产品名称" prop="materialName" min-width="140" />
         <el-table-column label="规格" prop="materialSpeci" width="120" />
         <el-table-column label="型号" prop="materialModel" width="120" />
         <el-table-column label="正向消耗数量" prop="srcConsumeQty" width="120" />

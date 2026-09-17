@@ -1506,7 +1506,7 @@
           :closable="false"
           show-icon
           style="margin-bottom:12px;"
-          title="三步：导出档案 → 发给供应商完善 → 把填好的文件上传回来。有勾选只导出勾选的，没勾选则导出当前查询全部。请勿删除隐藏的档案ID列；空着的格子表示不改。耗材编码不会被更新。"
+          title="三步：导出档案 → 发给供应商完善 → 把填好的文件上传回来。有勾选只导出勾选的，没勾选则导出当前查询全部。请勿删除隐藏的档案ID列；空着的格子表示不改。产品编码不会被更新。"
         />
         <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
           先整单校验，通过后确认写入。解析结果可预览并导出以便排查。
@@ -2307,7 +2307,7 @@ export default {
     },
 
     /**
-     * 将「耗材名称」输入转换为后端筛选参数（不改写输入框本身的值）
+     * 将「产品名称」输入转换为后端筛选参数（不改写输入框本身的值）
      * - 含中文/混合：只传 name，按名称/编码/规格等模糊匹配（不再附带拼音 OR，避免「稀释液」误命中大量简码含 XSY 的无关品）
      * - 纯字母：只传 nameSearch，按拼音简码首/尾/包含模糊匹配
      */
@@ -2471,14 +2471,14 @@ export default {
       }
       return '';
     },
-    /** 双击行（非耗材编码列）：切换勾选与高亮 */
+    /** 双击行（非产品编码列）：切换勾选与高亮 */
     onMaterialRowDblclick(row, column) {
       if (!row) return;
       const prop = column && column.property;
       const label = column && column.label;
       const type = column && column.type;
       if (type === 'selection' || type === 'index') return;
-      if (prop === 'code' || label === '耗材编码' || label === '产品编码') return;
+      if (prop === 'code' || label === '产品编码' || label === '产品编码') return;
       if (label === '操作' || (column && column.className && String(column.className).indexOf('material-action') !== -1)) return;
       const table = this.$refs.materialTable;
       if (!table || typeof table.toggleRowSelection !== 'function') return;
@@ -3244,7 +3244,7 @@ export default {
         }
       }
 
-      // 查询所有耗材编码，找出最大的6位数字编码
+      // 查询所有产品编码，找出最大的6位数字编码
       try {
         const response = await listMaterialAll({ includeDisabledInList: true });
         const materialList = response.rows || response.data || [];
@@ -3390,7 +3390,7 @@ export default {
     handleUpdate(row) {
       this.reset();
       this.dialogMode = 'edit';
-      this.isDisabled = true; // 修改模式下，耗材编码不可修改
+      this.isDisabled = true; // 修改模式下，产品编码不可修改
       const id = row.id || this.ids
       getMaterial(id).then(response => {
         this.form = this.hydrateMaterialForm(response.data);
@@ -5077,7 +5077,7 @@ export default {
   white-space: nowrap !important;
 }
 
-/* 行高统一，确保「序号」与「耗材编码」视觉同一行 */
+/* 行高统一，确保「序号」与「产品编码」视觉同一行 */
 .material-page-container .el-table td,
 .material-page-container .el-table th {
   padding-top: 6px !important;
@@ -5491,7 +5491,7 @@ export default {
   justify-content: flex-start;
 }
 
-/* 耗材名称、生产厂家、规格、供应商、医保编码：表头居中，明细靠左 */
+/* 产品名称、生产厂家、规格、供应商、医保编码：表头居中，明细靠左 */
 .material-page-container .el-table th.material-name-col .cell,
 .material-page-container .el-table th.material-factory-col .cell,
 .material-page-container .el-table th.material-speci-col .cell,

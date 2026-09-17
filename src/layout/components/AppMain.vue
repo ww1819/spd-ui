@@ -206,7 +206,7 @@
                       >
                         <el-table-column type="index" label="序号" width="58" align="center" />
                         <el-table-column label="仓库" prop="warehouseName" min-width="100" show-overflow-tooltip />
-                        <el-table-column label="耗材编码" prop="materialCode" min-width="110">
+                        <el-table-column label="产品编码" prop="materialCode" min-width="110">
                           <template slot-scope="scope">
                             <span
                               class="wh-reminder-material-code-link"
@@ -215,7 +215,7 @@
                             >{{ scope.row.materialCode || scope.row.material_code || '—' }}</span>
                           </template>
                         </el-table-column>
-                        <el-table-column label="耗材名称" prop="materialName" min-width="140" show-overflow-tooltip />
+                        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
                         <el-table-column label="规格" prop="materialSpeci" min-width="100" show-overflow-tooltip />
                         <el-table-column label="型号" prop="materialModel" min-width="100" show-overflow-tooltip />
                         <el-table-column label="当前库存" prop="currentQty" width="90" align="right" show-overflow-tooltip>
@@ -276,7 +276,7 @@
                       >
                         <el-table-column type="index" label="序号" width="58" align="center" />
                         <!-- 不用 show-overflow-tooltip：tooltip 包裹层会吞掉双击 -->
-                        <el-table-column label="耗材编码" prop="materialCode" min-width="110">
+                        <el-table-column label="产品编码" prop="materialCode" min-width="110">
                           <template slot-scope="scope">
                             <span
                               class="wh-reminder-material-code-link"
@@ -285,7 +285,7 @@
                             >{{ scope.row.materialCode || scope.row.material_code || '—' }}</span>
                           </template>
                         </el-table-column>
-                        <el-table-column label="耗材名称" prop="materialName" min-width="140" show-overflow-tooltip />
+                        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
                         <el-table-column label="规格" prop="materialSpeci" min-width="100" show-overflow-tooltip />
                         <el-table-column label="型号" prop="materialModel" min-width="100" show-overflow-tooltip />
                         <el-table-column label="数量" prop="qty" width="90" align="right" show-overflow-tooltip>
@@ -438,7 +438,7 @@
                       >
                         <el-table-column type="index" label="序号" width="58" align="center" />
                         <el-table-column label="科室名称" prop="departmentName" min-width="100" show-overflow-tooltip />
-                        <el-table-column label="耗材编码" prop="materialCode" min-width="110">
+                        <el-table-column label="产品编码" prop="materialCode" min-width="110">
                           <template slot-scope="scope">
                             <span
                               class="wh-reminder-material-code-link"
@@ -447,7 +447,7 @@
                             >{{ scope.row.materialCode || '—' }}</span>
                           </template>
                         </el-table-column>
-                        <el-table-column label="耗材名称" prop="materialName" min-width="140" show-overflow-tooltip />
+                        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
                         <el-table-column label="规格" prop="materialSpeci" min-width="100" show-overflow-tooltip />
                         <el-table-column label="单位" prop="unitName" width="72" align="center" show-overflow-tooltip />
                         <el-table-column label="单价" width="100" align="right" show-overflow-tooltip>
@@ -492,7 +492,7 @@
                         empty-text="暂无近效期科室库存"
                       >
                         <el-table-column type="index" label="序号" width="58" align="center" />
-                        <el-table-column label="耗材编码" prop="materialCode" min-width="110">
+                        <el-table-column label="产品编码" prop="materialCode" min-width="110">
                           <template slot-scope="scope">
                             <span
                               class="wh-reminder-material-code-link"
@@ -501,7 +501,7 @@
                             >{{ scope.row.materialCode || '—' }}</span>
                           </template>
                         </el-table-column>
-                        <el-table-column label="耗材名称" prop="materialName" min-width="140" show-overflow-tooltip />
+                        <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
                         <el-table-column label="规格" prop="materialSpeci" min-width="100" show-overflow-tooltip />
                         <el-table-column label="型号" prop="materialModel" min-width="100" show-overflow-tooltip />
                         <el-table-column label="单位" prop="unitName" width="72" align="center" show-overflow-tooltip />

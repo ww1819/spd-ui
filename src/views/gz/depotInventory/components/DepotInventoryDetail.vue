@@ -8,10 +8,10 @@
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <!-- 2. 耗材编码 -->
-      <el-table-column label="耗材编码" align="center" prop="material.code" width="140" show-overflow-tooltip resizable sortable :sort-method="sortDepotMaterialCode"/>
-      <!-- 3. 耗材名称 -->
-      <el-table-column label="耗材名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="sortDepotMaterialName"/>
+      <!-- 2. 产品编码 -->
+      <el-table-column label="产品编码" align="center" prop="material.code" width="140" show-overflow-tooltip resizable sortable :sort-method="sortDepotMaterialCode"/>
+      <!-- 3. 产品名称 -->
+      <el-table-column label="产品名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable sortable :sort-method="sortDepotMaterialName"/>
       <!-- 4. 规格 -->
       <el-table-column label="规格" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="sortDepotSpeci">
         <template slot-scope="scope">

@@ -6,8 +6,8 @@
           {{ scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="耗材名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
+      <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable/>
+      <el-table-column label="产品名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable/>
       <el-table-column
         v-for="col in hisChargeItemColumnDefs"
         :key="'his-charge-' + col.key"

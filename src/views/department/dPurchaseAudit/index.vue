@@ -332,7 +332,7 @@
                     <span>{{ scope.row.purchaseBillNo || (form && form.purchaseBillNo) || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
                   </template>

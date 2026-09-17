@@ -41,7 +41,7 @@
             <el-input
               v-else
               v-model="searchParams.materialName"
-              placeholder="耗材名称/编码/拼音模糊"
+              placeholder="产品名称/编码/拼音模糊"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -121,7 +121,7 @@
           </template>
         </el-table-column>
         <el-table-column
-          label="耗材名称"
+          label="产品名称"
           prop="materialName"
           width="185"
           min-width="170"
@@ -215,7 +215,7 @@ export default {
       showSearch: true,
       moreSearchTypes: [],
       moreSearchOptions: [
-        { label: "耗材名称", value: "materialName" },
+        { label: "产品名称", value: "materialName" },
         { label: "仓库", value: "warehouse" },
         { label: "供应商", value: "supplierKeyword" }
       ],

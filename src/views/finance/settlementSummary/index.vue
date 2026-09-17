@@ -46,7 +46,7 @@
             <el-input
               v-else-if="t === 'materialNameLike'"
               v-model="queryParams.materialNameLike"
-              placeholder="耗材名称/编码/简码"
+              placeholder="产品名称/编码/简码"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"

@@ -155,8 +155,8 @@
           <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column key="materialCode" label="耗材编码" align="center" prop="material.code" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[1].visible"/>
-      <el-table-column key="materialName" label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[2].visible"/>
+      <el-table-column key="materialCode" label="产品编码" align="center" prop="material.code" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[1].visible"/>
+      <el-table-column key="materialName" label="产品名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[2].visible"/>
       <el-table-column key="speci" label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" v-if="columns[3].visible">
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
@@ -368,8 +368,8 @@ export default {
       // 表格列显隐（与用户管理 right-toolbar 一致，key 须与数组下标一致）
       columns: [
         { key: 0, label: '序号', visible: true },
-        { key: 1, label: '耗材编码', visible: true },
-        { key: 2, label: '耗材名称', visible: true },
+        { key: 1, label: '产品编码', visible: true },
+        { key: 2, label: '产品名称', visible: true },
         { key: 3, label: '规格', visible: true },
         { key: 4, label: '型号', visible: true },
         { key: 5, label: '生产厂家', visible: true },
@@ -407,7 +407,7 @@ export default {
         { value: "receiptOrderNo", label: "单号" },
         { value: "supplier", label: "供应商" },
         { value: "warehouse", label: "仓库" },
-        { value: "materialName", label: "耗材名称" },
+        { value: "materialName", label: "产品名称" },
         { value: "materialSpeci", label: "规格" },
         { value: "materialModel", label: "型号" },
         { value: "hisChargeItemId", label: "收费项目ID" },
@@ -662,7 +662,7 @@ export default {
         receiptOrderNo: '单号',
         supplier: '供应商',
         warehouse: '仓库',
-        materialName: '耗材名称',
+        materialName: '产品名称',
         materialSpeci: '规格',
         materialModel: '型号',
         hisChargeItemId: '收费项目ID',
@@ -674,7 +674,7 @@ export default {
       const map = {
         receiptOrderNo: '入库单号模糊',
         supplier: '供应商编码/名称',
-        materialName: '耗材编码/名称/简码',
+        materialName: '产品编码/名称/简码',
         materialSpeci: '规格模糊',
         materialModel: '型号模糊',
         hisChargeItemId: '收费项目ID模糊',

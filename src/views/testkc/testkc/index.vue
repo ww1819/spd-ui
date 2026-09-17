@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="consumable-inventory">
       <!-- 顶部工具栏 -->
       <div class="toolbar">
@@ -17,8 +17,8 @@
                 </el-form-item>
               </el-col>
               <el-col :span="4.8">
-                <el-form-item label="耗材名称：" class="compact-item">
-                  <el-input v-model="searchForm.name" placeholder="耗材名称"></el-input>
+                <el-form-item label="产品名称：" class="compact-item">
+                  <el-input v-model="searchForm.name" placeholder="产品名称"></el-input>
                 </el-form-item>
               </el-col>
               <el-col :span="4.8">
@@ -57,7 +57,7 @@
         <el-table :data="tableData" border style="width: 100%" :header-cell-style="{background:'#f5f7fa',color:'#606266'}" height="500">
           <el-table-column type="index" label="序" width="50"></el-table-column>
           <el-table-column prop="code" label="耗材代号" width="150"></el-table-column>
-          <el-table-column prop="name" label="耗材名称" min-width="200"></el-table-column>
+          <el-table-column prop="name" label="产品名称" min-width="200"></el-table-column>
           <el-table-column prop="udi" label="UDI" width="150"></el-table-column>
           <el-table-column prop="stock" label="库存量" width="80"></el-table-column>
           <el-table-column prop="unit" label="单位" width="60"></el-table-column>

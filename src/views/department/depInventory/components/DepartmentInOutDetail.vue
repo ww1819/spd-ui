@@ -32,7 +32,7 @@
             <el-input
               v-else
               v-model="queryParams.materialKeyword"
-              placeholder="耗材名称/编码"
+              placeholder="产品名称/编码"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -115,8 +115,8 @@
             <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
+        <el-table-column label="产品编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode"/>
+        <el-table-column label="产品名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" />
         <el-table-column label="规格" align="center" prop="specification" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
         <el-table-column label="型号" align="center" prop="model" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
         <el-table-column label="科室" align="center" prop="departmentName" width="160" min-width="140" show-overflow-tooltip resizable sortable :sort-method="sortByDepartment"/>

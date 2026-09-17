@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="inventory-report">
     <!-- 搜索框 -->
     <el-form :inline="true" :model="searchForm" class="search-form">
@@ -33,7 +33,7 @@
     <!-- 表格 -->
     <el-table :data="tableData" border style="width: 100%">
       <el-table-column type="index" label="序号" align="center"></el-table-column>
-      <el-table-column prop="materialCode" label="耗材编码" align="center"></el-table-column>
+      <el-table-column prop="materialCode" label="产品编码" align="center"></el-table-column>
       <el-table-column prop="warehouse" label="仓库" align="center"></el-table-column>
       <el-table-column prop="type" label="类型" align="center"></el-table-column>
       <el-table-column prop="businessDate" label="业务日期" align="center"></el-table-column>
