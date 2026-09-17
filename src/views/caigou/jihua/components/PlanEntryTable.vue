@@ -16,13 +16,13 @@
       <el-table-column label="序号" align="center" header-align="center" prop="index" width="80" min-width="80" show-overflow-tooltip fixed="left">
         <template slot-scope="scope">{{ scope.$index + 1 }}</template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" header-align="center" width="120" show-overflow-tooltip>
+      <el-table-column label="产品编码" align="center" header-align="center" width="120" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column
-        label="名称"
+        label="产品名称"
         align="left"
         header-align="center"
         width="180"

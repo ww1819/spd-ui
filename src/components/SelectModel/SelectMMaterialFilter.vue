@@ -44,10 +44,10 @@
           </el-row>
           <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="耗材编码" prop="codeKeyword">
+              <el-form-item label="产品编码" prop="codeKeyword">
                 <el-input
                   v-model="queryParams.codeKeyword"
-                  placeholder="耗材编码"
+                  placeholder="产品编码"
                   clearable
                   size="small"
                   @keyup.enter.native="handleQuery"
@@ -55,10 +55,10 @@
               </el-form-item>
             </el-col>
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="耗材名称" prop="nameKeyword">
+              <el-form-item label="产品名称" prop="nameKeyword">
                 <el-input
                   v-model="queryParams.nameKeyword"
-                  placeholder="名称或首字母"
+                  placeholder="产品名称或首字母"
                   clearable
                   size="small"
                   @keyup.enter.native="handleQuery"
@@ -128,8 +128,8 @@
                 {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材编码" align="center" prop="code" width="130" show-overflow-tooltip resizable sortable />
-            <el-table-column label="耗材名称" align="center" prop="name" width="150" show-overflow-tooltip resizable sortable />
+            <el-table-column label="产品编码" align="center" prop="code" width="130" show-overflow-tooltip resizable sortable />
+            <el-table-column label="产品名称" align="center" prop="name" width="150" show-overflow-tooltip resizable sortable />
             <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable sortable>
               <template slot-scope="scope">
                 <span>{{ scope.row.speci || '--' }}</span>
@@ -224,8 +224,8 @@
                   {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
                 </template>
               </el-table-column>
-              <el-table-column label="耗材编码" align="center" prop="code" width="130" show-overflow-tooltip resizable sortable />
-              <el-table-column label="耗材名称" align="center" prop="name" width="150" show-overflow-tooltip resizable sortable />
+              <el-table-column label="产品编码" align="center" prop="code" width="130" show-overflow-tooltip resizable sortable />
+              <el-table-column label="产品名称" align="center" prop="name" width="150" show-overflow-tooltip resizable sortable />
               <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable sortable>
                 <template slot-scope="scope">
                   <span>{{ scope.row.speci || '--' }}</span>

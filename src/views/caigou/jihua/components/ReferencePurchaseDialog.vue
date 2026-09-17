@@ -145,10 +145,10 @@
                 :height="entryTableHeight"
               >
                 <el-table-column type="selection" width="50" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" :selectable="isEntrySelectable" />
-                <el-table-column label="耗材编码" width="120" show-overflow-tooltip>
+                <el-table-column label="产品编码" width="120" show-overflow-tooltip>
                   <template slot-scope="scope">{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</template>
                 </el-table-column>
-                <el-table-column label="耗材名称" prop="materialName" width="180" show-overflow-tooltip />
+                <el-table-column label="产品名称" prop="materialName" width="180" show-overflow-tooltip />
                 <el-table-column label="规格" prop="materialSpec" width="120" show-overflow-tooltip />
                 <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="80" show-overflow-tooltip />
@@ -361,7 +361,22 @@ export default {
       this.syncWarehouseFromProp()
       this.queryParams.pageNum = 1
       this.clearCache()
+      this.applyDefaultDateRange()
       this.resolveWarehouseLabel().finally(() => this.loadList())
+    },
+    /** 日期默认：止=今天，起=今天往前 5 天，缩小首屏查询范围避免卡顿 */
+    applyDefaultDateRange() {
+      const end = new Date()
+      const begin = new Date()
+      begin.setDate(begin.getDate() - 5)
+      this.queryParams.beginDate = this.formatDateYmd(begin)
+      this.queryParams.endDate = this.formatDateYmd(end)
+    },
+    formatDateYmd(d) {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
     },
     syncWarehouseFromProp() {
       const wid = this.warehouseId
@@ -411,8 +426,7 @@ export default {
     resetQuery() {
       this.queryParams.departmentId = null
       this.queryParams.purchaseBillNo = null
-      this.queryParams.beginDate = null
-      this.queryParams.endDate = null
+      this.applyDefaultDateRange()
       this.queryParams.purchasePlanRefStatus = null
       this.queryParams.pageNum = 1
       this.syncWarehouseFromProp()

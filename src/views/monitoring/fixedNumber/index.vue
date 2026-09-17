@@ -210,13 +210,13 @@
                 stripe>
       <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
-      <el-table-column label="耗材编码" align="center" prop="code" width="150" sortable="custom" show-overflow-tooltip resizable>
+      <el-table-column label="产品编码" align="center" prop="code" width="150" sortable="custom" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.code">{{ scope.row.code }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="center" prop="name" width="200" sortable="custom" show-overflow-tooltip resizable />
+      <el-table-column label="产品名称" align="center" prop="name" width="200" sortable="custom" show-overflow-tooltip resizable />
       <el-table-column label="规格" align="center" prop="specification" width="150" sortable="custom" show-overflow-tooltip resizable />
       <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable>
         <template slot-scope="scope">
@@ -596,8 +596,8 @@
                     {{ (addQueryParams.pageNum - 1) * addQueryParams.pageSize + scope.$index + 1 }}
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip resizable />
-                <el-table-column label="耗材名称" align="center" prop="name" width="200" show-overflow-tooltip resizable />
+                <el-table-column label="产品编码" align="center" prop="code" width="120" show-overflow-tooltip resizable />
+                <el-table-column label="产品名称" align="center" prop="name" width="200" show-overflow-tooltip resizable />
                 <el-table-column label="规格" align="center" prop="speci" width="150" show-overflow-tooltip resizable />
                 <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable />
                 <el-table-column label="单位" align="center" prop="fdUnit.unitName" width="100" show-overflow-tooltip resizable>
