@@ -51,20 +51,52 @@ export default {
   methods: {
     /** 切换到汇总表时再加载数据，避免首屏同时请求明细+汇总 */
     handleTabClick(tab) {
-      if (tab.name === 'second' && this.$refs.secondQuery && typeof this.$refs.secondQuery.getList === 'function') {
-        this.$nextTick(() => this.$refs.secondQuery.getList());
+      if (tab.name === 'second' && this.$refs.secondQuery) {
+        this.$nextTick(() => {
+          if (typeof this.$refs.secondQuery.getList === 'function') {
+            this.$refs.secondQuery.getList();
+          }
+          if (typeof this.$refs.secondQuery.updateTableHeight === 'function') {
+            this.$refs.secondQuery.updateTableHeight();
+            setTimeout(() => this.$refs.secondQuery.updateTableHeight(), 80);
+          }
+        });
       }
-      if (tab.name === 'thirdSupplier' && this.$refs.thirdSupplierQuery && typeof this.$refs.thirdSupplierQuery.getList === 'function') {
-        this.$nextTick(() => this.$refs.thirdSupplierQuery.getList());
+      if (tab.name === 'thirdSupplier' && this.$refs.thirdSupplierQuery) {
+        this.$nextTick(() => {
+          if (typeof this.$refs.thirdSupplierQuery.getList === 'function') {
+            this.$refs.thirdSupplierQuery.getList();
+          }
+          if (typeof this.$refs.thirdSupplierQuery.updateTableHeight === 'function') {
+            this.$refs.thirdSupplierQuery.updateTableHeight();
+            setTimeout(() => this.$refs.thirdSupplierQuery.updateTableHeight(), 80);
+          }
+        });
       }
-      if (tab.name === 'fourthDepartment' && this.$refs.fourthDepartmentQuery && typeof this.$refs.fourthDepartmentQuery.getList === 'function') {
-        this.$nextTick(() => this.$refs.fourthDepartmentQuery.getList());
+      if (tab.name === 'fourthDepartment' && this.$refs.fourthDepartmentQuery) {
+        this.$nextTick(() => {
+          if (typeof this.$refs.fourthDepartmentQuery.getList === 'function') {
+            this.$refs.fourthDepartmentQuery.getList();
+          }
+          if (typeof this.$refs.fourthDepartmentQuery.updateTableHeight === 'function') {
+            this.$refs.fourthDepartmentQuery.updateTableHeight();
+            setTimeout(() => this.$refs.fourthDepartmentQuery.updateTableHeight(), 80);
+          }
+        });
       }
       if (tab.name === 'purchaseSummary' && this.$refs.purchaseSummaryReport && typeof this.$refs.purchaseSummaryReport.loadReport === 'function') {
         this.$nextTick(() => this.$refs.purchaseSummaryReport.loadReport());
       }
-      if (tab.name === 'materialUsageRank' && this.$refs.materialUsageRankReport && typeof this.$refs.materialUsageRankReport.loadReport === 'function') {
-        this.$nextTick(() => this.$refs.materialUsageRankReport.loadReport());
+      if (tab.name === 'materialUsageRank' && this.$refs.materialUsageRankReport) {
+        this.$nextTick(() => {
+          if (typeof this.$refs.materialUsageRankReport.loadReport === 'function') {
+            this.$refs.materialUsageRankReport.loadReport();
+          }
+          if (typeof this.$refs.materialUsageRankReport.updateTableHeight === 'function') {
+            this.$refs.materialUsageRankReport.updateTableHeight();
+            setTimeout(() => this.$refs.materialUsageRankReport.updateTableHeight(), 80);
+          }
+        });
       }
     },
   },
@@ -126,20 +158,24 @@ body.inventory-query-fixed .main-container {
 <style>
 /* 出/退库查询明细表横向滚动条：与耗材产品维护一致 */
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar {
   width: 8px !important;
   height: 12px !important;
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
   height: 12px !important;
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
   width: 8px !important;
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   background: #a8a8a8 !important;
   border-radius: 3px !important;
   min-width: 2px !important;
@@ -148,7 +184,8 @@ body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el
   border: 2px solid transparent;
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
   border-radius: 3px !important;
 }

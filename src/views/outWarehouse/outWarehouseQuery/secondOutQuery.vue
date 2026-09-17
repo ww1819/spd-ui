@@ -161,7 +161,7 @@
       </div>
     </el-row>
 
-    <div class="table-container">
+    <div class="table-container" ref="tablePanel">
     <el-table
       ref="ctkSummaryTable"
       class="ctk-summary-main-table"
@@ -170,7 +170,7 @@
       :row-key="getSummaryRowKey"
       :row-class-name="ctkSummaryRowClassName"
       @selection-change="handleSelectionChange"
-      height="60vh"
+      :height="tableHeight"
       border
       stripe
     >
@@ -307,10 +307,9 @@ export default {
         { value: "materialSpeci", label: "规格" },
         { value: "materialModel", label: "型号" },
         { value: "warehouse", label: "仓库" },
-        { value: "department", label: "出库科室" },
-        { value: "financeCategoryKeyword", label: "财务分类" },
-        { value: "warehouseCategoryKeyword", label: "库房分类" }
+        { value: "department", label: "出库科室" }
       ],
+      tableHeight: 400,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -380,12 +379,45 @@ export default {
         : String(this.formatAmount(amt));
     },
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateTableHeight());
+    }
+  },
   created() {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange(this.moreSearchTypes);
     // 汇总表在父组件切换到此 tab 时再加载（见 index.vue handleTabClick），避免与明细表同时请求
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateTableHeight();
+      setTimeout(() => this.updateTableHeight(), 80);
+    });
+    window.addEventListener('resize', this.updateTableHeight);
+  },
+  activated() {
+    this.$nextTick(() => this.updateTableHeight());
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateTableHeight);
+  },
   methods: {
+    updateTableHeight() {
+      this.$nextTick(() => {
+        const panel = this.$refs.tablePanel;
+        if (!panel) return;
+        const h = Math.floor(panel.clientHeight);
+        if (h > 120) {
+          this.tableHeight = h;
+          this.$nextTick(() => {
+            if (this.$refs.ctkSummaryTable && this.$refs.ctkSummaryTable.doLayout) {
+              this.$refs.ctkSummaryTable.doLayout();
+            }
+          });
+        }
+      });
+    },
     sortByStr(a, b, getVal) {
       const va = (getVal(a) || '').toString().trim();
       const vb = (getVal(b) || '').toString().trim();
@@ -486,6 +518,7 @@ export default {
         this.selectedRowKeys = [];
         this.ids = [];
         this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
       }).catch(error => {
         console.error('获取数据失败:', error);
         this.warehouseList = [];
@@ -493,6 +526,7 @@ export default {
         this.selectedRowKeys = [];
         this.ids = [];
         this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
       });
     },
     getStatDate(){
@@ -629,6 +663,7 @@ export default {
           this.$set(this.moreSearchKeywords, k, '');
         }
       });
+      this.$nextTick(() => this.updateTableHeight());
     },
     saveMoreSearchDefaults() {
       const bar = this.$refs.moreSearchBar;
@@ -677,9 +712,7 @@ export default {
         materialSpeci: '规格',
         materialModel: '型号',
         warehouse: '仓库',
-        department: '出库科室',
-        financeCategoryKeyword: '财务分类',
-        warehouseCategoryKeyword: '库房分类'
+        department: '出库科室'
       };
       return map[t] || t;
     },
@@ -688,9 +721,7 @@ export default {
         factory: '生产厂家编码/名称/简码',
         materialName: '耗材编码/名称/简码',
         materialSpeci: '规格模糊',
-        materialModel: '型号模糊',
-        financeCategoryKeyword: '财务分类编码/名称/简拼',
-        warehouseCategoryKeyword: '库房分类编码/名称/简拼'
+        materialModel: '型号模糊'
       };
       return map[t] || '请输入关键字';
     },
@@ -700,6 +731,7 @@ export default {
       queryParams.materialSpeciLike = null;
       queryParams.materialModelLike = null;
       queryParams.factoryKeyword = null;
+      // 财务/库房分类仅走第二行多选，不再使用关键字框
       queryParams.financeCategoryKeyword = null;
       queryParams.warehouseCategoryKeyword = null;
       queryParams.supplerId = null;
@@ -748,12 +780,6 @@ export default {
             break;
           case 'materialModel':
             queryParams.materialModelLike = kw;
-            break;
-          case 'financeCategoryKeyword':
-            queryParams.financeCategoryKeyword = kw;
-            break;
-          case 'warehouseCategoryKeyword':
-            queryParams.warehouseCategoryKeyword = kw;
             break;
           default:
             break;
@@ -1130,11 +1156,14 @@ export default {
 .table-container {
   margin-top: 0;
   margin-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
+  min-width: 0;
+  min-height: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
+  flex: 1 1 auto;
 }
 
 /* 保持 Element 默认合计行行为，避免合计列错位/缺失 */
@@ -1258,11 +1287,20 @@ export default {
 </style>
 
 <style>
-/* 取消内层 app-container 的左右 padding，避免叠加全局 20px；左右 8px 由外层 inventory-query-page 统一控制 */
+/* 取消内层 app-container 的左右 padding；高度由外层 flex 分配，勿再套 100vh
+ * 注意：根节点不要写 display:!important，否则会盖掉 v-show 的 display:none，导致多页签叠在一起 */
 .app-container.first-inventory-page {
   padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
 /* 本页「更多检索」多选：与明细表同宽（覆盖 list-page 190px） */
@@ -1316,33 +1354,52 @@ export default {
   min-height: 32px !important;
 }
 
-/* 分页行：合计在左、翻页在右，同一行；翻页下方不留白 */
+/* 分页行：合计左、翻页右同一行，完整显示不被裁切 */
 .first-inventory-page .pagination-wrapper {
   display: flex !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
   gap: 12px !important;
-  margin-top: 0 !important;
-  padding-bottom: 0 !important;
+  margin-top: 4px !important;
   margin-bottom: 0 !important;
+  padding: 4px 0 6px !important;
+  min-height: 40px !important;
+  overflow: visible !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary {
-  flex-shrink: 0;
-  font-size: 14px;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 32px;
   color: #606266;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
 }
 .first-inventory-page .pagination-wrapper .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 32px !important;
   margin-top: 0 !important;
+  margin-bottom: 0 !important;
   margin-left: auto !important;
-  padding: 4px 0 4px 16px !important;
-  flex-shrink: 0;
+  padding: 0 4px !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  background: transparent !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
-  padding: 2px 0 !important;
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
 }
 
 /* 列表「计费」列：是/否按钮式展示（与耗材档案、出退库明细一致） */

@@ -41,7 +41,7 @@
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
+            <el-form-item label="日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -123,8 +123,18 @@
       </div>
     </el-row>
 
-    <div class="table-container">
-      <el-table v-loading="loading" :data="pagedList" show-summary :summary-method="getTotalSummaries" height="60vh" border stripe @sort-change="handleSortChange">
+    <div class="table-container" ref="tablePanel">
+      <el-table
+        ref="mainTable"
+        v-loading="loading"
+        :data="pagedList"
+        show-summary
+        :summary-method="getTotalSummaries"
+        :height="tableHeight"
+        border
+        stripe
+        @sort-change="handleSortChange"
+      >
         <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
@@ -240,7 +250,8 @@ export default {
       },
       sortProp: null,
       sortOrder: null,
-      numericSortProps: ['catAmt_0', 'catAmt_1', 'netQty', 'netAmt']
+      numericSortProps: ['catAmt_0', 'catAmt_1', 'netQty', 'netAmt'],
+      tableHeight: 400
     };
   },
   computed: {
@@ -305,11 +316,44 @@ export default {
       return this.formatNetCurrency(amt);
     },
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateTableHeight());
+    }
+  },
   created() {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateTableHeight();
+      setTimeout(() => this.updateTableHeight(), 80);
+    });
+    window.addEventListener('resize', this.updateTableHeight);
+  },
+  activated() {
+    this.$nextTick(() => this.updateTableHeight());
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateTableHeight);
+  },
   methods: {
+    updateTableHeight() {
+      this.$nextTick(() => {
+        const panel = this.$refs.tablePanel;
+        if (!panel) return;
+        const h = Math.floor(panel.clientHeight);
+        if (h > 120) {
+          this.tableHeight = h;
+          this.$nextTick(() => {
+            if (this.$refs.mainTable && this.$refs.mainTable.doLayout) {
+              this.$refs.mainTable.doLayout();
+            }
+          });
+        }
+      });
+    },
     handleSortChange({ prop, order }) {
       this.sortProp = order ? prop : null;
       this.sortOrder = order || null;
@@ -404,6 +448,7 @@ export default {
     },
     onMoreSearchTypesChange() {
       this.applyMoreSearchToQueryParams(this.queryParams);
+      this.$nextTick(() => this.updateTableHeight());
     },
     saveMoreSearchDefaults() {
       const bar = this.$refs.moreSearchBar;
@@ -482,11 +527,13 @@ export default {
         this.buildDepartmentAgg();
         this.total = this.departmentAggList.length;
         this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
       }).catch(() => {
         this.rawList = [];
         this.departmentAggList = [];
         this.total = 0;
         this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
       });
     },
     buildDepartmentAgg() {
@@ -679,11 +726,23 @@ export default {
 }
 
 .ctk-query-actions {
-  margin-left: auto;
+  margin-left: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.more-search-label {
+  color: #606266;
+  font-size: 12px;
+  line-height: 32px;
+  white-space: nowrap;
+}
+.more-search-type {
+  min-width: 148px;
+  width: 148px;
+  max-width: 148px;
 }
 
 .ctk-more-search-fields {
@@ -727,12 +786,14 @@ export default {
   margin-top: 0;
   margin-left: 0;
   margin-right: 0;
+  flex: 0 0 auto;
 }
 
-/* 工具栏上移：与搜索区间距对齐「页签↔搜索区」约 4px */
+/* 工具栏与表间距：与明细/汇总一致（4px） */
 .ctk-list-toolbar.list-toolbar {
   margin-top: 0 !important;
   margin-bottom: 4px !important;
+  flex: 0 0 auto;
 }
 
 /* 导出/搜索/重置：与顶部搜索框、底部明细框间距均为 8px */
@@ -760,13 +821,16 @@ export default {
 }
 
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
+  min-width: 0;
+  min-height: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
+  flex: 1 1 auto;
 }
 
 /* 明细表底部合计行：给表体底部留空间，并把 footer-wrapper 抬高，避免横向滚动条遮挡 */
@@ -849,40 +913,85 @@ export default {
 </style>
 
 <style>
-/* 取消内层 app-container 的左右 padding，避免叠加全局 20px；左右 8px 由外层 inventory-query-page 统一控制 */
+/* 取消内层 app-container 的左右 padding；高度由外层 flex 分配，勿再套 100vh
+ * 注意：根节点不要写 display:!important，否则会盖掉 v-show 的 display:none，导致多页签叠在一起 */
 .app-container.first-inventory-page {
   padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-/* 分页行：合计在左、翻页在右，同一行；翻页下方不留白 */
+/* 本页「更多检索」多选：尽量 148px */
+.first-inventory-page .ctk-list-toolbar .toolbar-more-search .more-search-type,
+.first-inventory-page .ctk-list-toolbar .toolbar-more-search .more-search-type.el-select,
+.first-inventory-page .ctk-list-toolbar .toolbar-more-search .el-select {
+  width: 148px !important;
+  min-width: 148px !important;
+  max-width: 148px !important;
+}
+.first-inventory-page .ctk-list-toolbar .toolbar-more-search .el-select > .el-input,
+.first-inventory-page .ctk-list-toolbar .toolbar-more-search .el-select .el-input__inner {
+  width: 148px !important;
+  max-width: 148px !important;
+}
+.first-inventory-page .ctk-list-toolbar .toolbar-more-search .el-select-dropdown {
+  min-width: 148px !important;
+}
+
+/* 分页行：合计左、翻页右同一行，完整显示不被裁切 */
 .first-inventory-page .pagination-wrapper {
   display: flex !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
   gap: 12px !important;
-  margin-top: 0 !important;
-  padding-bottom: 0 !important;
+  margin-top: 4px !important;
   margin-bottom: 0 !important;
+  padding: 4px 0 6px !important;
+  min-height: 40px !important;
+  overflow: visible !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary {
-  flex-shrink: 0;
-  font-size: 14px;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 32px;
   color: #606266;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
 }
 .first-inventory-page .pagination-wrapper .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 32px !important;
   margin-top: 0 !important;
+  margin-bottom: 0 !important;
   margin-left: auto !important;
-  padding: 4px 0 4px 16px !important;
-  flex-shrink: 0;
+  padding: 0 4px !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  background: transparent !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
-  padding: 2px 0 !important;
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
 }
 </style>
 

@@ -485,7 +485,7 @@
       </div>
     </el-dialog>
 
-    <!-- 查看采购计划弹窗：表头 计划单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间；明细 产品编码等 -->
+    <!-- 查看采购计划弹窗：表头 计划单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间；明细 耗材编码等 -->
     <el-dialog title="查看采购计划" :visible.sync="planViewDialogVisible" width="95%" append-to-body>
       <div v-if="planDetail" class="plan-view-header" style="display:flex;flex-wrap:wrap;gap:16px 24px;margin-bottom:12px;">
         <span><strong>计划单号：</strong>{{ planDetail.planNo || '--' }}</span>
