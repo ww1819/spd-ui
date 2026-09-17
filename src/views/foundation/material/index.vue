@@ -101,18 +101,26 @@
                 v-model="queryParams.beginDate"
                 type="date"
                 value-format="yyyy-MM-dd"
+                format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
                 class="query-date-picker"
+                @blur="onQueryDateBlur('beginDate', $event)"
+                @change="onQueryDateChange('beginDate', $event)"
+                @keyup.enter.native="onQueryDateEnter('beginDate', $event)"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
                 v-model="queryParams.endDate"
                 type="date"
                 value-format="yyyy-MM-dd"
+                format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
                 class="query-date-picker"
+                @blur="onQueryDateBlur('endDate', $event)"
+                @change="onQueryDateChange('endDate', $event)"
+                @keyup.enter.native="onQueryDateEnter('endDate', $event)"
               />
             </div>
             <div class="more-search-dynamic-field more-search-field--short">
@@ -140,19 +148,24 @@
           v-if="!isZqTcmTenant"
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['foundation:material:add']"
         >新增</el-button>
         <el-button
+          type="success"
           size="small"
+          icon="el-icon-edit"
           class="spd-btn spd-btn--secondary"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:material:edit']"
         >修改</el-button>
         <el-button
+          type="warning"
           size="small"
+          icon="el-icon-download"
           class="spd-btn spd-btn--secondary"
           @click="handleExport"
           v-hasPermi="['foundation:material:export']"
@@ -261,6 +274,7 @@
         :row-class-name="materialRowClassName"
         @selection-change="handleSelectionChange"
         @sort-change="handleSortChange"
+        @row-dblclick="onMaterialRowDblclick"
         :height="mainTableHeight"
         border
         :stripe="materialTableLightMode"
@@ -289,7 +303,11 @@
       </el-table-column>
       <el-table-column label="耗材编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" sortable="custom" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.code || ''">{{ scope.row.code }}</div>
+          <div
+            class="material-cell-top-left material-code-link link-type"
+            :title="scope.row.code || ''"
+            @click.stop="handleView(scope.row)"
+          >{{ scope.row.code }}</div>
         </template>
       </el-table-column>
       <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" sortable="custom" resizable class-name="material-name-col cell-pad-tight">
@@ -1779,6 +1797,7 @@ import { getFinanceCategory } from "@/api/foundation/financeCategory";
 import { pinyin } from 'pinyin-pro'
 import { getToken } from "@/utils/auth";
 import { sanitizeUdiNo } from '@/utils/udi';
+import { normalizeCompactDateInput, readDatePickerInputValue, isValidYmd } from '@/utils/compactDateInput';
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 import { syncMsunHisMaterialSingle } from '@/api/foundation/msunHisSync';
 
@@ -2452,6 +2471,21 @@ export default {
       }
       return '';
     },
+    /** 双击行（非耗材编码列）：切换勾选与高亮 */
+    onMaterialRowDblclick(row, column) {
+      if (!row) return;
+      const prop = column && column.property;
+      const label = column && column.label;
+      const type = column && column.type;
+      if (type === 'selection' || type === 'index') return;
+      if (prop === 'code' || label === '耗材编码') return;
+      if (label === '操作' || (column && column.className && String(column.className).indexOf('material-action') !== -1)) return;
+      const table = this.$refs.materialTable;
+      if (!table || typeof table.toggleRowSelection !== 'function') return;
+      const key = this.getMaterialRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
     getCrossPageSelectedIds() {
       return Object.keys(this.selectedRowMap || {}).map((key) => {
         const n = Number(key);
@@ -2833,6 +2867,50 @@ export default {
       ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId'].forEach((k) => {
         if (!set.has(k)) target[k] = undefined;
       });
+    },
+    /** 顶部日期：支持 20210112 / 2021-01-12 / 2021/01/12 等紧凑输入 */
+    applyQueryDateField(field, rawValue) {
+      const s = String(rawValue == null ? '' : rawValue).trim();
+      if (!s) {
+        this.queryParams[field] = null;
+        return;
+      }
+      const normalized = normalizeCompactDateInput(s);
+      if (normalized && isValidYmd(normalized)) {
+        this.queryParams[field] = normalized;
+        return;
+      }
+      const digitsOnly = s.replace(/\D/g, '');
+      if (/^\d{8}$/.test(digitsOnly) || /^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(s)) {
+        this.queryParams[field] = null;
+      }
+    },
+    onQueryDateBlur(field, e) {
+      const raw = readDatePickerInputValue(e, this.queryParams[field]);
+      const trimmed = String(raw == null ? '' : raw).trim();
+      if (!trimmed) {
+        const current = normalizeCompactDateInput(this.queryParams[field]);
+        if (current && isValidYmd(current)) return;
+        this.queryParams[field] = null;
+        return;
+      }
+      this.applyQueryDateField(field, trimmed);
+    },
+    onQueryDateChange(field, value) {
+      if (value == null || value === '') {
+        this.queryParams[field] = null;
+        return;
+      }
+      const normalized = normalizeCompactDateInput(value);
+      if (normalized && isValidYmd(normalized)) {
+        this.queryParams[field] = normalized;
+        return;
+      }
+      this.applyQueryDateField(field, value);
+    },
+    onQueryDateEnter(field, e) {
+      const raw = e && e.target ? e.target.value : '';
+      this.applyQueryDateField(field, raw);
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -6317,13 +6395,27 @@ export default {
   box-sizing: border-box;
 }
 
-.app-container.material-page-container .material-query-bottom-row {
-  margin-top: 0;
-  margin-bottom: 0;
+.app-container.material-page-container .material-query-bottom-row .more-search-field--date .query-date-picker.el-date-editor,
+.app-container.material-page-container .material-query-bottom-row .more-search-field--date .query-date-picker.el-input {
+  /* yyyy-MM-dd + 日历图标，刚好显示全 */
+  width: 148px !important;
+}
+
+.app-container.material-page-container .material-code-link {
+  cursor: pointer;
+  color: #409eff;
+}
+
+.app-container.material-page-container .material-code-link:hover {
+  text-decoration: underline;
 }
 
 .app-container.material-page-container .material-more-search-bar--hidden {
   display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 .app-container.material-page-container .material-fixed-query-row .material-fixed-query-actions {
