@@ -157,7 +157,7 @@
           type="success"
           size="small"
           icon="el-icon-edit"
-          class="spd-btn spd-btn--secondary"
+          class="spd-btn"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['foundation:material:edit']"
@@ -166,7 +166,7 @@
           type="warning"
           size="small"
           icon="el-icon-download"
-          class="spd-btn spd-btn--secondary"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['foundation:material:export']"
         >导出</el-button>
@@ -301,7 +301,7 @@
           >{{ isMaterialYesValue(scope.row.isBilling) ? '是' : '否' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="耗材编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" sortable="custom" resizable class-name="material-top-cell cell-pad-tight">
+      <el-table-column label="产品编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" sortable="custom" resizable class-name="material-top-cell cell-pad-tight">
         <template slot-scope="scope">
           <div
             class="material-cell-top-left material-code-link link-type"
@@ -310,7 +310,7 @@
           >{{ scope.row.code }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="耗材名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" sortable="custom" resizable class-name="material-name-col cell-pad-tight">
+      <el-table-column label="产品名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" sortable="custom" resizable class-name="material-name-col cell-pad-tight">
         <template slot-scope="scope">
           <div class="material-cell-body-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
         </template>
@@ -527,19 +527,19 @@
                 <div class="material-detail-card__body material-six-col-grid">
           <el-row :gutter="20">
                 <el-col :span="4">
-                  <el-form-item label="耗材编码：" prop="code">
+                  <el-form-item label="产品编码：" prop="code">
                 <el-input
                   v-model="form.code"
                   :disabled="isDisabled || form.id != null || isHsThirdTenant"
-                  :placeholder="isHsThirdTenant ? '耗材编码由系统自动生成' : '耗材编码（留空自动生成6位数字，手工输入可为任意长度）'"
+                  :placeholder="isHsThirdTenant ? '产品编码由系统自动生成' : '产品编码（留空自动生成6位数字，手工输入可为任意长度）'"
                   @blur="validateCode"
                   @input="handleCodeInput"
                 />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
-                  <el-form-item label="耗材名称：" prop="name" class="material-label-hint-red">
-                <el-input v-model="form.name" @dblclick.native="openZoomEditor('name', '耗材名称')" @input="nameChange" placeholder="耗材名称" />
+                  <el-form-item label="产品名称：" prop="name" class="material-label-hint-red">
+                <el-input v-model="form.name" @dblclick.native="openZoomEditor('name', '产品名称')" @input="nameChange" placeholder="产品名称" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">
@@ -1916,8 +1916,8 @@ export default {
       /** 更多检索：已选检索维度（多选）；默认从本地缓存/内置默认加载 */
       moreSearchTypes: [],
       moreSearchOptions: [
-        { value: 'code', label: '耗材编码' },
-        { value: 'name', label: '耗材名称' },
+        { value: 'code', label: '产品编码' },
+        { value: 'name', label: '产品名称' },
         { value: 'speci', label: '规格' },
         { value: 'hisChargeItemId', label: 'his收费项目编码' },
         { value: 'factory', label: '生产厂家' },
@@ -1944,8 +1944,8 @@ export default {
       // 显隐列数据
       columns: [
         { key: 0, label: `序号`, visible: true },
-        { key: 1, label: `耗材编码`, visible: true },
-        { key: 2, label: `耗材名称`, visible: true },
+        { key: 1, label: `产品编码`, visible: true },
+        { key: 2, label: `产品名称`, visible: true },
         { key: 3, label: `规格`, visible: true },
         { key: 4, label: `型号`, visible: true },
         { key: 5, label: `价格`, visible: true },
@@ -1992,7 +1992,7 @@ export default {
               if (response.rows && response.rows.length > 0) {
                 const existingMaterial = response.rows[0];
                 if (!this.form.id || existingMaterial.id !== this.form.id) {
-                  callback(new Error('该耗材编码已存在，请使用其他编码'));
+                  callback(new Error('该产品编码已存在，请使用其他编码'));
                 } else {
                   callback();
                 }
@@ -2005,7 +2005,7 @@ export default {
           }, trigger: "blur" }
         ],
         name: [
-          { required: true, message: "耗材名称不能为空", trigger: "blur" }
+          { required: true, message: "产品名称不能为空", trigger: "blur" }
         ],
         supplierId: [
           { required: true, message: "请选择供应商", trigger: "change" }
@@ -2478,7 +2478,7 @@ export default {
       const label = column && column.label;
       const type = column && column.type;
       if (type === 'selection' || type === 'index') return;
-      if (prop === 'code' || label === '耗材编码') return;
+      if (prop === 'code' || label === '耗材编码' || label === '产品编码') return;
       if (label === '操作' || (column && column.className && String(column.className).indexOf('material-action') !== -1)) return;
       const table = this.$refs.materialTable;
       if (!table || typeof table.toggleRowSelection !== 'function') return;
@@ -2811,8 +2811,8 @@ export default {
     },
     moreSearchPlaceholderFor(t) {
       const map = {
-        code: '耗材编码',
-        name: '耗材名称',
+        code: '产品编码',
+        name: '产品名称',
         udiNo: 'UDI',
         registerNo: '注册证号',
         sunshineCode: '阳采编码',
@@ -3445,7 +3445,7 @@ export default {
       document.body.removeChild(ta);
     },
     copyMaterialCode() {
-      this.copyTextToClipboard(this.form && this.form.code, '耗材编码');
+      this.copyTextToClipboard(this.form && this.form.code, '产品编码');
     },
     copyUdiCode() {
       this.copyTextToClipboard(this.form && this.form.udiNo, 'UDI码');
@@ -3552,7 +3552,7 @@ export default {
     collectSaveBlockTips() {
       const tips = [];
       const requiredFields = [
-        { key: 'name', label: '耗材名称' },
+        { key: 'name', label: '产品名称' },
         { key: 'supplierId', label: '供应商' },
         { key: 'factoryId', label: '生产厂家' },
         { key: 'speci', label: '规格' },
@@ -3800,8 +3800,8 @@ export default {
           sheetName: "耗材产品",
           columns: [
             { label: "序号", valueGetter: (_, index) => index + 1 },
-            { label: "耗材编码", prop: "code" },
-            { label: "耗材名称", prop: "name" },
+            { label: "产品编码", prop: "code" },
+            { label: "产品名称", prop: "name" },
             { label: "规格", prop: "speci" },
             { label: "单位", prop: "fdUnit.unitName" },
             {

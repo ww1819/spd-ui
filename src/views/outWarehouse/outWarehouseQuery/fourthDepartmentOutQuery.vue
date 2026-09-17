@@ -2,34 +2,42 @@
   <div class="app-container list-page first-inventory-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
+        <div
+          class="ctk-more-search-fields"
+          :class="{ 'ctk-more-search-fields--empty': !moreSearchTypes.length }"
         >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--select"
+          <more-search-bar
+            ref="moreSearchBar"
+            v-model="moreSearchTypes"
+            :options="moreSearchOptions"
+            :storage-key="moreSearchStorageKey"
+            :default-types="builtInMoreSearchDefaults"
+            :auto-load="false"
+            :show-picker="false"
+            :show-save="false"
+            :show-search-actions="false"
+            @change="onMoreSearchTypesChange"
+            @search="handleQuery"
+            @reset="resetQuery"
           >
-            <template v-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" />
-              </div>
-            </template>
-          </div>
-        </more-search-bar>
+            <div
+              v-for="t in moreSearchTypes"
+              :key="t"
+              class="more-search-dynamic-field more-search-field--select"
+            >
+              <template v-if="t === 'warehouse'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="高值"/>
+                </div>
+              </template>
+              <template v-else-if="t === 'department'">
+                <div class="query-select-wrapper more-search-select-wrap">
+                  <SelectDepartment v-model="queryParams.departmentId" />
+                </div>
+              </template>
+            </div>
+          </more-search-bar>
+        </div>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -58,20 +66,59 @@
                 <SelectSupplier v-model="queryParams.supplerId" />
               </div>
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
+    <el-row :gutter="0" class="list-toolbar ctk-list-toolbar">
       <div class="list-toolbar-left">
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
         >导出</el-button>
       </div>
       <div class="list-toolbar-right">
+        <div
+          class="toolbar-more-search"
+          @mouseenter="onToolbarMoreEnter"
+          @mouseleave="onToolbarMoreLeave"
+        >
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            filterable
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option
+              v-for="opt in moreSearchOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </div>
+        <el-button
+          type="success"
+          size="small"
+          class="spd-btn"
+          @click="saveMoreSearchDefaults"
+        >保存查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
@@ -176,6 +223,8 @@ export default {
       /** 出/退库汇总(科室) 金额分列：高值耗材 catAmt_0、低值耗材 catAmt_1（与耗材档案 isGz 一致） */
       gzLowColumnLabels: ['高值耗材', '低值耗材'],
       moreSearchTypes: [],
+      toolbarMoreHover: false,
+      toolbarMoreCloseTimer: null,
       moreSearchOptions: [
         { value: "warehouse", label: "仓库" },
         { value: "department", label: "出库科室" }
@@ -356,6 +405,46 @@ export default {
     onMoreSearchTypesChange() {
       this.applyMoreSearchToQueryParams(this.queryParams);
     },
+    saveMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.saveDefaults === 'function') {
+        bar.saveDefaults();
+      }
+    },
+    clearToolbarMoreCloseTimer() {
+      if (this.toolbarMoreCloseTimer) {
+        clearTimeout(this.toolbarMoreCloseTimer);
+        this.toolbarMoreCloseTimer = null;
+      }
+    },
+    setToolbarMoreVisible(visible) {
+      const sel = this.$refs.toolbarMoreSelect;
+      if (!sel) return;
+      if (sel.visible === visible) return;
+      sel.visible = visible;
+      if (!visible && typeof sel.blur === 'function') {
+        sel.blur();
+      }
+    },
+    onToolbarMoreEnter() {
+      this.toolbarMoreHover = true;
+      this.clearToolbarMoreCloseTimer();
+      this.setToolbarMoreVisible(true);
+    },
+    onToolbarMoreLeave() {
+      this.toolbarMoreHover = false;
+      this.clearToolbarMoreCloseTimer();
+      this.toolbarMoreCloseTimer = setTimeout(() => {
+        if (!this.toolbarMoreHover) {
+          this.setToolbarMoreVisible(false);
+        }
+      }, 120);
+    },
+    onToolbarMoreVisibleChange(visible) {
+      if (!visible) {
+        this.toolbarMoreHover = false;
+      }
+    },
     normalizeQueryParams() {
       const queryParams = { ...this.queryParams };
       this.applyMoreSearchToQueryParams(queryParams);
@@ -534,7 +623,8 @@ export default {
 <style scoped>
 /* 与库存明细查询保持一致的顶部偏移 */
 .app-container {
-  margin-top: -10px;
+  margin-top: 0;
+  padding-top: 0 !important;
 }
 
 /* 查询条件样式（与 secondOutQuery.vue 完全一致） */
@@ -561,25 +651,24 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 2px;
+  margin-top: 8px;
+  margin-bottom: 0;
 }
 
-/* 第二行：强制同一行不换行（避免宽度不足时“掉到下一行”） */
+/* 第二行：固定条件 + 搜索/重置，与耗材产品维护底行一致 */
 .query-row-second-inner {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
   width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
+  gap: 8px;
+  padding-bottom: 0;
 }
 
 .query-row-second-inner .el-form-item {
   flex: 0 0 auto;
   margin-bottom: 0 !important;
-  margin-right: 8px;
+  margin-right: 0;
   white-space: nowrap;
 }
 
@@ -587,6 +676,31 @@ export default {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+.ctk-query-actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.ctk-more-search-fields {
+  margin-bottom: 0;
+}
+.ctk-more-search-fields--empty {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+.ctk-more-search-fields:not(.ctk-more-search-fields--empty) + .query-row-second {
+  margin-top: 8px;
+}
+.ctk-more-search-fields--empty + .query-row-second {
+  margin-top: 0;
 }
 
 .query-item-date-range .query-date-start,
@@ -609,10 +723,16 @@ export default {
 
 /* 查询条件容器框样式：由外层 inventory-query-page 统一左右 8px，此处占满内容区 */
 .form-fields-container {
-  margin-bottom: 8px;
-  margin-top: -20px;
+  margin-bottom: 4px;
+  margin-top: 0;
   margin-left: 0;
   margin-right: 0;
+}
+
+/* 工具栏上移：与搜索区间距对齐「页签↔搜索区」约 4px */
+.ctk-list-toolbar.list-toolbar {
+  margin-top: 0 !important;
+  margin-bottom: 4px !important;
 }
 
 /* 导出/搜索/重置：与顶部搜索框、底部明细框间距均为 8px */
@@ -731,6 +851,7 @@ export default {
 <style>
 /* 取消内层 app-container 的左右 padding，避免叠加全局 20px；左右 8px 由外层 inventory-query-page 统一控制 */
 .app-container.first-inventory-page {
+  padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
 }

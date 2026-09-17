@@ -82,17 +82,74 @@ body.inventory-query-fixed .main-container {
 </style>
 
 <style scoped>
-/* 出/退库查询页：顶部与左右保持 8px，搜索框与明细框整体增宽；固定高度避免溢出 */
+/* 出/退库查询页：顶部收紧、左右 8px；flex 留给子页翻页完整高度 */
 .app-container.out-warehouse-query-page {
-  padding-top: 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding-top: 4px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
+  padding-bottom: 4px !important;
   height: calc(100vh - 92px) !important;
-  overflow-y: hidden !important;
-  overflow-x: hidden !important;
+  max-height: calc(100vh - 92px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  min-height: 0 !important;
 }
-/* 标签切换栏上移一点，与顶部间距 8px 由容器 padding-top 控制 */
+/* 子页签与下方搜索区紧贴，减少留白 */
 .inventory-tabs-compact {
+  flex: 0 0 auto;
   margin-top: 0;
+  margin-bottom: 0;
+}
+.inventory-tabs-compact >>> .el-tabs__header {
+  margin: 0 0 4px !important;
+}
+.inventory-tabs-compact >>> .el-tabs__nav-wrap {
+  margin-bottom: 0;
+}
+/* 子查询页吃掉页签下方剩余高度，避免再套一层 100vh 把翻页裁切 */
+.out-warehouse-query-page >>> .app-container.first-inventory-page,
+.out-warehouse-query-page >>> .app-container.list-page {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+}
+/* 兜底：任何 display:!important 不得盖掉 v-show 隐藏 */
+.out-warehouse-query-page >>> .app-container.first-inventory-page[style*="display: none"],
+.out-warehouse-query-page >>> .app-container.list-page[style*="display: none"] {
+  display: none !important;
+}
+</style>
+
+<style>
+/* 出/退库查询明细表横向滚动条：与耗材产品维护一致 */
+body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
 }
 </style>
