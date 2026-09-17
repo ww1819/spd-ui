@@ -1,60 +1,65 @@
 <template>
-  <div class="app-container list-page first-inventory-page">
+  <div class="app-container list-page first-inventory-page ctk-summary-out-query">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <div
-          class="ctk-more-search-fields"
-          :class="{ 'ctk-more-search-fields--empty': !moreSearchTypes.length }"
-        >
-          <more-search-bar
-            ref="moreSearchBar"
-            v-model="moreSearchTypes"
-            :options="moreSearchOptions"
-            :storage-key="moreSearchStorageKey"
-            :default-types="builtInMoreSearchDefaults"
-            :auto-load="false"
-            :show-picker="false"
-            :show-save="false"
-            :show-search-actions="false"
-            @change="onMoreSearchTypesChange"
-            @search="handleQuery"
-            @reset="resetQuery"
+        <div class="ctk-query-top-fields">
+          <div class="more-search-dynamic-field more-search-field--text">
+            <el-input
+              v-model="queryParams.supplierKeyword"
+              placeholder="供应商编码/名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+          <div
+            v-for="t in moreSearchTypes"
+            :key="t"
+            class="more-search-dynamic-field"
+            :class="(t === 'warehouse' || t === 'department') ? 'more-search-field--select' : 'more-search-field--text'"
           >
-            <div
-              v-for="t in moreSearchTypes"
-              :key="t"
-              class="more-search-dynamic-field"
-              :class="(t === 'warehouse' || t === 'department') ? 'more-search-field--select' : 'more-search-field--text'"
-            >
-              <template v-if="t === 'warehouse'">
-                <div class="query-select-wrapper more-search-select-wrap">
-                  <SelectWarehouse
-                    v-model="queryParams.warehouseId"
-                    excludeWarehouseType="高值"
-                    placeholder="仓库编码/名称/简码搜索"
-                  />
-                </div>
-              </template>
-              <template v-else-if="t === 'department'">
-                <div class="query-select-wrapper more-search-select-wrap">
-                  <SelectDepartment v-model="queryParams.departmentId" />
-                </div>
-              </template>
-              <el-input
-                v-else
-                v-model="moreSearchKeywords[t]"
-                :placeholder="moreSearchPlaceholderFor(t)"
-                clearable
-                class="more-search-input more-search-input--dynamic"
-                @keyup.enter.native="handleQuery"
-              />
-            </div>
-          </more-search-bar>
+            <template v-if="t === 'warehouse'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectWarehouse
+                  v-model="queryParams.warehouseId"
+                  excludeWarehouseType="高值"
+                  placeholder="仓库编码/名称/简码搜索"
+                />
+              </div>
+            </template>
+            <template v-else-if="t === 'department'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </template>
+            <el-input
+              v-else
+              v-model="moreSearchKeywords[t]"
+              :placeholder="moreSearchPlaceholderFor(t)"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
         </div>
+        <!-- 仅用于读写「更多检索」本地默认，界面不展示 -->
+        <more-search-bar
+          ref="moreSearchBar"
+          class="ctk-more-search-bar--hidden"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          :show-picker="false"
+          :show-save="false"
+          :show-search-actions="false"
+          @change="onMoreSearchTypesChange"
+        />
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
+            <el-form-item label="日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -73,15 +78,14 @@
                 class="query-date-picker query-date-end"
               />
             </el-form-item>
-
             <el-form-item prop="isGz" class="query-item-inline">
-              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable class="more-search-short-select">
+              <el-select v-model="queryParams.isGz" placeholder="高值" clearable class="more-search-short-select">
                 <el-option label="是" value="1" />
                 <el-option label="否" value="2" />
               </el-select>
             </el-form-item>
-            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
-              <el-select v-model="queryParams.billType" placeholder="单据类型" clearable class="more-search-select-wrap">
+            <el-form-item prop="billType" class="query-item-inline">
+              <el-select v-model="queryParams.billType" placeholder="单据类型" clearable class="more-search-short-select">
                 <el-option
                   v-for="dict in dict.type.out_warehouse_bill_type"
                   :key="dict.value"
@@ -91,12 +95,12 @@
               </el-select>
             </el-form-item>
             <el-form-item prop="financeCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
+              <div class="query-select-wrapper more-search-select-wrap ctk-category-multi">
                 <SelectFinanceCategoryLow v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类多选" />
               </div>
             </el-form-item>
             <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
+              <div class="query-select-wrapper more-search-select-wrap ctk-category-multi">
                 <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
               </div>
             </el-form-item>
@@ -298,7 +302,6 @@ export default {
       toolbarMoreHover: false,
       toolbarMoreCloseTimer: null,
       moreSearchOptions: [
-        { value: "supplier", label: "供应商" },
         { value: "factory", label: "生产厂家" },
         { value: "materialName", label: "耗材" },
         { value: "materialSpeci", label: "规格" },
@@ -418,7 +421,7 @@ export default {
       const v = row && row.material ? row.material.isBilling : null;
       return v === '1' || v === 1;
     },
-    /** 同仓库 + 同产品编码 + 同单价合并；单价不同则分行 */
+    /** 同仓库 + 同耗材编码 + 同单价合并；单价不同则分行 */
     mergeSummaryRowsByWarehouseMaterial(rows) {
       if (!rows || !rows.length) return [];
       const map = new Map();
@@ -454,7 +457,7 @@ export default {
       this.loading = true;
       const queryParams = this.buildListQueryParams();
       listCTKWarehouseSummary(queryParams).then(response => {
-        // 同仓库+同产品编码+同单价兜底合并；单价不同保留分行
+        // 同仓库+同耗材编码+同单价兜底合并；单价不同保留分行
         const pageBase = ((this.queryParams.pageNum || 1) - 1) * (this.queryParams.pageSize || 10);
         const rawRows = (response.rows || response || []).map((item, idx) => {
           const row = {
@@ -669,7 +672,6 @@ export default {
     },
     moreSearchTypeLabel(t) {
       const map = {
-        supplier: '供应商',
         factory: '生产厂家',
         materialName: '耗材',
         materialSpeci: '规格',
@@ -683,9 +685,8 @@ export default {
     },
     moreSearchPlaceholderFor(t) {
       const map = {
-        supplier: '供应商编码/名称',
         factory: '生产厂家编码/名称/简码',
-        materialName: '产品编码/名称/简码',
+        materialName: '耗材编码/名称/简码',
         materialSpeci: '规格模糊',
         materialModel: '型号模糊',
         financeCategoryKeyword: '财务分类编码/名称/简拼',
@@ -698,11 +699,13 @@ export default {
       queryParams.materialNameLike = null;
       queryParams.materialSpeciLike = null;
       queryParams.materialModelLike = null;
-      queryParams.supplierKeyword = null;
       queryParams.factoryKeyword = null;
       queryParams.financeCategoryKeyword = null;
       queryParams.warehouseCategoryKeyword = null;
       queryParams.supplerId = null;
+      // 供应商固定首行
+      const supplierKw = queryParams.supplierKeyword != null ? String(queryParams.supplierKeyword).trim() : '';
+      queryParams.supplierKeyword = supplierKw || null;
       if (!queryParams.beginDate || queryParams.beginDate === '') {
         queryParams.beginDate = null;
       }
@@ -734,10 +737,6 @@ export default {
           return;
         }
         switch (t) {
-          case 'supplier':
-            queryParams.supplierKeyword = kw;
-            queryParams.supplerId = null;
-            break;
           case 'factory':
             queryParams.factoryKeyword = kw;
             break;
@@ -915,9 +914,9 @@ export default {
   white-space: nowrap;
 }
 .more-search-type {
-  min-width: 220px;
-  width: auto;
-  max-width: 360px;
+  min-width: 148px;
+  width: 148px;
+  max-width: 148px;
 }
 .more-search-input {
   width: 200px;
@@ -941,7 +940,7 @@ export default {
 }
 
 .query-row-second {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
 }
 
@@ -980,33 +979,69 @@ export default {
 }
 
 .ctk-query-actions {
-  margin-left: auto;
+  margin-left: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
 }
 
-.ctk-more-search-fields {
-  margin-bottom: 0;
+/* 第一行：固定供应商 + 更多检索动态字段；与底行留 8px */
+.ctk-query-top-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  box-sizing: border-box;
 }
-.ctk-more-search-fields--empty {
+.ctk-more-search-bar--hidden {
   display: none !important;
   height: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
 }
-.ctk-more-search-fields:not(.ctk-more-search-fields--empty) + .query-row-second {
-  margin-top: 8px;
-}
-.ctk-more-search-fields--empty + .query-row-second {
-  margin-top: 0;
-}
 
 .query-item-date-range .query-date-start,
 .query-item-date-range .query-date-end {
-  width: 150px;
+  width: 138px;
+}
+
+/* 财务/库房分类多选：与日期框同宽；标签单行不撑高 */
+.ctk-category-multi.more-search-select-wrap {
+  width: 138px !important;
+  min-width: 138px !important;
+  max-width: 138px !important;
+  height: 32px !important;
+  overflow: hidden;
+}
+.ctk-category-multi >>> .el-select,
+.ctk-category-multi >>> .el-select .el-input {
+  width: 100% !important;
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.ctk-category-multi >>> .el-select--multiple .el-select__tags {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  max-width: calc(100% - 28px) !important;
+}
+.ctk-category-multi >>> .el-select--multiple .el-tag {
+  max-width: 72px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  height: 20px !important;
+  line-height: 18px !important;
+  margin: 2px 0 2px 4px !important;
+}
+.ctk-category-multi >>> .el-select--multiple .el-input__inner {
+  height: 32px !important;
+  min-height: 32px !important;
 }
 
 .query-item-date-range .query-date-start {
@@ -1058,12 +1093,14 @@ export default {
   margin-top: 0;
   margin-left: 0;
   margin-right: 0;
+  flex: 0 0 auto;
 }
 
-/* 工具栏上移：与搜索区间距对齐「页签↔搜索区」约 4px */
+/* 工具栏与汇总表间距：与明细表一致（4px） */
 .ctk-list-toolbar.list-toolbar {
   margin-top: 0 !important;
   margin-bottom: 4px !important;
+  flex: 0 0 auto;
 }
 
 /* 导出/搜索/重置：与顶部搜索框、底部明细框间距均为 8px */
@@ -1091,7 +1128,7 @@ export default {
 }
 
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
   overflow: visible;
   width: 100%;
@@ -1226,6 +1263,57 @@ export default {
   padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+}
+
+/* 本页「更多检索」多选：与明细表同宽（覆盖 list-page 190px） */
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .more-search-type,
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .more-search-type.el-select,
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select {
+  width: 148px !important;
+  min-width: 148px !important;
+  max-width: 148px !important;
+}
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select > .el-input,
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select .el-input__inner {
+  width: 148px !important;
+  max-width: 148px !important;
+}
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select-dropdown {
+  min-width: 148px !important;
+}
+
+/* 财务/库房分类多选宽度与单行标签（非 scoped，覆盖全局） */
+.first-inventory-page .ctk-category-multi.more-search-select-wrap {
+  width: 138px !important;
+  min-width: 138px !important;
+  max-width: 138px !important;
+  height: 32px !important;
+  overflow: hidden !important;
+}
+.first-inventory-page .ctk-category-multi .el-select,
+.first-inventory-page .ctk-category-multi .el-select .el-input {
+  width: 100% !important;
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.first-inventory-page .ctk-category-multi .el-select--multiple .el-select__tags {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  max-width: calc(100% - 28px) !important;
+}
+.first-inventory-page .ctk-category-multi .el-select--multiple .el-tag {
+  max-width: 72px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  height: 20px !important;
+  line-height: 18px !important;
+}
+.first-inventory-page .ctk-category-multi .el-select--multiple .el-input__inner {
+  height: 32px !important;
+  min-height: 32px !important;
 }
 
 /* 分页行：合计在左、翻页在右，同一行；翻页下方不留白 */
