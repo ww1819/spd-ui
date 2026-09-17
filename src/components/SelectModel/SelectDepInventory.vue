@@ -44,7 +44,7 @@
               <el-form-item label="关键字" prop="materialKeyword">
                 <el-input
                   v-model="queryParams.materialKeyword"
-                  placeholder="耗材编码/名称/简码"
+                  placeholder="产品编码/名称/简码"
                   clearable
                   size="small"
                   @keyup.enter.native="handleQuery"
@@ -125,7 +125,7 @@
                 {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材编码" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.code')">
+            <el-table-column label="产品编码" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.code')">
               <template slot-scope="scope">
                 <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
               </template>
@@ -224,7 +224,7 @@
                   {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
                 </template>
               </el-table-column>
-              <el-table-column label="耗材编码" align="center" width="130" show-overflow-tooltip resizable>
+              <el-table-column label="产品编码" align="center" width="130" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
                   <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
                 </template>

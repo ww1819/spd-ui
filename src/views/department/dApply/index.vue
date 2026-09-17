@@ -465,12 +465,12 @@
                         {{ (templateDetailPageNum - 1) * templateDetailPageSize + scope.$index + 1 }}
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材编码" min-width="100" show-overflow-tooltip>
+                    <el-table-column label="产品编码" min-width="100" show-overflow-tooltip>
                       <template slot-scope="scope">
                         {{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材名称" min-width="120" show-overflow-tooltip>
+                    <el-table-column label="产品名称" min-width="120" show-overflow-tooltip>
                       <template slot-scope="scope">
                         {{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}
                       </template>
@@ -589,8 +589,8 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="耗材名称" prop="materialKeyword">
-                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入耗材名称或首字母" clearable />
+                    <el-form-item label="产品名称" prop="materialKeyword">
+                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入产品名称或首字母" clearable />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -628,7 +628,7 @@
                       {{ (addTemplateDetailPageNum - 1) * addTemplateDetailPageSize + scope.$index + 1 }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
+                  <el-table-column label="产品编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
                   <el-table-column label="产品名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
                   <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
                   <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
@@ -699,7 +699,7 @@
             <span>{{ outboundRefEntryLabel(scope.row.basApplyEntryId) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材名称" align="center" min-width="120" prop="materialName" show-overflow-tooltip />
+        <el-table-column label="产品名称" align="center" min-width="120" prop="materialName" show-overflow-tooltip />
         <el-table-column label="库房申请单号" align="center" width="140" prop="whApplyBillNo" show-overflow-tooltip />
         <el-table-column label="出库单号" align="center" width="140" prop="ckBillNo" show-overflow-tooltip />
         <el-table-column label="出库状态" align="center" width="100">
