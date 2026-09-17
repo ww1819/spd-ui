@@ -53,26 +53,33 @@
               <el-button
                 type="primary"
                 size="small"
+                icon="el-icon-plus"
                 class="spd-btn spd-btn--primary"
                 @click="handleAdd"
                 v-hasPermi="['foundation:warehouse:add']"
               >新增</el-button>
               <el-button
+                type="success"
                 size="small"
+                icon="el-icon-edit"
                 class="spd-btn spd-btn--secondary"
                 :disabled="single"
                 @click="handleUpdate"
                 v-hasPermi="['foundation:warehouse:edit']"
               >修改</el-button>
               <el-button
+                type="danger"
                 size="small"
-                class="spd-btn spd-btn--secondary"
+                icon="el-icon-delete"
+                class="spd-btn spd-btn--danger"
                 :disabled="single"
                 @click="handleDelete"
                 v-hasPermi="['foundation:warehouse:remove']"
               >删除</el-button>
               <el-button
+                type="warning"
                 size="small"
+                icon="el-icon-download"
                 class="spd-btn spd-btn--secondary"
                 @click="handleExport"
                 v-hasPermi="['foundation:warehouse:export']"
@@ -95,10 +102,19 @@
               :row-class-name="warehouseRowClassName"
               @selection-change="handleSelectionChange"
               @sort-change="handleSortChange"
+              @row-dblclick="onWarehouseRowDblclick"
             >
               <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
               <el-table-column label="序号" align="center" prop="index" width="70" show-overflow-tooltip />
-              <el-table-column label="仓库编码" align="center" prop="code" width="150" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="仓库编码" align="center" prop="code" width="150" sortable="custom" show-overflow-tooltip>
+                <template slot-scope="scope">
+                  <span
+                    class="link-type warehouse-code-link"
+                    :title="scope.row.code || ''"
+                    @click.stop="handleView(scope.row)"
+                  >{{ scope.row.code }}</span>
+                </template>
+              </el-table-column>
               <el-table-column label="仓库名称" align="center" prop="name" min-width="200" sortable="custom" show-overflow-tooltip />
               <el-table-column label="负责人" align="center" prop="warehousePerson" width="130" sortable="custom" show-overflow-tooltip />
               <el-table-column label="电话" align="center" prop="warehousePhone" width="150" sortable="custom" show-overflow-tooltip />
@@ -124,12 +140,14 @@
                   <el-button
                     size="small"
                     type="text"
+                    icon="el-icon-edit"
                     @click="handleUpdate(scope.row)"
                     v-hasPermi="['foundation:warehouse:edit']"
                   >修改</el-button>
                   <el-button
                     size="small"
                     type="text"
+                    icon="el-icon-delete"
                     @click="handleDelete(scope.row)"
                     v-hasPermi="['foundation:warehouse:remove']"
                   >删除</el-button>
@@ -159,9 +177,9 @@
           <i class="el-icon-close warehouse-drawer-close" @click="cancel" />
         </div>
         <div class="warehouse-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
+          <el-form ref="form" :model="form" :rules="rules" label-width="110px" :disabled="dialogMode === 'view'">
             <el-form-item label="仓库编码" prop="code">
-              <el-input v-model="form.code" :disabled="isDisabled" placeholder="仓库编码" />
+              <el-input v-model="form.code" :disabled="isDisabled || dialogMode === 'view'" placeholder="仓库编码" />
             </el-form-item>
             <el-form-item label="仓库名称" prop="name">
               <el-input v-model="form.name" placeholder="仓库名称" />
@@ -215,8 +233,14 @@
           </el-form>
         </div>
         <div class="warehouse-drawer-footer">
-          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+          <el-button
+            v-if="dialogMode !== 'view'"
+            type="primary"
+            size="small"
+            class="spd-btn spd-btn--primary"
+            @click="submitForm"
+          >保 存</el-button>
+          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">{{ dialogMode === 'view' ? '关 闭' : '取 消' }}</el-button>
         </div>
       </div>
     </div>
@@ -235,6 +259,7 @@ export default {
       ids: [],
       rowHighlightTick: 0,
       isDisabled: false,
+      dialogMode: 'add',
       single: true,
       multiple: true,
       showSearch: true,
@@ -382,6 +407,7 @@ export default {
       this.reset();
     },
     reset() {
+      this.dialogMode = 'add';
       this.form = {
         id: null,
         code: null,
@@ -454,6 +480,7 @@ export default {
     handleAdd() {
       this.reset();
       this.open = true;
+      this.dialogMode = 'add';
       this.isDisabled = false;
       this.form.warehouseStatus = '2';
       this.form.warehouseType = '低值';
@@ -462,6 +489,7 @@ export default {
     },
     handleUpdate(row) {
       this.reset();
+      this.dialogMode = 'edit';
       const id = row.id || this.ids;
       getWarehouse(id).then(response => {
         this.form = response.data;
@@ -470,7 +498,35 @@ export default {
         this.title = "修改仓库";
       });
     },
+    /** 单击仓库编码：查看明细（只读） */
+    handleView(row) {
+      if (!row || row.id == null) return;
+      this.reset();
+      this.dialogMode = 'view';
+      getWarehouse(row.id).then(response => {
+        this.form = response.data;
+        this.open = true;
+        this.isDisabled = true;
+        this.title = "仓库明细";
+      });
+    },
+    /** 双击行（非仓库编码列）：切换勾选与高亮 */
+    onWarehouseRowDblclick(row, column) {
+      if (!row) return;
+      const prop = column && column.property;
+      const label = column && column.label;
+      const type = column && column.type;
+      if (type === 'selection' || type === 'index') return;
+      if (prop === 'code' || label === '仓库编码') return;
+      if (label === '操作' || (column && column.className && String(column.className).indexOf('apply-action') !== -1)) return;
+      const table = this.$refs.warehouseTable;
+      if (!table || typeof table.toggleRowSelection !== 'function') return;
+      const rid = row.id != null ? String(row.id) : '';
+      const selected = !!(rid && this.ids.some(id => String(id) === rid));
+      table.toggleRowSelection(row, !selected);
+    },
     submitForm() {
+      if (this.dialogMode === 'view') return;
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.id != null) {
@@ -931,5 +987,14 @@ export default {
 
 .app-container.warehouse-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
   height: 12px !important;
+}
+
+.warehouse-code-link {
+  cursor: pointer;
+  color: #409eff;
+}
+
+.warehouse-code-link:hover {
+  text-decoration: underline;
 }
 </style>
