@@ -159,23 +159,31 @@ body.inventory-query-fixed .main-container {
 /* 出/退库查询明细表横向滚动条：与耗材产品维护一致 */
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar,
 body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-supplier-summary-main-table .el-table__body-wrapper::-webkit-scrollbar,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-department-summary-main-table .el-table__body-wrapper::-webkit-scrollbar {
   width: 8px !important;
   height: 12px !important;
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
 body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-supplier-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-department-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
   height: 12px !important;
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
 body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-supplier-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-department-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
   width: 8px !important;
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
 body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-supplier-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-department-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   background: #a8a8a8 !important;
   border-radius: 3px !important;
   min-width: 2px !important;
@@ -185,7 +193,9 @@ body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table 
 }
 body.inventory-query-fixed .out-warehouse-query-page .ctk-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
 body.inventory-query-fixed .out-warehouse-query-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
-body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
+body.inventory-query-fixed .out-warehouse-query-page .ctk-usage-rank-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-supplier-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
+body.inventory-query-fixed .out-warehouse-query-page .ctk-department-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
   background: #f1f1f1 !important;
   border-radius: 3px !important;
 }

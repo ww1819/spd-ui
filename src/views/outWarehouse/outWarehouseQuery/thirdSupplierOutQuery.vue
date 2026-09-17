@@ -81,8 +81,8 @@
               </div>
             </el-form-item>
             <div class="ctk-query-actions query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -130,6 +130,7 @@
         <el-button
           type="success"
           size="small"
+          icon="el-icon-check"
           class="spd-btn"
           @click="saveMoreSearchDefaults"
         >保存查询条件</el-button>
@@ -140,18 +141,24 @@
     <div class="table-container" ref="tablePanel">
       <el-table
         ref="mainTable"
+        class="ctk-supplier-summary-main-table"
         v-loading="loading"
         :data="pagedList"
+        :row-key="getRowKey"
+        :row-class-name="ctkRowClassName"
         show-summary
         :summary-method="getTotalSummaries"
         :height="tableHeight"
         border
         stripe
+        @selection-change="handleSelectionChange"
+        @row-dblclick="handleRowDblclick"
         @sort-change="handleSortChange"
       >
-        <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+        <el-table-column type="selection" width="55" align="center" header-align="center" class-name="ctk-select-col col-serial-center" />
+        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+            <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
           </template>
         </el-table-column>
         <el-table-column label="供应商" align="center" prop="supplierName" width="240" min-width="200" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
@@ -231,10 +238,11 @@ export default {
       // 供应商聚合后的全量列表（用于前端分页）
       supplierAggList: [],
       moreSearchTypes: [],
+      selectedRowKeys: [],
       toolbarMoreHover: false,
       toolbarMoreCloseTimer: null,
       moreSearchOptions: [
-        { value: "materialId", label: "耗材" },
+        { value: "materialId", label: "产品" },
         { value: "materialNameLike", label: "产品名称" },
         { value: "materialSpeciLike", label: "规格" },
         { value: "materialModelLike", label: "型号" },
@@ -365,6 +373,31 @@ export default {
         }
       });
     },
+    getRowKey(row) {
+      if (!row) return '';
+      if (row._rowKey) return row._rowKey;
+      const sid = row.supplierId != null && row.supplierId !== '' ? String(row.supplierId) : null;
+      const supplierName = (row.supplierName || (row.supplier && row.supplier.name) || '').trim() || '未维护供应商';
+      return sid != null ? `id:${sid}` : `name:${supplierName}`;
+    },
+    handleSelectionChange(selection) {
+      this.selectedRowKeys = (selection || []).map(row => this.getRowKey(row));
+    },
+    /** 双击行：切换勾选（已选则取消，未选则选中） */
+    handleRowDblclick(row) {
+      const table = this.$refs.mainTable;
+      if (!table || !row) return;
+      const key = this.getRowKey(row);
+      const selected = key && this.selectedRowKeys.indexOf(key) !== -1;
+      table.toggleRowSelection(row, !selected);
+    },
+    ctkRowClassName({ row }) {
+      const key = this.getRowKey(row);
+      if (key && this.selectedRowKeys.indexOf(key) !== -1) {
+        return 'ctk-row-selected';
+      }
+      return '';
+    },
     handleSortChange({ prop, order }) {
       this.sortProp = order ? prop : null;
       this.sortOrder = order || null;
@@ -373,7 +406,9 @@ export default {
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill('');
-      if (sums.length > 0) sums[0] = '合计';
+      // 勾选列在前时，「合计」放在序号列
+      const labelIdx = columns.findIndex(c => c.type === 'index');
+      sums[labelIdx >= 0 ? labelIdx : 0] = '合计';
 
       const totalOutQty = (data || []).reduce((acc, r) => acc + Number(r.outQty || 0), 0);
       const totalOutAmt = (data || []).reduce((acc, r) => acc + Number(r.outAmt || 0), 0);
@@ -522,12 +557,14 @@ export default {
         }));
         this.buildSupplierAgg();
         this.total = this.supplierAggList.length;
+        this.selectedRowKeys = [];
         this.loading = false;
         this.$nextTick(() => this.updateTableHeight());
       }).catch(() => {
         this.rawList = [];
         this.supplierAggList = [];
         this.total = 0;
+        this.selectedRowKeys = [];
         this.loading = false;
         this.$nextTick(() => this.updateTableHeight());
       });
@@ -877,13 +914,26 @@ export default {
   cursor: grabbing;
 }
 
-/* 优化表格列间距 */
+/* 优化表格列间距（与出/退库明细表表头高度一致） */
 .table-container ::v-deep .el-table th.el-table__cell {
-  padding: 10px 12px !important;
+  padding: 4px 6px !important;
 }
 
 .table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 12px !important;
+  padding: 10px 6px !important;
+}
+
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 23px;
+  word-break: normal;
+}
+
+.table-container ::v-deep .el-table .cell {
+  padding: 0 4px;
 }
 </style>
 
@@ -967,6 +1017,64 @@ export default {
   display: flex !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
+}
+
+/* 表头样式对齐出/退库明细表 */
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__header-wrapper th,
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  height: 34px !important;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__header th.gutter {
+  background-color: #f1f5f9 !important;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.ctk-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.ctk-row-selected:hover > td {
+  background-color: #A0CBFF !important;
+}
+.first-inventory-page .ctk-supplier-summary-main-table th.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table td.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table th.el-table-column--selection,
+.first-inventory-page .ctk-supplier-summary-main-table td.el-table-column--selection {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-shadow: 2px 0 0 0 #e2e8f0;
+}
+.first-inventory-page .ctk-supplier-summary-main-table th.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table th.el-table-column--selection {
+  z-index: 3;
+  background-color: #f1f5f9;
+}
+.first-inventory-page .ctk-supplier-summary-main-table td.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table td.el-table-column--selection {
+  background-color: #fff;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.el-table__row--striped td.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr:hover > td.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr:hover > td.el-table-column--selection {
+  background-color: #D6EBFF;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.ctk-row-selected > td.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.ctk-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF;
+}
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.ctk-row-selected:hover > td.ctk-select-col,
+.first-inventory-page .ctk-supplier-summary-main-table .el-table__body tr.ctk-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF;
 }
 </style>
 

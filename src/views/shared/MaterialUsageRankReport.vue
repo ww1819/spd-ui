@@ -102,8 +102,8 @@
               </el-select>
             </el-form-item>
             <div class="ctk-query-actions query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -151,6 +151,7 @@
         <el-button
           type="success"
           size="small"
+          icon="el-icon-check"
           class="spd-btn"
           @click="saveMoreSearchDefaults"
         >保存查询条件</el-button>
@@ -164,17 +165,34 @@
         class="ctk-usage-rank-main-table"
         v-loading="loading"
         :data="tableList"
+        :row-key="getRowKey"
+        :row-class-name="ctkRowClassName"
         :height="tableHeight"
         border
         stripe
-        size="small"
+        @selection-change="handleSelectionChange"
+        @row-dblclick="handleRowDblclick"
         @sort-change="handleSortChange"
       >
-        <el-table-column type="index" label="序号" width="70" align="center" header-align="center" class-name="col-serial-center" fixed="left">
+        <el-table-column type="selection" width="55" align="center" header-align="center" class-name="ctk-select-col col-serial-center" />
+        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" class-name="col-serial-center">
           <template slot-scope="scope">
             <span class="col-serial-center-text">{{ (searchParams.pageNum - 1) * searchParams.pageSize + scope.$index + 1 }}</span>
           </template>
         </el-table-column>
+        <el-table-column
+          label="产品编码"
+          prop="materialCode"
+          width="145"
+          min-width="130"
+          align="left"
+          header-align="center"
+          show-overflow-tooltip
+          resizable
+          sortable="custom"
+          :sort-orders="['ascending', 'descending']"
+          class-name="ctk-col-left"
+        />
         <el-table-column
           label="产品名称"
           prop="materialName"
@@ -288,6 +306,7 @@ export default {
       ],
       toolbarMoreHover: false,
       toolbarMoreCloseTimer: null,
+      selectedRowKeys: [],
       allRows: [],
       tableList: [],
       total: 0,
@@ -511,28 +530,65 @@ export default {
       this.searchParams.pageNum = 1;
       this.applyPagination();
     },
+    getRowKey(row) {
+      if (!row) return '';
+      if (row._rowKey) return row._rowKey;
+      if (row.materialId != null && row.materialId !== '') return `id:${row.materialId}`;
+      return `code:${row.materialCode || ''}|name:${row.materialName || ''}`;
+    },
+    handleSelectionChange(selection) {
+      this.selectedRowKeys = (selection || []).map(row => this.getRowKey(row));
+    },
+    /** 双击行：切换勾选（已选则取消，未选则选中） */
+    handleRowDblclick(row) {
+      const table = this.$refs.mainTable;
+      if (!table || !row) return;
+      const key = this.getRowKey(row);
+      const selected = key && this.selectedRowKeys.indexOf(key) !== -1;
+      table.toggleRowSelection(row, !selected);
+    },
+    ctkRowClassName({ row }) {
+      const key = this.getRowKey(row);
+      if (key && this.selectedRowKeys.indexOf(key) !== -1) {
+        return 'ctk-row-selected';
+      }
+      return '';
+    },
     async loadReport() {
       this.loading = true;
       try {
         const q = this.normalizeQuery();
-        const backendRows = await listMaterialUsageRank(q);
-        const rows = (Array.isArray(backendRows) ? backendRows : []).map((r) => ({
-          materialId: r.materialId,
-          materialName: r.materialName || "--",
-          specification: r.specification || "--",
-          model: r.model || "--",
-          unitName: r.unitName || "--",
-          unitPrice: r.unitPrice,
-          quantity: r.quantity,
-          amount: r.amount,
-          factoryName: r.factoryName || "--",
-          supplierName: r.supplierName || "--",
-          ratioPercent: r.ratioPercent,
-          isGzLabel: r.isGzLabel || "否",
-          remark: r.remark || ""
-        }));
+        const res = await listMaterialUsageRank(q);
+        const backendRows = Array.isArray(res)
+          ? res
+          : (Array.isArray(res && res.data) ? res.data : []);
+        const rows = backendRows.map((r, idx) => {
+          const codeRaw = r.materialCode != null ? r.materialCode : r.code;
+          const code = codeRaw != null ? String(codeRaw).trim() : '';
+          const row = {
+            materialId: r.materialId,
+            materialCode: code || "--",
+            materialName: r.materialName || "--",
+            specification: r.specification || "--",
+            model: r.model || "--",
+            unitName: r.unitName || "--",
+            unitPrice: r.unitPrice,
+            quantity: r.quantity,
+            amount: r.amount,
+            factoryName: r.factoryName || "--",
+            supplierName: r.supplierName || "--",
+            ratioPercent: r.ratioPercent,
+            isGzLabel: r.isGzLabel || "否",
+            remark: r.remark || ""
+          };
+          row._rowKey = row.materialId != null && row.materialId !== ''
+            ? `id:${row.materialId}`
+            : `idx:${idx}|code:${row.materialCode}|name:${row.materialName}`;
+          return row;
+        });
         this.allRows = rows;
         this.total = rows.length;
+        this.selectedRowKeys = [];
         this.totalInfo = rows.reduce(
           (acc, r) => {
             acc.totalQty += this.toNum(r.quantity);
@@ -546,6 +602,7 @@ export default {
         this.allRows = [];
         this.tableList = [];
         this.total = 0;
+        this.selectedRowKeys = [];
         this.totalInfo = { totalQty: 0, totalAmt: 0 };
         this.$message && this.$message.error("耗材使用排名加载失败");
       } finally {
@@ -728,6 +785,72 @@ export default {
   align-items: center !important;
   flex-wrap: nowrap !important;
 }
+
+/* 表头样式对齐出/退库明细表 */
+.first-inventory-page .ctk-usage-rank-main-table .el-table__header-wrapper th,
+.first-inventory-page .ctk-usage-rank-main-table .el-table__header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  height: 34px !important;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__header th.gutter {
+  background-color: #f1f5f9 !important;
+}
+.first-inventory-page .ctk-usage-rank-main-table th.ctk-col-left .cell {
+  text-align: center !important;
+  justify-content: center !important;
+}
+.first-inventory-page .ctk-usage-rank-main-table td.ctk-col-left .cell {
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.ctk-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.ctk-row-selected:hover > td {
+  background-color: #A0CBFF !important;
+}
+.first-inventory-page .ctk-usage-rank-main-table th.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table td.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table th.el-table-column--selection,
+.first-inventory-page .ctk-usage-rank-main-table td.el-table-column--selection {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-shadow: 2px 0 0 0 #e2e8f0;
+}
+.first-inventory-page .ctk-usage-rank-main-table th.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table th.el-table-column--selection {
+  z-index: 3;
+  background-color: #f1f5f9;
+}
+.first-inventory-page .ctk-usage-rank-main-table td.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table td.el-table-column--selection {
+  background-color: #fff;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.el-table__row--striped td.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr:hover > td.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr:hover > td.el-table-column--selection {
+  background-color: #D6EBFF;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.ctk-row-selected > td.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.ctk-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF;
+}
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.ctk-row-selected:hover > td.ctk-select-col,
+.first-inventory-page .ctk-usage-rank-main-table .el-table__body tr.ctk-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF;
+}
 </style>
 
 <style scoped>
@@ -881,13 +1004,19 @@ export default {
 }
 .table-container ::v-deep .el-table thead th.el-table__cell > .cell,
 .table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 23px;
+  word-break: normal;
 }
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
 }
+/* 指定列：表头居中，明细靠左 */
 .table-container ::v-deep .el-table th.ctk-col-left .cell {
-  text-align: left !important;
+  text-align: center !important;
+  justify-content: center !important;
 }
 .table-container ::v-deep .el-table td.ctk-col-left .cell {
   text-align: left !important;
@@ -896,6 +1025,7 @@ export default {
 .table-container ::v-deep .el-table th.col-serial-center .cell,
 .table-container ::v-deep .el-table td.col-serial-center .cell {
   text-align: center !important;
+  justify-content: center;
 }
 .table-container ::v-deep .col-serial-center-text {
   display: block;

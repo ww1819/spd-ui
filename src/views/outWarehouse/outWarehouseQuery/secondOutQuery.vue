@@ -105,8 +105,8 @@
               </div>
             </el-form-item>
             <div class="ctk-query-actions query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -154,6 +154,7 @@
         <el-button
           type="success"
           size="small"
+          icon="el-icon-check"
           class="spd-btn"
           @click="saveMoreSearchDefaults"
         >保存查询条件</el-button>
@@ -170,6 +171,7 @@
       :row-key="getSummaryRowKey"
       :row-class-name="ctkSummaryRowClassName"
       @selection-change="handleSelectionChange"
+      @row-dblclick="handleSummaryRowDblclick"
       :height="tableHeight"
       border
       stripe
@@ -303,7 +305,7 @@ export default {
       toolbarMoreCloseTimer: null,
       moreSearchOptions: [
         { value: "factory", label: "生产厂家" },
-        { value: "materialName", label: "耗材" },
+        { value: "materialName", label: "产品" },
         { value: "materialSpeci", label: "规格" },
         { value: "materialModel", label: "型号" },
         { value: "warehouse", label: "仓库" },
@@ -708,7 +710,7 @@ export default {
     moreSearchTypeLabel(t) {
       const map = {
         factory: '生产厂家',
-        materialName: '耗材',
+        materialName: '产品',
         materialSpeci: '规格',
         materialModel: '型号',
         warehouse: '仓库',
@@ -719,7 +721,7 @@ export default {
     moreSearchPlaceholderFor(t) {
       const map = {
         factory: '生产厂家编码/名称/简码',
-        materialName: '耗材编码/名称/简码',
+        materialName: '产品编码/名称/简码',
         materialSpeci: '规格模糊',
         materialModel: '型号模糊'
       };
@@ -796,6 +798,14 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
       this.selectedRowKeys = (selection || []).map(row => this.getSummaryRowKey(row))
+    },
+    /** 双击行：切换勾选（已选则取消，未选则选中） */
+    handleSummaryRowDblclick(row) {
+      const table = this.$refs.ctkSummaryTable;
+      if (!table || !row) return;
+      const key = this.getSummaryRowKey(row);
+      const selected = key && this.selectedRowKeys.indexOf(key) !== -1;
+      table.toggleRowSelection(row, !selected);
     },
     getSummaryRowKey(row) {
       return (row && row._rowKey) || [

@@ -340,6 +340,34 @@ $spd-control-h: 32px;
   font-size: 13px !important;
   border-radius: 6px;
   border-color: #e2e8f0;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* 搜索区输入框：悬停高亮，移开恢复 */
+.app-container .form-fields-container .el-input__inner:hover,
+.app-container .form-fields-container .el-range-editor.el-input__inner:hover,
+.app-container .form-fields-container .el-select:hover .el-input__inner,
+.app-container .form-fields-container .el-autocomplete:hover .el-input__inner,
+.app-container .form-fields-container .el-date-editor:hover.el-input__inner,
+.app-container .form-fields-container .el-date-editor:hover .el-input__inner,
+.app-container .list-query-panel .el-input__inner:hover,
+.app-container .list-query-panel .el-range-editor.el-input__inner:hover,
+.app-container .list-query-panel .el-select:hover .el-input__inner,
+.app-container .list-query-panel .el-autocomplete:hover .el-input__inner,
+.app-container .list-query-panel .el-date-editor:hover.el-input__inner,
+.app-container .list-query-panel .el-date-editor:hover .el-input__inner {
+  border-color: #93c5fd !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.app-container .form-fields-container .el-input__inner:focus,
+.app-container .form-fields-container .el-range-editor.is-active,
+.app-container .form-fields-container .el-select .el-input.is-focus .el-input__inner,
+.app-container .list-query-panel .el-input__inner:focus,
+.app-container .list-query-panel .el-range-editor.is-active,
+.app-container .list-query-panel .el-select .el-input.is-focus .el-input__inner {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.16);
 }
 
 .app-container .form-fields-container .el-input,
