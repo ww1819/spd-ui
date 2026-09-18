@@ -25,8 +25,8 @@
               @keyup.enter.native="handleQuery"
             />
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -82,13 +82,16 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['inWarehouse:apply:add']"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['inWarehouse:apply:export']"
         >导出</el-button>
@@ -103,6 +106,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -180,12 +184,13 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="180">
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="200">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['inWarehouse:apply:edit']"
               v-if="scope.row.billStatus != 2"
@@ -194,6 +199,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['inWarehouse:apply:remove']"
               v-if="scope.row.billStatus != 2"
@@ -202,27 +208,35 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
             >打印</el-button>
             <el-button
               size="small"
               type="text"
+              icon="el-icon-document"
               @click="handleShowEntryChangeLog(scope.row)"
               v-hasPermi="['inWarehouse:apply:query']"
+              style="padding: 0 5px; margin: 0;"
             >变更记录</el-button>
           </span>
         </template>
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary" v-if="total > 0">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        :pager-count="7"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -926,6 +940,10 @@ export default {
       detailEditCols: ['qty', 'batchNumber', 'beginTime', 'endTime', 'remark'],
       // 总条数
       total: 0,
+      /** 列表全量合计（后端 totalInfo） */
+      totalInfo: {
+        totalAmt: 0
+      },
       // 入库表格数据
       warehouseList: [],
       stkMaterialList: [],
@@ -998,6 +1016,22 @@ export default {
     /** 明细表高度：calc(100vh - 384px) */
     detailTableHeight() {
       return 'max(240px, calc(100vh - 384px))';
+    },
+    /** 列表全量总金额（后端合计） */
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    /** 当前页金额合计 */
+    pageTotalAmtFormatted() {
+      const list = this.warehouseList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
     /** 已有入库明细时不允许引用配送单，避免表头与行数据错乱 */
     deliveryRefBlocked() {
@@ -1421,6 +1455,9 @@ export default {
       listWarehouse(queryParams).then(response => {
         this.warehouseList = response.rows || [];
         this.total = response.total || 0;
+        const ti = response.totalInfo || {};
+        const amt = ti.totalAmt != null ? ti.totalAmt : (ti.totalRkAmt != null ? ti.totalRkAmt : 0);
+        this.totalInfo = { totalAmt: amt };
         this.loading = false;
         this.$nextTick(() => {
           this.updateMainTableHeight();
@@ -1843,6 +1880,18 @@ export default {
       this.ids = ids;
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
+    },
+    /** 双击行切换勾选（操作列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'billNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -2486,6 +2535,37 @@ export default {
   border-radius: 0;
   box-shadow: none;
   margin-bottom: 0;
+}
+
+.apply-pager-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-height: 40px;
+  padding: 4px 0;
+  box-sizing: border-box;
+}
+.apply-pager-bar .pagination-summary {
+  flex: 1 1 auto;
+  min-width: 200px;
+  margin-left: 12px;
+  padding-left: 4px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+}
+.apply-pager-bar .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
+}
+.apply-pager-bar .pagination-container {
+  margin-top: 0 !important;
+  margin-left: auto;
+}
+.apply-pagination-wrap.apply-pager-bar {
+  margin-top: 4px;
 }
 
 .el-table td {
