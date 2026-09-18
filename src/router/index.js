@@ -333,12 +333,6 @@ export const dynamicRoutes = [
         meta: { title: '退货申请', icon: 'list' }
       },
       {
-        path: 'goodsAudit',
-        component: () => import('@/views/gzOrder/goodsAudit/index'),
-        name: 'GzOrderGoodsAudit',
-        meta: { title: '退货审核', icon: 'audit' }
-      },
-      {
         path: 'refund',
         component: () => import('@/views/gzOrder/refund/index'),
         name: 'GzOrderRefund',

@@ -1,165 +1,185 @@
 <template>
-  <div class="table-container">
-    <el-table ref="table" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border height="54vh">
-      <el-table-column type="selection" width="55" align="center" fixed="left" />
-      <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
-        </template>
-      </el-table-column>
-      <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.orderNo || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="仓库" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="科室" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.department && scope.row.department.name) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="院内码" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.inHospitalCode || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="产品名称" align="center" width="160" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.specification || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="型号" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.unitName">{{ scope.row.unitName }}</span>
-          <span v-else-if="scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName">{{ scope.row.material.fdUnit.unitName }}</span>
-          <span v-else-if="scope.row.material && scope.row.material.unitName">{{ scope.row.material.unitName }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="单价" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.price != null && scope.row.price !== undefined">{{ scope.row.price | formatPrice }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="数量" align="center" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.qty != null && scope.row.qty !== undefined">{{ scope.row.qty }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.amt != null && scope.row.amt !== undefined">{{ scope.row.amt | formatCurrency }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="生产日期" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.beginTime">{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="有效期" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="批号" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.batchNumber || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="批次" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.batchNo || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="生产厂家" align="center" width="160" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="注册证有效期" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="UDI码" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.udiNo && scope.row.udiNo !== scope.row.materialCode">{{ scope.row.udiNo }}</span>
-          <span v-else-if="scope.row.material && scope.row.material.udiNo && scope.row.material.udiNo !== scope.row.materialCode">{{ scope.row.material.udiNo }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="单据状态" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="制单人" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.createBy || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="制单日期" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.orderDate">{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="审核人" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.updateBy || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="审核日期" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="单据类型" align="center" width="100" show-overflow-tooltip resizable fixed="right">
-        <template slot-scope="scope">
-          <span>{{ scope.row.billTypeName || '--' }}</span>
-        </template>
-      </el-table-column>
-    </el-table>
+  <div class="gz-stock-table-panel">
+    <div class="table-container" ref="tablePanel">
+      <el-table
+        ref="table"
+        class="gz-stock-main-table"
+        v-loading="loading"
+        :data="tableList"
+        :height="tableHeight"
+        :row-key="getRowKey"
+        :row-class-name="gzStockRowClassName"
+        border
+        stripe
+        @selection-change="handleSelectionChange"
+        @row-dblclick="handleRowDblclick"
+      >
+        <el-table-column type="selection" width="48" align="center" header-align="center" class-name="col-serial-center" />
+        <el-table-column label="序号" align="center" header-align="center" width="80" class-name="col-serial-center" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单号" align="left" header-align="center" class-name="ctk-col-left" width="180" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.orderNo || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="仓库" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="科室" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.department && scope.row.department.name) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="院内码" align="left" header-align="center" class-name="ctk-col-left" width="180" show-overflow-tooltip resizable sortable :sort-method="sortByInHospitalCode">
+          <template slot-scope="scope">
+            <span>{{ scope.row.inHospitalCode || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="产品编码" align="left" header-align="center" class-name="ctk-col-left" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode">
+          <template slot-scope="scope">
+            <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="产品名称" align="left" header-align="center" class-name="ctk-col-left" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName">
+          <template slot-scope="scope">
+            <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" width="130" min-width="100" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.specification || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="型号" align="left" header-align="center" class-name="ctk-col-left" width="130" min-width="90" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" width="100" min-width="90" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.unitName">{{ scope.row.unitName }}</span>
+            <span v-else-if="scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName">{{ scope.row.material.fdUnit.unitName }}</span>
+            <span v-else-if="scope.row.material && scope.row.material.unitName">{{ scope.row.material.unitName }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单价" align="center" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.price != null && scope.row.price !== undefined">{{ scope.row.price | formatPrice }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="数量" align="center" width="80" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.qty != null && scope.row.qty !== undefined">{{ scope.row.qty }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="金额" align="center" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.amt != null && scope.row.amt !== undefined">{{ scope.row.amt | formatCurrency }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产日期" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.beginTime">{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="有效期" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="批号" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.batchNumber || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="批次" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.batchNo || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="生产厂家" align="left" header-align="center" class-name="ctk-col-left" width="160" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.factoryName || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="注册证号" align="left" header-align="center" class-name="ctk-col-left" width="180" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="注册证有效期" align="left" header-align="center" class-name="ctk-col-left" width="140" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="UDI码" align="left" header-align="center" class-name="ctk-col-left" width="180" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.udiNo && scope.row.udiNo !== scope.row.materialCode">{{ scope.row.udiNo }}</span>
+            <span v-else-if="scope.row.material && scope.row.material.udiNo && scope.row.material.udiNo !== scope.row.materialCode">{{ scope.row.material.udiNo }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单据状态" align="center" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="制单人" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.createBy || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="制单日期" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.orderDate">{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="审核人" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.updateBy || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="审核日期" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单据类型" align="center" width="100" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.billTypeName || '--' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <div class="pagination-wrapper">
-      <pagination
-        v-show="total > 0"
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="applyDetailPagination"
-      />
+      <div class="pagination-container" v-show="total > 0">
+        <el-pagination
+          background
+          :current-page="queryParams.pageNum"
+          :page-size="queryParams.pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="total"
+          :pager-count="7"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -185,6 +205,8 @@ export default {
       tableList: [],
       total: 0,
       ids: [],
+      selectedRowKeys: [],
+      tableHeight: 400,
       /** 展开后的全量明细（按条码行），用于前端分页切片 */
       allDetailRows: [],
       /** 未按耗材关键词过滤前的明细缓存 */
@@ -206,6 +228,10 @@ export default {
           this.applyDetailPagination();
           return;
         }
+        if (oldVal && newVal.pageSize !== oldVal.pageSize && this.isPaginationOnlyChange(newVal, oldVal)) {
+          this.applyDetailPagination();
+          return;
+        }
         this.getList();
       },
       deep: true,
@@ -218,7 +244,10 @@ export default {
   mounted() {
     this.$nextTick(() => {
       this.syncTableScroll();
+      this.updateTableHeight();
+      setTimeout(() => this.updateTableHeight(), 80);
     });
+    window.addEventListener('resize', this.updateTableHeight);
   },
   updated() {
     this.$nextTick(() => {
@@ -229,11 +258,69 @@ export default {
     });
   },
   beforeDestroy() {
+    window.removeEventListener('resize', this.updateTableHeight);
     if (this._headerScrollbarCleanup) {
       this._headerScrollbarCleanup();
     }
   },
   methods: {
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByInHospitalCode(a, b) {
+      return this.sortByStr(a, b, r => r.inHospitalCode || '');
+    },
+    sortByMaterialCode(a, b) {
+      return this.sortByStr(a, b, r => r.materialCode || (r.material && r.material.code) || '');
+    },
+    sortByMaterialName(a, b) {
+      return this.sortByStr(a, b, r => r.materialName || (r.material && r.material.name) || '');
+    },
+    updateTableHeight() {
+      this.$nextTick(() => {
+        const panel = this.$refs.tablePanel;
+        if (!panel) return;
+        const h = Math.floor(panel.clientHeight);
+        if (h > 120) {
+          this.tableHeight = h;
+          this.$nextTick(() => {
+            if (this.$refs.table && this.$refs.table.doLayout) {
+              this.$refs.table.doLayout();
+            }
+          });
+        }
+      });
+    },
+    getRowKey(row) {
+      return (row && row._rowKey) || '';
+    },
+    gzStockRowClassName({ row }) {
+      const key = this.getRowKey(row);
+      if (key && this.selectedRowKeys.indexOf(key) !== -1) {
+        return 'gz-stock-row-selected';
+      }
+      return '';
+    },
+    handleRowDblclick(row) {
+      const table = this.$refs.table;
+      if (!table || !row) return;
+      const key = this.getRowKey(row);
+      const storeSelection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = !!(key && (
+        this.selectedRowKeys.indexOf(key) !== -1 ||
+        storeSelection.some(r => this.getRowKey(r) === key)
+      ));
+      table.toggleRowSelection(row, !selected);
+    },
+    handleSizeChange(val) {
+      this.queryParams.pageSize = val;
+      this.queryParams.pageNum = 1;
+    },
+    handleCurrentChange(val) {
+      this.queryParams.pageNum = val;
+    },
     getList() {
       this.loading = true;
       const codeKeyword = this.queryParams.inHospitalCode != null ? String(this.queryParams.inHospitalCode).trim().toLowerCase() : '';
@@ -260,6 +347,7 @@ export default {
           this.allDetailRows = [];
           this.tableList = [];
           this.total = 0;
+          this.selectedRowKeys = [];
           this.loading = false;
           return this.showTraceHintIfNeeded(codeKeyword);
         }
@@ -295,6 +383,7 @@ export default {
       }).then(() => {
         this.$nextTick(() => {
           this.syncTableScroll();
+          this.updateTableHeight();
           if (this.$refs.table) {
             this.$refs.table.doLayout();
           }
@@ -304,7 +393,9 @@ export default {
         this.allDetailRows = [];
         this.tableList = [];
         this.total = 0;
+        this.selectedRowKeys = [];
         this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
       });
     },
     applyClientFilters() {
@@ -312,6 +403,7 @@ export default {
       rows = rows.filter(row => this.matchesDetailMaterialKeyword(row));
       rows = this.filterDetailRowsByDateRange(rows);
       this.allDetailRows = rows;
+      this.selectedRowKeys = [];
       if (Number(this.queryParams.pageNum) !== 1) {
         this.queryParams.pageNum = 1;
       }
@@ -336,8 +428,7 @@ export default {
       if (!oldVal || !newVal) {
         return false;
       }
-      return newVal.pageSize === oldVal.pageSize
-        && newVal.materialKeyword === oldVal.materialKeyword
+      return newVal.materialKeyword === oldVal.materialKeyword
         && newVal.warehouseId === oldVal.warehouseId
         && newVal.supplierId === oldVal.supplierId
         && newVal.departmentId === oldVal.departmentId
@@ -360,7 +451,18 @@ export default {
         }
       }
       const start = (pageNum - 1) * pageSize;
-      this.tableList = allRows.slice(start, start + pageSize);
+      this.tableList = allRows.slice(start, start + pageSize).map((row, idx) => {
+        if (row && !row._rowKey) {
+          row._rowKey = `gz-stock-${start + idx}-${row.orderNo || ''}-${row.inHospitalCode || ''}-${row.id || idx}`;
+        }
+        return row;
+      });
+      this.$nextTick(() => {
+        this.updateTableHeight();
+        if (this.$refs.table) {
+          this.$refs.table.doLayout();
+        }
+      });
     },
     shouldApplyDateFilter() {
       const filter = this.resolveOrderNoFilter();
@@ -715,6 +817,7 @@ export default {
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id);
+      this.selectedRowKeys = (selection || []).map(row => this.getRowKey(row));
       this.$emit('selection-change', selection);
     },
     syncTableScroll() {
@@ -765,12 +868,63 @@ export default {
 </script>
 
 <style scoped>
+.gz-stock-table-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   position: relative;
+  flex: 1 1 auto;
+}
+
+.table-container ::v-deep .el-table__header-wrapper {
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.table-container ::v-deep .el-table th.el-table__cell {
+  padding: 4px 6px !important;
+}
+.table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 6px !important;
+}
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 23px;
+  word-break: normal;
+}
+.table-container ::v-deep .el-table th.ctk-col-left .cell,
+.table-container ::v-deep .el-table td.ctk-col-left .cell {
+  text-align: left !important;
+  justify-content: flex-start !important;
 }
 </style>

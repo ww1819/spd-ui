@@ -1,18 +1,8 @@
 <template>
-  <div class="app-container list-page first-inventory-page">
+  <div class="app-container list-page first-inventory-page dept-consume-query">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="searchForm" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
+        <div class="ctk-query-top-fields">
           <div
             v-for="t in moreSearchTypes"
             :key="t"
@@ -83,13 +73,26 @@
             <el-input
               v-else
               v-model="searchForm.materialName"
-              placeholder="产品名称"
+              placeholder="耗材名称"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
             />
           </div>
-        </more-search-bar>
+        </div>
+        <more-search-bar
+          ref="moreSearchBar"
+          class="ctk-more-search-bar--hidden"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          :show-picker="false"
+          :show-save="false"
+          :show-search-actions="false"
+          @change="onMoreSearchTypesChange"
+        />
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -112,62 +115,91 @@
                 class="query-date-picker query-date-end"
               />
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
+    <el-row :gutter="0" class="list-toolbar ctk-list-toolbar">
       <div class="list-toolbar-left">
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport">导出</el-button>
+        <el-button type="warning" size="small" icon="el-icon-download" class="spd-btn" @click="handleExport">导出</el-button>
       </div>
       <div class="list-toolbar-right">
+        <div class="toolbar-more-search" @mouseenter="onToolbarMoreEnter" @mouseleave="onToolbarMoreLeave">
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option v-for="opt in moreSearchOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </div>
+        <el-button type="success" size="small" icon="el-icon-check" class="spd-btn" @click="saveMoreSearchDefaults">保存查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
-    <div class="table-container">
+    <div class="table-container" ref="tablePanel">
       <el-table
+        ref="reportTable"
+        class="dept-consume-main-table"
         v-loading="loading"
         :data="tableData"
-        height="60vh"
+        :height="tableHeight"
+        :row-key="getDeptConsumeRowKey"
+        :row-class-name="deptConsumeRowClassName"
         border
         stripe
         @sort-change="handleSortChange"
+        @selection-change="handleSelectionChange"
+        @row-dblclick="handleDeptConsumeRowDblclick"
       >
-        <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+        <el-table-column type="selection" width="48" align="center" header-align="center" class-name="dept-consume-select-col col-serial-center" />
+        <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            {{ scope.$index + 1 }}
+            <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable />
-        <el-table-column label="科室" align="center" prop="departmentName" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="产品编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="产品名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="规格" align="center" prop="specification" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="型号" align="center" prop="model" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="单价" align="center" prop="unitPrice" width="120" min-width="110" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
+        <el-table-column label="单号" align="left" header-align="center" class-name="ctk-col-left" prop="billNo" width="180" show-overflow-tooltip resizable />
+        <el-table-column label="科室" align="left" header-align="center" class-name="ctk-col-left" prop="departmentName" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="耗材编码" align="left" header-align="center" class-name="ctk-col-left" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="耗材名称" align="left" header-align="center" class-name="ctk-col-left" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" prop="specification" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="型号" align="left" header-align="center" class-name="ctk-col-left" prop="model" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="单价" align="center" prop="unitPrice" width="120" min-width="110" show-overflow-tooltip resizable sortable="custom">
           <template slot-scope="scope">
             <span v-if="scope.row.unitPrice != null && scope.row.unitPrice !== ''">{{ scope.row.unitPrice | formatPrice }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="数量" align="center" prop="quantity" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="金额" align="center" prop="amount" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
+        <el-table-column label="数量" align="center" prop="quantity" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="金额" align="center" prop="amount" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom">
           <template slot-scope="scope">
             <span v-if="scope.row.amount">{{ scope.row.amount | formatCurrency }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材分类" align="center" prop="category" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="财务分类" align="center" prop="financialCategory" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="注册证号" align="center" prop="registrationNumber" width="180" show-overflow-tooltip resizable />
-        <el-table-column label="医保编码" align="center" prop="medicalInsuranceCode" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="收费编码" align="center" prop="hisChargeItemCode" width="130" min-width="120" show-overflow-tooltip resizable />
-        <el-table-column label="收费名称" align="center" prop="hisChargeItemName" width="150" min-width="130" show-overflow-tooltip resizable />
-        <el-table-column label="收费规格" align="center" prop="hisChargeItemSpeci" width="130" min-width="110" show-overflow-tooltip resizable />
-        <el-table-column label="收费单位" align="center" prop="hisChargeItemUnit" width="100" min-width="90" show-overflow-tooltip resizable />
+        <el-table-column label="耗材分类" align="left" header-align="center" class-name="ctk-col-left" prop="category" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="财务分类" align="left" header-align="center" class-name="ctk-col-left" prop="financialCategory" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="注册证号" align="left" header-align="center" class-name="ctk-col-left" prop="registrationNumber" width="180" show-overflow-tooltip resizable />
+        <el-table-column label="医保编码" align="left" header-align="center" class-name="ctk-col-left" prop="medicalInsuranceCode" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="收费编码" align="left" header-align="center" class-name="ctk-col-left" prop="hisChargeItemCode" width="130" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="收费名称" align="left" header-align="center" class-name="ctk-col-left" prop="hisChargeItemName" width="150" min-width="130" show-overflow-tooltip resizable />
+        <el-table-column label="收费规格" align="left" header-align="center" class-name="ctk-col-left" prop="hisChargeItemSpeci" width="130" min-width="110" show-overflow-tooltip resizable />
+        <el-table-column label="收费单位" align="left" header-align="center" class-name="ctk-col-left" prop="hisChargeItemUnit" width="100" min-width="90" show-overflow-tooltip resizable />
         <el-table-column label="收费价格" align="center" prop="hisChargeItemPrice" width="120" min-width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== ''">{{ scope.row.hisChargeItemPrice | formatCurrency }}</span>
@@ -190,7 +222,7 @@
           :page-size="queryParams.pageSize"
           :page-sizes="[10, 20, 30, 50]"
           :total="total"
-          :pager-count="11"
+          :pager-count="7"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -206,6 +238,7 @@ import request from "@/utils/request";
 import RightToolbar from "@/components/RightToolbar";
 import { exportDepartmentConsumptionDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { buildDefaultDateRange } from "@/utils/defaultDateRange";
+import deptConsumeLayoutMixin from "./mixins/deptConsumeLayoutMixin";
 
 function createDefaultDates() {
   const { beginDate, endDate } = buildDefaultDateRange(5);
@@ -214,6 +247,7 @@ function createDefaultDates() {
 
 export default {
   name: "DetailReport",
+  mixins: [deptConsumeLayoutMixin],
   components: { SelectDepartment, RightToolbar },
   data() {
     return {
@@ -225,12 +259,16 @@ export default {
         { label: "单号", value: "consumeBillNo" },
         { label: "HIS收费编码", value: "hisChargeCode" },
         { label: "住院/门诊号", value: "patientId" },
-        { label: "产品名称", value: "materialName" },
+        { label: "耗材名称", value: "materialName" },
         { label: "规格", value: "specification" },
         { label: "型号", value: "model" },
         { label: "耗材分类", value: "warehouseCategoryKeyword" },
         { label: "财务分类", value: "financeCategoryKeyword" }
       ],
+      selectedRowKeys: [],
+      toolbarMoreHover: false,
+      toolbarMoreCloseTimer: null,
+      tableHeight: 400,
       tableData: [],
       total: 0,
       totalInfo: {
@@ -278,8 +316,18 @@ export default {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange();
     this.getList();
+    this.initDeptConsumeLayout();
   },
   methods: {
+    stampRowKeys(rows) {
+      const pageBase = ((this.queryParams.pageNum || 1) - 1) * (this.queryParams.pageSize || 10);
+      return (rows || []).map((row, idx) => {
+        if (row && !row._rowKey) {
+          row._rowKey = `dept-consume-detail-${pageBase + idx}-${row.billNo || ''}-${row.materialCode || ''}-${idx}`;
+        }
+        return row;
+      });
+    },
     buildRequestParams() {
       const form = { ...this.searchForm };
       this.applyMoreSearchToQueryParams(form);
@@ -311,7 +359,7 @@ export default {
       })
         .then(response => {
           if (response && (response.code === 200 || response.code === undefined)) {
-            this.tableData = response.rows || response.data?.rows || [];
+            this.tableData = this.stampRowKeys(response.rows || response.data?.rows || []);
             this.total = response.total != null ? response.total : response.data?.total || 0;
             this.totalInfo = response.totalInfo || { totalQty: 0, totalAmt: 0 };
           } else {
@@ -322,14 +370,18 @@ export default {
               this.$modal.msgWarning(response.msg);
             }
           }
+          this.selectedRowKeys = [];
           this.loading = false;
+          this.$nextTick(() => this.updateTableHeight());
         })
         .catch(error => {
           this.$modal.msgError("查询失败：" + (error.msg || error.message || "未知错误"));
           this.tableData = [];
           this.total = 0;
           this.totalInfo = { totalQty: 0, totalAmt: 0 };
+          this.selectedRowKeys = [];
           this.loading = false;
+          this.$nextTick(() => this.updateTableHeight());
         });
     },
     handleQuery() {
@@ -444,259 +496,5 @@ export default {
 };
 </script>
 
-<style scoped>
-.app-container {
-  margin-top: -10px;
-}
-
-.query-row-first {
-  margin-bottom: 2px;
-}
-
-.query-row-first-inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  width: 100%;
-  gap: 2px;
-  padding-bottom: 2px;
-}
-
-.query-row-first-inner .el-form-item {
-  flex: 0 0 auto;
-  margin-bottom: 0 !important;
-  margin-right: 6px;
-  white-space: nowrap;
-}
-
-.query-row-first-inner .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.query-item-inline {
-  display: inline-block;
-  margin-right: 8px;
-  margin-bottom: 2px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 72px !important;
-  padding-right: 6px !important;
-}
-
-.query-item-wide-label .el-form-item__label {
-  width: 96px !important;
-  padding-right: 6px !important;
-}
-
-.query-item-inline .el-form-item {
-  margin-bottom: 0;
-}
-
-.query-select-wrapper {
-  width: 132px;
-}
-
-.query-input-text {
-  width: 128px;
-}
-
-.query-input-text--short {
-  width: 112px;
-}
-
-.query-daterange-picker {
-  width: 240px;
-}
-
-.query-row-date {
-  margin-bottom: 2px;
-}
-
-.query-item-daterange-row .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.query-date-single {
-  width: 148px;
-}
-
-.query-date-separator {
-  margin: 0 6px;
-  color: #606266;
-  white-space: nowrap;
-}
-
-.query-row-second {
-  margin-bottom: 2px;
-  position: relative;
-}
-
-.query-row-second-inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
-}
-
-.query-row-second-inner .el-form-item {
-  flex: 0 0 auto;
-  margin-bottom: 0 !important;
-  margin-right: 8px;
-  white-space: nowrap;
-}
-
-.query-row-second-inner .el-form-item .el-form-item__content {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.query-item-date-range .query-date-start,
-.query-item-date-range .query-date-end {
-  width: 150px;
-}
-.query-item-date-range .query-date-start {
-  margin-right: 6px;
-}
-.query-item-date-range .query-date-end {
-  margin-left: 6px;
-}
-.query-item-date-range .query-date-sep {
-  margin: 0 2px;
-  flex-shrink: 0;
-}
-
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.button-row-inventory {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-}
-
-.button-row-inventory-flex {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.button-row-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.button-row-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.table-container {
-  margin-top: 8px;
-  margin-bottom: 0;
-  overflow: visible;
-  width: 100%;
-  min-width: 0;
-  margin-left: 0;
-  margin-right: 0;
-  position: relative;
-}
-
-.table-container ::v-deep .el-table__body-wrapper {
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  scrollbar-width: thin;
-  scrollbar-color: #a0a0a0 #e8e8e8;
-}
-
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 10px;
-  transition: height 0.2s ease;
-}
-.table-container:hover ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 12px;
-}
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #e8e8e8;
-  border-radius: 3px;
-  margin: 0 2px;
-  cursor: pointer;
-}
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #a0a0a0;
-  border-radius: 3px;
-  cursor: grab;
-}
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #808080;
-}
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
-  background: #606060;
-  cursor: grabbing;
-}
-
-.table-container ::v-deep .el-table th.el-table__cell {
-  padding: 10px 12px !important;
-}
-.table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 12px !important;
-}
-
-.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
-  white-space: nowrap;
-  line-height: 23px;
-}
-
-.table-container ::v-deep .el-table .caret-wrapper {
-  margin-left: 2px;
-}
-
-</style>
-
-<style>
-.app-container.first-inventory-page {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-.first-inventory-page .pagination-wrapper {
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 12px !important;
-  margin-top: 0 !important;
-  padding-bottom: 0 !important;
-  margin-bottom: 0 !important;
-}
-.first-inventory-page .pagination-wrapper .pagination-summary {
-  flex-shrink: 0;
-  font-size: 14px;
-  color: #606266;
-  white-space: nowrap;
-}
-.first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
-  font-weight: 700;
-}
-.first-inventory-page .pagination-wrapper .pagination-container {
-  margin-top: 0 !important;
-  margin-left: auto !important;
-  padding: 4px 0 4px 16px !important;
-  flex-shrink: 0;
-}
-.first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
-  padding: 2px 0 !important;
-}
-</style>
+<style src="./styles/deptConsumeLayout.css"></style>
+<style scoped src="./styles/deptConsumeLayoutScoped.css"></style>

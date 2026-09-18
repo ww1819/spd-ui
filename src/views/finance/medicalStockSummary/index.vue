@@ -2,39 +2,29 @@
   <div class="app-container list-page medical-stock-summary-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--select"
-          >
-            <template v-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable />
-              </div>
-            </template>
-            <template v-else-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable />
-              </div>
-            </template>
-            <template v-else>
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable />
-              </div>
-            </template>
+        <div class="ctk-query-top-fields">
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectWarehouse
+                v-model="queryParams.warehouseIds"
+                :finance-pick-mode="true"
+                :multiple="true"
+                clearable
+                placeholder="仓库多选"
+              />
+            </div>
           </div>
-        </more-search-bar>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable />
+            </div>
+          </div>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable />
+            </div>
+          </div>
+        </div>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -56,6 +46,10 @@
                 class="query-date-picker"
               />
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -173,12 +167,6 @@ export default {
   data() {
     return {
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '仓库', value: 'warehouse' },
-        { label: '供应商', value: 'supplier' },
-        { label: '科室', value: 'department' }
-      ],
       activeTab: 'inbound',
       queryParams: {
         ...monthRange(),
@@ -199,17 +187,9 @@ export default {
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults()
-    this.onMoreSearchTypesChange()
     this.loadInbound()
   },
   computed: {
-    moreSearchStorageKey() {
-      return 'spd.finance.medicalStockSummary.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
-    },
     inboundPageAmountFormatted() {
       const list = this.inboundList || []
       const s = list.reduce((acc, row) => acc + Number(row && row.amount != null ? row.amount : 0), 0)
@@ -222,6 +202,11 @@ export default {
     },
   },
   methods: {
+    formatAmount(v) {
+      const n = Number(v)
+      if (!Number.isFinite(n)) return '0.00'
+      return n.toFixed(2)
+    },
     buildBaseParams() {
       const p = {
         beginDate: this.queryParams.beginDate,
@@ -230,7 +215,6 @@ export default {
         supplerId: this.queryParams.supplerId,
         departmentId: this.queryParams.departmentId,
       }
-      this.applyMoreSearchToQueryParams(p)
       if (Array.isArray(p.warehouseIds) && p.warehouseIds.length === 0) {
         p.warehouseIds = null
       }
@@ -243,7 +227,6 @@ export default {
         this.loadOutbound()
       }
     },
-    /** Pagination 组件在翻页/改页大小时先 emit pagination，再同步 .sync；需显式写入 pageNum/pageSize 再请求 */
     onInboundPagination({ page, limit }) {
       if (page != null) {
         this.inboundPage.pageNum = page
@@ -298,48 +281,9 @@ export default {
         supplerId: null,
         departmentId: null,
       })
-      this.moreSearchTypes = this.loadMoreSearchDefaults()
-      this.onMoreSearchTypesChange()
       this.inboundPage.pageNum = 1
       this.outboundPage.pageNum = 1
       this.loadCurrentTab()
-    },
-    moreSearchFieldClass() {
-      return 'more-search-field--select'
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults()
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice()
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey)
-        if (!raw) return fallback
-        const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed)) return fallback
-        const allow = new Set(this.moreSearchOptions.map(o => o.value))
-        const cleaned = parsed.filter(v => allow.has(v))
-        return cleaned.length ? cleaned : fallback
-      } catch (e) {
-        return fallback
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || [])
-      const map = {
-        warehouse: 'warehouseIds',
-        supplier: 'supplerId',
-        department: 'departmentId'
-      }
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = type === 'warehouse' ? [] : null
-        }
-      })
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams)
     },
     handleExportInbound() {
       this.download('/finance/medicalStockSummary/inbound/export', this.buildBaseParams(), `卫材入库汇总_${Date.now()}.xlsx`)
@@ -354,6 +298,13 @@ export default {
 <style scoped>
 .list-query-panel {
   margin-top: -20px;
+}
+.ctk-query-top-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
 }
 .report-tip {
   margin: 0 0 12px;

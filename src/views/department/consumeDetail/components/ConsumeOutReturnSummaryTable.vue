@@ -1,18 +1,8 @@
 <template>
-  <div class="app-container list-page first-inventory-page">
+  <div class="app-container list-page first-inventory-page consume-detail-query">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
+        <div class="ctk-query-top-fields">
           <div
             v-for="t in moreSearchTypes"
             :key="t"
@@ -46,7 +36,20 @@
               @keyup.enter.native="handleQuery"
             />
           </div>
-        </more-search-bar>
+        </div>
+        <more-search-bar
+          ref="moreSearchBar"
+          class="ctk-more-search-bar--hidden"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          :show-picker="false"
+          :show-save="false"
+          :show-search-actions="false"
+          @change="onMoreSearchTypesChange"
+        />
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -70,58 +73,87 @@
               />
             </el-form-item>
             <el-form-item prop="financeCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
+              <div class="query-select-wrapper query-select-finance-cat">
                 <SelectFinanceCategoryLow
                   v-model="queryParams.financeCategoryIds"
                   :multiple="true"
-                  placeholder="财务分类"
+                  placeholder="财务分类多选"
                 />
               </div>
             </el-form-item>
             <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
+              <div class="query-select-wrapper query-select-warehouse-cat">
                 <SelectWarehouseCategoryLow
                   v-model="queryParams.warehouseCategoryIds"
                   :multiple="true"
-                  placeholder="库房分类"
+                  placeholder="库房分类多选"
                 />
               </div>
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
+    <el-row :gutter="0" class="list-toolbar ctk-list-toolbar">
       <div class="list-toolbar-left">
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport">导出</el-button>
+        <el-button type="warning" size="small" icon="el-icon-download" class="spd-btn" @click="handleExport">导出</el-button>
       </div>
       <div class="list-toolbar-right">
+        <div class="toolbar-more-search" @mouseenter="onToolbarMoreEnter" @mouseleave="onToolbarMoreLeave">
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option v-for="opt in moreSearchOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+          </el-select>
+        </div>
+        <el-button type="success" size="small" icon="el-icon-check" class="spd-btn" @click="saveMoreSearchDefaults">保存查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
-    <div class="table-container">
+    <div class="table-container" ref="tablePanel">
       <el-table
+        ref="reportTable"
+        class="consume-detail-main-table"
         v-loading="loading"
         :data="dataList"
+        :height="tableHeight"
+        :row-key="getConsumeRowKey"
+        :row-class-name="consumeRowClassName"
         show-summary
         :summary-method="getTotalSummaries"
-        height="60vh"
         border
         stripe
+        @selection-change="handleSelectionChange"
+        @row-dblclick="handleConsumeRowDblclick"
       >
-        <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+        <el-table-column type="selection" width="48" align="center" header-align="center" class-name="consume-select-col col-serial-center" />
+        <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
+            <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="科室" align="center" prop="departmentName" min-width="120" show-overflow-tooltip resizable />
-        <el-table-column label="仓库" align="center" prop="warehouseName" min-width="100" show-overflow-tooltip resizable />
-        <el-table-column label="帐类名称" align="center" prop="accountKindName" width="90" show-overflow-tooltip resizable />
-        <el-table-column label="产品名称" align="center" prop="materialName" min-width="160" show-overflow-tooltip resizable />
-        <el-table-column label="规格" align="center" prop="materialSpeci" min-width="120" show-overflow-tooltip resizable />
-        <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable />
+        <el-table-column label="科室" align="left" header-align="center" class-name="ctk-col-left" prop="departmentName" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="仓库" align="left" header-align="center" class-name="ctk-col-left" prop="warehouseName" min-width="100" show-overflow-tooltip resizable />
+        <el-table-column label="帐类名称" align="left" header-align="center" class-name="ctk-col-left" prop="accountKindName" width="90" show-overflow-tooltip resizable />
+        <el-table-column label="产品名称" align="left" header-align="center" class-name="ctk-col-left" prop="materialName" min-width="160" show-overflow-tooltip resizable />
+        <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" prop="materialSpeci" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" prop="unitName" width="80" show-overflow-tooltip resizable />
         <el-table-column label="数量" align="center" prop="materialQty" width="90" show-overflow-tooltip resizable />
         <el-table-column label="采购价" align="center" prop="unitPrice" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -135,7 +167,7 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="财务分类" align="center" prop="financeCategoryName" min-width="100" show-overflow-tooltip resizable />
+        <el-table-column label="财务分类" align="left" header-align="center" class-name="ctk-col-left" prop="financeCategoryName" min-width="100" show-overflow-tooltip resizable />
       </el-table>
     </div>
 
@@ -152,7 +184,7 @@
           :page-size="queryParams.pageSize"
           :page-sizes="[10, 20, 30, 50]"
           :total="total"
-          :pager-count="11"
+          :pager-count="7"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -171,9 +203,11 @@ import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCate
 import SelectWarehouseCategoryLow from "@/components/SelectModel/SelectWarehouseCategoryLow";
 import RightToolbar from "@/components/RightToolbar";
 import { getDefaultBeginDate, getDefaultEndDate } from "../consumeDetailDateDefaults";
+import consumeDetailLayoutMixin from "../mixins/consumeDetailLayoutMixin";
 
 export default {
   name: "ConsumeOutReturnSummaryTable",
+  mixins: [consumeDetailLayoutMixin],
   components: {
     SelectWarehouse,
     MaterialAutocomplete,
@@ -192,6 +226,10 @@ export default {
         { label: "耗材", value: "materialNameLike" },
         { label: "规格", value: "materialSpeciLike" }
       ],
+      selectedRowKeys: [],
+      toolbarMoreHover: false,
+      toolbarMoreCloseTimer: null,
+      tableHeight: 400,
       total: 0,
       totalInfo: {
         totalQty: 0,
@@ -233,8 +271,18 @@ export default {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange();
     this.getList();
+    this.initConsumeDetailLayout();
   },
   methods: {
+    stampRowKeys(rows) {
+      const pageBase = ((this.queryParams.pageNum || 1) - 1) * (this.queryParams.pageSize || 10);
+      return (rows || []).map((row, idx) => {
+        if (row && !row._rowKey) {
+          row._rowKey = `consume-out-return-${pageBase + idx}-${row.materialName || ''}-${row.departmentName || ''}-${idx}`;
+        }
+        return row;
+      });
+    },
     getTotalSummaries(param) {
       const { columns, data } = param;
       const sums = Array(columns.length).fill("");
@@ -253,7 +301,7 @@ export default {
           sums[index] = fmt ? fmt(totalAmt) : this.formatAmount(totalAmt);
         }
       });
-      sums[0] = "合计";
+      sums[1] = "合计";
       return sums;
     },
     getList() {
@@ -262,16 +310,20 @@ export default {
       this.applyMoreSearchToQueryParams(queryParams);
       listConsumeOutReturnSummary(queryParams)
         .then((response) => {
-          this.dataList = response.rows || [];
+          this.dataList = this.stampRowKeys(response.rows || []);
           this.total = response.total != null ? response.total : 0;
           this.totalInfo = response.totalInfo || { totalQty: 0, totalAmt: 0 };
+          this.selectedRowKeys = [];
           this.loading = false;
+          this.$nextTick(() => this.updateTableHeight());
         })
         .catch(() => {
           this.dataList = [];
           this.total = 0;
           this.totalInfo = { totalQty: 0, totalAmt: 0 };
+          this.selectedRowKeys = [];
           this.loading = false;
+          this.$nextTick(() => this.updateTableHeight());
         });
     },
     handleQuery() {
@@ -372,101 +424,5 @@ export default {
 };
 </script>
 
-<style scoped>
-.app-container {
-  margin-top: -10px;
-}
-.list-query-panel {
-  margin-top: -20px;
-}
-
-.query-row-left {
-  margin-bottom: 2px;
-}
-
-.query-item-inline {
-  display: inline-block;
-  margin-right: 16px;
-  margin-bottom: 2px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
-}
-
-.query-item-inline .el-form-item {
-  margin-bottom: 0;
-}
-
-.query-select-wrapper {
-  width: 180px;
-}
-
-.query-input-wide {
-  width: 200px;
-}
-
-.query-input-spec {
-  width: 140px;
-}
-
-.category-multi-wrap {
-  width: 200px;
-}
-
-.query-row-second {
-  margin-bottom: 2px;
-  position: relative;
-}
-
-.query-row-second-inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-  width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
-}
-
-.query-row-second-inner .el-form-item {
-  flex: 0 0 auto;
-  margin-bottom: 0 !important;
-  margin-right: 8px;
-  white-space: nowrap;
-}
-
-.query-item-date-range .query-date-start,
-.query-item-date-range .query-date-end {
-  width: 140px !important;
-}
-
-.query-date-sep {
-  margin: 0 6px;
-  color: #606266;
-}
-
-.button-row-inventory-flex {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.pagination-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-
-.pagination-summary {
-  font-size: 13px;
-  color: #606266;
-}
-
-.summary-label {
-  font-weight: 600;
-}
-</style>
+<style src="../styles/consumeDetailLayout.css"></style>
+<style scoped src="../styles/consumeDetailLayoutScoped.css"></style>

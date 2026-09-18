@@ -1,63 +1,86 @@
 <template>
-  <div class="table-container">
-    <el-table ref="table" v-loading="loading" :data="tableList" @selection-change="handleSelectionChange" border height="54vh">
-      <el-table-column type="selection" width="55" align="center" fixed="left" />
-      <el-table-column label="序号" align="center" width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
-        </template>
-      </el-table-column>
-      <el-table-column label="单号" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.orderNo || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="总金额" align="center" prop="totalAmt" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.totalAmt">{{ scope.row.totalAmt | formatCurrency }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="orderStatus" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="制单人" align="center" width="120" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ scope.row.createBy || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="制单日期" align="center" width="180" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.orderDate">{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable/>
-    </el-table>
+  <div class="gz-stock-table-panel">
+    <div class="table-container" ref="tablePanel">
+      <el-table
+        ref="table"
+        class="gz-stock-main-table"
+        v-loading="loading"
+        :data="tableList"
+        :height="tableHeight"
+        :row-key="getRowKey"
+        :row-class-name="gzStockRowClassName"
+        border
+        stripe
+        @selection-change="handleSelectionChange"
+        @row-dblclick="handleRowDblclick"
+      >
+        <el-table-column type="selection" width="48" align="center" header-align="center" class-name="col-serial-center" />
+        <el-table-column label="序号" align="center" header-align="center" width="80" class-name="col-serial-center" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单号" align="left" header-align="center" class-name="ctk-col-left" width="180" min-width="160" show-overflow-tooltip resizable sortable :sort-method="sortByOrderNo">
+          <template slot-scope="scope">
+            <span>{{ scope.row.orderNo || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="科室" align="left" header-align="center" class-name="ctk-col-left" width="120" min-width="100" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.department && scope.row.department.name) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="总金额" align="center" prop="totalAmt" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByTotalAmt">
+          <template slot-scope="scope">
+            <span v-if="scope.row.totalAmt">{{ scope.row.totalAmt | formatCurrency }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="单据状态" align="center" prop="orderStatus" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.biz_status" :value="scope.row.orderStatus"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="制单人" align="left" header-align="center" class-name="ctk-col-left" width="120" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByCreateBy">
+          <template slot-scope="scope">
+            <span>{{ scope.row.createBy || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="制单日期" align="left" header-align="center" class-name="ctk-col-left" width="120" min-width="110" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.orderDate">{{ parseTime(scope.row.orderDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="审核日期" align="left" header-align="center" class-name="ctk-col-left" width="120" min-width="110" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="备注" align="left" header-align="center" class-name="ctk-col-left" prop="remark" min-width="150" show-overflow-tooltip resizable/>
+      </el-table>
+    </div>
 
     <div class="pagination-wrapper">
-      <pagination
-        v-show="total > 0"
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
+      <div class="pagination-container" v-show="total > 0">
+        <el-pagination
+          background
+          :current-page="queryParams.pageNum"
+          :page-size="queryParams.pageSize"
+          :page-sizes="[10, 20, 30, 50]"
+          :total="total"
+          :pager-count="7"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-// 跟台表的API需要根据实际情况调整
 import { listOrder } from "@/api/gz/order";
 
 export default {
@@ -74,7 +97,9 @@ export default {
       loading: true,
       tableList: [],
       total: 0,
-      ids: []
+      ids: [],
+      selectedRowKeys: [],
+      tableHeight: 400
     };
   },
   watch: {
@@ -89,44 +114,113 @@ export default {
     this.getList();
   },
   mounted() {
-    // 同步表头和表体的滚动
     this.$nextTick(() => {
       this.syncTableScroll();
+      this.updateTableHeight();
+      setTimeout(() => this.updateTableHeight(), 80);
     });
+    window.addEventListener('resize', this.updateTableHeight);
   },
   updated() {
-    // 数据更新后重新同步滚动
     this.$nextTick(() => {
       this.syncTableScroll();
-      // 强制表格重新布局
       if (this.$refs.table) {
         this.$refs.table.doLayout();
       }
     });
   },
   beforeDestroy() {
-    // 清理资源
+    window.removeEventListener('resize', this.updateTableHeight);
     if (this._headerScrollbarCleanup) {
       this._headerScrollbarCleanup();
     }
   },
   methods: {
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByNum(a, b, getVal) {
+      const va = Number(getVal(a));
+      const vb = Number(getVal(b));
+      if (isNaN(va) && isNaN(vb)) return 0;
+      if (isNaN(va)) return 1;
+      if (isNaN(vb)) return -1;
+      return va - vb;
+    },
+    sortByOrderNo(a, b) {
+      return this.sortByStr(a, b, r => r.orderNo || '');
+    },
+    sortByTotalAmt(a, b) {
+      return this.sortByNum(a, b, r => r.totalAmt);
+    },
+    sortByCreateBy(a, b) {
+      return this.sortByStr(a, b, r => r.createBy || '');
+    },
+    updateTableHeight() {
+      this.$nextTick(() => {
+        const panel = this.$refs.tablePanel;
+        if (!panel) return;
+        const h = Math.floor(panel.clientHeight);
+        if (h > 120) {
+          this.tableHeight = h;
+          this.$nextTick(() => {
+            if (this.$refs.table && this.$refs.table.doLayout) {
+              this.$refs.table.doLayout();
+            }
+          });
+        }
+      });
+    },
+    getRowKey(row) {
+      return (row && row._rowKey) || '';
+    },
+    gzStockRowClassName({ row }) {
+      const key = this.getRowKey(row);
+      if (key && this.selectedRowKeys.indexOf(key) !== -1) {
+        return 'gz-stock-row-selected';
+      }
+      return '';
+    },
+    handleRowDblclick(row) {
+      const table = this.$refs.table;
+      if (!table || !row) return;
+      const key = this.getRowKey(row);
+      const storeSelection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = !!(key && (
+        this.selectedRowKeys.indexOf(key) !== -1 ||
+        storeSelection.some(r => this.getRowKey(r) === key)
+      ));
+      table.toggleRowSelection(row, !selected);
+    },
+    handleSizeChange(val) {
+      this.queryParams.pageSize = val;
+      this.queryParams.pageNum = 1;
+    },
+    handleCurrentChange(val) {
+      this.queryParams.pageNum = val;
+    },
     getList() {
       this.loading = true;
-      // 跟台表的查询逻辑需要根据实际业务调整
-      // 这里暂时使用相同的API，但可能需要单独的跟台表API
       const params = {
         ...this.queryParams,
-        orderType: 103 // 跟台类型（需要确认实际类型值）
+        orderType: 103
       };
       listOrder(params).then(response => {
-        this.tableList = response.rows || [];
+        const pageBase = ((this.queryParams.pageNum || 1) - 1) * (this.queryParams.pageSize || 10);
+        this.tableList = (response.rows || []).map((row, idx) => {
+          if (row && !row._rowKey) {
+            row._rowKey = `gz-stock-follow-${pageBase + idx}-${row.orderNo || ''}-${row.id || idx}`;
+          }
+          return row;
+        });
         this.total = response.total || 0;
+        this.selectedRowKeys = [];
         this.loading = false;
-        // 数据加载完成后，重新同步滚动以确保列对齐
         this.$nextTick(() => {
           this.syncTableScroll();
-          // 强制表格重新布局
+          this.updateTableHeight();
           if (this.$refs.table) {
             this.$refs.table.doLayout();
           }
@@ -135,56 +229,49 @@ export default {
         this.loading = false;
         this.tableList = [];
         this.total = 0;
+        this.selectedRowKeys = [];
+        this.$nextTick(() => this.updateTableHeight());
       });
     },
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.id);
+      this.selectedRowKeys = (selection || []).map(row => this.getRowKey(row));
       this.$emit('selection-change', selection);
-    },
-    handleView(row) {
-      // 查看详情逻辑
-      console.log('查看跟台单详情', row);
     },
     syncTableScroll() {
       const headerWrapper = this.$el?.querySelector('.el-table__header-wrapper');
       const bodyWrapper = this.$el?.querySelector('.el-table__body-wrapper');
-      
+
       if (!headerWrapper || !bodyWrapper) {
         return;
       }
-      
-      // 双向同步滚动：表体滚动时同步表头，表头滚动时同步表体
+
       const syncScroll = (source, target) => {
         if (source.scrollLeft !== target.scrollLeft) {
           target.scrollLeft = source.scrollLeft;
         }
       };
-      
-      // 表体滚动时同步表头
+
       const syncBodyToHeader = () => {
         syncScroll(bodyWrapper, headerWrapper);
       };
-      
-      // 表头滚动时同步表体
+
       const syncHeaderToBody = () => {
         syncScroll(headerWrapper, bodyWrapper);
       };
-      
-      // 移除旧的事件监听器
+
       if (this._syncBodyToHeader) {
         bodyWrapper.removeEventListener('scroll', this._syncBodyToHeader);
       }
       if (this._syncHeaderToBody) {
         headerWrapper.removeEventListener('scroll', this._syncHeaderToBody);
       }
-      
-      // 添加新的事件监听器
+
       this._syncBodyToHeader = syncBodyToHeader;
       this._syncHeaderToBody = syncHeaderToBody;
       bodyWrapper.addEventListener('scroll', syncBodyToHeader, { passive: true });
       headerWrapper.addEventListener('scroll', syncHeaderToBody, { passive: true });
-      
-      // 保存清理函数
+
       this._headerScrollbarCleanup = () => {
         if (this._syncBodyToHeader) {
           bodyWrapper?.removeEventListener('scroll', this._syncBodyToHeader);
@@ -199,12 +286,63 @@ export default {
 </script>
 
 <style scoped>
+.gz-stock-table-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   position: relative;
+  flex: 1 1 auto;
+}
+
+.table-container ::v-deep .el-table__header-wrapper {
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+}
+
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.table-container ::v-deep .el-table th.el-table__cell {
+  padding: 4px 6px !important;
+}
+.table-container ::v-deep .el-table td.el-table__cell {
+  padding: 10px 6px !important;
+}
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 23px;
+  word-break: normal;
+}
+.table-container ::v-deep .el-table th.ctk-col-left .cell,
+.table-container ::v-deep .el-table td.ctk-col-left .cell {
+  text-align: left !important;
+  justify-content: flex-start !important;
 }
 </style>
