@@ -2,57 +2,9 @@
   <div class="app-container list-page finance-settlement-summary">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="moreSearchFieldClass(t)"
-          >
-            <template v-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseIds" :finance-pick-mode="true" :multiple="true" clearable />
-              </div>
-            </template>
-            <template v-else-if="t === 'department'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable />
-              </div>
-            </template>
-            <template v-else-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable />
-              </div>
-            </template>
-            <template v-else-if="t === 'financeCategory'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectFinanceCategoryLow
-                  v-model="queryParams.financeCategoryIds"
-                  :multiple="true"
-                  placeholder="财务分类多选"
-                />
-              </div>
-            </template>
+        <div class="ctk-query-top-fields">
+          <div class="more-search-dynamic-field more-search-field--text">
             <el-input
-              v-else-if="t === 'materialNameLike'"
-              v-model="queryParams.materialNameLike"
-              placeholder="产品名称/编码/简码"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.billNo"
               placeholder="业务单号模糊"
               clearable
@@ -60,7 +12,46 @@
               @keyup.enter.native="handleQuery"
             />
           </div>
-        </more-search-bar>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectWarehouse
+                v-model="queryParams.warehouseIds"
+                :finance-pick-mode="true"
+                :multiple="true"
+                clearable
+                placeholder="仓库多选"
+              />
+            </div>
+          </div>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectDepartment v-model="queryParams.departmentId" :finance-pick-mode="true" clearable />
+            </div>
+          </div>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectSupplier v-model="queryParams.supplerId" :finance-pick-mode="true" clearable />
+            </div>
+          </div>
+          <div class="more-search-dynamic-field more-search-field--text">
+            <el-input
+              v-model="queryParams.materialNameLike"
+              placeholder="产品名称/编码/简码"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectFinanceCategoryLow
+                v-model="queryParams.financeCategoryIds"
+                :multiple="true"
+                placeholder="财务分类多选"
+              />
+            </div>
+          </div>
+        </div>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -89,6 +80,10 @@
                 <el-option label="否" value="2" />
               </el-select>
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -315,15 +310,6 @@ export default {
     return {
       loading: false,
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '单号', value: 'billNo' },
-        { label: '仓库', value: 'warehouse' },
-        { label: '科室', value: 'department' },
-        { label: '供应商', value: 'supplier' },
-        { label: '耗材', value: 'materialNameLike' },
-        { label: '财务分类', value: 'financeCategory' }
-      ],
       queryParams: {
         ...getDefaultFinanceAuditDateRange(),
         billNo: null,
@@ -406,16 +392,8 @@ export default {
       if (e) return `科室月消耗表三（${monthCn(e)}）`
       return '科室月消耗表三'
     },
-    moreSearchStorageKey() {
-      return 'spd.finance.settlementSummary.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
-    },
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults()
-    this.onMoreSearchTypesChange()
     this.loadData()
   },
   methods: {
@@ -557,7 +535,6 @@ export default {
     /** 请求参数：截止日期带上当天 23:59:59，与后端 audit_date 时分对齐 */
     buildApiQueryParams() {
       const p = { ...this.queryParams }
-      this.applyMoreSearchToQueryParams(p)
       if (p.endDate != null && p.endDate !== '') {
         const s = String(p.endDate).trim()
         if (s.length === 10 && !s.includes(' ')) {
@@ -612,52 +589,7 @@ export default {
         financeCategoryIds: [],
       })
       this.$refs.queryForm && this.$refs.queryForm.clearValidate()
-      this.moreSearchTypes = this.loadMoreSearchDefaults()
-      this.onMoreSearchTypesChange()
       this.handleQuery()
-    },
-    moreSearchFieldClass(t) {
-      if (t === 'billNo' || t === 'materialNameLike') {
-        return 'more-search-field--text'
-      }
-      return 'more-search-field--select'
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults()
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice()
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey)
-        if (!raw) return fallback
-        const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed)) return fallback
-        const allow = new Set(this.moreSearchOptions.map(o => o.value))
-        const cleaned = parsed.filter(v => allow.has(v))
-        return cleaned.length ? cleaned : fallback
-      } catch (e) {
-        return fallback
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || [])
-      const map = {
-        billNo: 'billNo',
-        warehouse: 'warehouseIds',
-        department: 'departmentId',
-        supplier: 'supplerId',
-        materialNameLike: 'materialNameLike',
-        financeCategory: 'financeCategoryIds'
-      }
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = (type === 'warehouse' || type === 'financeCategory') ? [] : null
-        }
-      })
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams)
     },
     async handleExportTable1() {
       await exportFinanceSettlementSummaryXlsx({
@@ -693,6 +625,13 @@ export default {
 <style scoped>
 .list-query-panel {
   margin-top: -20px;
+}
+.ctk-query-top-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 8px;
 }
 .report-sheet-tabs {
   margin-top: 4px;
