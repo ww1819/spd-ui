@@ -145,8 +145,8 @@
         <el-table-column label="盈亏单号" align="left" header-align="center" prop="billNo" min-width="160" show-overflow-tooltip resizable class-name="ctk-col-left"/>
         <el-table-column label="盘点单号" align="left" header-align="center" prop="stocktakingNo" min-width="140" show-overflow-tooltip resizable class-name="ctk-col-left"/>
         <el-table-column label="仓库" align="left" header-align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable class-name="ctk-col-left"/>
-        <el-table-column label="产品编码" align="left" header-align="center" prop="materialCode" width="150" show-overflow-tooltip resizable class-name="ctk-col-left"/>
-        <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="160" show-overflow-tooltip resizable class-name="ctk-col-left"/>
+        <el-table-column label="产品编码" align="left" header-align="center" prop="materialCode" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" class-name="ctk-col-left"/>
+        <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="160" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" class-name="ctk-col-left"/>
         <el-table-column label="规格" align="left" header-align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable class-name="ctk-col-left">
           <template slot-scope="scope">
             <span>{{ scope.row.materialSpeci || '--' }}</span>
@@ -431,6 +431,17 @@ export default {
     },
     onMoreSearchTypesChange() {
       this.applyMoreSearchToQueryParams(this.queryParams);
+    },
+    sortByStr(a, b, getVal) {
+      const va = (getVal(a) || '').toString().trim();
+      const vb = (getVal(b) || '').toString().trim();
+      return va.localeCompare(vb, 'zh-CN');
+    },
+    sortByMaterialCode(a, b) {
+      return this.sortByStr(a, b, r => r.materialCode || '');
+    },
+    sortByMaterialName(a, b) {
+      return this.sortByStr(a, b, r => r.materialName || '');
     },
     formatNum(val) {
       if (val == null || val === '') return '--'
