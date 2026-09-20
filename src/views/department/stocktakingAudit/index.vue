@@ -66,6 +66,7 @@
         >审核</el-button>
         <el-button
           size="small"
+          icon="el-icon-close"
           class="spd-btn spd-btn--danger"
           @click="handleBatchReject"
           v-hasPermi="['department:stocktakingAudit:reject']"
