@@ -204,13 +204,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -921,6 +924,10 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
+      /** 列表全量合计（后端 totalInfo） */
+      totalInfo: {
+        totalAmt: 0
+      },
       mainTableHeight: 400,
       // 入库表格数据
       warehouseList: [],
@@ -976,6 +983,22 @@ export default {
     /** 明细表高度：与到货验收弹窗一致 */
     detailTableHeight() {
       return 'max(240px, calc(100vh - 384px))';
+    },
+    /** 列表全量总金额（后端合计） */
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    /** 当前页金额合计 */
+    pageTotalAmtFormatted() {
+      const list = this.warehouseList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
     showPrintOrientation() {
       const m = this.modalObj
@@ -1474,6 +1497,10 @@ export default {
       listWarehouse(queryParams).then(response => {
         this.warehouseList = response.rows || [];
         this.total = response.total || 0;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : (ti.totalRkAmt != null ? ti.totalRkAmt : 0);
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
         this.$nextTick(() => {
           this.updateMainTableHeight();
@@ -3354,6 +3381,26 @@ export default {
 .app-container.inWarehouse-audit-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.inWarehouse-audit-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.inWarehouse-audit-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.inWarehouse-audit-page .apply-pagination-wrap .pagination-container {
@@ -3361,6 +3408,7 @@ export default {
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

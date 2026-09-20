@@ -227,7 +227,7 @@
     </el-table>
 
     <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
-      <div class="pagination-summary" v-if="total > 0">
+      <div class="pagination-summary">
         <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
       <pagination
@@ -1456,8 +1456,9 @@ export default {
         this.warehouseList = response.rows || [];
         this.total = response.total || 0;
         const ti = response.totalInfo || {};
-        const amt = ti.totalAmt != null ? ti.totalAmt : (ti.totalRkAmt != null ? ti.totalRkAmt : 0);
-        this.totalInfo = { totalAmt: amt };
+        const raw = ti.totalAmt != null ? ti.totalAmt : (ti.totalRkAmt != null ? ti.totalRkAmt : 0);
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
         this.$nextTick(() => {
           this.updateMainTableHeight();
