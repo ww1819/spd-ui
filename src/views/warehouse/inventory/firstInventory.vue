@@ -171,15 +171,16 @@
       </div>
     </el-row>
 
-    <!-- 显隐列 + 列宽 + 明细对齐：挂载在页面内，保存后按当前登录用户持久化 -->
+    <!-- 显隐列 + 列宽 + 明细对齐：可拖动，避免挡住表格列；保存后按当前登录用户持久化 -->
     <el-dialog
+      v-dialogDrag
       title="列设置"
       :visible.sync="columnDialogVisible"
-      width="640px"
-      :append-to-body="false"
-      :modal-append-to-body="false"
+      width="720px"
+      append-to-body
+      :modal="false"
       :close-on-click-modal="false"
-      custom-class="inventory-column-dialog-inpage"
+      custom-class="inventory-column-dialog"
       :show-close="false"
     >
       <div class="column-panels column-panels--single">
@@ -193,7 +194,7 @@
                 popper-class="column-dialog-help-tooltip"
               >
                 <div slot="content" class="column-dialog-help-content">
-                  勾选为显示、取消勾选为隐藏；点击行后可点上移/下移调整顺序；可设置列宽与明细对齐（左/中/右）。表头固定居中。「默认」恢复系统默认且不保留本次修改。
+                  勾选为显示、取消勾选为隐藏；「排序」勾选后该列可升/降序，未勾选则不可排序；点击行后可点上移/下移调整顺序；可设置列宽与明细对齐（左/中/右）。表头固定居中。「初始化」恢复系统默认且不保留本次修改。
                 </div>
                 <i class="el-icon-question column-dialog-help-icon" />
               </el-tooltip>
@@ -227,6 +228,12 @@
                 @click.native.stop
               />
               <span class="column-row-label" :title="c.label">{{ c.label }}</span>
+              <el-checkbox
+                class="column-row-sortable"
+                :value="!!c.sortable"
+                @change="(val) => setColumnSortable(c.key, val)"
+                @click.native.stop
+              >排序</el-checkbox>
               <el-input-number
                 class="column-row-width"
                 size="mini"
@@ -254,10 +261,28 @@
           </div>
         </div>
       </div>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="saveColumnConfig">保 存</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetColumnConfigDefault">默 认</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="columnDialogVisible = false">关 闭</el-button>
+      <div slot="footer" class="column-dialog-footer">
+        <el-button
+          type="primary"
+          size="small"
+          icon="el-icon-check"
+          class="spd-btn spd-btn--primary"
+          @click="saveColumnConfig"
+        >保 存</el-button>
+        <el-button
+          type="success"
+          size="small"
+          icon="el-icon-refresh"
+          class="spd-btn"
+          @click="initColumnConfig"
+        >初始化</el-button>
+        <el-button
+          type="danger"
+          size="small"
+          icon="el-icon-close"
+          class="spd-btn"
+          @click="columnDialogVisible = false"
+        >关 闭</el-button>
       </div>
     </el-dialog>
 
@@ -285,6 +310,7 @@
           class-name="col-serial-center"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -300,7 +326,7 @@
           prop="material.code"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortByMaterialCode"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -313,7 +339,7 @@
           prop="material.name"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortByMaterialName"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -326,7 +352,7 @@
           prop="material.speci"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortBySpeci"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -343,7 +369,7 @@
           prop="material.model"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortByModel"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -360,7 +386,7 @@
           prop="material.fdFactory.factoryName"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortByFactory"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -377,7 +403,7 @@
           prop="warehouse.name"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortByWarehouse"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -390,7 +416,7 @@
           prop="supplier.name"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortBySupplier"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -403,7 +429,7 @@
           prop="unitPrice"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortByUnitPrice"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -420,6 +446,7 @@
           label="单位"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -435,6 +462,8 @@
           prop="qty"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByQty"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -446,7 +475,7 @@
           prop="amt"
           show-overflow-tooltip
           resizable
-          sortable
+          :sortable="!!item.col.sortable"
           :sort-method="sortByAmt"
           :align="item.col.align || 'center'"
           header-align="center"
@@ -463,6 +492,7 @@
           label="入库批次号"
           prop="batchNo"
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -478,6 +508,7 @@
           prop="materialNo"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -511,6 +542,7 @@
           prop="beginTime"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -526,6 +558,7 @@
           prop="endTime"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -541,6 +574,7 @@
           prop="material.registerNo"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -556,6 +590,7 @@
           prop="material.periodDate"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -572,6 +607,7 @@
           prop="material.isBilling"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -588,6 +624,7 @@
           label="产品档案状态"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -603,6 +640,7 @@
           prop="receiptOrderNo"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -614,6 +652,7 @@
           prop="createTime"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -631,6 +670,7 @@
           prop="createrName"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -650,6 +690,7 @@
           prop="auditDate"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -667,6 +708,7 @@
           prop="auditPersonName"
           show-overflow-tooltip
           resizable
+          :sortable="!!item.col.sortable"
           :align="item.col.align || 'center'"
           header-align="center"
           :width="item.col.width"
@@ -729,31 +771,31 @@ import { listWarehouse } from "@/api/foundation/warehouse";
 
 function createDefaultInventoryColumns() {
   return [
-    { key: 0, label: '序号', visible: true, width: 80, align: 'center' },
-    { key: 1, label: '产品编码', visible: true, width: 150, align: 'center' },
-    { key: 2, label: '产品名称', visible: true, width: 160, align: 'center' },
-    { key: 3, label: '规格', visible: true, width: 120, align: 'center' },
-    { key: 4, label: '型号', visible: true, width: 120, align: 'center' },
-    { key: 5, label: '生产厂家', visible: true, width: 150, align: 'center' },
-    { key: 6, label: '仓库', visible: true, width: 120, align: 'center' },
-    { key: 7, label: '供应商', visible: true, width: 160, align: 'center' },
-    { key: 8, label: '单价', visible: true, width: 120, align: 'center' },
-    { key: 9, label: '单位', visible: true, width: 80, align: 'center' },
-    { key: 10, label: '库存数量', visible: true, width: 120, align: 'center' },
-    { key: 11, label: '金额', visible: true, width: 120, align: 'center' },
-    { key: 12, label: '入库批次号', visible: true, width: 220, align: 'center' },
-    { key: 13, label: '批号', visible: true, width: 120, align: 'center' },
-    { key: 14, label: '生产日期', visible: true, width: 160, align: 'center' },
-    { key: 15, label: '有效期', visible: true, width: 160, align: 'center' },
-    { key: 16, label: '注册证号', visible: true, width: 180, align: 'center' },
-    { key: 17, label: '注册证有效期', visible: true, width: 180, align: 'center' },
-    { key: 18, label: '计费', visible: true, width: 80, align: 'center' },
-    { key: 19, label: '入库单号', visible: true, width: 180, align: 'center' },
-    { key: 20, label: '制单日期', visible: true, width: 160, align: 'center' },
-    { key: 21, label: '制单人', visible: true, width: 120, align: 'center' },
-    { key: 22, label: '审核日期', visible: true, width: 160, align: 'center' },
-    { key: 23, label: '审核人', visible: true, width: 120, align: 'center' },
-    { key: 24, label: '产品档案状态', visible: true, width: 110, align: 'center' }
+    { key: 0, label: '序号', visible: true, width: 80, align: 'center', sortable: false },
+    { key: 1, label: '产品编码', visible: true, width: 150, align: 'center', sortable: true },
+    { key: 2, label: '产品名称', visible: true, width: 160, align: 'center', sortable: true },
+    { key: 3, label: '规格', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 4, label: '型号', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 5, label: '生产厂家', visible: true, width: 150, align: 'center', sortable: true },
+    { key: 6, label: '仓库', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 7, label: '供应商', visible: true, width: 160, align: 'center', sortable: true },
+    { key: 8, label: '单价', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 9, label: '单位', visible: true, width: 80, align: 'center', sortable: false },
+    { key: 10, label: '库存数量', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 11, label: '金额', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 12, label: '入库批次号', visible: true, width: 220, align: 'center', sortable: false },
+    { key: 13, label: '批号', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 14, label: '生产日期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 15, label: '有效期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 16, label: '注册证号', visible: true, width: 180, align: 'center', sortable: false },
+    { key: 17, label: '注册证有效期', visible: true, width: 180, align: 'center', sortable: false },
+    { key: 18, label: '计费', visible: true, width: 80, align: 'center', sortable: false },
+    { key: 19, label: '入库单号', visible: true, width: 180, align: 'center', sortable: false },
+    { key: 20, label: '制单日期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 21, label: '制单人', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 22, label: '审核日期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 23, label: '审核人', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 24, label: '产品档案状态', visible: true, width: 110, align: 'center', sortable: false }
   ];
 }
 
@@ -970,6 +1012,12 @@ export default {
       if (!col) return;
       col.visible = !!val;
     },
+    setColumnSortable(key, val) {
+      const col = this.columns.find(c => String(c.key) === String(key));
+      if (!col) return;
+      col.sortable = !!val;
+      this.refreshTableColumns();
+    },
     /** 在全部列中上移/下移选中行（delta: -1 上移, 1 下移） */
     moveColumn(delta) {
       const key = this.columnActiveKey;
@@ -1023,6 +1071,8 @@ export default {
             const hiddenSet = new Set(hidden.map(k => String(k)));
             const widths = o.widths || {};
             const aligns = o.aligns || {};
+            const sortables = o.sortables || {};
+            const hasSortables = o.sortables != null;
             this.columns.forEach(c => {
               c.visible = !hiddenSet.has(String(c.key));
               const w = widths[String(c.key)];
@@ -1037,6 +1087,12 @@ export default {
                 c.align = a;
               } else if (!c.align) {
                 c.align = 'center';
+              }
+              if (hasSortables) {
+                const s = sortables[String(c.key)];
+                c.sortable = s === true || s === 'true' || s === 1 || s === '1';
+              } else if (c.sortable == null) {
+                c.sortable = false;
               }
             });
             const orderKeys = o.orderKeys;
@@ -1071,16 +1127,18 @@ export default {
       const hiddenKeys = this.columns.filter(c => !c.visible).map(c => c.key);
       const widths = {};
       const aligns = {};
+      const sortables = {};
       this.columns.forEach(c => {
         widths[String(c.key)] = Number(c.width) || 120;
         aligns[String(c.key)] = c.align || 'center';
+        sortables[String(c.key)] = !!c.sortable;
       });
       const orderKeys = (this.columnOrder && this.columnOrder.length)
         ? this.columnOrder.slice()
         : createDefaultColumnOrder();
       saveUserUiConfig({
         configKey: this.columnConfigKey,
-        configValue: JSON.stringify({ hiddenKeys, widths, aligns, orderKeys })
+        configValue: JSON.stringify({ hiddenKeys, widths, aligns, sortables, orderKeys })
       }).then(() => {
         this.$modal.msgSuccess('保存成功');
         this.columnDialogVisible = false;
@@ -1096,8 +1154,8 @@ export default {
         }
       });
     },
-    /** 恢复系统默认列设置，并清除本账号已保存的个性化配置 */
-    resetColumnConfigDefault() {
+    /** 初始化：恢复系统默认列设置，并清除本账号已保存的个性化配置 */
+    initColumnConfig() {
       this.columns = createDefaultInventoryColumns();
       this.columnOrder = createDefaultColumnOrder();
       this.columnActiveKey = null;
@@ -1106,10 +1164,10 @@ export default {
         configKey: this.columnConfigKey,
         configValue: ''
       }).then(() => {
-        this.$modal.msgSuccess('已恢复默认');
+        this.$modal.msgSuccess('已初始化为系统默认');
         this.columnDialogVisible = false;
       }).catch(() => {
-        this.$modal.msgSuccess('已恢复默认（本地）');
+        this.$modal.msgSuccess('已初始化为系统默认（本地）');
         this.columnDialogVisible = false;
       });
     },
@@ -1142,6 +1200,7 @@ export default {
     sortByWarehouse(a, b) { return this.sortByStr(a, b, r => (r.warehouse && r.warehouse.name) || ''); },
     sortBySupplier(a, b) { return this.sortByStr(a, b, r => (r.supplier && r.supplier.name) || ''); },
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    sortByQty(a, b) { return this.sortByNum(a, b, 'qty'); },
     sortByAmt(a, b) { return this.sortByNum(a, b, 'amt'); },
     materialUseDictLabel(isUse) {
       if (isUse === undefined || isUse === null || isUse === '') return '--';
@@ -1500,6 +1559,45 @@ export default {
   font-size: 13px;
   line-height: 1.5;
   color: #f56c6c;
+}
+
+/* 列设置弹窗：append-to-body + 可拖动，样式需非 scoped */
+.inventory-column-dialog {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.inventory-column-dialog .el-dialog__header {
+  cursor: move;
+  padding: 12px 16px 8px;
+}
+.inventory-column-dialog .el-dialog__body {
+  flex: 0 1 auto;
+  overflow: auto;
+  padding: 8px 16px 4px;
+  max-height: calc(90vh - 140px);
+}
+.inventory-column-dialog .el-dialog__footer {
+  padding: 10px 16px 14px;
+}
+.inventory-column-dialog .column-dialog-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.inventory-column-dialog .column-dialog-footer .el-button {
+  margin: 0 !important;
+  min-width: 96px;
+}
+/* 无遮罩时弹窗仍浮在表格之上 */
+.el-dialog__wrapper:has(> .inventory-column-dialog) {
+  pointer-events: none;
+}
+.el-dialog__wrapper:has(> .inventory-column-dialog) .inventory-column-dialog {
+  pointer-events: auto;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 /* 分页行：与出/退库明细底部留白一致 */
@@ -1999,33 +2097,6 @@ export default {
   width: 100%;
 }
 
-/* 显隐列弹窗限制在本页内容区内，不铺满整个浏览器框架 */
-.first-inventory-page {
-  position: relative;
-  min-height: 400px;
-}
-.first-inventory-page ::v-deep .inventory-column-dialog-inpage.el-dialog__wrapper {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2001;
-}
-.first-inventory-page ::v-deep .inventory-column-dialog-inpage .el-dialog {
-  margin-top: 0 !important;
-  max-height: 90%;
-  display: flex;
-  flex-direction: column;
-}
-.first-inventory-page ::v-deep .inventory-column-dialog-inpage .el-dialog__body {
-  flex: 1;
-  overflow: auto;
-}
-
 .column-panel-head-title {
   display: inline-flex;
   align-items: center;
@@ -2054,7 +2125,7 @@ export default {
   display: flex;
   align-items: stretch;
   gap: 12px;
-  min-height: 360px;
+  min-height: 0;
 }
 
 .column-panels--single {
@@ -2128,6 +2199,18 @@ export default {
   white-space: nowrap;
   font-size: 13px;
   color: #303133;
+}
+
+.column-row-sortable {
+  flex-shrink: 0;
+  margin-right: 0;
+  white-space: nowrap;
+}
+
+.column-row-sortable ::v-deep .el-checkbox__label {
+  padding-left: 4px;
+  font-size: 12px;
+  color: #606266;
 }
 
 .column-row-width {
