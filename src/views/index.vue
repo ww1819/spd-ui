@@ -1,94 +1,225 @@
 <template>
-  <div class="app-container home">
-    <el-row :gutter="homeLayoutGap" class="home-dashboard-row">
-      <el-col :xs="24" :sm="24" :md="12" :lg="8" >
-        <el-card class="update-log" style="height:42vh;">
-          <div slot="header" class="clearfix">
-            <span>仓库采购情况</span>
-          </div>
-          <div class="body">
-              <div v-if="ckChartEmptyHint" class="home-chart-empty">{{ ckChartEmptyHint }}</div>
-              <div v-show="!ckChartEmptyHint" ref="ckChartRef" class="echart" :style="myChartStyle"></div>
-          </div>
-        </el-card>
+  <div class="app-container home home-workbench">
+    <div class="home-toolbar">
+      <div class="home-view-switch" role="tablist">
+        <button
+          v-for="item in viewOptions"
+          :key="item.value"
+          type="button"
+          class="home-view-btn"
+          :class="{ active: homeView === item.value }"
+          @click="switchView(item.value)"
+        >{{ item.label }}</button>
+      </div>
+      <el-button
+        size="small"
+        type="primary"
+        plain
+        class="home-save-default"
+        :disabled="homeView === savedView"
+        :loading="savingPref"
+        @click="saveDefaultView"
+      >{{ homeView === savedView ? '已是默认首页' : '保存为默认首页' }}</el-button>
+    </div>
 
-        <el-card class="update-log" style="height:43vh;margin-top: 2vh">
-          <div slot="header" class="clearfix">
-            <span>科室使用记录情况</span>
-          </div>
-          <div class="body">
-              <div v-if="ksChartEmptyHint" class="home-chart-empty">{{ ksChartEmptyHint }}</div>
-              <div v-show="!ksChartEmptyHint" ref="ksChartRef" class="echart" :style="myChartStyle"></div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="9">
-        <el-card class="update-log home-today-stats-card">
-          <div slot="header" class="clearfix">
-            <span>今日统计</span>
-          </div>
-          <div class="body home-today-stats-body">
-            <el-row class="home-today-stats-row">
-              <el-col :span="8">入库单</el-col>
-              <el-col :span="8">出库单</el-col>
-              <el-col :span="8">退库单</el-col>
-            </el-row>
-            <el-row class="home-today-stats-row tj-number">
-              <el-col :span="8">{{ formatStatQty(todayStats.inCount) }}</el-col>
-              <el-col :span="8">{{ formatStatQty(todayStats.outCount) }}</el-col>
-              <el-col :span="8">{{ formatStatQty(todayStats.returnCount) }}</el-col>
-            </el-row>
-            <el-row class="home-today-stats-row">
-              <el-col :span="8">申领单</el-col>
-              <el-col :span="8">申购单</el-col>
-              <el-col :span="8">库存数量</el-col>
-            </el-row>
-            <el-row class="home-today-stats-row tj-number">
-              <el-col :span="8">{{ formatStatQty(todayStats.applyCount) }}</el-col>
-              <el-col :span="8">{{ formatStatQty(todayStats.purchaseCount) }}</el-col>
-              <el-col :span="8">{{ formatStatQty(todayStats.inventoryQty) }}</el-col>
-            </el-row>
-          </div>
-        </el-card>
-
-        <el-card class="update-log home-proportion-card home-outbound-only-card">
-          <div slot="header" class="clearfix">
-            <span>出库统计占比</span>
-            <span class="home-chart-subtitle">当月财务分类出退库</span>
-          </div>
-          <div class="body">
-            <div v-if="outChartEmptyHint" class="home-chart-empty home-proportion-empty">{{ outChartEmptyHint }}</div>
-            <div v-show="!outChartEmptyHint" ref="outChartRef" class="echart home-proportion-pie"></div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="24" :md="12" :lg="7" class="home-right-col">
-        <div class="home-right-top-block">
-          <el-card class="update-log home-attachment-card">
-            <div slot="header" class="clearfix">
-              <span>常用附件下载</span>
-              <a class="home-card-more-link">更多>></a>
-            </div>
-          </el-card>
-          <el-card class="update-log home-memo-card">
-            <div slot="header" class="clearfix">
-              <span>备忘录</span>
-              <a class="home-card-more-link">更多>></a>
-            </div>
-          </el-card>
+    <!-- 科室工作台 -->
+    <div v-show="homeView === 'dept'" class="home-panel">
+      <div class="home-todo-grid">
+        <div
+          v-for="todo in deptTodos"
+          :key="todo.key"
+          class="home-todo-card"
+          :class="{ warn: todo.count > 0, calm: !todo.count }"
+          role="button"
+          tabindex="0"
+          @click="openTodo(todo)"
+          @keyup.enter="openTodo(todo)"
+        >
+          <div class="home-todo-num">{{ formatStatQty(todo.count) }}</div>
+          <div class="home-todo-label">{{ todo.label }}</div>
+          <div class="home-todo-hint">{{ todo.hint }}</div>
         </div>
-        <el-card class="update-log home-proportion-card home-inbound-card">
-          <div slot="header" class="clearfix">
-            <span>入库统计占比</span>
-            <span class="home-chart-subtitle">当月财务分类入退货</span>
+      </div>
+      <div class="home-kpi-grid home-kpi-grid--3">
+        <div v-for="kpi in deptKpiCards" :key="kpi.key" class="home-kpi-card" :class="{ stock: kpi.stock }">
+          <div class="home-kpi-top">
+            <div class="home-kpi-label">{{ kpi.label }}</div>
+            <div class="home-kpi-delta" :class="kpi.deltaClass">{{ kpi.deltaText }}</div>
           </div>
-          <div class="body">
-            <div v-if="inChartEmptyHint" class="home-chart-empty home-proportion-empty">{{ inChartEmptyHint }}</div>
-            <div v-show="!inChartEmptyHint" ref="inChartRef" class="echart home-proportion-pie"></div>
+          <div class="home-kpi-num">{{ formatStatQty(kpi.value) }}</div>
+          <svg v-if="kpi.spark" class="home-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+            <polyline :points="kpi.spark" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </div>
+      <el-card class="home-menu-card" shadow="never">
+        <div slot="header" class="clearfix">常用菜单</div>
+        <div v-if="displayMenus.length" class="home-freq-list">
+          <button
+            v-for="m in displayMenus"
+            :key="m.path"
+            type="button"
+            class="home-freq-item"
+            @click="goMenu(m)"
+          ><span class="home-freq-dot" /><span>{{ m.title }}</span></button>
+        </div>
+        <div v-else class="home-cabin-empty home-cabin-empty--menu">
+          <p class="home-cabin-empty-text">暂无常用菜单，使用功能后按频率出现在这里</p>
+        </div>
+      </el-card>
+    </div>
+
+    <!-- 仓库工作台 -->
+    <div v-show="homeView === 'warehouse'" class="home-panel">
+      <div class="home-todo-grid">
+        <div
+          v-for="todo in warehouseTodos"
+          :key="todo.key"
+          class="home-todo-card"
+          :class="{ warn: todo.count > 0, calm: !todo.count }"
+          role="button"
+          tabindex="0"
+          @click="openTodo(todo)"
+          @keyup.enter="openTodo(todo)"
+        >
+          <div class="home-todo-num">{{ formatStatQty(todo.count) }}</div>
+          <div class="home-todo-label">{{ todo.label }}</div>
+          <div class="home-todo-hint">{{ todo.hint }}</div>
+        </div>
+      </div>
+      <div class="home-kpi-grid home-kpi-grid--4">
+        <div v-for="kpi in warehouseKpiCards" :key="'wh-' + kpi.key" class="home-kpi-card" :class="{ stock: kpi.stock }">
+          <div class="home-kpi-top">
+            <div class="home-kpi-label">{{ kpi.label }}</div>
+            <div class="home-kpi-delta" :class="kpi.deltaClass">{{ kpi.deltaText }}</div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+          <div class="home-kpi-num">{{ formatStatQty(kpi.value) }}</div>
+          <svg v-if="kpi.spark" class="home-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true">
+            <polyline :points="kpi.spark" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </div>
+      </div>
+      <el-card class="home-menu-card" shadow="never">
+        <div slot="header" class="clearfix">常用菜单</div>
+        <div v-if="displayMenus.length" class="home-freq-list">
+          <button
+            v-for="m in displayMenus"
+            :key="'wh-' + m.path"
+            type="button"
+            class="home-freq-item"
+            @click="goMenu(m)"
+          ><span class="home-freq-dot" /><span>{{ m.title }}</span></button>
+        </div>
+        <div v-else class="home-cabin-empty home-cabin-empty--menu">
+          <p class="home-cabin-empty-text">暂无常用菜单，使用功能后按频率出现在这里</p>
+        </div>
+      </el-card>
+    </div>
+
+    <!-- 全局驾驶舱 -->
+    <div v-if="homeView === 'global'" class="home-panel">
+      <div class="home-todo-grid home-todo-grid--compact">
+        <div
+          v-for="todo in globalTodos"
+          :key="'g-' + todo.key"
+          class="home-todo-card home-todo-card--compact"
+          :class="{ warn: todo.count > 0, calm: !todo.count }"
+          role="button"
+          tabindex="0"
+          @click="openTodo(todo)"
+          @keyup.enter="openTodo(todo)"
+        >
+          <div class="home-todo-num">{{ formatStatQty(todo.count) }}</div>
+          <div class="home-todo-label">{{ todo.label }}</div>
+        </div>
+      </div>
+      <el-row :gutter="homeLayoutGap" class="home-dashboard-row">
+        <el-col :xs="24" :sm="24" :md="12" :lg="8">
+          <el-card class="update-log" style="height:42vh;">
+            <div slot="header" class="clearfix"><span>仓库采购情况</span></div>
+            <div class="body">
+              <div v-if="ckChartEmptyHint" class="home-cabin-empty">
+                <div class="home-cabin-empty-plot" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
+                <p class="home-cabin-empty-text">{{ ckChartEmptyHint }}</p>
+              </div>
+              <div v-show="!ckChartEmptyHint" ref="ckChartRef" class="echart" :style="myChartStyle"></div>
+            </div>
+          </el-card>
+          <el-card class="update-log" style="height:43vh;margin-top: 2vh">
+            <div slot="header" class="clearfix"><span>科室使用记录情况</span></div>
+            <div class="body">
+              <div v-if="ksChartEmptyHint" class="home-cabin-empty">
+                <div class="home-cabin-empty-plot" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
+                <p class="home-cabin-empty-text">{{ ksChartEmptyHint }}</p>
+              </div>
+              <div v-show="!ksChartEmptyHint" ref="ksChartRef" class="echart" :style="myChartStyle"></div>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="12" :lg="9">
+          <el-card class="update-log home-today-stats-card">
+            <div slot="header" class="clearfix"><span>今日统计</span></div>
+            <div class="body home-today-stats-body">
+              <div class="home-kpi-grid home-kpi-grid--3 home-kpi-grid--global">
+                <div v-for="kpi in globalKpiCards" :key="'g-' + kpi.key" class="home-kpi-card" :class="{ stock: kpi.stock }">
+                  <div class="home-kpi-top">
+                    <div class="home-kpi-label">{{ kpi.label }}</div>
+                    <div class="home-kpi-delta" :class="kpi.deltaClass">{{ kpi.deltaText }}</div>
+                  </div>
+                  <div class="home-kpi-num">{{ formatStatQty(kpi.value) }}</div>
+                  <svg v-if="kpi.spark" class="home-spark" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true">
+                    <polyline :points="kpi.spark" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </el-card>
+          <el-card class="update-log home-proportion-card home-outbound-only-card">
+            <div slot="header" class="clearfix">
+              <span>出库统计占比</span>
+              <span class="home-chart-subtitle">当月财务分类出退库</span>
+            </div>
+            <div class="body">
+              <div v-if="outChartEmptyHint" class="home-cabin-empty home-cabin-empty--pie">
+                <div class="home-cabin-empty-ring" aria-hidden="true" />
+                <p class="home-cabin-empty-text">{{ outChartEmptyHint }}</p>
+              </div>
+              <div v-show="!outChartEmptyHint" ref="outChartRef" class="echart home-proportion-pie"></div>
+            </div>
+          </el-card>
+        </el-col>
+        <el-col :xs="24" :sm="24" :md="12" :lg="7" class="home-right-col">
+          <el-card class="update-log home-menu-card home-global-menu-card" shadow="never">
+            <div slot="header" class="clearfix">常用菜单</div>
+            <div v-if="displayMenus.length" class="home-freq-list">
+              <button
+                v-for="m in displayMenus"
+                :key="'g-' + m.path"
+                type="button"
+                class="home-freq-item"
+                @click="goMenu(m)"
+              ><span class="home-freq-dot" /><span>{{ m.title }}</span></button>
+            </div>
+            <div v-else class="home-cabin-empty home-cabin-empty--menu">
+              <p class="home-cabin-empty-text">暂无常用菜单</p>
+            </div>
+          </el-card>
+          <el-card class="update-log home-proportion-card home-inbound-card">
+            <div slot="header" class="clearfix">
+              <span>入库统计占比</span>
+              <span class="home-chart-subtitle">当月财务分类入退货</span>
+            </div>
+            <div class="body">
+              <div v-if="inChartEmptyHint" class="home-cabin-empty home-cabin-empty--pie">
+                <div class="home-cabin-empty-ring" aria-hidden="true" />
+                <p class="home-cabin-empty-text">{{ inChartEmptyHint }}</p>
+              </div>
+              <div v-show="!inChartEmptyHint" ref="inChartRef" class="echart home-proportion-pie"></div>
+            </div>
+          </el-card>
+        </el-col>
+      </el-row>
+    </div>
   </div>
 </template>
 <style>
@@ -103,15 +234,46 @@
     fetchHomeDepartmentUsage,
     fetchHomeTodayStats,
     fetchHomeOutboundFinanceCategoryProportion,
-    fetchHomeInboundFinanceCategoryProportion
+    fetchHomeInboundFinanceCategoryProportion,
+    fetchHomeWarehouseReminderCounts,
+    fetchHomeDepartmentReminderCounts,
+    fetchHomePref,
+    saveHomePref,
+    fetchFrequentMenus,
+    fetchHomeKpiTrend
   } from "@/api/dashboard/home";
+  import { getUserUiConfig, saveUserUiConfig } from "@/api/system/userUiConfig";
+  import { collectLeafMenus } from "@/utils/nav-menu";
+
+const HOME_VIEW_UI_KEY = "spd.homeView";
 export default {
   name: "Index",
   data() {
     return {
       /** 与 .home 内边距一致：列间距 = 顶部留白 = 左右卡片间距 */
       homeLayoutGap: 16,
-      // 版本号
+      viewOptions: [
+        { value: "dept", label: "科室视角" },
+        { value: "warehouse", label: "仓库视角" },
+        { value: "global", label: "全局驾驶舱" }
+      ],
+      homeView: "dept",
+      savedView: "dept",
+      savingPref: false,
+      globalChartsLoaded: false,
+      deptCounts: {
+        unreceivedBillCount: 0,
+        nearExpiryLineCount: 0,
+        inventoryAlertLineCount: 0,
+        consumeLineCount: 0
+      },
+      warehouseCounts: {
+        pendingApplyBillCount: 0,
+        pendingPurchaseBillCount: 0,
+        nearExpiryInventoryLineCount: 0,
+        inventoryAlertLineCount: 0
+      },
+      frequentMenus: [],
       version: "3.8.6",
       CKtitle: [],
       CKxData: [],
@@ -137,6 +299,20 @@ export default {
         purchaseCount: 0,
         inventoryQty: 0
       },
+      kpiYesterday: {
+        inCount: 0,
+        outCount: 0,
+        returnCount: 0,
+        applyCount: 0,
+        purchaseCount: 0
+      },
+      kpiSeries: {
+        inCount: [0, 0, 0, 0, 0, 0, 0],
+        outCount: [0, 0, 0, 0, 0, 0, 0],
+        returnCount: [0, 0, 0, 0, 0, 0, 0],
+        applyCount: [0, 0, 0, 0, 0, 0, 0],
+        purchaseCount: [0, 0, 0, 0, 0, 0, 0]
+      },
       /** 仓库采购图无仓库或无系列时的提示 */
       ckChartEmptyHint: "",
       /** 科室使用图加载失败或无数据时的提示 */
@@ -154,25 +330,75 @@ export default {
       /** 入库占比图无数据或加载失败时的提示 */
       inChartEmptyHint: ""
     };
-  },mounted() {
-    const { day } = this.buildTodayRange();
-    this.restoreTodayStatsFromCache(day);
-    const year = new Date().getFullYear();
-    if (!this.restoreKsFromCache(year)) {
-      this.primeKsShell(year);
-    }
-    this.restoreCkFromCache(year);
-    this.$nextTick(() => {
-      this.initKs();
-      if (this.CKyData && this.CKyData.length) {
-        this.initCk();
+  },
+  computed: {
+    deptTodos() {
+      return [
+        { key: "unreceived", label: "待收货确认", hint: "已出库未确认", count: this.deptCounts.unreceivedBillCount, open: { category: "department", subTab: "unreceivedConfirm" } },
+        { key: "expiry", label: "近效期", hint: "科室库存近效期", count: this.deptCounts.nearExpiryLineCount, open: { category: "department", subTab: "expiry" } },
+        { key: "alert", label: "库存预警", hint: "低于下限或超上限", count: this.deptCounts.inventoryAlertLineCount, open: { category: "department", subTab: "inventory" } },
+        { key: "consume", label: "待消耗", hint: "HIS待处理消耗", count: this.deptCounts.consumeLineCount, open: { category: "department", subTab: "consume" } }
+      ];
+    },
+    warehouseTodos() {
+      return [
+        { key: "apply", label: "待审申领", hint: "待审核申领单", count: this.warehouseCounts.pendingApplyBillCount, open: { category: "warehouse", subTab: "apply" } },
+        { key: "purchase", label: "待审申购", hint: "待审核申购单", count: this.warehouseCounts.pendingPurchaseBillCount, open: { category: "warehouse", subTab: "purchase" } },
+        { key: "nearExpiry", label: "近效期", hint: "仓库近效期库存", count: this.warehouseCounts.nearExpiryInventoryLineCount, open: { category: "warehouse", subTab: "nearExpiry" } },
+        { key: "inventory", label: "库存预警", hint: "仓库库存预警", count: this.warehouseCounts.inventoryAlertLineCount, open: { category: "warehouse", subTab: "inventory" } }
+      ];
+    },
+    globalTodos() {
+      return [
+        { key: "g-apply", label: "待审申领", count: this.warehouseCounts.pendingApplyBillCount, open: { category: "warehouse", subTab: "apply" } },
+        { key: "g-purchase", label: "待审申购", count: this.warehouseCounts.pendingPurchaseBillCount, open: { category: "warehouse", subTab: "purchase" } },
+        { key: "g-recv", label: "待收货", count: this.deptCounts.unreceivedBillCount, open: { category: "department", subTab: "unreceivedConfirm" } },
+        { key: "g-wh-exp", label: "仓库近效期", count: this.warehouseCounts.nearExpiryInventoryLineCount, open: { category: "warehouse", subTab: "nearExpiry" } },
+        { key: "g-dep-exp", label: "科室近效期", count: this.deptCounts.nearExpiryLineCount, open: { category: "department", subTab: "expiry" } },
+        { key: "g-consume", label: "待消耗", count: this.deptCounts.consumeLineCount, open: { category: "department", subTab: "consume" } }
+      ];
+    },
+    displayMenus() {
+      if (this.frequentMenus.length) {
+        return this.frequentMenus.slice(0, 8);
       }
-    });
-    this.loadWarehousePurchaseChart();
-    this.loadDepartmentUsageChart();
-    this.loadTodayStats();
-    this.loadOutboundProportionChart();
-    this.loadInboundProportionChart();
+      return collectLeafMenus(this.$store.getters.sidebarRouters, 8);
+    },
+    deptKpiCards() {
+      return [
+        this.buildKpiCard("applyCount", "今日申领数量"),
+        this.buildKpiCard("purchaseCount", "今日申购数量"),
+        this.buildKpiCard("inventoryQty", "库存数量", true)
+      ];
+    },
+    warehouseKpiCards() {
+      return [
+        this.buildKpiCard("inCount", "今日入库"),
+        this.buildKpiCard("outCount", "今日出库"),
+        this.buildKpiCard("returnCount", "今日退库"),
+        this.buildKpiCard("inventoryQty", "库存数量", true)
+      ];
+    },
+    globalKpiCards() {
+      return [
+        this.buildKpiCard("inCount", "入库"),
+        this.buildKpiCard("outCount", "出库"),
+        this.buildKpiCard("returnCount", "退库"),
+        this.buildKpiCard("applyCount", "申领"),
+        this.buildKpiCard("purchaseCount", "申购"),
+        this.buildKpiCard("inventoryQty", "库存", true)
+      ];
+    }
+  },
+  watch: {
+    homeView(val) {
+      if (val === "global") {
+        this.$nextTick(() => this.ensureGlobalCharts());
+      }
+    }
+  },
+  mounted() {
+    this.bootstrapHome();
   },
   beforeDestroy() {
     if (this.ckResizeHandler) {
@@ -205,6 +431,160 @@ export default {
     }
   },
   methods: {
+    async bootstrapHome() {
+      const { day } = this.buildTodayRange();
+      this.restoreTodayStatsFromCache(day);
+      await this.loadPref();
+      this.loadTodayStats();
+      this.loadKpiTrend();
+      this.loadTodoCounts();
+      this.loadFrequentMenus();
+      if (this.homeView === "global") {
+        this.$nextTick(() => this.ensureGlobalCharts());
+      }
+    },
+    normalizeView(view) {
+      const v = view ? String(view).toLowerCase() : "";
+      if (v === "dept" || v === "warehouse" || v === "global") {
+        return v;
+      }
+      return "dept";
+    },
+    async readUiHomeView() {
+      try {
+        const res = await getUserUiConfig(HOME_VIEW_UI_KEY);
+        const raw = res && res.data && res.data.configValue;
+        if (!raw) {
+          return "";
+        }
+        return this.normalizeView(raw);
+      } catch (e) {
+        return "";
+      }
+    },
+    async loadPref() {
+      let prefView = "";
+      let prefApiOk = false;
+      try {
+        const res = await fetchHomePref();
+        if (res && res.data && typeof res.data.homeView === "string") {
+          prefApiOk = true;
+          prefView = this.normalizeView(res.data.homeView);
+        }
+      } catch (e) {
+        prefApiOk = false;
+      }
+      const uiView = await this.readUiHomeView();
+      let view = "dept";
+      if (prefApiOk && prefView && prefView !== "dept") {
+        view = prefView;
+      } else if (uiView) {
+        view = uiView;
+        if (prefApiOk && prefView !== uiView) {
+          saveHomePref(uiView).catch(() => {});
+        }
+      } else if (prefApiOk) {
+        view = prefView || "dept";
+      }
+      this.homeView = view;
+      this.savedView = view;
+    },
+    switchView(view) {
+      this.homeView = this.normalizeView(view);
+    },
+    async saveDefaultView() {
+      this.savingPref = true;
+      const view = this.normalizeView(this.homeView);
+      try {
+        try {
+          await saveHomePref(view);
+        } catch (e) {
+          // 运行中的后端若尚未加载 /pref，改走个人界面配置
+        }
+        await saveUserUiConfig({ configKey: HOME_VIEW_UI_KEY, configValue: view });
+        this.homeView = view;
+        this.savedView = view;
+        this.$message.success("已保存为你的默认首页");
+      } catch (e) {
+        this.$message.error((e && (e.message || e.msg)) || "保存失败");
+      } finally {
+        this.savingPref = false;
+      }
+    },
+    async loadTodoCounts() {
+      try {
+        const [deptRes, whRes] = await Promise.all([
+          fetchHomeDepartmentReminderCounts().catch(() => null),
+          fetchHomeWarehouseReminderCounts().catch(() => null)
+        ]);
+        const d = (deptRes && deptRes.data) || {};
+        const w = (whRes && whRes.data) || {};
+        this.deptCounts.unreceivedBillCount = Number(d.unreceivedBillCount) || 0;
+        this.deptCounts.nearExpiryLineCount = Number(d.nearExpiryLineCount) || 0;
+        this.deptCounts.inventoryAlertLineCount = Number(d.inventoryAlertLineCount) || 0;
+        this.deptCounts.consumeLineCount = Number(d.consumeLineCount) || 0;
+        this.warehouseCounts.pendingApplyBillCount = Number(w.pendingApplyBillCount) || 0;
+        this.warehouseCounts.pendingPurchaseBillCount = Number(w.pendingPurchaseBillCount) || 0;
+        this.warehouseCounts.nearExpiryInventoryLineCount = Number(w.nearExpiryInventoryLineCount) || 0;
+        this.warehouseCounts.inventoryAlertLineCount = Number(w.inventoryAlertLineCount) || 0;
+      } catch (e) {
+        console.error("加载首页待办失败", e);
+      }
+    },
+    async loadFrequentMenus() {
+      try {
+        const res = await fetchFrequentMenus(8);
+        const list = (res && res.data) || [];
+        this.frequentMenus = (Array.isArray(list) ? list : [])
+          .map((item) => ({
+            path: item.path || item.PATH,
+            title: item.title || item.TITLE || item.path,
+            hitCount: item.hitCount || item.hit_count || item.HITCOUNT
+          }))
+          .filter((item) => item.path);
+      } catch (e) {
+        this.frequentMenus = [];
+      }
+    },
+    openTodo(todo) {
+      if (!todo || !todo.open) {
+        return;
+      }
+      this.$store.dispatch("app/openWarehouseReminder", todo.open);
+    },
+    goMenu(item) {
+      if (!item || !item.path) {
+        return;
+      }
+      this.$router.push(item.path).catch(() => {});
+    },
+    ensureGlobalCharts() {
+      const year = new Date().getFullYear();
+      if (!this.restoreKsFromCache(year)) {
+        this.primeKsShell(year);
+      }
+      this.restoreCkFromCache(year);
+      this.$nextTick(() => {
+        this.initKs();
+        if (this.CKyData && this.CKyData.length) {
+          this.initCk();
+        }
+      });
+      if (!this.globalChartsLoaded) {
+        this.globalChartsLoaded = true;
+        this.loadWarehousePurchaseChart();
+        this.loadDepartmentUsageChart();
+        this.loadOutboundProportionChart();
+        this.loadInboundProportionChart();
+      } else {
+        this.$nextTick(() => {
+          if (this.ckChartInstance) this.ckChartInstance.resize();
+          if (this.ksChartInstance) this.ksChartInstance.resize();
+          if (this.outChartInstance) this.outChartInstance.resize();
+          if (this.inChartInstance) this.inChartInstance.resize();
+        });
+      }
+    },
     monthDateRange(year, month) {
       const mm = String(month).padStart(2, "0");
       const beginDate = `${year}-${mm}-01 00:00:00`;
@@ -305,7 +685,7 @@ export default {
           this.CKtitle = [];
           this.CKyData = [];
           this.ckQtyMap = {};
-          this.ckChartEmptyHint = "暂无仓库采购数据（接口无返回）";
+          this.ckChartEmptyHint = "今日暂无业务流动";
           this.initCk();
           return;
         }
@@ -315,7 +695,7 @@ export default {
           this.CKtitle = [];
           this.CKyData = [];
           this.ckQtyMap = {};
-          this.ckChartEmptyHint = "当前租户下无可用仓库，无法展示仓库采购情况";
+          this.ckChartEmptyHint = "今日暂无业务流动";
           this.initCk();
           return;
         }
@@ -369,7 +749,7 @@ export default {
         this.CKtitle = [];
         this.CKyData = [];
         this.ckQtyMap = {};
-        this.ckChartEmptyHint = "加载仓库采购图失败，请检查网络或联系管理员";
+        this.ckChartEmptyHint = "今日暂无业务流动";
         this.initCk();
       }
     },
@@ -391,7 +771,7 @@ export default {
         const d = res && res.data;
         if (!d) {
           this.primeKsShell(year);
-          this.ksChartEmptyHint = "暂无科室使用数据（接口无返回）";
+          this.ksChartEmptyHint = "今日暂无业务流动";
           this.$nextTick(() => this.initKs());
           return;
         }
@@ -431,7 +811,7 @@ export default {
           { name: '消耗数量', type: 'line', data: new Array(12).fill(0) },
           { name: '消耗金额', type: 'line', data: new Array(12).fill(0) }
         ];
-        this.ksChartEmptyHint = "加载科室使用记录图失败，请检查网络或联系管理员";
+        this.ksChartEmptyHint = "今日暂无业务流动";
         this.$nextTick(() => this.initKs());
       }
     },
@@ -452,6 +832,109 @@ export default {
     formatStatQty(val) {
       const num = Number(val || 0);
       return Number.isFinite(num) ? num.toLocaleString("zh-CN", { maximumFractionDigits: 3 }) : "0";
+    },
+    zeroSeries(len) {
+      const n = Number(len) || 7;
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        out.push(0);
+      }
+      return out;
+    },
+    buildKpiCard(key, label, stock) {
+      const value = Number(this.todayStats[key]) || 0;
+      if (stock) {
+        return { key, label, value, stock: true, spark: "", deltaText: "实时存量", deltaClass: "is-flat" };
+      }
+      const yesterday = Number((this.kpiYesterday && this.kpiYesterday[key]) || 0) || 0;
+      const src = Array.isArray(this.kpiSeries[key]) ? this.kpiSeries[key].slice() : this.zeroSeries(7);
+      if (src.length) {
+        src[src.length - 1] = value;
+      }
+      const delta = this.formatKpiDelta(value, yesterday);
+      return {
+        key,
+        label,
+        value,
+        stock: false,
+        spark: this.sparklinePoints(src),
+        deltaText: delta.text,
+        deltaClass: delta.cls
+      };
+    },
+    formatKpiDelta(today, yesterday) {
+      const t = Number(today) || 0;
+      const y = Number(yesterday) || 0;
+      if (t === 0 && y === 0) {
+        return { text: "较昨日持平", cls: "is-flat" };
+      }
+      const d = t - y;
+      if (d === 0) {
+        return { text: "较昨日持平", cls: "is-flat" };
+      }
+      const sign = d > 0 ? "+" : "";
+      return { text: "较昨日 " + sign + this.formatStatQty(d), cls: d > 0 ? "is-up" : "is-down" };
+    },
+    sparklinePoints(arr) {
+      const src = Array.isArray(arr) && arr.length ? arr.map((v) => Number(v) || 0) : [0, 0, 0, 0, 0, 0, 0];
+      const w = 100;
+      const h = 28;
+      const pad = 3;
+      const max = Math.max.apply(null, src);
+      const min = Math.min.apply(null, src);
+      const span = max - min;
+      return src.map((v, i) => {
+        const x = src.length === 1 ? w / 2 : (i / (src.length - 1)) * w;
+        const y = span <= 0 ? h * 0.68 : pad + (1 - (v - min) / span) * (h - pad * 2);
+        return x.toFixed(1) + "," + y.toFixed(1);
+      }).join(" ");
+    },
+    parseNumList(arr) {
+      if (!Array.isArray(arr)) {
+        return this.zeroSeries(7);
+      }
+      return arr.map((v) => Number(v) || 0);
+    },
+    applyKpiTrendPayload(d) {
+      if (!d || typeof d !== "object") {
+        return;
+      }
+      this.kpiSeries.inCount = this.parseNumList(d.inCount);
+      this.kpiSeries.outCount = this.parseNumList(d.outCount);
+      this.kpiSeries.returnCount = this.parseNumList(d.returnCount);
+      this.kpiSeries.applyCount = this.parseNumList(d.applyCount);
+      this.kpiSeries.purchaseCount = this.parseNumList(d.purchaseCount);
+      const y = d.yesterday || {};
+      this.kpiYesterday.inCount = Number(y.inCount) || 0;
+      this.kpiYesterday.outCount = Number(y.outCount) || 0;
+      this.kpiYesterday.returnCount = Number(y.returnCount) || 0;
+      this.kpiYesterday.applyCount = Number(y.applyCount) || 0;
+      this.kpiYesterday.purchaseCount = Number(y.purchaseCount) || 0;
+    },
+    yesterdayDateStr() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return this.formatDate(d);
+    },
+    async loadKpiTrend() {
+      try {
+        const res = await fetchHomeKpiTrend(7);
+        this.applyKpiTrendPayload(res && res.data);
+        return;
+      } catch (e) {
+        // 后端未加载新接口时，退化为昨日 todayStats + 末点为今日
+      }
+      try {
+        const res = await fetchHomeTodayStats(this.yesterdayDateStr());
+        const y = (res && res.data) || {};
+        this.kpiYesterday.inCount = Number(y.inCount) || 0;
+        this.kpiYesterday.outCount = Number(y.outCount) || 0;
+        this.kpiYesterday.returnCount = Number(y.returnCount) || 0;
+        this.kpiYesterday.applyCount = Number(y.applyCount) || 0;
+        this.kpiYesterday.purchaseCount = Number(y.purchaseCount) || 0;
+      } catch (err) {
+        // keep zeros
+      }
     },
     buildFinancePieSlices(rows, emptyLabel) {
       const list = (rows || [])
@@ -480,7 +963,7 @@ export default {
         const rows = (res && res.data) || [];
         this.outChartSlices = this.buildFinancePieSlices(rows, "暂无当月出库");
         if (this.outChartSlices.length === 1 && this.outChartSlices[0].name === "暂无当月出库") {
-          this.outChartEmptyHint = "暂无当月财务分类出库数据";
+          this.outChartEmptyHint = "本月暂无分类数据";
           this.initFinancePieChart("out");
           return;
         }
@@ -488,7 +971,7 @@ export default {
       } catch (e) {
         console.error("加载出库统计占比失败", e);
         this.outChartSlices = [];
-        this.outChartEmptyHint = "加载出库统计占比失败，请刷新页面重试";
+        this.outChartEmptyHint = "本月暂无分类数据";
         this.initFinancePieChart("out");
       }
     },
@@ -499,7 +982,7 @@ export default {
         const rows = (res && res.data) || [];
         this.inChartSlices = this.buildFinancePieSlices(rows, "暂无当月入库");
         if (this.inChartSlices.length === 1 && this.inChartSlices[0].name === "暂无当月入库") {
-          this.inChartEmptyHint = "暂无当月财务分类入库数据";
+          this.inChartEmptyHint = "本月暂无分类数据";
           this.initFinancePieChart("in");
           return;
         }
@@ -507,7 +990,7 @@ export default {
       } catch (e) {
         console.error("加载入库统计占比失败", e);
         this.inChartSlices = [];
-        this.inChartEmptyHint = "加载入库统计占比失败，请刷新页面重试";
+        this.inChartEmptyHint = "本月暂无分类数据";
         this.initFinancePieChart("in");
       }
     },
@@ -602,9 +1085,9 @@ export default {
       } catch (err) {
         console.error("initFinancePieChart", kind, err);
         if (isOut) {
-          this.outChartEmptyHint = "出库统计占比图表渲染失败，请刷新页面重试";
+          this.outChartEmptyHint = "本月暂无分类数据";
         } else {
-          this.inChartEmptyHint = "入库统计占比图表渲染失败，请刷新页面重试";
+          this.inChartEmptyHint = "本月暂无分类数据";
         }
       }
     },
@@ -667,9 +1150,7 @@ export default {
       this._ckInitRetries = 0;
       try {
         const option = {
-          title: {
-            text: ""
-          },
+          title: { text: "" },
           tooltip: {
             trigger: "axis",
             formatter: (params) => {
@@ -687,28 +1168,11 @@ export default {
               return lines.join("<br/>");
             }
           },
-          legend: {
-            data: this.CKtitle
-          },
-          grid: {
-            left: "3%",
-            right: "4%",
-            bottom: "3%",
-            containLabel: true
-          },
-          toolbox: {
-            feature: {
-              saveAsImage: {}
-            }
-          },
-          xAxis: {
-            type: "category",
-            boundaryGap: false,
-            data: this.CKxData
-          },
-          yAxis: {
-            type: "value"
-          },
+          legend: { data: this.CKtitle },
+          grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
+          toolbox: { feature: { saveAsImage: {} } },
+          xAxis: { type: "category", boundaryGap: false, data: this.CKxData },
+          yAxis: { type: "value" },
           series: this.CKyData
         };
         if (!this.ckChartInstance) {
@@ -730,7 +1194,7 @@ export default {
         }
       } catch (err) {
         console.error("initCk", err);
-        this.ckChartEmptyHint = "仓库采购图表渲染失败，请刷新页面重试";
+        this.ckChartEmptyHint = "今日暂无业务流动";
       }
     },
     initKs() {
@@ -756,37 +1220,18 @@ export default {
       this._ksInitRetries = 0;
       try {
         const option = {
-          title: {
-            text: ""
-          },
-          tooltip: {
-            trigger: "axis"
-          },
-          legend: {
-            data: this.KStitle
-          },
-          grid: {
-            left: "3%",
-            right: "4%",
-            bottom: "3%",
-            containLabel: true
-          },
-          toolbox: {
-            feature: {
-              saveAsImage: {}
-            }
-          },
+          title: { text: "" },
+          tooltip: { trigger: "axis" },
+          legend: { data: this.KStitle },
+          grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
+          toolbox: { feature: { saveAsImage: {} } },
           xAxis: {
             type: "category",
             boundaryGap: false,
-            axisLabel: {
-              interval: 0
-            },
+            axisLabel: { interval: 0 },
             data: this.KSxData
           },
-          yAxis: {
-            type: "value"
-          },
+          yAxis: { type: "value" },
           series: this.KSyData
         };
         if (!this.ksChartInstance) {
@@ -808,7 +1253,7 @@ export default {
         }
       } catch (err) {
         console.error("initKs", err);
-        this.ksChartEmptyHint = "科室使用记录图表渲染失败，请刷新页面重试";
+        this.ksChartEmptyHint = "今日暂无业务流动";
       }
     }
   }
@@ -817,10 +1262,13 @@ export default {
 
 <style scoped lang="scss">
 .home {
-  /* 四边留白与 el-row :gutter 相同，列与列之间视觉间距 = 顶部间距 */
   margin-top: 0;
   padding: 16px;
   box-sizing: border-box;
+  font-family: "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  color: #676a6c;
+  overflow-x: hidden;
 
   blockquote {
     padding: 10px 20px;
@@ -843,10 +1291,318 @@ export default {
     margin: 0;
   }
 
-  font-family: "open sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 13px;
-  color: #676a6c;
-  overflow-x: hidden;
+  .home-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .home-view-switch {
+    display: inline-flex;
+    padding: 3px;
+    background: #f1f5f9;
+    border-radius: 8px;
+  }
+
+  .home-view-btn {
+    border: 0;
+    background: transparent;
+    height: 32px;
+    padding: 0 16px;
+    font-size: 13px;
+    color: #64748b;
+    border-radius: 6px;
+    cursor: pointer;
+    line-height: 32px;
+  }
+
+  .home-view-btn.active {
+    background: #fff;
+    color: var(--current-color, #2563eb);
+    font-weight: 600;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+
+  .home-save-default {
+    flex-shrink: 0;
+  }
+
+  .home-todo-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .home-todo-grid--compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (max-width: 1600px) {
+    .home-todo-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .home-todo-grid--compact {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .home-kpi-grid--3,
+    .home-kpi-grid--4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 992px) {
+    .home-todo-grid,
+    .home-todo-grid--compact,
+    .home-kpi-grid--3,
+    .home-kpi-grid--4 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .home-todo-card {
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 8px;
+    padding: 16px 14px 14px;
+    cursor: pointer;
+    min-height: 108px;
+    min-width: 0;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .home-todo-card:hover {
+    border-color: var(--current-color, #2563eb);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.08);
+  }
+
+  .home-todo-card.calm .home-todo-num {
+    color: #94a3b8;
+  }
+
+  .home-todo-card.warn {
+    border-color: #fecaca;
+  }
+
+  .home-todo-card.warn .home-todo-num {
+    color: #dc2626;
+  }
+
+  .home-todo-card--compact {
+    min-height: 88px;
+    padding: 12px;
+  }
+
+  .home-todo-num {
+    font-size: 28px;
+    line-height: 1.1;
+    font-weight: 650;
+    color: var(--current-color, #2563eb);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .home-todo-label {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  .home-todo-hint {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  .home-kpi-grid {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .home-kpi-grid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-kpi-grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .home-kpi-grid--global {
+    margin: 0;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .home-kpi-card {
+    background: #fff;
+    border: 1px solid #e8ecf1;
+    border-radius: 8px;
+    padding: 14px 14px 10px;
+    min-width: 0;
+  }
+
+  .home-kpi-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .home-kpi-label {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .home-kpi-delta {
+    font-size: 11px;
+    white-space: nowrap;
+    color: #94a3b8;
+  }
+  .home-kpi-delta.is-up { color: #16a34a; }
+  .home-kpi-delta.is-down { color: #dc2626; }
+  .home-kpi-delta.is-flat { color: #94a3b8; }
+
+  .home-kpi-num {
+    margin-top: 8px;
+    font-size: 24px;
+    font-weight: 650;
+    color: #0f172a;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .home-spark {
+    display: block;
+    width: 100%;
+    height: 28px;
+    margin-top: 8px;
+    color: var(--current-color, #2563eb);
+    opacity: 0.85;
+  }
+
+  .home-kpi-card.stock .home-spark {
+    display: none;
+  }
+
+  .home-menu-card {
+    border: 1px solid #e8ecf1;
+  }
+
+  .home-freq-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .home-freq-item {
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #334155;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .home-freq-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--current-color, #2563eb);
+    flex-shrink: 0;
+  }
+
+  .home-freq-item:hover {
+    border-color: var(--current-color, #2563eb);
+    color: var(--current-color, #2563eb);
+    background: #fff;
+  }
+
+  .home-empty-tip {
+    color: #94a3b8;
+    font-size: 13px;
+    padding: 8px 0 4px;
+  }
+
+  .home-cabin-empty {
+    min-height: 28vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    box-sizing: border-box;
+  }
+
+  .home-cabin-empty--pie {
+    min-height: 20vh;
+  }
+
+  .home-cabin-empty--menu {
+    min-height: 64px;
+    padding: 8px 0;
+  }
+
+  .home-cabin-empty-plot {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 6px;
+    width: 56%;
+    max-width: 220px;
+    height: 72px;
+    opacity: 0.7;
+  }
+
+  .home-cabin-empty-plot i {
+    display: block;
+    flex: 1;
+    border-radius: 2px 2px 0 0;
+    background: linear-gradient(180deg, #cbd5e1, #f1f5f9);
+  }
+  .home-cabin-empty-plot i:nth-child(1) { height: 22%; }
+  .home-cabin-empty-plot i:nth-child(2) { height: 38%; }
+  .home-cabin-empty-plot i:nth-child(3) { height: 28%; }
+  .home-cabin-empty-plot i:nth-child(4) { height: 52%; }
+  .home-cabin-empty-plot i:nth-child(5) { height: 34%; }
+  .home-cabin-empty-plot i:nth-child(6) { height: 44%; }
+  .home-cabin-empty-plot i:nth-child(7) { height: 26%; }
+
+  .home-cabin-empty-ring {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    border: 10px solid #e2e8f0;
+    border-top-color: #94a3b8;
+    box-sizing: border-box;
+  }
+
+  .home-cabin-empty-text {
+    margin: 0;
+    color: #94a3b8;
+    font-size: 13px;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .home-alert-row {
+    margin-bottom: 4px;
+  }
+
+  .home-global-menu-card {
+    margin-bottom: 2vh;
+  }
 
   ul {
     list-style-type: none;
@@ -897,15 +1653,16 @@ export default {
     ::v-deep .el-card__body {
       height: calc(42vh - 52px);
       display: flex;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch;
+      justify-content: stretch;
       box-sizing: border-box;
+      overflow: auto;
     }
   }
 
   .home-today-stats-body {
     width: 100%;
-    text-align: center;
+    text-align: left;
   }
 
   .home-today-stats-row {
@@ -953,7 +1710,6 @@ export default {
     flex-direction: column;
   }
 
-  /* 与中间列「今日统计」同高 42vh，备忘录底边与今日统计底边对齐 */
   .home-right-top-block {
     height: 42vh;
     display: flex;
@@ -972,7 +1728,6 @@ export default {
     min-height: 0;
   }
 
-  /* 与中间列「出库统计占比」同高、同间距，顶边在同一水平线 */
   .home-inbound-card {
     margin-top: 2vh;
     flex-shrink: 0;
