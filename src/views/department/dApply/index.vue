@@ -15,8 +15,8 @@
               <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -62,13 +62,16 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['department:dApply:add']"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['department:dApply:export']"
         >导出</el-button>
@@ -83,6 +86,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -129,6 +133,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-view"
               @click="handleView(scope.row)"
               v-if="scope.row.applyBillStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -144,6 +149,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:dApply:edit']"
               v-if="scope.row.applyBillStatus != 2"
@@ -152,6 +158,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:dApply:remove']"
               v-if="scope.row.applyBillStatus != 2"
@@ -162,7 +169,10 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
       <pagination
         :total="total"
         :page.sync="queryParams.pageNum"
@@ -361,7 +371,8 @@
                 </el-table-column>
                 <el-table-column v-if="!action" label="关联出库" width="88" align="center">
                   <template slot-scope="scope">
-                    <el-button type="text" size="small" @click="openOutboundRefDialog(scope.row.id)">查看</el-button>
+                    <el-button type="text"
+              icon="el-icon-view" size="small" @click="openOutboundRefDialog(scope.row.id)">查看</el-button>
                   </template>
                 </el-table-column>
                 <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
@@ -465,12 +476,12 @@
                         {{ (templateDetailPageNum - 1) * templateDetailPageSize + scope.$index + 1 }}
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材编码" min-width="100" show-overflow-tooltip>
+                    <el-table-column label="产品编码" min-width="100" show-overflow-tooltip>
                       <template slot-scope="scope">
                         {{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材名称" min-width="120" show-overflow-tooltip>
+                    <el-table-column label="产品名称" min-width="120" show-overflow-tooltip>
                       <template slot-scope="scope">
                         {{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}
                       </template>
@@ -589,8 +600,8 @@
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
-                    <el-form-item label="耗材名称" prop="materialKeyword">
-                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入耗材名称或首字母" clearable />
+                    <el-form-item label="产品名称" prop="materialKeyword">
+                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入产品名称或首字母" clearable />
                     </el-form-item>
                   </el-col>
                   <el-col :span="4">
@@ -628,8 +639,8 @@
                       {{ (addTemplateDetailPageNum - 1) * addTemplateDetailPageSize + scope.$index + 1 }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="耗材编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
-                  <el-table-column label="名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
+                  <el-table-column label="产品编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
+                  <el-table-column label="产品名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
                   <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
                   <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
                   <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
@@ -699,7 +710,7 @@
             <span>{{ outboundRefEntryLabel(scope.row.basApplyEntryId) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材名称" align="center" min-width="120" prop="materialName" show-overflow-tooltip />
+        <el-table-column label="产品名称" align="center" min-width="120" prop="materialName" show-overflow-tooltip />
         <el-table-column label="库房申请单号" align="center" width="140" prop="whApplyBillNo" show-overflow-tooltip />
         <el-table-column label="出库单号" align="center" width="140" prop="ckBillNo" show-overflow-tooltip />
         <el-table-column label="出库状态" align="center" width="100">
@@ -801,6 +812,7 @@ export default {
       selectedRowMap: {},
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 科室申领表格数据
       applyList: [],
       selectRow: [],
@@ -871,6 +883,20 @@ export default {
     };
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.applyList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     /** 引用模板-当前页的明细列表（前端分页） */
     templateDetailPageList() {
       if (!this.templateDetailList || this.templateDetailList.length === 0) {
@@ -1158,17 +1184,36 @@ export default {
       listApply(params).then(response => {
         this.applyList = response.rows || [];
         this.total = response.total != null ? response.total : 0;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
         this.$nextTick(() => {
           this.restoreMainPageSelection();
           this.scheduleApplyLayoutRefresh();
         });
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(params);
+        }
       }).catch(() => {
         this.applyList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listApply({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     nameBtn() {
       if (!this.form.departmentId) {
@@ -1915,6 +1960,18 @@ export default {
       this.ids = ids;
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'applyBillNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -3049,6 +3106,26 @@ export default {
 .app-container.d-apply-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.d-apply-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.d-apply-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.d-apply-page .apply-pagination-wrap .pagination-container {
@@ -3056,6 +3133,7 @@ export default {
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

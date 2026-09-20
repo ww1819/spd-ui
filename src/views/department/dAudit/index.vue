@@ -302,7 +302,7 @@
         <el-table :data="basApplyEntryList" :row-class-name="rowBasApplyEntryIndex" @selection-change="handleBasApplyEntrySelectionChange" ref="basApplyEntry" height="calc(32vh)" border :summary-method="getSummaries" show-summary>
           <el-table-column v-if="canEditCurrent()" type="selection" width="60" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable/>
-          <el-table-column label="名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
+          <el-table-column label="产品名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.materialSpec || '--' }}</span>

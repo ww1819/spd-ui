@@ -1,18 +1,18 @@
 <template>
-  <div class="app-container list-page first-inventory-page">
+  <div class="app-container list-page first-inventory-page cg-report-query">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
+        <div class="ctk-query-top-fields">
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectSupplier
+                v-model="queryParams.supplierId"
+                :keyword.sync="queryParams.supplierKeyword"
+                allow-keyword-blur
+                placeholder="编码/名称/首拼"
+              />
+            </div>
+          </div>
           <div
             v-for="t in moreSearchTypes"
             :key="t"
@@ -22,16 +22,6 @@
             <template v-if="t === 'warehouse'">
               <div class="query-select-wrapper query-select-wrapper--warehouse more-search-select-wrap">
                 <SelectWarehouse v-model="queryParams.warehouseIds" :multiple="true" />
-              </div>
-            </template>
-            <template v-else-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier
-                  v-model="queryParams.supplierId"
-                  :keyword.sync="queryParams.supplierKeyword"
-                  allow-keyword-blur
-                  placeholder="编码/名称/首拼"
-                />
               </div>
             </template>
             <el-input
@@ -59,7 +49,20 @@
               @keyup.enter.native="handleQuery"
             />
           </div>
-        </more-search-bar>
+        </div>
+        <more-search-bar
+          ref="moreSearchBar"
+          class="ctk-more-search-bar--hidden"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          :show-picker="false"
+          :show-save="false"
+          :show-search-actions="false"
+          @change="onMoreSearchTypesChange"
+        />
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -70,7 +73,7 @@
                 value-format="yyyy-MM-dd"
                 placeholder="起始日期"
                 clearable
-                class="query-date-start"
+                class="query-date-picker query-date-start"
               />
               <span class="query-date-sep">至</span>
               <el-date-picker
@@ -79,7 +82,7 @@
                 value-format="yyyy-MM-dd"
                 placeholder="截止日期"
                 clearable
-                class="query-date-end"
+                class="query-date-picker query-date-end"
               />
             </el-form-item>
             <el-form-item label="采购计划状态" prop="planStatus" class="query-item-inline query-item-wide-label">
@@ -92,55 +95,83 @@
                 />
               </el-select>
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
+    <el-row :gutter="0" class="list-toolbar ctk-list-toolbar">
       <div class="list-toolbar-left">
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport">导出</el-button>
+        <el-button type="warning" size="small" icon="el-icon-download" class="spd-btn" @click="handleExport">导出</el-button>
       </div>
       <div class="list-toolbar-right">
+        <div class="toolbar-more-search" @mouseenter="onToolbarMoreEnter" @mouseleave="onToolbarMoreLeave">
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option v-for="opt in moreSearchOptions" :key="opt.value" :label="opt.label" :value="opt.value"/>
+          </el-select>
+        </div>
+        <el-button type="success" size="small" icon="el-icon-check" class="spd-btn" @click="saveMoreSearchDefaults">保存查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
-    <div class="table-container">
+    <div class="table-container" ref="tablePanel">
       <el-table
+        ref="reportTable"
         v-loading="loading"
         :data="reportList"
-        height="60vh"
+        :height="tableHeight"
+        :row-key="getDetailRowKey"
+        :row-class-name="cgReportRowClassName"
         border
         stripe
-        class="table-compact"
+        class="cg-report-main-table"
         @sort-change="handleSortChange"
+        @selection-change="handleSelectionChange"
+        @row-dblclick="handleDetailRowDblclick"
       >
-        <el-table-column type="index" label="序号" width="80" align="center" show-overflow-tooltip resizable>
+        <el-table-column type="selection" width="48" align="center" header-align="center" class-name="cg-select-col col-serial-center" />
+        <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable>
           <template slot-scope="scope">
-            {{ scope.$index + 1 }}
+            <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="计划单号" align="center" prop="planNo" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="耗材名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="规格" align="center" prop="materialSpec" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="单位" align="center" prop="materialUnit" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="供应商" align="center" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="仓库" align="center" prop="warehouseName" width="130" show-overflow-tooltip resizable />
-        <el-table-column label="数量" align="center" prop="qty" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
+        <el-table-column label="计划单号" align="left" header-align="center" class-name="ctk-col-left" prop="planNo" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="产品编码" align="left" header-align="center" class-name="ctk-col-left" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="产品名称" align="left" header-align="center" class-name="ctk-col-left" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" prop="materialSpec" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" prop="materialUnit" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="供应商" align="left" header-align="center" class-name="ctk-col-left" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable="custom" />
+        <el-table-column label="仓库" align="left" header-align="center" class-name="ctk-col-left" prop="warehouseName" width="130" show-overflow-tooltip resizable />
+        <el-table-column label="数量" align="center" prop="qty" width="110" min-width="100" show-overflow-tooltip resizable sortable="custom">
           <template slot-scope="scope">
             <span v-if="scope.row.qty">{{ scope.row.qty }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="单价" align="center" prop="price" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
+        <el-table-column label="单价" align="center" prop="price" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom">
           <template slot-scope="scope">
             <span v-if="scope.row.price">{{ scope.row.price | formatCurrency }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="金额" align="center" prop="amt" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom" :sort-orders="['ascending', 'descending']">
+        <el-table-column label="金额" align="center" prop="amt" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom">
           <template slot-scope="scope">
             <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency }}</span>
             <span v-else>--</span>
@@ -152,7 +183,7 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="制单人" align="center" prop="createBy" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="制单人" align="left" header-align="center" class-name="ctk-col-left" prop="createBy" width="120" show-overflow-tooltip resizable />
         <el-table-column label="计划状态" align="center" prop="planStatus" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus" />
@@ -174,7 +205,7 @@
           :page-size="queryParams.pageSize"
           :page-sizes="[10, 20, 30, 50]"
           :total="total"
-          :pager-count="11"
+          :pager-count="7"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -208,7 +239,6 @@ export default {
       moreSearchOptions: [
         { label: "计划单号", value: "planNo" },
         { label: "仓库", value: "warehouse" },
-        { label: "供应商", value: "supplier" },
         { label: "耗材", value: "materialKeyword" },
         { label: "规格", value: "materialSpecKeyword" }
       ],
@@ -230,7 +260,11 @@ export default {
       },
       sortProp: null,
       sortOrder: null,
-      numericSortProps: ["qty", "price", "amt"]
+      numericSortProps: ["qty", "price", "amt"],
+      selectedRowKeys: [],
+      toolbarMoreHover: false,
+      toolbarMoreCloseTimer: null,
+      tableHeight: 400
     };
   },
   computed: {
@@ -266,7 +300,105 @@ export default {
     this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateTableHeight();
+      setTimeout(() => this.updateTableHeight(), 80);
+    });
+    window.addEventListener('resize', this.updateTableHeight);
+  },
+  activated() {
+    this.$nextTick(() => this.updateTableHeight());
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateTableHeight);
+    this.clearToolbarMoreCloseTimer();
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateTableHeight());
+    }
+  },
   methods: {
+    getDetailRowKey(row) {
+      return (row && row._rowKey) || '';
+    },
+    cgReportRowClassName({ row }) {
+      const key = this.getDetailRowKey(row);
+      if (key && this.selectedRowKeys.indexOf(key) !== -1) {
+        return 'cg-row-selected';
+      }
+      return '';
+    },
+    handleSelectionChange(selection) {
+      this.selectedRowKeys = (selection || []).map(row => this.getDetailRowKey(row));
+    },
+    handleDetailRowDblclick(row) {
+      const table = this.$refs.reportTable;
+      if (!table || !row) return;
+      const key = this.getDetailRowKey(row);
+      const storeSelection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = !!(key && (
+        this.selectedRowKeys.indexOf(key) !== -1 ||
+        storeSelection.some(r => this.getDetailRowKey(r) === key)
+      ));
+      table.toggleRowSelection(row, !selected);
+    },
+    updateTableHeight() {
+      this.$nextTick(() => {
+        const panel = this.$refs.tablePanel;
+        if (!panel) return;
+        const h = Math.floor(panel.clientHeight);
+        if (h > 120) {
+          this.tableHeight = h;
+          this.$nextTick(() => {
+            if (this.$refs.reportTable && this.$refs.reportTable.doLayout) {
+              this.$refs.reportTable.doLayout();
+            }
+          });
+        }
+      });
+    },
+    saveMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.saveDefaults === 'function') {
+        bar.saveDefaults();
+      }
+    },
+    clearToolbarMoreCloseTimer() {
+      if (this.toolbarMoreCloseTimer) {
+        clearTimeout(this.toolbarMoreCloseTimer);
+        this.toolbarMoreCloseTimer = null;
+      }
+    },
+    setToolbarMoreVisible(visible) {
+      const sel = this.$refs.toolbarMoreSelect;
+      if (!sel) return;
+      if (sel.visible === visible) return;
+      sel.visible = visible;
+      if (!visible && typeof sel.blur === 'function') {
+        sel.blur();
+      }
+    },
+    onToolbarMoreEnter() {
+      this.toolbarMoreHover = true;
+      this.clearToolbarMoreCloseTimer();
+      this.setToolbarMoreVisible(true);
+    },
+    onToolbarMoreLeave() {
+      this.toolbarMoreHover = false;
+      this.clearToolbarMoreCloseTimer();
+      this.toolbarMoreCloseTimer = setTimeout(() => {
+        if (!this.toolbarMoreHover) {
+          this.setToolbarMoreVisible(false);
+        }
+      }, 280);
+    },
+    onToolbarMoreVisibleChange(visible) {
+      if (!visible) {
+        this.toolbarMoreHover = false;
+      }
+    },
     buildPlanListParams() {
       const queryParams = { ...this.queryParams };
       this.applyMoreSearchToQueryParams(queryParams);
@@ -341,6 +473,7 @@ export default {
             this.reportList = [];
             this.total = 0;
             this.loading = false;
+            this.$nextTick(() => this.updateTableHeight());
             return;
           }
           this.fetchPlanDetails(planList);
@@ -350,6 +483,7 @@ export default {
           this.reportList = [];
           this.total = 0;
           this.loading = false;
+          this.$nextTick(() => this.updateTableHeight());
         });
     },
     fetchPlanDetails(planList) {
@@ -379,16 +513,28 @@ export default {
         .then(plansWithDetails => {
           const detailList = this.processPlanData(plansWithDetails);
           const filteredList = this.filterDetailData(detailList);
+          this.selectedRowKeys = [];
+          (filteredList || []).forEach((row, idx) => {
+            if (row && !row._rowKey) {
+              row._rowKey = 'cg-' + idx + '-' + [
+                row.planNo, row.orderNo, row.materialCode, row.materialId,
+                row.supplierName, row.warehouseName, row.qty, row.orderQty,
+                row.totalQty, row.amt, row.totalAmt, row.unitPrice, row.price
+              ].map(v => (v == null ? '' : String(v))).join('_');
+            }
+          });
           this.allDetailList = filteredList;
           this.total = filteredList.length;
           this.applyPagination();
           this.loading = false;
+          this.$nextTick(() => this.updateTableHeight());
         })
         .catch(() => {
           this.allDetailList = [];
           this.reportList = [];
           this.total = 0;
           this.loading = false;
+          this.$nextTick(() => this.updateTableHeight());
         });
     },
     filterDetailData(detailList) {
@@ -537,7 +683,7 @@ export default {
       this.handleQuery();
     },
     moreSearchFieldClass(t) {
-      if (['warehouse', 'supplier'].includes(t)) {
+      if (t === 'warehouse') {
         return 'more-search-field--select';
       }
       return 'more-search-field--text';
@@ -545,7 +691,8 @@ export default {
     loadMoreSearchDefaults() {
       const bar = this.$refs.moreSearchBar;
       if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
+        const loaded = bar.loadDefaults();
+        return (loaded || []).filter(v => v !== 'supplier');
       }
       const fallback = this.builtInMoreSearchDefaults.slice();
       try {
@@ -565,7 +712,6 @@ export default {
       const map = {
         planNo: 'planNo',
         warehouse: 'warehouseIds',
-        supplier: 'supplierId',
         materialKeyword: 'materialKeyword',
         materialSpecKeyword: 'materialSpecKeyword'
       };
@@ -574,14 +720,10 @@ export default {
           target[map[type]] = type === 'warehouse' ? [] : null;
         }
       });
-      if (!set.has('supplier')) {
-        target.supplierKeyword = null;
-      }
     },
     onMoreSearchTypesChange() {
       this.applyMoreSearchToQueryParams(this.queryParams);
     },
-    /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
       const rows = this.allDetailList || [];
       if (!rows.length) {
@@ -613,27 +755,173 @@ export default {
 };
 </script>
 
-<style scoped>
-.app-container {
-  margin-top: -10px;
+<style>
+.app-container.first-inventory-page {
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-.query-row-left {
-  margin-bottom: 2px;
+.first-inventory-page .pagination-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
+  gap: 12px !important;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  padding: 4px 0 6px !important;
+  min-height: 40px !important;
+  overflow: visible !important;
+}
+.first-inventory-page .pagination-wrapper .pagination-summary {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 32px;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
+  font-weight: 700;
+}
+.first-inventory-page .pagination-wrapper .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 32px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: auto !important;
+  padding: 0 4px !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+.first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+
+.cg-report-query .ctk-list-toolbar .toolbar-more-search .more-search-type,
+.cg-report-query .ctk-list-toolbar .toolbar-more-search .more-search-type.el-select,
+.cg-report-query .ctk-list-toolbar .toolbar-more-search .el-select {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  height: 32px !important;
+  overflow: visible !important;
+}
+.cg-report-query .ctk-list-toolbar .toolbar-more-search .el-select > .el-input,
+.cg-report-query .ctk-list-toolbar .toolbar-more-search .el-select .el-input__inner {
+  width: 160px !important;
+  max-width: 160px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+}
+.cg-report-query .ctk-list-toolbar .toolbar-more-search .el-select-dropdown {
+  min-width: 160px !important;
+}
+
+.first-inventory-page .cg-report-main-table .el-table__header-wrapper th,
+.first-inventory-page .cg-report-main-table .el-table__header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  height: 34px !important;
+}
+.first-inventory-page .cg-report-main-table .el-table__header th.gutter {
+  background-color: #f1f5f9 !important;
+}
+
+.first-inventory-page .cg-report-main-table .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+.first-inventory-page .cg-report-main-table .el-table__body tr.cg-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+.first-inventory-page .cg-report-main-table .el-table__body tr.cg-row-selected:hover > td {
+  background-color: #A0CBFF !important;
+}
+.first-inventory-page .cg-report-main-table th.cg-select-col,
+.first-inventory-page .cg-report-main-table td.cg-select-col,
+.first-inventory-page .cg-report-main-table th.el-table-column--selection,
+.first-inventory-page .cg-report-main-table td.el-table-column--selection {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-shadow: 2px 0 0 0 #e2e8f0;
+}
+.first-inventory-page .cg-report-main-table th.cg-select-col,
+.first-inventory-page .cg-report-main-table th.el-table-column--selection {
+  z-index: 3;
+  background-color: #f1f5f9;
+}
+.first-inventory-page .cg-report-main-table td.cg-select-col,
+.first-inventory-page .cg-report-main-table td.el-table-column--selection {
+  background-color: #fff;
+}
+.first-inventory-page .cg-report-main-table .el-table__body tr.el-table__row--striped td.cg-select-col,
+.first-inventory-page .cg-report-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa;
+}
+.first-inventory-page .cg-report-main-table .el-table__body tr:hover > td.cg-select-col,
+.first-inventory-page .cg-report-main-table .el-table__body tr:hover > td.el-table-column--selection {
+  background-color: #D6EBFF;
+}
+.first-inventory-page .cg-report-main-table .el-table__body tr.cg-row-selected > td.cg-select-col,
+.first-inventory-page .cg-report-main-table .el-table__body tr.cg-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF;
+}
+.first-inventory-page .cg-report-main-table .el-table__body tr.cg-row-selected:hover > td.cg-select-col,
+.first-inventory-page .cg-report-main-table .el-table__body tr.cg-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF;
+}
+.first-inventory-page .cg-report-main-table td.cg-select-col .cell,
+.first-inventory-page .cg-report-main-table td.el-table-column--selection .cell,
+.first-inventory-page .cg-report-main-table th.cg-select-col .cell,
+.first-inventory-page .cg-report-main-table th.el-table-column--selection .cell {
+  text-align: center !important;
+  justify-content: center !important;
+  background: transparent;
+}
+</style>
+
+<style scoped>
+.app-container {
+  margin-top: 0;
+  padding-top: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .query-item-inline {
   display: inline-block;
   margin-right: 16px;
   margin-bottom: 2px;
-}
-
-.query-item-inline .el-form-item__label {
-  width: 80px !important;
-}
-
-.query-item-inline .el-form-item {
-  margin-bottom: 0;
 }
 
 .query-item-wide-label .el-form-item__label {
@@ -648,34 +936,67 @@ export default {
   width: 220px;
 }
 
-.query-input-text {
-  width: 180px;
-}
-
 .query-select-status {
   width: 150px;
 }
 
+.more-search-dynamic-field {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 6px;
+  height: 32px;
+}
+.more-search-label {
+  color: #606266;
+  font-size: 12px;
+  line-height: 32px;
+  white-space: nowrap;
+}
+
+.ctk-query-top-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+.ctk-more-search-bar--hidden {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+.more-search-type {
+  width: 160px;
+  min-width: 160px;
+  max-width: 160px;
+}
+.more-search-input--dynamic {
+  width: 180px;
+}
+
 .query-row-second {
-  margin-bottom: 2px;
-  position: relative;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .query-row-second-inner {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
   width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
+  gap: 8px;
+  padding-bottom: 0;
 }
 
 .query-row-second-inner .el-form-item {
   flex: 0 0 auto;
   margin-bottom: 0 !important;
-  margin-right: 8px;
+  margin-right: 0;
   white-space: nowrap;
 }
 
@@ -685,220 +1006,127 @@ export default {
   flex-wrap: nowrap;
 }
 
-.query-item-date-range .query-date-start,
-.query-item-date-range .query-date-end {
-  width: 180px !important;
-}
-
-.query-item-date-range .query-date-start {
-  margin-right: 0;
-}
-
-.query-item-date-range .query-date-end {
+.ctk-query-actions {
   margin-left: 0;
-}
-
-.query-item-date-range .query-date-sep {
-  margin: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-.list-query-panel {
-  margin-top: -20px;
+.query-item-date-range .query-date-start,
+.query-item-date-range .query-date-end {
+  width: 138px;
+}
+.query-item-date-range .query-date-start {
+  margin-right: 6px;
+}
+.query-item-date-range .query-date-end {
+  margin-left: 6px;
+}
+.query-item-date-range .query-date-sep {
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
-.button-row-inventory {
+.form-fields-container {
+  margin-bottom: 4px;
+  margin-top: 0;
+  margin-left: 0;
+  margin-right: 0;
+  flex: 0 0 auto;
+}
+
+.ctk-list-toolbar.list-toolbar {
   margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
+  margin-bottom: 4px !important;
+  flex: 0 0 auto;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
 }
-
-.button-row-inventory-flex {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.button-row-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.button-row-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
+.ctk-list-toolbar .list-toolbar-right {
+  flex-wrap: nowrap !important;
+  flex-shrink: 0;
 }
 
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
+  flex: 1 1 auto;
 }
 
-.table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 32px;
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  scrollbar-width: thin;
-  scrollbar-color: #a0a0a0 #e8e8e8;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 3;
-  background: #fff;
-}
-
-.table-container ::v-deep .el-table__fixed-footer-wrapper {
-  position: sticky;
-  bottom: 12px;
-  z-index: 4;
-  background: #fff;
-}
-
+.table-container ::v-deep .cg-report-main-table .el-table__body-wrapper::-webkit-scrollbar,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 10px;
-  transition: height 0.2s ease;
+  width: 8px !important;
+  height: 12px !important;
 }
-
-.table-container:hover ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 12px;
+.table-container ::v-deep .cg-report-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
-
+.table-container ::v-deep .cg-report-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+.table-container ::v-deep .cg-report-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #e8e8e8;
-  border-radius: 3px;
-  margin: 0 2px;
-  cursor: pointer;
+  background: #e8e8e8 !important;
+  border-radius: 4px !important;
 }
-
+.table-container ::v-deep .cg-report-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #a0a0a0;
-  border-radius: 3px;
-  cursor: grab;
+  background: #909090 !important;
+  border-radius: 4px !important;
 }
-
+.table-container ::v-deep .cg-report-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #808080;
-}
-
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
-  background: #606060;
-  cursor: grabbing;
+  background: #707070 !important;
 }
 
 .table-container ::v-deep .el-table th.el-table__cell {
-  padding: 10px 12px !important;
+  padding: 4px 6px !important;
 }
 
 .table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 12px !important;
+  padding: 10px 6px !important;
 }
 
-.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   line-height: 23px;
-}
-
-.table-container ::v-deep .el-table.table-compact th .caret-wrapper {
-  position: relative !important;
-  display: inline-block !important;
-  flex-shrink: 0 !important;
-  height: 26px !important;
-  width: 24px !important;
-  margin-left: 4px !important;
-  cursor: pointer !important;
-  vertical-align: middle !important;
-  overflow: visible !important;
-}
-
-.table-container ::v-deep .el-table.table-compact th .sort-caret {
-  position: absolute !important;
-  left: 7px !important;
-  width: 0 !important;
-  height: 0 !important;
-  border-style: solid !important;
-  border-left-width: 5px !important;
-  border-right-width: 5px !important;
-  border-left-color: transparent !important;
-  border-right-color: transparent !important;
-}
-
-.table-container ::v-deep .el-table.table-compact th .sort-caret.ascending {
-  top: 3px !important;
-  border-top-width: 0 !important;
-  border-bottom-width: 5px !important;
-  border-bottom-color: #C0C4CC !important;
-}
-
-.table-container ::v-deep .el-table.table-compact th .sort-caret.descending {
-  bottom: 3px !important;
-  border-bottom-width: 0 !important;
-  border-top-width: 5px !important;
-  border-top-color: #C0C4CC !important;
-}
-
-.table-container ::v-deep .el-table.table-compact th.ascending .sort-caret.ascending {
-  border-bottom-color: #409EFF !important;
-}
-
-.table-container ::v-deep .el-table.table-compact th.descending .sort-caret.descending {
-  border-top-color: #409EFF !important;
-}
-
-.table-container ::v-deep .el-table__footer-wrapper td.el-table__cell > .cell,
-.table-container ::v-deep .el-table__fixed-footer-wrapper td.el-table__cell > .cell {
-  white-space: nowrap;
   word-break: normal;
-  overflow: visible;
-  line-height: 23px;
-}
-</style>
-
-<style>
-.app-container.first-inventory-page {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
 }
 
-.first-inventory-page .pagination-wrapper {
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 12px !important;
-  margin-top: 0 !important;
-  padding-bottom: 0 !important;
-  margin-bottom: 0 !important;
+.table-container ::v-deep .el-table .cell {
+  padding: 0 4px;
 }
 
-.first-inventory-page .pagination-wrapper .pagination-summary {
-  flex-shrink: 0;
-  font-size: 14px;
-  color: #606266;
-  white-space: nowrap;
+.table-container ::v-deep .el-table th.col-serial-center .cell,
+.table-container ::v-deep .el-table td.col-serial-center .cell {
+  text-align: center !important;
+  justify-content: center;
 }
 
-.first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
-  font-weight: 700;
+.table-container ::v-deep .col-serial-center-text {
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 
-.first-inventory-page .pagination-wrapper .pagination-container {
-  margin-top: 0 !important;
-  margin-left: auto !important;
-  padding: 4px 0 4px 16px !important;
-  flex-shrink: 0;
+.table-container ::v-deep .el-table th.ctk-col-left .cell {
+  text-align: center !important;
 }
-
-.first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
-  padding: 2px 0 !important;
+.table-container ::v-deep .el-table td.ctk-col-left .cell {
+  text-align: left !important;
 }
 </style>

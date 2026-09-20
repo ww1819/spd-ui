@@ -129,13 +129,13 @@
             <span v-else>{{ scope.row.warehouseName }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="产品编码" align="center" prop="materialCode" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row._summaryType">-</span>
             <span v-else>{{ scope.row.materialCode }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材名称" align="center" prop="materialName" min-width="160" show-overflow-tooltip resizable>
+        <el-table-column label="产品名称" align="center" prop="materialName" min-width="160" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row._summaryType">-</span>
             <span v-else>{{ scope.row.materialName }}</span>

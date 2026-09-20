@@ -36,8 +36,8 @@
         <col class="col-category">
       </colgroup>
       <tr>
-        <th>耗材编码</th>
-        <th>耗材名称</th>
+        <th>产品编码</th>
+        <th>产品名称</th>
         <th>规格</th>
 <!--        <th>单位</th>-->
         <th>单价</th>

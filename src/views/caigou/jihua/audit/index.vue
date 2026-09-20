@@ -18,8 +18,8 @@
               <SelectWarehouse v-model="queryParams.warehouseId"/>
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -65,19 +65,24 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           :disabled="multiple"
         >审核</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['caigou:jihua:export']"
         >导出计划明细</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExportPurchaseRecord"
         >导出采购记录</el-button>
       </div>
@@ -91,10 +96,10 @@
               class="table-compact apply-main-table"
               row-key="id"
               :row-class-name="applyMainRowClassName"
-              show-summary :summary-method="getTotalSummaries"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
-      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" width="60" min-width="60" show-overflow-tooltip resizable />
       <el-table-column label="计划单号" align="center" prop="planNo" width="180" min-width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
@@ -141,10 +146,12 @@
       <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="140">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
-            <el-button size="small" type="text" @click="handleView(scope.row)" style="padding: 0 5px; margin: 0;">查看</el-button>
+            <el-button size="small" type="text"
+              icon="el-icon-view" @click="handleView(scope.row)" style="padding: 0 5px; margin: 0;">查看</el-button>
             <el-button
               size="small"
               type="text"
+              icon="el-icon-check"
               @click="handleAudit(scope.row)"
               v-if="scope.row.planStatus == '1' || scope.row.planStatus == 1"
               style="padding: 0 5px; margin: 0;"
@@ -154,13 +161,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -299,6 +309,7 @@ export default {
       mainListSelectionTick: 0,
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 计划表格数据
       warehouseList: [],
       stkMaterialList: [],
@@ -378,6 +389,20 @@ export default {
     }
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.warehouseList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     planSourceDisplay() {
       const list = this.stkIoBillEntryList || [];
       const set = new Set();
@@ -567,31 +592,6 @@ getSummaries(param) {
       });
       return sums;
     },
-    getTotalSummaries(param) {
-      const { columns, data } = param;
-      const sums = [];
-      columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
-          return;
-        }
-        const values = data.map(item => Number(item[column.property]));
-        if(index === 4){
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              } else {
-                return prev;
-              }
-            }, 0);
-            sums[index] = this.formatSumByProp(sums[index], column.property);
-          }
-        }
-      });
-      return sums;
-    },
     /** 查询计划列表 */
     getList() {
       this.loading = true;
@@ -599,7 +599,14 @@ getSummaries(param) {
       listPurchasePlan(params).then(response => {
         this.warehouseList = response.rows || [];
         this.total = response.total;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(params);
+        }
         this.$nextTick(() => {
           this.restoreMainPageSelection();
           this.scheduleApplyLayoutRefresh();
@@ -607,9 +614,21 @@ getSummaries(param) {
       }).catch(() => {
         this.warehouseList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listPurchasePlan({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     getStatDate(){
       const d = new Date();
@@ -701,6 +720,21 @@ handleQuery() {
       });
     },
     /** 查看按钮操作（与采购计划处单据查看一致） */
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'planNo')) {
+        return;
+      }
+      if (typeof this.selectableAuditRow === 'function' && !this.selectableAuditRow(row)) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
     handleView(row){
       const id = row.id;
       getPurchasePlan(id).then(response => {
@@ -1840,6 +1874,26 @@ html body .app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .ap
 .app-container.caigou-jihua-audit-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.caigou-jihua-audit-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.caigou-jihua-audit-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.caigou-jihua-audit-page .apply-pagination-wrap .pagination-container {
@@ -1847,6 +1901,7 @@ html body .app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .ap
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

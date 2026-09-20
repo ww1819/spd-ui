@@ -4,13 +4,16 @@
  */
 
 $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-audit-page,
-  departmentTransfer-apply-page, d-audit-page, batch-consume-page, stocktaking-apply-page, d-apply-audit-page,
+  departmentTransfer-apply-page, d-audit-page, batch-consume-page, stocktaking-apply-page, stocktaking-audit-page,
+  d-apply-page, d-apply-audit-page, d-purchase-page, d-purchase-audit-page,
   gzOrder-goodsApply-page, gzOrder-refund-page, gzOrder-follow-page,
   settlement-apply-page, settlement-audit-page,
   finance-invoice-page, finance-wh-settlement-page, finance-supp-settlement-page,
   inWarehouse-apply-page, inWarehouse-audit-page, inWarehouse-refundGoodsApply-page, inWarehouse-refundGoodsAudit-page,
-  outWarehouse-refundDepotAudit-page, stocktaking-page, stocktaking-profit-page, profit-loss-page,
-  initial-stock-import-page, stocktaking-in-page, warehouseTransfer-apply-page, warehouseTransfer-audit-page,
+  outWarehouse-apply-page, outWarehouse-audit-page, outWarehouse-refundDepotApply-page, outWarehouse-refundDepotAudit-page,
+  warehouseTransfer-apply-page, warehouseTransfer-audit-page,
+  stocktaking-page, stocktaking-profit-page, profit-loss-page,
+  initial-stock-import-page, stocktaking-in-page,
   new-product-apply-page, new-product-audit-page, wh-warehouse-apply-page,
   patient-charge-page;
 
@@ -53,9 +56,10 @@ $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-aud
     flex: 0 0 auto;
   }
 
-  /* 搜索区与「新增」等按钮行之间留白，与页面顶部 padding 一致 */
+  /* 搜索区与「新增」等按钮行之间留白，与按钮行到表格的间距对齐 */
   .app-container.#{$page} > .list-toolbar {
-    margin-top: 8px !important;
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
   }
 
   .app-container.#{$page} .list-query-panel .el-form {
@@ -209,6 +213,27 @@ $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-aud
   .app-container.#{$page} .apply-pagination-wrap {
     flex: 0 0 auto;
     border-top: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 4px 0 0;
+  }
+
+  .app-container.#{$page} .apply-pagination-wrap .pagination-summary {
+    margin-left: 14px;
+    padding-left: 2px;
+    font-size: 13px;
+    color: #606266;
+    line-height: 28px;
+    flex: 1 1 auto;
+    min-width: 180px;
+  }
+
+  .app-container.#{$page} .apply-pagination-wrap .pagination-summary .summary-label {
+    font-weight: 600;
+    color: #303133;
   }
 
   .app-container.#{$page} .apply-pagination-wrap .pagination-container {
@@ -216,10 +241,11 @@ $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-aud
     min-height: 52px;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+    margin-left: auto;
     padding: 10px 14px 14px !important;
     background: #fff;
     border: none;
-    border-top: 1px solid #eef2f7;
+    border-top: none;
     border-radius: 0 0 10px 10px;
     box-shadow: none;
     display: flex;

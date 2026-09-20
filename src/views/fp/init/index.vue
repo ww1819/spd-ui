@@ -275,12 +275,12 @@
                     style="width: 100%"
                   >
                     <el-table-column type="index" label="序号" align="center" width="80" show-overflow-tooltip></el-table-column>
-                    <el-table-column label="耗材编码" align="center" width="120" show-overflow-tooltip>
+                    <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材名称" align="center" width="180" show-overflow-tooltip>
+                    <el-table-column label="产品名称" align="center" width="180" show-overflow-tooltip>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}</span>
                       </template>

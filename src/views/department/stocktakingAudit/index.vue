@@ -15,8 +15,8 @@
               <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -59,19 +59,23 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           v-hasPermi="['department:stocktakingAudit:audit']"
         >审核</el-button>
         <el-button
           size="small"
+          icon="el-icon-close"
           class="spd-btn spd-btn--danger"
           @click="handleBatchReject"
           v-hasPermi="['department:stocktakingAudit:reject']"
         >驳回</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['department:stocktakingAudit:export']"
         >导出</el-button>
@@ -86,8 +90,9 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
-      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="盘点单号" align="center" prop="stockNo" width="150" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
@@ -155,6 +160,7 @@
               v-if="scope.row.stockStatus == 2"
               size="small"
               type="text"
+              icon="el-icon-download"
               v-hasPermi="['department:stocktakingAudit:export', 'department:stocktaking:export']"
               @click="handleExportRow(scope.row)"
               style="padding: 0 5px; margin: 0;"
@@ -162,12 +168,14 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-view"
               @click="handleView(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
             <el-button
               size="small"
               type="text"
+              icon="el-icon-check"
               @click="handleAudit(scope.row)"
               v-hasPermi="['department:stocktakingAudit:audit']"
               v-if="scope.row.stockStatus == 1"
@@ -176,6 +184,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-close"
               @click="handleReject(scope.row)"
               v-hasPermi="['department:stocktakingAudit:reject']"
               v-if="scope.row.stockStatus == 1"
@@ -186,13 +195,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -309,13 +321,13 @@
                 :height="detailTableHeight"
               >
                 <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="产品编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
                     <span v-else>--</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材名称" prop="materialId" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')">
+                <el-table-column label="产品名称" prop="materialId" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')">
                   <template slot-scope="scope">
                     <span v-if="scope.row.material">{{ scope.row.material.name || '--' }}</span>
                     <span v-else>--</span>
@@ -456,6 +468,10 @@ export default {
       selectedRowMap: {},
       // 总条数
       total: 0,
+      /** 列表全量合计（后端 totalInfo） */
+      totalInfo: {
+        totalAmt: 0
+      },
       // 盘点表格数据
       stocktakingList: [],
       // 盘点明细表格数据
@@ -514,6 +530,22 @@ export default {
     }
   },
   computed: {
+    /** 列表全量总金额（后端合计） */
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    /** 当前页金额合计 */
+    pageTotalAmtFormatted() {
+      const list = this.stocktakingList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     /** 弹窗明细表高度：与到货验收一致；待审核含驳回原因行时额外扣减 */
     detailTableHeight() {
       let offset = 384;
@@ -767,17 +799,37 @@ export default {
       listStocktakingAudit(queryParams).then(response => {
         this.stocktakingList = (response && response.rows) || [];
         this.total = (response && response.total) || 0;
+        const ti = (response && response.totalInfo) || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
         this.$nextTick(() => {
           this.restoreMainPageSelection();
           this.scheduleApplyLayoutRefresh();
         });
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(queryParams);
+        }
       }).catch(() => {
         this.stocktakingList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
       });
+    },
+    /** 总金额兜底：按当前筛选条件取全量行汇总金额 */
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listStocktakingAudit({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     /** 搜索按钮操作 */
     handleQuery() {
@@ -811,6 +863,25 @@ export default {
       this.ids = ids;
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'stockNo')) {
+        return;
+      }
+      if (typeof this.selectableAuditRow === 'function' && !this.selectableAuditRow(row)) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
+    /** 仅待审核单据可勾选 */
+    selectableAuditRow(row) {
+      return row.stockStatus == 1 || row.stockStatus === '1';
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -1923,6 +1994,27 @@ html body .app-container.stocktaking-audit-page .apply-inbound-nested-modal .app
 .app-container.stocktaking-audit-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 4px 0 0;
+}
+
+.app-container.stocktaking-audit-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.stocktaking-audit-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.stocktaking-audit-page .apply-pagination-wrap .pagination-container {
@@ -1930,10 +2022,11 @@ html body .app-container.stocktaking-audit-page .apply-inbound-nested-modal .app
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;
-  border-top: 1px solid #eef2f7;
+  border-top: none;
   border-radius: 0 0 10px 10px;
   box-shadow: none;
   display: flex;

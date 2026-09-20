@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="order-print" ref="receiptOrderPrintRef" hidden="hidden">
 <!--    <div class="title" style="padding-top: 15px">结算单</div>-->
     <div style="font-size: 22px;text-align: center;">
@@ -15,8 +15,8 @@
     </div>
     <table class="common-table">
       <tr>
-        <th>耗材编码</th>
-        <th>耗材名称</th>
+        <th>产品编码</th>
+        <th>产品名称</th>
         <th>规格</th>
 <!--        <th>单位</th>-->
         <th>单价</th>

@@ -389,7 +389,7 @@
             <span>{{ scope.row.writeOffDeptName || '--' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材名称" prop="materialName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="产品名称" prop="materialName" min-width="110" show-overflow-tooltip />
         <el-table-column label="规格" prop="materialSpeci" min-width="90" show-overflow-tooltip>
           <template slot-scope="scope">
             <span>{{ scope.row.materialSpeci || '--' }}</span>

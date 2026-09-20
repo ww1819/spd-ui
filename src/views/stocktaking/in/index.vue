@@ -278,13 +278,13 @@
         <el-table :data="filteredWhStocktakingEntryList" v-loading="detailLoading" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
           <el-table-column v-if="detailEditable" type="selection" width="50" align="center" resizable />
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="耗材编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
+          <el-table-column label="产品编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="耗材名称" prop="materialId" width="140" show-overflow-tooltip resizable>
+          <el-table-column label="产品名称" prop="materialId" width="140" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <SelectMaterial v-if="!scope.row.kcNo && action" v-model="scope.row.materialId" :value2="isShow"/>
               <span v-else>{{ scope.row.material ? (scope.row.material.name || '--') : '--' }}</span>
@@ -472,13 +472,13 @@
       :close-on-click-modal="false"
     >
       <el-table :data="pendingNewEntries" border size="small" v-loading="profitNameSpecStockLoading">
-        <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
+        <el-table-column label="产品编码" width="120" align="center" show-overflow-tooltip>
           <template slot-scope="scope">
             <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
+        <el-table-column label="产品名称" min-width="150" show-overflow-tooltip>
           <template slot-scope="scope">{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '--' }}</template>
         </el-table-column>
         <el-table-column label="规格" min-width="120" show-overflow-tooltip>
@@ -579,13 +579,13 @@
         以下明细「账面数量(qty)」与当前仓库库存不一致，请逐条点击「确定」确认；确认后将把明细账面更新为当前仓库数量，并重新计算金额。「盈亏数量」= 盘点数量 − 明细账面（第一列）。普通盘盈/盘亏（仅盘点与账面不同、但与仓库实时库存一致）不会进入本表。
       </div>
       <el-table :data="saveQtyConfirmList" border size="small">
-        <el-table-column label="耗材编码" width="120" align="center" show-overflow-tooltip>
+        <el-table-column label="产品编码" width="120" align="center" show-overflow-tooltip>
           <template slot-scope="scope">
             <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="耗材名称" min-width="150" show-overflow-tooltip>
+        <el-table-column label="产品名称" min-width="150" show-overflow-tooltip>
           <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
         </el-table-column>
         <el-table-column label="规格" min-width="100" show-overflow-tooltip>
@@ -671,8 +671,8 @@
         <el-table :data="profitImport.previewList" border size="small" max-height="320" v-loading="profitImport.previewLoading">
           <el-table-column label="行号" prop="rowIndex" width="60" align="center" />
           <el-table-column label="仓库" prop="warehouseName" width="100" show-overflow-tooltip />
-          <el-table-column label="耗材编码" prop="materialCode" width="110" show-overflow-tooltip />
-          <el-table-column label="耗材名称" prop="materialName" min-width="120" show-overflow-tooltip />
+          <el-table-column label="产品编码" prop="materialCode" width="110" show-overflow-tooltip />
+          <el-table-column label="产品名称" prop="materialName" min-width="120" show-overflow-tooltip />
           <el-table-column label="供应商" prop="supplierName" width="100" show-overflow-tooltip />
           <el-table-column label="单价" width="80" align="right">
             <template slot-scope="scope">{{ scope.row.data && scope.row.data.unitPrice }}</template>

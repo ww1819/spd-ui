@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <el-table
     :data="data"
     border
@@ -16,7 +16,7 @@
       </template>
     </el-table-column>
     <el-table-column prop="uniqueCode" label="唯一码" width="220" />
-    <el-table-column prop="name" label="耗材名称" />
+    <el-table-column prop="name" label="产品名称" />
     <el-table-column prop="spec" label="规格" width="120" />
     <el-table-column label="有效期" width="120">
       <template slot-scope="{ row }">

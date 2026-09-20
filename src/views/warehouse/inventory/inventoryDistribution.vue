@@ -2,39 +2,23 @@
   <div class="app-container list-page inventory-distribution-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--select"
-          >
-            <template v-if="t === 'warehouse'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['设备', '高值']"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'materialName'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <MaterialAutocomplete v-model="queryParams.materialName"/>
-              </div>
-            </template>
-            <template v-else-if="t === 'supplier'">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectSupplier v-model="queryParams.supplierId" />
-              </div>
-            </template>
+        <div class="ctk-query-top-fields">
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['设备', '高值']"/>
+            </div>
           </div>
-        </more-search-bar>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <MaterialAutocomplete v-model="queryParams.materialName" placeholder="产品编码/名称/简码"/>
+            </div>
+          </div>
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectSupplier v-model="queryParams.supplierId" />
+            </div>
+          </div>
+        </div>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
@@ -74,6 +58,10 @@
             <el-form-item label="Top" prop="topN" class="query-item-inline">
               <el-input-number v-model="queryParams.topN" :min="1" :max="50" controls-position="right" class="query-input-topn"/>
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -141,12 +129,6 @@ export default {
       showSearch: true,
       loading: false,
       groupRows: [],
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { value: "warehouse", label: "仓库" },
-        { value: "materialName", label: "耗材" },
-        { value: "supplier", label: "供应商" }
-      ],
       queryParams: {
         warehouseId: null,
         supplierId: null,
@@ -162,12 +144,6 @@ export default {
     }
   },
   computed: {
-    moreSearchStorageKey() {
-      return "spd.warehouse.inventory.distribution.moreSearchTypes"
-    },
-    builtInMoreSearchDefaults() {
-      return ["warehouse", "materialName", "supplier"]
-    },
     groupLabel() {
       const m = {
         warehouse: '仓库',
@@ -177,10 +153,6 @@ export default {
       }
       return m[this.queryParams.groupBy] || '分组'
     }
-  },
-  created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults()
-    this.onMoreSearchTypesChange()
   },
   mounted() {
     this.initChart()
@@ -199,33 +171,6 @@ export default {
     }
   },
   methods: {
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar
-      if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults()
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice()
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey)
-        if (!raw) return fallback
-        const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed)) return fallback
-        const allow = new Set(this.moreSearchOptions.map(o => o.value))
-        const cleaned = parsed.filter(v => allow.has(v))
-        return cleaned.length ? cleaned : fallback
-      } catch (e) {
-        return fallback
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || [])
-      if (!set.has("warehouse")) target.warehouseId = null
-      if (!set.has("materialName")) target.materialName = null
-      if (!set.has("supplier")) target.supplierId = null
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams)
-    },
     formatAmt(v) {
       const n = Number(v || 0)
       const f = this.$options.filters && this.$options.filters.formatCurrency
@@ -311,7 +256,6 @@ export default {
         endDate: this.queryParams.endDate,
         distributionGroupBy: this.queryParams.groupBy || 'warehouse'
       }
-      this.applyMoreSearchToQueryParams(q)
       listInventoryDistribution(q).then(res => {
         const rows = (res && res.data) ? res.data : []
         let list = rows.map(r => ({
@@ -341,8 +285,6 @@ export default {
       this.queryParams.groupBy = 'warehouse'
       this.queryParams.metric = 'qty'
       this.queryParams.topN = 10
-      this.moreSearchTypes = this.loadMoreSearchDefaults()
-      this.onMoreSearchTypesChange()
       this.handleQuery()
     }
   }
@@ -359,7 +301,8 @@ export default {
 
 <style scoped>
 .app-container {
-  margin-top: -10px;
+  margin-top: 0;
+  padding-top: 0 !important;
 }
 
 .query-row-left {
@@ -384,30 +327,38 @@ export default {
   width: 180px;
 }
 
+.ctk-query-top-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+
 .query-select-metric {
   width: 120px;
 }
 
 .query-row-second {
-  margin-bottom: 2px;
-  position: relative;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .query-row-second-inner {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
   width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
+  gap: 8px;
+  padding-bottom: 0;
 }
 
 .query-row-second-inner .el-form-item {
   flex: 0 0 auto;
   margin-bottom: 0 !important;
-  margin-right: 8px;
+  margin-right: 0;
   white-space: nowrap;
 }
 
@@ -415,6 +366,14 @@ export default {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+}
+
+.ctk-query-actions {
+  margin-left: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .query-item-date-range .query-date-start,
@@ -439,7 +398,7 @@ export default {
 /* 与库存明细查询 query-fields 容器一致 */
 .form-fields-container {
   margin-bottom: 8px;
-  margin-top: -20px;
+  margin-top: 0;
   margin-left: 0;
   margin-right: 0;
 }

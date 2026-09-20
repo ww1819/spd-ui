@@ -106,7 +106,7 @@ export function matchMaterialKeyword(item, rawKeyword) {
 }
 
 /**
- * 耗材名称：名称/简码/通用名/品牌 + 拼音首字母（不含编码、规格、型号）
+ * 产品名称：名称/简码/通用名/品牌 + 拼音首字母（不含编码、规格、型号）
  */
 export function matchMaterialNameKeyword(item, rawKeyword) {
   if (!item) {
@@ -155,7 +155,7 @@ export function matchMaterialNameKeyword(item, rawKeyword) {
   return false;
 }
 
-/** 耗材编码：模糊匹配（大小写不敏感） */
+/** 产品编码：模糊匹配（大小写不敏感） */
 export function matchMaterialCodeKeyword(item, rawKeyword) {
   if (!item) {
     return false;
@@ -213,7 +213,7 @@ export function matchModelKeyword(model, rawKeyword) {
 }
 
 /**
- * 将耗材名称关键词转为后端 name / nameSearch 参数（与产品档案列表一致）
+ * 将产品名称关键词转为后端 name / nameSearch 参数（与产品档案列表一致）
  * - 含中文：name + nameSearch（拼音首字母简码）
  * - 纯字母：仅 nameSearch（按 referred_name 模糊，支持首/尾字母大小写不敏感）
  * - 其他：仅 name 文本模糊

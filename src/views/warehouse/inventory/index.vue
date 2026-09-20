@@ -82,20 +82,63 @@ body.inventory-query-fixed {
 body.inventory-query-fixed .main-container {
   overflow-y: hidden !important;
 }
+
+/* 仅加粗库存明细表底部横向滚动条 */
+body.inventory-query-fixed .out-warehouse-query-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909090 !important;
+  border-radius: 4px !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #707070 !important;
+}
+body.inventory-query-fixed .out-warehouse-query-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #e8e8e8 !important;
+  border-radius: 4px !important;
+}
 </style>
 
 <style scoped>
-/* 库存查询页：与出/退库查询一致，顶部与左右 8px，固定高度避免溢出 */
+/* 库存查询页：与出/退库查询一致，顶部与左右 8px，flex 留给子页完整高度 */
 .app-container.out-warehouse-query-page {
   padding-top: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
+  padding-bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
   height: calc(100vh - 92px) !important;
+  max-height: calc(100vh - 92px) !important;
   overflow-y: hidden !important;
   overflow-x: hidden !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
 }
-/* 标签切换栏上移一点，与顶部间距 8px 由容器 padding-top 控制 */
 .inventory-tabs-compact {
   margin-top: 0;
+  flex: 0 0 auto;
+}
+.inventory-tabs-compact >>> .el-tabs__header {
+  margin: 0 0 4px !important;
+}
+.inventory-tabs-compact >>> .el-tabs__nav-wrap {
+  margin-bottom: 0;
+}
+/* 子页（明细/汇总等）占满剩余高度 */
+.out-warehouse-query-page >>> .app-container.first-inventory-page,
+.out-warehouse-query-page >>> .app-container.list-page {
+  flex: 1 1 auto !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
 }
 </style>

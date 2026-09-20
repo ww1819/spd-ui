@@ -25,8 +25,8 @@
               @keyup.enter.native="handleQuery"
             />
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
         </el-col>
       </el-row>
@@ -78,6 +78,7 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleBatchAudit"
@@ -85,14 +86,18 @@
         >审核</el-button>
         <el-button
           v-if="isZaoqiangTenant"
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-upload2"
+          class="spd-btn"
           :disabled="multiple"
           @click="handleBatchHisPush"
         >推送HIS</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['outWarehouse:audit:export']"
         >导出</el-button>
@@ -107,8 +112,9 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
-      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
@@ -184,6 +190,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
               @click="handlePrint(scope.row)"
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -191,6 +198,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['outWarehouse:apply:edit']"
               v-if="scope.row.billStatus != 2"
@@ -199,6 +207,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['outWarehouse:apply:remove']"
               v-if="scope.row.billStatus != 2"
@@ -207,6 +216,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-document"
               @click="handleShowEntryChangeLog(scope.row)"
               style="padding: 0 5px; margin: 0;"
               v-hasPermi="['outWarehouse:apply:query']"
@@ -215,6 +225,7 @@
               v-if="isZaoqiangTenant && scope.row.billStatus == 2"
               size="small"
               type="text"
+              icon="el-icon-upload2"
               style="padding: 0 5px; margin: 0; color: #e6a23c;"
               @click="handleHisPush(scope.row)"
             >推送HIS</el-button>
@@ -222,6 +233,7 @@
               v-if="isZaoqiangTenant"
               size="small"
               type="text"
+              icon="el-icon-tickets"
               style="padding: 0 5px; margin: 0;"
               @click="openHisBillView(scope.row)"
             >HIS单据</el-button>
@@ -230,13 +242,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -388,13 +403,13 @@
         >
           <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" />
           <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
-          <el-table-column label="耗材编码" align="center" width="130" min-width="120" show-overflow-tooltip resizable sortable>
+          <el-table-column label="产品编码" align="center" width="130" min-width="120" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column
-            label="名称"
+            label="产品名称"
             align="left"
             header-align="center"
             width="180"
@@ -763,6 +778,10 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
+      /** 列表全量合计（后端 totalInfo） */
+      totalInfo: {
+        totalAmt: 0
+      },
       mainTableHeight: 400,
       // 出库表格数据
       warehouseList: [],
@@ -813,6 +832,22 @@ export default {
     };
   },
   computed: {
+    /** 列表全量总金额（后端合计） */
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    /** 当前页金额合计 */
+    pageTotalAmtFormatted() {
+      const list = this.warehouseList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     isZaoqiangTenant() {
       return isZaoqiangTenant(this.$store.getters.customerId)
     },
@@ -1110,6 +1145,8 @@ export default {
           const mergedRows = Array.from(mergedMap.values())
           this.warehouseList = mergedRows.filter(r => r.billStatus == null || Number(r.billStatus) === 0 || Number(r.billStatus) === 1)
           this.total = this.warehouseList.length
+          const sum = this.warehouseList.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0)
+          this.totalInfo = { totalAmt: Number.isFinite(sum) ? sum : 0 }
           finishList();
         }).catch(() => {
           this.loading = false;
@@ -1122,12 +1159,33 @@ export default {
         if (String(status) === '2') {
           this.warehouseList = rows.filter(r => Number(r.billStatus) === 2)
           this.total = this.warehouseList.length
+          const sum = this.warehouseList.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0)
+          this.totalInfo = { totalAmt: Number.isFinite(sum) ? sum : 0 }
         } else {
           this.warehouseList = rows
           this.total = response.total
+          const ti = (response && response.totalInfo) || {}
+          const raw = ti.totalAmt != null ? ti.totalAmt : (ti.totalCkAmt != null ? ti.totalCkAmt : 0)
+          const amt = Number(raw)
+          this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 }
+          if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+            this.fillListTotalAmtFallback(baseQuery)
+          }
         }
         finishList();
       });
+    },
+    /** 总金额兜底：按当前筛选条件取全量行汇总金额 */
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listOutWarehouse({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     resolveChangeLogBillType() {
       return 'STK_IO_BILL_201';
@@ -1449,6 +1507,25 @@ export default {
       this.ids = ids;
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'billNo')) {
+        return;
+      }
+      if (typeof this.selectableAuditRow === 'function' && !this.selectableAuditRow(row)) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
+    /** 仅待审核的单据可勾选，已审核的不可勾选 */
+    selectableAuditRow(row) {
+      return row.billStatus != 2
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -2973,6 +3050,26 @@ export default {
 .app-container.outWarehouse-audit-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.outWarehouse-audit-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.outWarehouse-audit-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.outWarehouse-audit-page .apply-pagination-wrap .pagination-container {
@@ -2980,6 +3077,7 @@ export default {
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

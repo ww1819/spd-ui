@@ -1,18 +1,17 @@
 <template>
-  <div class="app-container list-page first-inventory-page">
+  <div class="app-container list-page first-inventory-page ctk-summary-out-query">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
+        <div class="ctk-query-top-fields">
+          <div class="more-search-dynamic-field more-search-field--text">
+            <el-input
+              v-model="queryParams.supplierKeyword"
+              placeholder="供应商编码/名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
           <div
             v-for="t in moreSearchTypes"
             :key="t"
@@ -42,11 +41,25 @@
               @keyup.enter.native="handleQuery"
             />
           </div>
-        </more-search-bar>
+        </div>
+        <!-- 仅用于读写「更多检索」本地默认，界面不展示 -->
+        <more-search-bar
+          ref="moreSearchBar"
+          class="ctk-more-search-bar--hidden"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          :show-picker="false"
+          :show-save="false"
+          :show-search-actions="false"
+          @change="onMoreSearchTypesChange"
+        />
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
+            <el-form-item label="日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -65,15 +78,14 @@
                 class="query-date-picker query-date-end"
               />
             </el-form-item>
-
             <el-form-item prop="isGz" class="query-item-inline">
-              <el-select v-model="queryParams.isGz" placeholder="是否高值" clearable class="more-search-short-select">
+              <el-select v-model="queryParams.isGz" placeholder="高值" clearable class="more-search-short-select">
                 <el-option label="是" value="1" />
                 <el-option label="否" value="2" />
               </el-select>
             </el-form-item>
-            <el-form-item label="单据类型" prop="billType" class="query-item-inline">
-              <el-select v-model="queryParams.billType" placeholder="单据类型" clearable class="more-search-select-wrap">
+            <el-form-item prop="billType" class="query-item-inline">
+              <el-select v-model="queryParams.billType" placeholder="单据类型" clearable class="more-search-short-select">
                 <el-option
                   v-for="dict in dict.type.out_warehouse_bill_type"
                   :key="dict.value"
@@ -83,34 +95,74 @@
               </el-select>
             </el-form-item>
             <el-form-item prop="financeCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
+              <div class="query-select-wrapper more-search-select-wrap ctk-category-multi">
                 <SelectFinanceCategoryLow v-model="queryParams.financeCategoryIds" :multiple="true" placeholder="财务分类多选" />
               </div>
             </el-form-item>
             <el-form-item prop="warehouseCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
+              <div class="query-select-wrapper more-search-select-wrap ctk-category-multi">
                 <SelectWarehouseCategoryLow v-model="queryParams.warehouseCategoryIds" :multiple="true" placeholder="库房分类多选" />
               </div>
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
+    <el-row :gutter="0" class="list-toolbar ctk-list-toolbar">
       <div class="list-toolbar-left">
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
         >导出</el-button>
       </div>
       <div class="list-toolbar-right">
+        <div
+          class="toolbar-more-search"
+          @mouseenter="onToolbarMoreEnter"
+          @mouseleave="onToolbarMoreLeave"
+        >
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            filterable
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option
+              v-for="opt in moreSearchOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </div>
+        <el-button
+          type="success"
+          size="small"
+          icon="el-icon-check"
+          class="spd-btn"
+          @click="saveMoreSearchDefaults"
+        >保存查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
-    <div class="table-container">
+    <div class="table-container" ref="tablePanel">
     <el-table
       ref="ctkSummaryTable"
       class="ctk-summary-main-table"
@@ -119,7 +171,8 @@
       :row-key="getSummaryRowKey"
       :row-class-name="ctkSummaryRowClassName"
       @selection-change="handleSelectionChange"
-      height="60vh"
+      @row-dblclick="handleSummaryRowDblclick"
+      :height="tableHeight"
       border
       stripe
     >
@@ -130,8 +183,8 @@
         </template>
       </el-table-column>
       <el-table-column label="仓库" align="left" header-align="center" prop="warehouseName" width="130" min-width="110" show-overflow-tooltip resizable class-name="ctk-col-left"/>
-      <el-table-column label="耗材编码" align="left" header-align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" class-name="ctk-col-left"/>
-      <el-table-column label="耗材名称" align="left" header-align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" class-name="ctk-col-left"/>
+      <el-table-column label="产品编码" align="left" header-align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" class-name="ctk-col-left"/>
+      <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" class-name="ctk-col-left"/>
       <el-table-column label="型号" align="left" header-align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel" class-name="ctk-col-left"/>
       <el-table-column label="规格" align="left" header-align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" class-name="ctk-col-left"/>
       <el-table-column label="单位" align="left" header-align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName" class-name="ctk-col-left"/>
@@ -248,17 +301,17 @@ export default {
       stkIoBillEntryList: [],
       moreSearchTypes: [],
       moreSearchKeywords: {},
+      toolbarMoreHover: false,
+      toolbarMoreCloseTimer: null,
       moreSearchOptions: [
-        { value: "supplier", label: "供应商" },
         { value: "factory", label: "生产厂家" },
-        { value: "materialName", label: "耗材" },
+        { value: "materialName", label: "产品" },
         { value: "materialSpeci", label: "规格" },
         { value: "materialModel", label: "型号" },
         { value: "warehouse", label: "仓库" },
-        { value: "department", label: "出库科室" },
-        { value: "financeCategoryKeyword", label: "财务分类" },
-        { value: "warehouseCategoryKeyword", label: "库房分类" }
+        { value: "department", label: "出库科室" }
       ],
+      tableHeight: 400,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -328,12 +381,45 @@ export default {
         : String(this.formatAmount(amt));
     },
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateTableHeight());
+    }
+  },
   created() {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange(this.moreSearchTypes);
     // 汇总表在父组件切换到此 tab 时再加载（见 index.vue handleTabClick），避免与明细表同时请求
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateTableHeight();
+      setTimeout(() => this.updateTableHeight(), 80);
+    });
+    window.addEventListener('resize', this.updateTableHeight);
+  },
+  activated() {
+    this.$nextTick(() => this.updateTableHeight());
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateTableHeight);
+  },
   methods: {
+    updateTableHeight() {
+      this.$nextTick(() => {
+        const panel = this.$refs.tablePanel;
+        if (!panel) return;
+        const h = Math.floor(panel.clientHeight);
+        if (h > 120) {
+          this.tableHeight = h;
+          this.$nextTick(() => {
+            if (this.$refs.ctkSummaryTable && this.$refs.ctkSummaryTable.doLayout) {
+              this.$refs.ctkSummaryTable.doLayout();
+            }
+          });
+        }
+      });
+    },
     sortByStr(a, b, getVal) {
       const va = (getVal(a) || '').toString().trim();
       const vb = (getVal(b) || '').toString().trim();
@@ -434,6 +520,7 @@ export default {
         this.selectedRowKeys = [];
         this.ids = [];
         this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
       }).catch(error => {
         console.error('获取数据失败:', error);
         this.warehouseList = [];
@@ -441,6 +528,7 @@ export default {
         this.selectedRowKeys = [];
         this.ids = [];
         this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
       });
     },
     getStatDate(){
@@ -577,30 +665,65 @@ export default {
           this.$set(this.moreSearchKeywords, k, '');
         }
       });
+      this.$nextTick(() => this.updateTableHeight());
+    },
+    saveMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.saveDefaults === 'function') {
+        bar.saveDefaults();
+      }
+    },
+    clearToolbarMoreCloseTimer() {
+      if (this.toolbarMoreCloseTimer) {
+        clearTimeout(this.toolbarMoreCloseTimer);
+        this.toolbarMoreCloseTimer = null;
+      }
+    },
+    setToolbarMoreVisible(visible) {
+      const sel = this.$refs.toolbarMoreSelect;
+      if (!sel) return;
+      if (sel.visible === visible) return;
+      sel.visible = visible;
+      if (!visible && typeof sel.blur === 'function') {
+        sel.blur();
+      }
+    },
+    onToolbarMoreEnter() {
+      this.toolbarMoreHover = true;
+      this.clearToolbarMoreCloseTimer();
+      this.setToolbarMoreVisible(true);
+    },
+    onToolbarMoreLeave() {
+      this.toolbarMoreHover = false;
+      this.clearToolbarMoreCloseTimer();
+      this.toolbarMoreCloseTimer = setTimeout(() => {
+        if (!this.toolbarMoreHover) {
+          this.setToolbarMoreVisible(false);
+        }
+      }, 120);
+    },
+    onToolbarMoreVisibleChange(visible) {
+      if (!visible) {
+        this.toolbarMoreHover = false;
+      }
     },
     moreSearchTypeLabel(t) {
       const map = {
-        supplier: '供应商',
         factory: '生产厂家',
-        materialName: '耗材',
+        materialName: '产品',
         materialSpeci: '规格',
         materialModel: '型号',
         warehouse: '仓库',
-        department: '出库科室',
-        financeCategoryKeyword: '财务分类',
-        warehouseCategoryKeyword: '库房分类'
+        department: '出库科室'
       };
       return map[t] || t;
     },
     moreSearchPlaceholderFor(t) {
       const map = {
-        supplier: '供应商编码/名称',
         factory: '生产厂家编码/名称/简码',
-        materialName: '耗材编码/名称/简码',
+        materialName: '产品编码/名称/简码',
         materialSpeci: '规格模糊',
-        materialModel: '型号模糊',
-        financeCategoryKeyword: '财务分类编码/名称/简拼',
-        warehouseCategoryKeyword: '库房分类编码/名称/简拼'
+        materialModel: '型号模糊'
       };
       return map[t] || '请输入关键字';
     },
@@ -609,11 +732,14 @@ export default {
       queryParams.materialNameLike = null;
       queryParams.materialSpeciLike = null;
       queryParams.materialModelLike = null;
-      queryParams.supplierKeyword = null;
       queryParams.factoryKeyword = null;
+      // 财务/库房分类仅走第二行多选，不再使用关键字框
       queryParams.financeCategoryKeyword = null;
       queryParams.warehouseCategoryKeyword = null;
       queryParams.supplerId = null;
+      // 供应商固定首行
+      const supplierKw = queryParams.supplierKeyword != null ? String(queryParams.supplierKeyword).trim() : '';
+      queryParams.supplierKeyword = supplierKw || null;
       if (!queryParams.beginDate || queryParams.beginDate === '') {
         queryParams.beginDate = null;
       }
@@ -645,10 +771,6 @@ export default {
           return;
         }
         switch (t) {
-          case 'supplier':
-            queryParams.supplierKeyword = kw;
-            queryParams.supplerId = null;
-            break;
           case 'factory':
             queryParams.factoryKeyword = kw;
             break;
@@ -660,12 +782,6 @@ export default {
             break;
           case 'materialModel':
             queryParams.materialModelLike = kw;
-            break;
-          case 'financeCategoryKeyword':
-            queryParams.financeCategoryKeyword = kw;
-            break;
-          case 'warehouseCategoryKeyword':
-            queryParams.warehouseCategoryKeyword = kw;
             break;
           default:
             break;
@@ -682,6 +798,14 @@ export default {
       this.single = selection.length!==1
       this.multiple = !selection.length
       this.selectedRowKeys = (selection || []).map(row => this.getSummaryRowKey(row))
+    },
+    /** 双击行：切换勾选（已选则取消，未选则选中） */
+    handleSummaryRowDblclick(row) {
+      const table = this.$refs.ctkSummaryTable;
+      if (!table || !row) return;
+      const key = this.getSummaryRowKey(row);
+      const selected = key && this.selectedRowKeys.indexOf(key) !== -1;
+      table.toggleRowSelection(row, !selected);
     },
     getSummaryRowKey(row) {
       return (row && row._rowKey) || [
@@ -763,7 +887,8 @@ export default {
 <style scoped>
 /* 与库存明细查询保持一致的顶部偏移 */
 .app-container {
-  margin-top: -10px;
+  margin-top: 0;
+  padding-top: 0 !important;
 }
 
 /* 查询条件样式 */
@@ -825,9 +950,9 @@ export default {
   white-space: nowrap;
 }
 .more-search-type {
-  min-width: 220px;
-  width: auto;
-  max-width: 360px;
+  min-width: 148px;
+  width: 148px;
+  max-width: 148px;
 }
 .more-search-input {
   width: 200px;
@@ -851,7 +976,8 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 2px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .query-row-second .el-form-item {
@@ -865,22 +991,20 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 第二行：强制同一行不换行（避免宽度不足时“掉到下一行”） */
+/* 第二行：固定条件 + 搜索/重置，与耗材产品维护底行一致 */
 .query-row-second-inner {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
   width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
+  gap: 8px;
+  padding-bottom: 0;
 }
 
 .query-row-second-inner .el-form-item {
   flex: 0 0 auto;
   margin-bottom: 0 !important;
-  margin-right: 8px;
+  margin-right: 0;
   white-space: nowrap;
 }
 
@@ -890,9 +1014,70 @@ export default {
   flex-wrap: nowrap;
 }
 
+.ctk-query-actions {
+  margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 第一行：固定供应商 + 更多检索动态字段；与底行留 8px */
+.ctk-query-top-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+.ctk-more-search-bar--hidden {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
 .query-item-date-range .query-date-start,
 .query-item-date-range .query-date-end {
-  width: 150px;
+  width: 138px;
+}
+
+/* 财务/库房分类多选：与日期框同宽；标签单行不撑高 */
+.ctk-category-multi.more-search-select-wrap {
+  width: 138px !important;
+  min-width: 138px !important;
+  max-width: 138px !important;
+  height: 32px !important;
+  overflow: hidden;
+}
+.ctk-category-multi >>> .el-select,
+.ctk-category-multi >>> .el-select .el-input {
+  width: 100% !important;
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.ctk-category-multi >>> .el-select--multiple .el-select__tags {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  max-width: calc(100% - 28px) !important;
+}
+.ctk-category-multi >>> .el-select--multiple .el-tag {
+  max-width: 72px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  height: 20px !important;
+  line-height: 18px !important;
+  margin: 2px 0 2px 4px !important;
+}
+.ctk-category-multi >>> .el-select--multiple .el-input__inner {
+  height: 32px !important;
+  min-height: 32px !important;
 }
 
 .query-item-date-range .query-date-start {
@@ -940,10 +1125,18 @@ export default {
 
 /* 查询条件容器框样式：由外层 inventory-query-page 统一左右 8px，此处占满内容区 */
 .form-fields-container {
-  margin-bottom: 8px;
-  margin-top: -20px;
+  margin-bottom: 4px;
+  margin-top: 0;
   margin-left: 0;
   margin-right: 0;
+  flex: 0 0 auto;
+}
+
+/* 工具栏与汇总表间距：与明细表一致（4px） */
+.ctk-list-toolbar.list-toolbar {
+  margin-top: 0 !important;
+  margin-bottom: 4px !important;
+  flex: 0 0 auto;
 }
 
 /* 导出/搜索/重置：与顶部搜索框、底部明细框间距均为 8px */
@@ -971,13 +1164,16 @@ export default {
 }
 
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
+  min-width: 0;
+  min-height: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
+  flex: 1 1 auto;
 }
 
 /* 保持 Element 默认合计行行为，避免合计列错位/缺失 */
@@ -986,8 +1182,6 @@ export default {
   overflow-x: auto !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
-  scrollbar-width: auto;
-  scrollbar-color: #909399 #e4e7ed;
 }
 
 .table-container ::v-deep .el-table__footer-wrapper {
@@ -1018,28 +1212,31 @@ export default {
   text-overflow: initial;
 }
 
-/* 横向滚动条：固定 16px，悬停不增粗（与明细表一致） */
+/* 滚动条：与耗材产品维护一致（高 12px / 宽 8px） */
 .table-container ::v-deep .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar {
-  width: 10px !important;
-  height: 16px !important;
+  width: 8px !important;
+  height: 12px !important;
 }
 .table-container ::v-deep .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
-  height: 16px !important;
+  height: 12px !important;
 }
 .table-container ::v-deep .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
-  width: 10px !important;
+  width: 8px !important;
 }
 .table-container ::v-deep .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #e4e7ed !important;
-  border-radius: 4px !important;
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
 }
 .table-container ::v-deep .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 4px !important;
-  border: none !important;
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
 }
 .table-container ::v-deep .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #606266 !important;
+  background: #909090 !important;
 }
 
 .table-container ::v-deep .ctk-summary-main-table .el-table__body td,
@@ -1100,39 +1297,119 @@ export default {
 </style>
 
 <style>
-/* 取消内层 app-container 的左右 padding，避免叠加全局 20px；左右 8px 由外层 inventory-query-page 统一控制 */
+/* 取消内层 app-container 的左右 padding；高度由外层 flex 分配，勿再套 100vh
+ * 注意：根节点不要写 display:!important，否则会盖掉 v-show 的 display:none，导致多页签叠在一起 */
 .app-container.first-inventory-page {
+  padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-/* 分页行：合计在左、翻页在右，同一行；翻页下方不留白 */
+/* 本页「更多检索」多选：与明细表同宽（覆盖 list-page 190px） */
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .more-search-type,
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .more-search-type.el-select,
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select {
+  width: 148px !important;
+  min-width: 148px !important;
+  max-width: 148px !important;
+}
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select > .el-input,
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select .el-input__inner {
+  width: 148px !important;
+  max-width: 148px !important;
+}
+.ctk-summary-out-query .ctk-list-toolbar .toolbar-more-search .el-select-dropdown {
+  min-width: 148px !important;
+}
+
+/* 财务/库房分类多选宽度与单行标签（非 scoped，覆盖全局） */
+.first-inventory-page .ctk-category-multi.more-search-select-wrap {
+  width: 138px !important;
+  min-width: 138px !important;
+  max-width: 138px !important;
+  height: 32px !important;
+  overflow: hidden !important;
+}
+.first-inventory-page .ctk-category-multi .el-select,
+.first-inventory-page .ctk-category-multi .el-select .el-input {
+  width: 100% !important;
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.first-inventory-page .ctk-category-multi .el-select--multiple .el-select__tags {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  max-width: calc(100% - 28px) !important;
+}
+.first-inventory-page .ctk-category-multi .el-select--multiple .el-tag {
+  max-width: 72px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  height: 20px !important;
+  line-height: 18px !important;
+}
+.first-inventory-page .ctk-category-multi .el-select--multiple .el-input__inner {
+  height: 32px !important;
+  min-height: 32px !important;
+}
+
+/* 分页行：合计左、翻页右同一行，完整显示不被裁切 */
 .first-inventory-page .pagination-wrapper {
   display: flex !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
   gap: 12px !important;
-  margin-top: 0 !important;
-  padding-bottom: 0 !important;
+  margin-top: 4px !important;
   margin-bottom: 0 !important;
+  padding: 4px 0 6px !important;
+  min-height: 40px !important;
+  overflow: visible !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary {
-  flex-shrink: 0;
-  font-size: 14px;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 32px;
   color: #606266;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
 }
 .first-inventory-page .pagination-wrapper .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 32px !important;
   margin-top: 0 !important;
+  margin-bottom: 0 !important;
   margin-left: auto !important;
-  padding: 4px 0 4px 16px !important;
-  flex-shrink: 0;
+  padding: 0 4px !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  background: transparent !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
-  padding: 2px 0 !important;
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
 }
 
 /* 列表「计费」列：是/否按钮式展示（与耗材档案、出退库明细一致） */
@@ -1229,24 +1506,29 @@ export default {
   justify-content: center !important;
   background: transparent;
 }
-.first-inventory-page .ctk-summary-main-table .el-table__body-wrapper {
-  scrollbar-width: auto !important;
-  scrollbar-color: #909399 #e4e7ed !important;
-}
 .first-inventory-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar {
-  width: 10px !important;
-  height: 16px !important;
+  width: 8px !important;
+  height: 12px !important;
+}
+.first-inventory-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
 }
 .first-inventory-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
-  height: 16px !important;
+  height: 12px !important;
 }
 .first-inventory-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #909399 !important;
-  border-radius: 4px !important;
-  border: none !important;
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 2px !important;
+  min-height: 4px !important;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+.first-inventory-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
 }
 .first-inventory-page .ctk-summary-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #e4e7ed !important;
-  border-radius: 4px !important;
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
 }
 </style>

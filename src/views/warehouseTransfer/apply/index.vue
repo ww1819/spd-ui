@@ -18,8 +18,8 @@
               <SelectWarehouse v-model="queryParams.toWarehouseId" placeholder="调入仓库" :excludeWarehouseType="['设备', '高值']" clearable />
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -70,12 +70,15 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="addTransfer"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
         >导出</el-button>
       </div>
@@ -89,6 +92,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
         <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
         <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -148,6 +152,7 @@
               <el-button
                 size="small"
                 type="text"
+              icon="el-icon-edit"
                 @click="editTransfer(scope.row)"
                 :disabled="dialogLoading"
                 v-if="scope.row.status != 2 && scope.row.status != '2'"
@@ -156,6 +161,7 @@
               <el-button
                 size="small"
                 type="text"
+              icon="el-icon-delete"
                 @click="deleteTransfer(scope.row)"
                 :disabled="loading"
                 v-if="scope.row.status != 2 && scope.row.status != '2'"
@@ -164,6 +170,7 @@
               <el-button
                 size="small"
                 type="text"
+              icon="el-icon-printer"
                 @click="handlePrint(scope.row,true)"
                 v-if="scope.row.status == 2 || scope.row.status == '2'"
                 style="padding: 0 5px; margin: 0;"
@@ -173,13 +180,16 @@
         </el-table-column>
       </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getTransferList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getTransferList"
+      />
     </div>
     </div>
 
@@ -273,12 +283,12 @@
                   >
                     <el-table-column v-if="dialogType !== 'view'" type="selection" width="60" align="center" header-align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                     <el-table-column label="序号" align="center" header-align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                    <el-table-column label="耗材编码" align="center" header-align="center" prop="materialCode" width="150" show-overflow-tooltip resizable>
+                    <el-table-column label="产品编码" align="center" header-align="center" prop="materialCode" width="150" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材名称" align="left" header-align="center" prop="materialName" width="180" show-overflow-tooltip resizable>
+                    <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="180" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <span>{{ scope.row.materialName || '--' }}</span>
                       </template>
@@ -475,6 +485,11 @@ export default {
         total: 0
       },
       total: 0,
+      /** 列表全量合计（后端 totalInfo） */
+      totalInfo: {
+        totalAmt: 0
+      },
+      mainTableHeight: 400,
       // 打印数据（用于隐藏的打印组件）
       printRowData: null,
 
@@ -506,6 +521,22 @@ export default {
     };
   },
   computed: {
+    /** 列表全量总金额（后端合计） */
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    /** 当前页金额合计 */
+    pageTotalAmtFormatted() {
+      const list = this.tableData || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     // 表单总金额
     formTotalAmount() {
       let total = 0;
@@ -807,10 +838,18 @@ export default {
           });
           this.pagination.total = response.total;
           this.total = response.total;
+          const ti = response.totalInfo || {};
+          const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+          const amt = Number(raw);
+          this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
+          if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+            this.fillListTotalAmtFallback(params);
+          }
         } else {
           this.tableData = [];
           this.pagination.total = 0;
           this.total = 0;
+          this.totalInfo = { totalAmt: 0 };
         }
       } catch (error) {
         this.$modal.msgError('获取调拨单列表失败：' + (error.message || '未知错误'));
@@ -818,6 +857,7 @@ export default {
         this.tableData = [];
         this.pagination.total = 0;
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
       } finally {
         this.loading = false;
         if (restoreSelection) {
@@ -829,6 +869,21 @@ export default {
           this.scheduleApplyLayoutRefresh();
         }
       }
+    },
+    /** 总金额兜底：按当前筛选条件取全量行汇总金额 */
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listWarehouseTransfer({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => {
+          const n = row && row.totalAmount != null ? row.totalAmount : (row && row.total_amount != null ? row.total_amount : 0);
+          return acc + Number(n);
+        }, 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
 
     // 查看调拨单详情
@@ -987,6 +1042,18 @@ export default {
     },
 
     // 添加调拨单
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'transferOrderCode')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
     addTransfer() {
       this.dialogType = 'add';
       this.action = true;
@@ -2327,6 +2394,26 @@ export default {
 .app-container.warehouseTransfer-apply-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.warehouseTransfer-apply-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.warehouseTransfer-apply-page .apply-pagination-wrap .pagination-container {
@@ -2334,6 +2421,7 @@ export default {
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

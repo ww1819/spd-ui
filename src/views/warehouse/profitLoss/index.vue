@@ -201,12 +201,12 @@
                     :summary-method="getEntrySummaries"
                   >
                     <el-table-column label="序号" align="center" header-align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable />
-                    <el-table-column label="耗材编码" align="center" header-align="center" min-width="100" show-overflow-tooltip resizable>
+                    <el-table-column label="产品编码" align="center" header-align="center" min-width="100" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="耗材名称" align="left" header-align="center" min-width="140" show-overflow-tooltip resizable>
+                    <el-table-column label="产品名称" align="left" header-align="center" min-width="140" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <span>{{ (scope.row.material && scope.row.material.name) || '--' }}</span>
                       </template>

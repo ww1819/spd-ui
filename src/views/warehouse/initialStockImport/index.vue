@@ -148,8 +148,8 @@
         <div style="margin-bottom: 8px;">预览（共 {{ upload.previewList.length }} 条），确认无误后点击「确认导入」生成期初单</div>
         <el-table :data="upload.previewList" border size="small" max-height="280">
           <el-table-column type="index" label="行号" width="55" align="center" />
-          <el-table-column label="耗材编码" prop="data.materialCode" min-width="90" show-overflow-tooltip />
-          <el-table-column label="耗材名称" prop="data.materialName" min-width="90" show-overflow-tooltip />
+          <el-table-column label="产品编码" prop="data.materialCode" min-width="90" show-overflow-tooltip />
+          <el-table-column label="产品名称" prop="data.materialName" min-width="90" show-overflow-tooltip />
           <el-table-column label="HIS产品档案id" prop="data.thirdPartyMaterialId" width="120" show-overflow-tooltip />
           <el-table-column label="规格" prop="data.speci" width="90" show-overflow-tooltip />
           <el-table-column label="型号" prop="data.model" width="90" show-overflow-tooltip />
@@ -199,8 +199,8 @@
       <div style="margin-top: 12px; font-weight: 600;">明细</div>
       <el-table :data="detail.form.entryList || []" border size="small" max-height="320" style="margin-top: 6px;">
         <el-table-column type="index" label="序号" width="55" align="center" />
-        <el-table-column label="耗材编码" align="center" prop="material.code" min-width="100" show-overflow-tooltip />
-        <el-table-column label="耗材名称" align="center" prop="material.name" min-width="120" show-overflow-tooltip />
+        <el-table-column label="产品编码" align="center" prop="material.code" min-width="100" show-overflow-tooltip />
+        <el-table-column label="产品名称" align="center" prop="material.name" min-width="120" show-overflow-tooltip />
         <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip />
         <el-table-column label="型号" align="center" prop="model" width="90" show-overflow-tooltip />
         <el-table-column label="批次号" align="center" prop="batchNo" width="140" show-overflow-tooltip />

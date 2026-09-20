@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <!-- 查看订单详情弹窗 -->
     <transition name="modal-fade">
@@ -72,8 +72,8 @@
                     {{ scope.$index + 1 }}
                   </template>
                 </el-table-column>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" />
-                <el-table-column label="耗材名称" align="center" prop="materialName" width="180" />
+                <el-table-column label="产品编码" align="center" prop="materialCode" width="120" />
+                <el-table-column label="产品名称" align="center" prop="materialName" width="180" />
                 <el-table-column label="规格" align="center" prop="materialSpec" width="120" />
                 <el-table-column label="单位" align="center" prop="materialUnit" width="80" />
                 <el-table-column label="数量" align="center" prop="orderQty" width="100" />

@@ -295,12 +295,12 @@ $text: #3a4350;
 }
 
 .mega-link:hover {
-  background: rgba(28, 36, 48, 0.04);
-  color: $ink;
+  background: color-mix(in srgb, var(--current-color, #2563eb) 14%, #fff);
+  color: var(--current-color, #2563eb);
 }
 
 .mega-link.is-active {
-  background: color-mix(in srgb, var(--current-color, #2563eb) 12%, #fff);
+  background: color-mix(in srgb, var(--current-color, #2563eb) 18%, #fff);
   color: var(--current-color, #2563eb);
   font-weight: 500;
 }

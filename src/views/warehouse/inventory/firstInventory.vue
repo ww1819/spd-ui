@@ -1,18 +1,17 @@
-<template>
-  <div class="app-container list-page first-inventory-page">
+﻿<template>
+  <div class="app-container list-page first-inventory-page inv-detail-query">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
+        <div class="ctk-query-top-fields">
+          <div class="more-search-dynamic-field more-search-field--text">
+            <el-input
+              v-model="queryParams.supplierKeyword"
+              placeholder="供应商编码/名称"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+          </div>
           <div
             v-for="t in moreSearchTypes"
             :key="t"
@@ -37,11 +36,25 @@
               @keyup.enter.native="handleQuery"
             />
           </div>
-        </more-search-bar>
+        </div>
+        <!-- 仅用于读写「更多检索」本地默认，界面不展示 -->
+        <more-search-bar
+          ref="moreSearchBar"
+          class="ctk-more-search-bar--hidden"
+          v-model="moreSearchTypes"
+          :options="moreSearchOptions"
+          :storage-key="moreSearchStorageKey"
+          :default-types="builtInMoreSearchDefaults"
+          :auto-load="false"
+          :show-picker="false"
+          :show-save="false"
+          :show-search-actions="false"
+          @change="onMoreSearchTypesChange"
+        />
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="业务日期" class="query-item-inline query-item-date-range">
+            <el-form-item label="日期" class="query-item-inline query-item-date-range">
               <el-date-picker
                 v-model="queryParams.beginDate"
                 type="date"
@@ -60,15 +73,29 @@
                 class="query-date-picker query-date-end"
               />
             </el-form-item>
-            <el-form-item label="计费" prop="isBilling" class="query-item-inline">
-              <el-select v-model="queryParams.isBilling" placeholder="请选择计费"
+            <el-form-item prop="financeCategoryIds" class="query-item-inline">
+              <div class="query-select-wrapper more-search-select-wrap inv-category-multi">
+                <SelectFinanceCategoryLow
+                  v-model="queryParams.financeCategoryIds"
+                  :multiple="true"
+                  placeholder="财务分类多选"
+                />
+              </div>
+            </el-form-item>
+            <el-form-item prop="warehouseCategoryId" class="query-item-inline">
+              <div class="query-select-wrapper more-search-select-wrap inv-category-multi">
+                <SelectWarehouseCategory v-model="queryParams.warehouseCategoryId" placeholder="库房分类" />
+              </div>
+            </el-form-item>
+            <el-form-item prop="isBilling" class="query-item-inline">
+              <el-select v-model="queryParams.isBilling" placeholder="计费"
                          clearable class="more-search-short-select">
                 <el-option label="是" value="1"/>
                 <el-option label="否" value="0"/>
               </el-select>
             </el-form-item>
-            <el-form-item label="产品档案" prop="materialIsUse" class="query-item-inline">
-              <el-select v-model="queryParams.materialIsUse" placeholder="启停用" clearable class="more-search-short-select">
+            <el-form-item prop="materialIsUse" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsUse" placeholder="产品档案" clearable class="more-search-short-select">
                 <el-option
                   v-for="dict in dict.type.is_use_status"
                   :key="dict.value"
@@ -77,42 +104,66 @@
                 />
               </el-select>
             </el-form-item>
-            <el-form-item label="库房分类" prop="warehouseCategoryId" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectWarehouseCategory v-model="queryParams.warehouseCategoryId" />
-              </div>
-            </el-form-item>
-            <el-form-item label="财务分类" prop="financeCategoryIds" class="query-item-inline">
-              <div class="query-select-wrapper more-search-select-wrap">
-                <SelectFinanceCategoryLow
-                  v-model="queryParams.financeCategoryIds"
-                  :multiple="true"
-                  placeholder="财务分类多选"
-                />
-              </div>
-            </el-form-item>
             <el-form-item class="query-item-inline query-item-zero-stock">
               <el-button
                 size="small"
+                icon="el-icon-box"
                 :class="showZeroStock ? 'spd-btn spd-btn--primary' : 'spd-btn spd-btn--secondary'"
                 :type="showZeroStock ? 'primary' : 'default'"
                 @click="toggleShowZeroStock"
               >零库存</el-button>
             </el-form-item>
+            <div class="ctk-query-actions query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
+    <el-row :gutter="0" class="list-toolbar ctk-list-toolbar">
       <div class="list-toolbar-left">
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          class="spd-btn"
           @click="handleExport"
-        >导出</el-button>
+        ><i class="el-icon-download"></i><span>导出</span></el-button>
       </div>
       <div class="list-toolbar-right">
+        <div
+          class="toolbar-more-search"
+          @mouseenter="onToolbarMoreEnter"
+          @mouseleave="onToolbarMoreLeave"
+        >
+          <span class="more-search-label">更多检索</span>
+          <el-select
+            ref="toolbarMoreSelect"
+            v-model="moreSearchTypes"
+            multiple
+            collapse-tags
+            size="small"
+            :popper-append-to-body="false"
+            placeholder="选择检索条件（可多选）"
+            class="more-search-type"
+            @change="onMoreSearchTypesChange"
+            @visible-change="onToolbarMoreVisibleChange"
+          >
+            <el-option
+              v-for="opt in moreSearchOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </div>
+        <el-button
+          type="success"
+          size="small"
+          class="spd-btn"
+          @click="saveMoreSearchDefaults"
+        ><i class="el-icon-check"></i><span>保存查询条件</span></el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
         <el-tooltip class="item" effect="dark" content="显隐列" placement="top">
           <el-button size="small" circle icon="el-icon-menu" @click="openColumnDialog" />
@@ -120,152 +171,557 @@
       </div>
     </el-row>
 
-    <!-- 显隐列：挂载在页面内，保存后按当前登录用户持久化 -->
+    <!-- 显隐列 + 列宽 + 明细对齐：可拖动，避免挡住表格列；保存后按当前登录用户持久化 -->
     <el-dialog
-      title="显示/隐藏"
+      v-dialogDrag
+      title="列设置"
       :visible.sync="columnDialogVisible"
-      width="640px"
-      :append-to-body="false"
-      :modal-append-to-body="false"
+      width="720px"
+      append-to-body
+      :modal="false"
       :close-on-click-modal="false"
-      custom-class="inventory-column-dialog-inpage"
+      custom-class="inventory-column-dialog"
       :show-close="false"
     >
-      <el-transfer
-        :titles="['显示', '隐藏']"
-        v-model="columnHiddenKeys"
-        :data="columnTransferData"
-        @change="onColumnTransferChange"
-      />
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="saveColumnConfig">保 存</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="columnDialogVisible = false">关 闭</el-button>
+      <div class="column-panels column-panels--single">
+        <div class="column-panel">
+          <div class="column-panel-head">
+            <span class="column-panel-head-title">
+              <span>列设置 {{ visibleColumnList.length }}/{{ columns.length }} 显示</span>
+              <el-tooltip
+                placement="bottom-start"
+                effect="light"
+                popper-class="column-dialog-help-tooltip"
+              >
+                <div slot="content" class="column-dialog-help-content">
+                  勾选为显示、取消勾选为隐藏；「排序」勾选后该列可升/降序，未勾选则不可排序；点击行后可点上移/下移调整顺序；可设置列宽与明细对齐（左/中/右）。表头固定居中。「初始化」恢复系统默认且不保留本次修改。
+                </div>
+                <i class="el-icon-question column-dialog-help-icon" />
+              </el-tooltip>
+            </span>
+            <span class="column-panel-head-actions">
+              <el-button
+                type="text"
+                icon="el-icon-arrow-up"
+                :disabled="!canMoveColumnUp"
+                @click.stop="moveColumn(-1)"
+              >上移</el-button>
+              <el-button
+                type="text"
+                icon="el-icon-arrow-down"
+                :disabled="!canMoveColumnDown"
+                @click.stop="moveColumn(1)"
+              >下移</el-button>
+            </span>
+          </div>
+          <div class="column-panel-body">
+            <div
+              v-for="c in orderedColumns"
+              :key="'col-' + c.key"
+              class="column-row"
+              :class="{ 'is-selected': columnActiveKey === String(c.key) }"
+              @click="selectColumnRow(c.key)"
+            >
+              <el-checkbox
+                :value="!!c.visible"
+                @change="(val) => setColumnVisible(c.key, val)"
+                @click.native.stop
+              />
+              <span class="column-row-label" :title="c.label">{{ c.label }}</span>
+              <el-checkbox
+                class="column-row-sortable"
+                :value="!!c.sortable"
+                @change="(val) => setColumnSortable(c.key, val)"
+                @click.native.stop
+              >排序</el-checkbox>
+              <el-input-number
+                class="column-row-width"
+                size="mini"
+                :min="40"
+                :max="800"
+                :step="10"
+                controls-position="right"
+                :value="c.width"
+                @change="(val) => setColumnWidth(c.key, val)"
+                @click.native.stop
+              />
+              <el-radio-group
+                class="column-row-align"
+                size="mini"
+                :value="c.align || 'center'"
+                @input="(val) => setColumnAlign(c.key, val)"
+                @click.native.stop
+              >
+                <el-radio-button label="left">左</el-radio-button>
+                <el-radio-button label="center">中</el-radio-button>
+                <el-radio-button label="right">右</el-radio-button>
+              </el-radio-group>
+            </div>
+            <div v-if="!orderedColumns.length" class="column-panel-empty">无列</div>
+          </div>
+        </div>
+      </div>
+      <div slot="footer" class="column-dialog-footer">
+        <el-button
+          type="primary"
+          size="small"
+          icon="el-icon-check"
+          class="spd-btn spd-btn--primary"
+          @click="saveColumnConfig"
+        >保 存</el-button>
+        <el-button
+          type="success"
+          size="small"
+          icon="el-icon-refresh"
+          class="spd-btn"
+          @click="initColumnConfig"
+        >初始化</el-button>
+        <el-button
+          type="danger"
+          size="small"
+          icon="el-icon-close"
+          class="spd-btn"
+          @click="columnDialogVisible = false"
+        >关 闭</el-button>
       </div>
     </el-dialog>
 
-    <div class="table-container">
-    <el-table v-loading="loading" :data="inventoryList"
-              :row-class-name="inventoryListIndex"
-              @selection-change="handleSelectionChange" 
-              height="60vh"
-              border>
-      <el-table-column type="selection" width="48" align="center" fixed="left"/>
-      <el-table-column label="序号" width="80" align="center" header-align="center" class-name="col-serial-center" show-overflow-tooltip resizable v-if="columns[0].visible">
-        <template slot-scope="scope">
-          <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="materialCode" label="耗材编码" align="center" prop="material.code" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[1].visible"/>
-      <el-table-column key="materialName" label="耗材名称" align="center" prop="material.name" width="160" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[2].visible"/>
-      <el-table-column key="speci" label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" v-if="columns[3].visible">
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="model" label="型号" align="center" prop="material.model" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByModel" v-if="columns[4].visible">
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="factory" label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="150" show-overflow-tooltip resizable sortable :sort-method="sortByFactory" v-if="columns[5].visible">
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="warehouse" label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByWarehouse" v-if="columns[6].visible"/>
-      <el-table-column key="supplier" label="供应商" align="center" prop="supplier.name" width="160" show-overflow-tooltip resizable sortable :sort-method="sortBySupplier" v-if="columns[7].visible"/>
-      <el-table-column key="unitPrice" label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice" v-if="columns[8].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="unit" label="单位" align="center" width="80" show-overflow-tooltip resizable v-if="columns[9].visible">
-        <template slot-scope="scope">
-          <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || (scope.row.material && scope.row.material.unit && (scope.row.material.unit.unitName || scope.row.material.unit.name)) || (scope.row.material && scope.row.material.unitName) || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="qty" label="库存数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable v-if="columns[10].visible"/>
-      <el-table-column key="amt" label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByAmt" v-if="columns[11].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="batchNo" label="入库批次号" align="center" prop="batchNo" width="220" resizable v-if="columns[12].visible">
-        <template slot-scope="scope">
-          <span class="batch-no-text">{{ scope.row.batchNo || '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="materialNo" label="批号" align="center" prop="materialNo" width="120" show-overflow-tooltip resizable v-if="columns[13].visible"/>
-      <el-table-column label="主条码" align="center" prop="mainBarcode" width="140" show-overflow-tooltip resizable/>
-      <el-table-column label="辅条码" align="center" prop="subBarcode" width="140" show-overflow-tooltip resizable/>
-      <el-table-column key="beginTime" label="生产日期" align="center" prop="beginTime" width="160" show-overflow-tooltip resizable v-if="columns[14].visible">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="endTime" label="有效期" align="center" prop="endTime" width="160" show-overflow-tooltip resizable v-if="columns[15].visible">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="registerNo" label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable v-if="columns[16].visible">
-        <template slot-scope="scope">
-          <span>{{ scope.row.material && scope.row.material.registerNo ? scope.row.material.registerNo : '--' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="periodDate" label="注册证有效期" align="center" prop="material.periodDate" width="180" show-overflow-tooltip resizable v-if="columns[17].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="isBilling" label="计费" align="center" prop="material.isBilling" width="80" show-overflow-tooltip resizable v-if="columns[18].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1 || scope.row.material.isBilling === true || scope.row.material.isBilling === 'true')">是</span>
-          <span v-else-if="scope.row.material && (scope.row.material.isBilling === '0' || scope.row.material.isBilling === 0 || scope.row.material.isBilling === '2' || scope.row.material.isBilling === false || scope.row.material.isBilling === 'false')">否</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="materialUseStatus" label="产品档案状态" align="center" width="110" show-overflow-tooltip resizable v-if="columns[24].visible">
-        <template slot-scope="scope">
-          <span>{{ materialUseDictLabel(scope.row.material && scope.row.material.isUse) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="receiptOrderNo" label="入库单号" align="center" prop="receiptOrderNo" width="180" show-overflow-tooltip resizable v-if="columns[19].visible"/>
-      <el-table-column key="createTime" label="制单日期" align="center" prop="createTime" width="160" show-overflow-tooltip resizable v-if="columns[20].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-          <span v-else-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="createrName" label="制单人" align="center" prop="createrName" width="120" show-overflow-tooltip resizable v-if="columns[21].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.createrName">{{ scope.row.createrName }}</span>
-          <span v-else-if="scope.row.creater && scope.row.creater.nickName">{{ scope.row.creater.nickName }}</span>
-          <span v-else-if="scope.row.creater && scope.row.creater.userName">{{ scope.row.creater.userName }}</span>
-          <span v-else-if="scope.row.createBy">{{ scope.row.createBy }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="auditDate" label="审核日期" align="center" prop="auditDate" width="160" show-overflow-tooltip resizable v-if="columns[22].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
-          <span v-else-if="scope.row.warehouseDate">{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column key="auditPersonName" label="审核人" align="center" prop="auditPersonName" width="120" show-overflow-tooltip resizable v-if="columns[23].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.auditPersonName">{{ scope.row.auditPersonName }}</span>
-          <span v-else-if="scope.row.auditPerson && scope.row.auditPerson.nickName">{{ scope.row.auditPerson.nickName }}</span>
-          <span v-else-if="scope.row.auditPerson && scope.row.auditPerson.userName">{{ scope.row.auditPerson.userName }}</span>
-          <span v-else-if="scope.row.auditBy">{{ scope.row.auditBy }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
+    <div class="table-container" ref="tablePanel">
+    <el-table
+      ref="invDetailTable"
+      class="inv-detail-main-table"
+      :key="'inv-detail-table-' + tableColumnEpoch"
+      v-loading="loading"
+      :data="inventoryList"
+      :row-key="getDetailRowKey"
+      :row-class-name="invDetailRowClassName"
+      @selection-change="handleSelectionChange"
+      @row-dblclick="handleDetailRowDblclick"
+      :height="tableHeight"
+      border
+      stripe
+    >
+      <el-table-column type="selection" width="55" align="center" header-align="center" class-name="inv-select-col col-serial-center"/>
+      <template v-for="item in tableColumnItems">
+        <el-table-column
+          v-if="item.type === 'col' && Number(item.col.key) === 0"
+          :key="'tc-' + tableColumnEpoch + '-0'"
+          label="序号"
+          class-name="col-serial-center"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 1"
+          :key="'tc-' + tableColumnEpoch + '-1'"
+          label="产品编码"
+          prop="material.code"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByMaterialCode"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 2"
+          :key="'tc-' + tableColumnEpoch + '-2'"
+          label="产品名称"
+          prop="material.name"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByMaterialName"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 3"
+          :key="'tc-' + tableColumnEpoch + '-3'"
+          label="规格"
+          prop="material.speci"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortBySpeci"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 4"
+          :key="'tc-' + tableColumnEpoch + '-4'"
+          label="型号"
+          prop="material.model"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByModel"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 5"
+          :key="'tc-' + tableColumnEpoch + '-5'"
+          label="生产厂家"
+          prop="material.fdFactory.factoryName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByFactory"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 6"
+          :key="'tc-' + tableColumnEpoch + '-6'"
+          label="仓库"
+          prop="warehouse.name"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByWarehouse"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 7"
+          :key="'tc-' + tableColumnEpoch + '-7'"
+          label="供应商"
+          prop="supplier.name"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortBySupplier"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 8"
+          :key="'tc-' + tableColumnEpoch + '-8'"
+          label="单价"
+          prop="unitPrice"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByUnitPrice"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 9"
+          :key="'tc-' + tableColumnEpoch + '-9'"
+          label="单位"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || (scope.row.material && scope.row.material.unit && (scope.row.material.unit.unitName || scope.row.material.unit.name)) || (scope.row.material && scope.row.material.unitName) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 10"
+          :key="'tc-' + tableColumnEpoch + '-10'"
+          label="库存数量"
+          prop="qty"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByQty"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 11"
+          :key="'tc-' + tableColumnEpoch + '-11'"
+          label="金额"
+          prop="amt"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByAmt"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 12"
+          :key="'tc-' + tableColumnEpoch + '-12'"
+          label="入库批次号"
+          prop="batchNo"
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span class="batch-no-text">{{ scope.row.batchNo || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 13"
+          :key="'tc-' + tableColumnEpoch + '-13'"
+          label="批号"
+          prop="materialNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="item.type === 'mainBarcode'"
+          :key="'tc-' + tableColumnEpoch + '-mainBarcode'"
+          label="主条码"
+          align="center"
+          header-align="center"
+          prop="mainBarcode"
+          width="140"
+          show-overflow-tooltip
+          resizable
+        />
+        <el-table-column
+          v-else-if="item.type === 'subBarcode'"
+          :key="'tc-' + tableColumnEpoch + '-subBarcode'"
+          label="辅条码"
+          align="center"
+          header-align="center"
+          prop="subBarcode"
+          width="140"
+          show-overflow-tooltip
+          resizable
+        />
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 14"
+          :key="'tc-' + tableColumnEpoch + '-14'"
+          label="生产日期"
+          prop="beginTime"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 15"
+          :key="'tc-' + tableColumnEpoch + '-15'"
+          label="有效期"
+          prop="endTime"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 16"
+          :key="'tc-' + tableColumnEpoch + '-16'"
+          label="注册证号"
+          prop="material.registerNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ scope.row.material && scope.row.material.registerNo ? scope.row.material.registerNo : '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 17"
+          :key="'tc-' + tableColumnEpoch + '-17'"
+          label="注册证有效期"
+          prop="material.periodDate"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 18"
+          :key="'tc-' + tableColumnEpoch + '-18'"
+          label="计费"
+          prop="material.isBilling"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1 || scope.row.material.isBilling === true || scope.row.material.isBilling === 'true')">是</span>
+            <span v-else-if="scope.row.material && (scope.row.material.isBilling === '0' || scope.row.material.isBilling === 0 || scope.row.material.isBilling === '2' || scope.row.material.isBilling === false || scope.row.material.isBilling === 'false')">否</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 24"
+          :key="'tc-' + tableColumnEpoch + '-24'"
+          label="产品档案状态"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ materialUseDictLabel(scope.row.material && scope.row.material.isUse) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 19"
+          :key="'tc-' + tableColumnEpoch + '-19'"
+          label="入库单号"
+          prop="receiptOrderNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 20"
+          :key="'tc-' + tableColumnEpoch + '-20'"
+          label="制单日期"
+          prop="createTime"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+            <span v-else-if="scope.row.materialDate">{{ parseTime(scope.row.materialDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 21"
+          :key="'tc-' + tableColumnEpoch + '-21'"
+          label="制单人"
+          prop="createrName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.createrName">{{ scope.row.createrName }}</span>
+            <span v-else-if="scope.row.creater && scope.row.creater.nickName">{{ scope.row.creater.nickName }}</span>
+            <span v-else-if="scope.row.creater && scope.row.creater.userName">{{ scope.row.creater.userName }}</span>
+            <span v-else-if="scope.row.createBy">{{ scope.row.createBy }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 22"
+          :key="'tc-' + tableColumnEpoch + '-22'"
+          label="审核日期"
+          prop="auditDate"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d}') }}</span>
+            <span v-else-if="scope.row.warehouseDate">{{ parseTime(scope.row.warehouseDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 23"
+          :key="'tc-' + tableColumnEpoch + '-23'"
+          label="审核人"
+          prop="auditPersonName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.auditPersonName">{{ scope.row.auditPersonName }}</span>
+            <span v-else-if="scope.row.auditPerson && scope.row.auditPerson.nickName">{{ scope.row.auditPerson.nickName }}</span>
+            <span v-else-if="scope.row.auditPerson && scope.row.auditPerson.userName">{{ scope.row.auditPerson.userName }}</span>
+            <span v-else-if="scope.row.auditBy">{{ scope.row.auditBy }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+      </template>
       <el-table-column
         v-for="col in hisChargeItemColumnDefs"
         :key="'his-charge-' + col.key"
@@ -289,12 +745,14 @@
       <div class="pagination-summary">
         <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
-      <pagination
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
+      <div class="pagination-container">
+        <pagination
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
     </div>
 
   </div>
@@ -304,7 +762,6 @@
 import { listInventory } from "@/api/warehouse/inventory";
 import { exportWarehouseInventoryDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { getUserUiConfig, saveUserUiConfig } from "@/api/system/userUiConfig";
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
 import SelectFinanceCategoryLow from "@/components/SelectModel/SelectFinanceCategoryLow";
@@ -312,11 +769,45 @@ import RightToolbar from "@/components/RightToolbar";
 import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
+function createDefaultInventoryColumns() {
+  return [
+    { key: 0, label: '序号', visible: true, width: 80, align: 'center', sortable: false },
+    { key: 1, label: '产品编码', visible: true, width: 150, align: 'center', sortable: true },
+    { key: 2, label: '产品名称', visible: true, width: 160, align: 'center', sortable: true },
+    { key: 3, label: '规格', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 4, label: '型号', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 5, label: '生产厂家', visible: true, width: 150, align: 'center', sortable: true },
+    { key: 6, label: '仓库', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 7, label: '供应商', visible: true, width: 160, align: 'center', sortable: true },
+    { key: 8, label: '单价', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 9, label: '单位', visible: true, width: 80, align: 'center', sortable: false },
+    { key: 10, label: '库存数量', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 11, label: '金额', visible: true, width: 120, align: 'center', sortable: true },
+    { key: 12, label: '入库批次号', visible: true, width: 220, align: 'center', sortable: false },
+    { key: 13, label: '批号', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 14, label: '生产日期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 15, label: '有效期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 16, label: '注册证号', visible: true, width: 180, align: 'center', sortable: false },
+    { key: 17, label: '注册证有效期', visible: true, width: 180, align: 'center', sortable: false },
+    { key: 18, label: '计费', visible: true, width: 80, align: 'center', sortable: false },
+    { key: 19, label: '入库单号', visible: true, width: 180, align: 'center', sortable: false },
+    { key: 20, label: '制单日期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 21, label: '制单人', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 22, label: '审核日期', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 23, label: '审核人', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 24, label: '产品档案状态', visible: true, width: 110, align: 'center', sortable: false }
+  ];
+}
+
+function createDefaultColumnOrder() {
+  return createDefaultInventoryColumns().map(c => c.key);
+}
+
 export default {
   name: "firstInventory",
   dicts: ['is_use_status'],
   mixins: [hisChargeItemTableColumnsMixin],
-  components: {SelectMaterial,SelectWarehouse,SelectWarehouseCategory,SelectFinanceCategoryLow,RightToolbar},
+  components: {SelectWarehouse,SelectWarehouseCategory,SelectFinanceCategoryLow,RightToolbar},
   data() {
     return {
       // 遮罩层
@@ -324,6 +815,10 @@ export default {
       activeName: 'first',
       // 选中数组
       ids: [],
+      selectedRowKeys: [],
+      tableHeight: 400,
+      toolbarMoreHover: false,
+      toolbarMoreCloseTimer: null,
       // 非单个禁用
       single: true,
       // 非多个禁用
@@ -353,6 +848,7 @@ export default {
         materialSpeci: null,
         materialModel: null,
         supplierId: null,
+        supplierKeyword: null,
         beginDate: null,
         endDate: null,
         batchNumber: null,
@@ -365,39 +861,16 @@ export default {
       },
       // 表单参数
       form: {},
-      // 表格列显隐（与用户管理 right-toolbar 一致，key 须与数组下标一致）
-      columns: [
-        { key: 0, label: '序号', visible: true },
-        { key: 1, label: '耗材编码', visible: true },
-        { key: 2, label: '耗材名称', visible: true },
-        { key: 3, label: '规格', visible: true },
-        { key: 4, label: '型号', visible: true },
-        { key: 5, label: '生产厂家', visible: true },
-        { key: 6, label: '仓库', visible: true },
-        { key: 7, label: '供应商', visible: true },
-        { key: 8, label: '单价', visible: true },
-        { key: 9, label: '单位', visible: true },
-        { key: 10, label: '库存数量', visible: true },
-        { key: 11, label: '金额', visible: true },
-        { key: 12, label: '入库批次号', visible: true },
-        { key: 13, label: '批号', visible: true },
-        { key: 14, label: '生产日期', visible: true },
-        { key: 15, label: '有效期', visible: true },
-        { key: 16, label: '注册证号', visible: true },
-        { key: 17, label: '注册证有效期', visible: true },
-        { key: 18, label: '计费', visible: true },
-        { key: 19, label: '入库单号', visible: true },
-        { key: 20, label: '制单日期', visible: true },
-        { key: 21, label: '制单人', visible: true },
-        { key: 22, label: '审核日期', visible: true },
-        { key: 23, label: '审核人', visible: true },
-        { key: 24, label: '产品档案状态', visible: true }
-      ],
+      // 表格列显隐/列宽/明细对齐/顺序（key 稳定；表头固定居中）
+      columns: createDefaultInventoryColumns(),
+      columnOrder: createDefaultColumnOrder(),
+      tableColumnEpoch: 0,
       // 表单校验
       rules: {
       },
       columnDialogVisible: false,
-      columnHiddenKeys: [],
+      /** 列设置弹窗：当前点选行（用于上移/下移） */
+      columnActiveKey: null,
       columnConfigKey: 'inventory_first_detail_columns',
       /** 是否显示零库存明细（默认不显示） */
       showZeroStock: false,
@@ -405,9 +878,8 @@ export default {
       moreSearchKeywords: {},
       moreSearchOptions: [
         { value: "receiptOrderNo", label: "单号" },
-        { value: "supplier", label: "供应商" },
         { value: "warehouse", label: "仓库" },
-        { value: "materialName", label: "耗材名称" },
+        { value: "materialName", label: "产品" },
         { value: "materialSpeci", label: "规格" },
         { value: "materialModel", label: "型号" },
         { value: "hisChargeItemId", label: "收费项目ID" },
@@ -420,11 +892,54 @@ export default {
       return "spd.warehouse.inventory.first.moreSearchTypes";
     },
     builtInMoreSearchDefaults() {
-      return [];
+      // 与出/退库明细首行一致：默认带出「产品」检索框
+      return ['materialName'];
     },
-    /** 穿梭框数据源（key 用字符串，避免 Transfer 对数字 key 异常） */
-    columnTransferData() {
-      return (this.columns || []).map(c => ({ key: String(c.key), label: c.label }));
+    /** 按 columnOrder 排序后的列 */
+    orderedColumns() {
+      const map = {};
+      (this.columns || []).forEach(c => { map[String(c.key)] = c; });
+      const order = (this.columnOrder && this.columnOrder.length)
+        ? this.columnOrder
+        : createDefaultColumnOrder();
+      const list = [];
+      order.forEach(k => {
+        const c = map[String(k)];
+        if (c) list.push(c);
+      });
+      (this.columns || []).forEach(c => {
+        if (!list.some(x => String(x.key) === String(c.key))) list.push(c);
+      });
+      return list;
+    },
+    /** 显示列（按顺序） */
+    visibleColumnList() {
+      return this.orderedColumns.filter(c => c.visible);
+    },
+    canMoveColumnUp() {
+      if (!this.columnActiveKey) return false;
+      const list = this.orderedColumns;
+      return list.findIndex(c => String(c.key) === this.columnActiveKey) > 0;
+    },
+    canMoveColumnDown() {
+      if (!this.columnActiveKey) return false;
+      const list = this.orderedColumns;
+      const i = list.findIndex(c => String(c.key) === this.columnActiveKey);
+      return i >= 0 && i < list.length - 1;
+    },
+    /** 表格渲染项（含批号后固定插入主/辅条码） */
+    tableColumnItems() {
+      const items = [];
+      this.orderedColumns.forEach(col => {
+        if (col.visible) {
+          items.push({ type: 'col', col });
+        }
+        if (Number(col.key) === 13) {
+          items.push({ type: 'mainBarcode' });
+          items.push({ type: 'subBarcode' });
+        }
+      });
+      return items;
     },
     /** 当前页数量合计 */
     pageTotalQty() {
@@ -449,19 +964,99 @@ export default {
     listWarehouse().then((res) => {
       this.restaurants = res.rows;
     });
+    this.$nextTick(() => {
+      this.updateTableHeight();
+      setTimeout(() => this.updateTableHeight(), 80);
+    });
+    window.addEventListener('resize', this.updateTableHeight);
+  },
+  activated() {
+    this.$nextTick(() => this.updateTableHeight());
+  },
+  beforeDestroy() {
+    this.clearToolbarMoreCloseTimer();
+    window.removeEventListener('resize', this.updateTableHeight);
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateTableHeight());
+    }
   },
   methods: {
+    updateTableHeight() {
+      this.$nextTick(() => {
+        const panel = this.$refs.tablePanel;
+        if (!panel) return;
+        const h = Math.floor(panel.clientHeight);
+        if (h > 120) {
+          this.tableHeight = h;
+          this.$nextTick(() => {
+            if (this.$refs.invDetailTable && this.$refs.invDetailTable.doLayout) {
+              this.$refs.invDetailTable.doLayout();
+            }
+          });
+        }
+      });
+    },
     openColumnDialog() {
-      this.columnHiddenKeys = this.columns.filter(c => !c.visible).map(c => String(c.key));
+      this.columnActiveKey = null;
       this.columnDialogVisible = true;
     },
-    onColumnTransferChange() {
-      this.applyColumnVisibilityFromHiddenKeys();
+    /** 点击行：选中以便上移/下移 */
+    selectColumnRow(key) {
+      const k = String(key);
+      this.columnActiveKey = this.columnActiveKey === k ? null : k;
     },
-    applyColumnVisibilityFromHiddenKeys() {
-      const hidden = new Set(this.columnHiddenKeys.map(String));
-      this.columns.forEach(c => {
-        c.visible = !hidden.has(String(c.key));
+    setColumnVisible(key, val) {
+      const col = this.columns.find(c => String(c.key) === String(key));
+      if (!col) return;
+      col.visible = !!val;
+    },
+    setColumnSortable(key, val) {
+      const col = this.columns.find(c => String(c.key) === String(key));
+      if (!col) return;
+      col.sortable = !!val;
+      this.refreshTableColumns();
+    },
+    /** 在全部列中上移/下移选中行（delta: -1 上移, 1 下移） */
+    moveColumn(delta) {
+      const key = this.columnActiveKey;
+      if (!key) return;
+      const list = this.orderedColumns;
+      const i = list.findIndex(c => String(c.key) === key);
+      const j = i + delta;
+      if (i < 0 || j < 0 || j >= list.length) return;
+      const keyA = String(list[i].key);
+      const keyB = String(list[j].key);
+      const order = (this.columnOrder && this.columnOrder.length)
+        ? this.columnOrder.slice()
+        : createDefaultColumnOrder();
+      const ia = order.findIndex(k => String(k) === keyA);
+      const ib = order.findIndex(k => String(k) === keyB);
+      if (ia < 0 || ib < 0) return;
+      const tmp = order[ia];
+      order[ia] = order[ib];
+      order[ib] = tmp;
+      this.columnOrder = order;
+      this.tableColumnEpoch += 1;
+    },
+    setColumnWidth(key, val) {
+      const col = this.columns.find(c => String(c.key) === String(key));
+      if (!col) return;
+      const n = Number(val);
+      col.width = Number.isFinite(n) ? Math.min(800, Math.max(40, Math.round(n))) : 120;
+    },
+    setColumnAlign(key, val) {
+      const col = this.columns.find(c => String(c.key) === String(key));
+      if (!col) return;
+      col.align = (val === 'left' || val === 'right' || val === 'center') ? val : 'center';
+    },
+    refreshTableColumns() {
+      this.tableColumnEpoch += 1;
+      this.$nextTick(() => {
+        if (this.$refs.invDetailTable && this.$refs.invDetailTable.doLayout) {
+          this.$refs.invDetailTable.doLayout();
+        }
       });
     },
     loadUserColumnConfig() {
@@ -474,9 +1069,54 @@ export default {
             const o = typeof val === 'string' ? JSON.parse(val) : val;
             const hidden = o.hiddenKeys || [];
             const hiddenSet = new Set(hidden.map(k => String(k)));
+            const widths = o.widths || {};
+            const aligns = o.aligns || {};
+            const sortables = o.sortables || {};
+            const hasSortables = o.sortables != null;
             this.columns.forEach(c => {
               c.visible = !hiddenSet.has(String(c.key));
+              const w = widths[String(c.key)];
+              if (w != null && w !== '') {
+                const n = Number(w);
+                if (Number.isFinite(n) && n >= 40) {
+                  c.width = Math.min(800, Math.round(n));
+                }
+              }
+              const a = aligns[String(c.key)];
+              if (a === 'left' || a === 'right' || a === 'center') {
+                c.align = a;
+              } else if (!c.align) {
+                c.align = 'center';
+              }
+              if (hasSortables) {
+                const s = sortables[String(c.key)];
+                c.sortable = s === true || s === 'true' || s === 1 || s === '1';
+              } else if (c.sortable == null) {
+                c.sortable = false;
+              }
             });
+            const orderKeys = o.orderKeys;
+            if (Array.isArray(orderKeys) && orderKeys.length) {
+              const valid = new Set(this.columns.map(c => String(c.key)));
+              const seen = new Set();
+              const next = [];
+              orderKeys.forEach(k => {
+                const s = String(k);
+                if (!valid.has(s) || seen.has(s)) return;
+                seen.add(s);
+                const n = Number(k);
+                next.push(Number.isFinite(n) ? n : k);
+              });
+              this.columns.forEach(c => {
+                const s = String(c.key);
+                if (!seen.has(s)) {
+                  seen.add(s);
+                  next.push(c.key);
+                }
+              });
+              this.columnOrder = next;
+            }
+            this.refreshTableColumns();
           } catch (e) {
             console.warn('loadUserColumnConfig', e);
           }
@@ -484,14 +1124,25 @@ export default {
         .catch(() => {});
     },
     saveColumnConfig() {
-      this.applyColumnVisibilityFromHiddenKeys();
       const hiddenKeys = this.columns.filter(c => !c.visible).map(c => c.key);
+      const widths = {};
+      const aligns = {};
+      const sortables = {};
+      this.columns.forEach(c => {
+        widths[String(c.key)] = Number(c.width) || 120;
+        aligns[String(c.key)] = c.align || 'center';
+        sortables[String(c.key)] = !!c.sortable;
+      });
+      const orderKeys = (this.columnOrder && this.columnOrder.length)
+        ? this.columnOrder.slice()
+        : createDefaultColumnOrder();
       saveUserUiConfig({
         configKey: this.columnConfigKey,
-        configValue: JSON.stringify({ hiddenKeys })
+        configValue: JSON.stringify({ hiddenKeys, widths, aligns, sortables, orderKeys })
       }).then(() => {
         this.$modal.msgSuccess('保存成功');
         this.columnDialogVisible = false;
+        this.refreshTableColumns();
       }).catch((err) => {
         const m = (err && err.message) ? String(err.message) : '';
         if (m.includes('404')) {
@@ -501,6 +1152,23 @@ export default {
         } else {
           this.$modal.msgError(m ? `保存失败：${m}` : '保存失败，请检查网络或稍后重试');
         }
+      });
+    },
+    /** 初始化：恢复系统默认列设置，并清除本账号已保存的个性化配置 */
+    initColumnConfig() {
+      this.columns = createDefaultInventoryColumns();
+      this.columnOrder = createDefaultColumnOrder();
+      this.columnActiveKey = null;
+      this.refreshTableColumns();
+      saveUserUiConfig({
+        configKey: this.columnConfigKey,
+        configValue: ''
+      }).then(() => {
+        this.$modal.msgSuccess('已初始化为系统默认');
+        this.columnDialogVisible = false;
+      }).catch(() => {
+        this.$modal.msgSuccess('已初始化为系统默认（本地）');
+        this.columnDialogVisible = false;
       });
     },
     /** 表头排序：字符串列 */
@@ -532,6 +1200,7 @@ export default {
     sortByWarehouse(a, b) { return this.sortByStr(a, b, r => (r.warehouse && r.warehouse.name) || ''); },
     sortBySupplier(a, b) { return this.sortByStr(a, b, r => (r.supplier && r.supplier.name) || ''); },
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
+    sortByQty(a, b) { return this.sortByNum(a, b, 'qty'); },
     sortByAmt(a, b) { return this.sortByNum(a, b, 'amt'); },
     materialUseDictLabel(isUse) {
       if (isUse === undefined || isUse === null || isUse === '') return '--';
@@ -564,18 +1233,20 @@ export default {
       }
       params.receiptOrderNo = null;
       params.supplierId = null;
-      params.supplierKeyword = null;
       params.materialName = null;
       params.materialSpeci = null;
       params.materialModel = null;
       params.hisChargeItemId = null;
       params.batchNumber = null;
+      // 供应商固定首行
+      const supplierKw = params.supplierKeyword != null ? String(params.supplierKeyword).trim() : '';
+      params.supplierKeyword = supplierKw || null;
       const types = this.moreSearchTypes || [];
       if (!types.includes('warehouse')) {
         params.warehouseId = null;
       }
       types.forEach(t => {
-        if (t === 'warehouse') {
+        if (t === 'warehouse' || t === 'supplier') {
           return;
         }
         const raw = this.moreSearchKeywords[t];
@@ -586,10 +1257,6 @@ export default {
         switch (t) {
           case 'receiptOrderNo':
             params.receiptOrderNo = kw;
-            break;
-          case 'supplier':
-            params.supplierKeyword = kw;
-            params.supplierId = null;
             break;
           case 'materialName':
             params.materialName = kw;
@@ -622,33 +1289,36 @@ export default {
     },
     loadMoreSearchDefaults() {
       const bar = this.$refs.moreSearchBar;
+      let list = [];
       if (bar && typeof bar.loadDefaults === "function") {
-        return bar.loadDefaults();
+        list = bar.loadDefaults() || [];
+      } else {
+        const fallback = this.builtInMoreSearchDefaults.slice();
+        try {
+          const raw = localStorage.getItem(this.moreSearchStorageKey);
+          if (!raw) return fallback;
+          const parsed = JSON.parse(raw);
+          if (!Array.isArray(parsed)) return fallback;
+          const allow = new Set(this.moreSearchOptions.map(o => o.value));
+          const cleaned = parsed.filter(v => allow.has(v));
+          list = cleaned.length ? cleaned : fallback;
+        } catch (e) {
+          return fallback;
+        }
       }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
+      return (list || []).filter(v => v !== 'supplier');
     },
     onMoreSearchTypesChange(val) {
-      const set = new Set(val || []);
+      const set = new Set((val || []).filter(v => v !== 'supplier'));
       if (!set.has('warehouse')) {
         this.queryParams.warehouseId = null;
       }
       Object.keys(this.moreSearchKeywords).forEach(k => {
-        if (!set.has(k)) {
+        if (!set.has(k) || k === 'supplier') {
           this.$delete(this.moreSearchKeywords, k);
         }
       });
-      (val || []).forEach(k => {
+      Array.from(set).forEach(k => {
         if (k === 'warehouse') {
           return;
         }
@@ -660,9 +1330,8 @@ export default {
     moreSearchTypeLabel(t) {
       const map = {
         receiptOrderNo: '单号',
-        supplier: '供应商',
         warehouse: '仓库',
-        materialName: '耗材名称',
+        materialName: '产品',
         materialSpeci: '规格',
         materialModel: '型号',
         hisChargeItemId: '收费项目ID',
@@ -673,14 +1342,53 @@ export default {
     moreSearchPlaceholderFor(t) {
       const map = {
         receiptOrderNo: '入库单号模糊',
-        supplier: '供应商编码/名称',
-        materialName: '耗材编码/名称/简码',
+        materialName: '产品编码/名称/简码',
         materialSpeci: '规格模糊',
         materialModel: '型号模糊',
         hisChargeItemId: '收费项目ID模糊',
         batchNumber: '生产批号模糊'
       };
       return map[t] || '请输入关键字';
+    },
+    saveMoreSearchDefaults() {
+      const bar = this.$refs.moreSearchBar;
+      if (bar && typeof bar.saveDefaults === 'function') {
+        bar.saveDefaults();
+      }
+    },
+    clearToolbarMoreCloseTimer() {
+      if (this.toolbarMoreCloseTimer) {
+        clearTimeout(this.toolbarMoreCloseTimer);
+        this.toolbarMoreCloseTimer = null;
+      }
+    },
+    setToolbarMoreVisible(visible) {
+      const sel = this.$refs.toolbarMoreSelect;
+      if (!sel) return;
+      if (sel.visible === visible) return;
+      sel.visible = visible;
+      if (!visible && typeof sel.blur === 'function') {
+        sel.blur();
+      }
+    },
+    onToolbarMoreEnter() {
+      this.toolbarMoreHover = true;
+      this.clearToolbarMoreCloseTimer();
+      this.setToolbarMoreVisible(true);
+    },
+    onToolbarMoreLeave() {
+      this.toolbarMoreHover = false;
+      this.clearToolbarMoreCloseTimer();
+      this.toolbarMoreCloseTimer = setTimeout(() => {
+        if (!this.toolbarMoreHover) {
+          this.setToolbarMoreVisible(false);
+        }
+      }, 280);
+    },
+    onToolbarMoreVisibleChange(visible) {
+      if (!visible) {
+        this.toolbarMoreHover = false;
+      }
     },
     toggleShowZeroStock() {
       this.showZeroStock = !this.showZeroStock;
@@ -690,19 +1398,48 @@ export default {
     getList() {
       this.loading = true;
       listInventory(this.buildListQueryParams()).then(response => {
-        this.inventoryList = response.rows || [];
+        this.inventoryList = (response.rows || []).map((item, idx) => {
+          const pageBase = ((this.queryParams.pageNum || 1) - 1) * (this.queryParams.pageSize || 10);
+          return {
+            ...item,
+            _rowKey: `${pageBase + idx}_${item.id || ''}_${(item.material && item.material.code) || ''}_${item.batchNo || ''}`
+          };
+        });
         this.total = response.total;
         this.totalInfo = response.totalInfo || { totalAmt: 0, totalQty: 0, subTotalAmt: 0, subTotalQty: 0 };
+        this.selectedRowKeys = [];
+        this.ids = [];
+        this.loading = false;
+        this.$nextTick(() => this.updateTableHeight());
+      }).catch(() => {
+        this.inventoryList = [];
+        this.total = 0;
+        this.selectedRowKeys = [];
+        this.ids = [];
         this.loading = false;
       });
     },
-    inventoryListIndex({ row, rowIndex }) {
-      // 确保 pageNum 和 pageSize 是正整数
-      const pageNum = Math.max(1, parseInt(this.queryParams.pageNum, 10));
-      const pageSize = Math.max(1, parseInt(this.queryParams.pageSize, 10));
-
-      // 计算行索引
-      row.index = (pageNum - 1) * pageSize + rowIndex + 1;
+    getDetailRowKey(row) {
+      return (row && row._rowKey) || (row && row.id) || '';
+    },
+    invDetailRowClassName({ row }) {
+      const key = this.getDetailRowKey(row);
+      if (key && this.selectedRowKeys.indexOf(key) !== -1) {
+        return 'inv-row-selected';
+      }
+      return '';
+    },
+    /** 双击行其他列：未选中则勾选，已选中则取消 */
+    handleDetailRowDblclick(row) {
+      const table = this.$refs.invDetailTable;
+      if (!table || !row) return;
+      const key = this.getDetailRowKey(row);
+      const storeSelection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = !!(key && (
+        this.selectedRowKeys.indexOf(key) !== -1 ||
+        storeSelection.some(r => this.getDetailRowKey(r) === key)
+      ));
+      table.toggleRowSelection(row, !selected);
     },
 
     // 取消按钮
@@ -761,6 +1498,7 @@ export default {
       this.ids = selection.map(item => item.id)
       this.single = selection.length!==1
       this.multiple = !selection.length
+      this.selectedRowKeys = (selection || []).map(row => this.getDetailRowKey(row))
     },
     /** 导出：与出/退库汇总(供应商)相同版式（xlsx、宋体、标题、表头加粗、空行、合计红色） */
     async handleExport() {
@@ -797,39 +1535,140 @@ export default {
 </script>
 
 <style>
-/* 取消内层 app-container 的左右 padding，避免叠加全局 20px；左右 8px 由外层 inventory-query-page 统一控制 */
+/* 取消内层左右 padding；高度由外层 flex 分配，勿再套 100vh */
 .app-container.first-inventory-page {
+  padding-top: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
 }
 
-/* 分页行：合计在左、翻页在右，同一行；翻页下方不留白 */
+/* 列设置说明：挂到 body，需非 scoped */
+.column-dialog-help-tooltip {
+  max-width: 380px !important;
+}
+.column-dialog-help-tooltip .column-dialog-help-content {
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #f56c6c;
+}
+
+/* 列设置弹窗：append-to-body + 可拖动，样式需非 scoped */
+.inventory-column-dialog {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.inventory-column-dialog .el-dialog__header {
+  cursor: move;
+  padding: 12px 16px 8px;
+}
+.inventory-column-dialog .el-dialog__body {
+  flex: 0 1 auto;
+  overflow: auto;
+  padding: 8px 16px 4px;
+  max-height: calc(90vh - 140px);
+}
+.inventory-column-dialog .el-dialog__footer {
+  padding: 10px 16px 14px;
+}
+.inventory-column-dialog .column-dialog-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.inventory-column-dialog .column-dialog-footer .el-button {
+  margin: 0 !important;
+  min-width: 96px;
+}
+/* 无遮罩时弹窗仍浮在表格之上 */
+.el-dialog__wrapper:has(> .inventory-column-dialog) {
+  pointer-events: none;
+}
+.el-dialog__wrapper:has(> .inventory-column-dialog) .inventory-column-dialog {
+  pointer-events: auto;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+/* 分页行：与出/退库明细底部留白一致 */
 .first-inventory-page .pagination-wrapper {
   display: flex !important;
   align-items: center !important;
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
   gap: 12px !important;
-  margin-top: 0 !important;
-  padding-bottom: 0 !important;
+  margin-top: 4px !important;
   margin-bottom: 0 !important;
+  padding: 4px 0 6px !important;
+  min-height: 40px !important;
+  overflow: visible !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary {
-  flex-shrink: 0;
-  font-size: 14px;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 32px;
   color: #606266;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
 }
 .first-inventory-page .pagination-wrapper .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 32px !important;
   margin-top: 0 !important;
+  margin-bottom: 0 !important;
   margin-left: auto !important;
-  padding: 4px 0 4px 16px !important;
-  flex-shrink: 0;
+  padding: 0 4px !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  background: transparent !important;
 }
 .first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
-  padding: 2px 0 !important;
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+
+/* 仅加粗明细表底部横向滚动条 */
+.first-inventory-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #909090 !important;
+  border-radius: 4px !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #707070 !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #e8e8e8 !important;
+  border-radius: 4px !important;
 }
 
 /* 批次号自动换行显示完整 */
@@ -845,11 +1684,67 @@ export default {
 .first-inventory-page .el-table th .cell {
   white-space: nowrap;
 }
+
+/* 库存明细表：表头对齐出/退库明细 */
+.first-inventory-page .inv-detail-main-table .el-table__header-wrapper th,
+.first-inventory-page .inv-detail-main-table .el-table__header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  height: 34px !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__header th.gutter {
+  background-color: #f1f5f9 !important;
+}
+
+/* 本页「更多检索」多选：调短（覆盖 list-page 190px） */
+.inv-detail-query .ctk-list-toolbar .toolbar-more-search .more-search-type,
+.inv-detail-query .ctk-list-toolbar .toolbar-more-search .more-search-type.el-select,
+.inv-detail-query .ctk-list-toolbar .toolbar-more-search .el-select {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  height: 32px !important;
+  overflow: visible !important;
+}
+.inv-detail-query .ctk-list-toolbar .toolbar-more-search .el-select > .el-input,
+.inv-detail-query .ctk-list-toolbar .toolbar-more-search .el-select .el-input__inner {
+  width: 160px !important;
+  max-width: 160px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
+}
+.inv-detail-query .ctk-list-toolbar .toolbar-more-search .el-select-dropdown {
+  min-width: 160px !important;
+}
+
+/* 勾选/双击选中行高亮，与出/退库明细一致 */
+.first-inventory-page .inv-detail-main-table .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body tr.inv-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body tr.inv-row-selected:hover > td {
+  background-color: #A0CBFF !important;
+}
 </style>
 
 <style scoped>
 .app-container {
-  margin-top: -10px;
+  margin-top: 0;
+  padding-top: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* 查询条件样式 */
@@ -887,7 +1782,7 @@ export default {
 }
 .more-search-row--multi {
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   max-width: 100%;
 }
 .more-search-dynamic-field {
@@ -895,23 +1790,43 @@ export default {
   align-items: center;
   flex-wrap: nowrap;
   gap: 6px;
-  margin-top: 2px;
+  height: 32px;
 }
 .more-search-field-label {
   color: #606266;
   font-size: 12px;
+  line-height: 32px;
   white-space: nowrap;
   flex-shrink: 0;
 }
 .more-search-label {
   color: #606266;
   font-size: 12px;
+  line-height: 32px;
   white-space: nowrap;
 }
+
+/* 第一行与底行留 8px */
+.ctk-query-top-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+}
+.ctk-more-search-bar--hidden {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
 .more-search-type {
-  width: 190px;
-  min-width: 190px;
-  max-width: 190px;
+  width: 148px;
+  min-width: 148px;
+  max-width: 148px;
 }
 .more-search-input {
   width: 200px;
@@ -927,26 +1842,35 @@ export default {
 }
 
 .query-row-second {
-  margin-bottom: 2px;
-  position: relative;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
-/* 第二行：强制同一行不换行（避免 inline-block 宽度不足时“掉到第三行”） */
+.query-row-second .el-form-item {
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.query-row-second .el-form-item .el-form-item__content {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* 第二行：与出/退库明细底行一致，行高与上下留白对齐 */
 .query-row-second-inner {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  overflow-x: auto;
-  overflow-y: hidden;
   width: 100%;
-  gap: 4px;
-  padding-bottom: 2px;
+  gap: 8px;
+  padding-bottom: 0;
 }
 
 .query-row-second-inner .el-form-item {
   flex: 0 0 auto;
   margin-bottom: 0 !important;
-  margin-right: 8px;
+  margin-right: 0;
   white-space: nowrap;
 }
 
@@ -956,10 +1880,56 @@ export default {
   flex-wrap: nowrap;
 }
 
+.ctk-query-actions {
+  margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .query-item-date-range .query-date-start,
 .query-item-date-range .query-date-end {
-  width: 150px;
+  width: 138px;
 }
+
+/* 财务分类多选：标签单行不撑高，行高与出退库一致 */
+.inv-category-multi.more-search-select-wrap {
+  width: 138px !important;
+  min-width: 138px !important;
+  max-width: 138px !important;
+  height: 32px !important;
+  overflow: hidden;
+}
+.inv-category-multi >>> .el-select,
+.inv-category-multi >>> .el-select .el-input {
+  width: 100% !important;
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.inv-category-multi >>> .el-select--multiple .el-select__tags {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  max-width: calc(100% - 28px) !important;
+  white-space: nowrap !important;
+}
+.inv-category-multi >>> .el-select--multiple .el-tag {
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  height: 20px !important;
+  line-height: 18px !important;
+  margin: 2px 0 2px 4px !important;
+}
+.inv-category-multi >>> .el-select--multiple .el-input__inner {
+  height: 32px !important;
+  min-height: 32px !important;
+}
+
 .query-item-date-range .query-date-start {
   margin-right: 6px;
 }
@@ -1007,15 +1977,29 @@ export default {
   margin-bottom: 0;
 }
 
-/* 查询条件容器框样式：由外层 inventory-query-page 统一左右 8px，此处占满内容区 */
+/* 查询条件容器：恢复正常留白，勿用负 margin 顶到页签 */
 .form-fields-container {
-  margin-bottom: 8px;
-  margin-top: -20px;
+  margin-bottom: 4px;
+  margin-top: 0;
   margin-left: 0;
   margin-right: 0;
+  flex: 0 0 auto;
 }
 
-/* 导出/搜索/重置：与顶部搜索框、底部明细框间距均为 8px */
+/* 工具栏与搜索区/明细表间距 4px */
+.ctk-list-toolbar.list-toolbar {
+  margin-top: 0 !important;
+  margin-bottom: 4px !important;
+  flex: 0 0 auto;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+.ctk-list-toolbar .list-toolbar-right {
+  flex-wrap: nowrap !important;
+  flex-shrink: 0;
+}
+
+/* 导出/搜索/重置 */
 .button-row-inventory {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
@@ -1040,104 +2024,210 @@ export default {
 }
 
 .table-container {
-  margin-top: 8px;
+  margin-top: 0;
   margin-bottom: 0;
-  overflow: visible;
+  overflow: hidden;
   width: 100%;
   min-width: 0;
+  min-height: 0;
   margin-left: 0;
   margin-right: 0;
   position: relative;
+  flex: 1 1 auto;
 }
 
-/* 表体横向可滚；无表内合计行时底部留白略减，横向条更易露出 */
-.table-container ::v-deep .el-table__body-wrapper {
-  padding-bottom: 16px;
-  overflow-x: auto !important;
-  overflow-y: auto !important;
-  scrollbar-width: thin;
-  scrollbar-color: #a0a0a0 #e8e8e8;
-}
-
-/* 表内合计行已关闭（避免 sticky 合计盖住横向滚动条）；全量/当前页合计见下方 pagination-summary */
+/* 仅加粗明细表底部横向滚动条 */
+.table-container ::v-deep .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
-  height: 10px;
-  transition: height 0.2s ease;
+  width: 8px !important;
+  height: 12px !important;
 }
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:hover {
-  height: 14px;
+.table-container ::v-deep .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
-
+.table-container ::v-deep .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar:vertical {
+  width: 8px !important;
+}
+.table-container ::v-deep .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-track,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #e8e8e8;
-  border-radius: 3px;
-  margin: 0 2px;
-  cursor: pointer;
+  background: #e8e8e8 !important;
+  border-radius: 4px !important;
 }
-
+.table-container ::v-deep .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
-  background: #a0a0a0;
-  border-radius: 3px;
-  cursor: grab;
+  background: #909090 !important;
+  border-radius: 4px !important;
 }
-
+.table-container ::v-deep .inv-detail-main-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
 .table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #808080;
+  background: #707070 !important;
 }
 
-.table-container ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:active {
-  background: #606060;
-  cursor: grabbing;
-}
-
-/* 优化表格列间距 */
+/* 优化表格列间距（与出/退库明细表头高度一致） */
 .table-container ::v-deep .el-table th.el-table__cell {
-  padding: 10px 12px !important;
+  padding: 4px 6px !important;
 }
 
 .table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 12px !important;
+  padding: 10px 6px !important;
+}
+
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 23px;
+  word-break: normal;
 }
 
 .table-container ::v-deep .el-table .cell {
   padding: 0 4px;
 }
 
-.table-container ::v-deep .el-table th.col-serial-center .cell,
-.table-container ::v-deep .el-table td.col-serial-center .cell {
+.table-container ::v-deep .el-table th.col-serial-center .cell {
   text-align: center !important;
+  justify-content: center;
 }
 
 .table-container ::v-deep .col-serial-center-text {
   display: block;
   width: 100%;
-  text-align: center;
 }
 
-/* 显隐列弹窗限制在本页内容区内，不铺满整个浏览器框架 */
-.first-inventory-page {
-  position: relative;
-  min-height: 400px;
-}
-.first-inventory-page ::v-deep .inventory-column-dialog-inpage.el-dialog__wrapper {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  display: flex;
+.column-panel-head-title {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  z-index: 2001;
+  gap: 6px;
 }
-.first-inventory-page ::v-deep .inventory-column-dialog-inpage .el-dialog {
-  margin-top: 0 !important;
-  max-height: 90%;
+
+.column-dialog-help-icon {
+  font-size: 16px;
+  color: #f56c6c;
+  cursor: help;
+  line-height: 1;
+}
+
+.column-dialog-help-icon:hover {
+  color: #f78989;
+}
+
+.column-dialog-help-content {
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #f56c6c;
+}
+
+.column-panels {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  min-height: 0;
+}
+
+.column-panels--single {
+  display: block;
+  min-height: 0;
+}
+
+.column-panels--single .column-panel {
+  width: 100%;
+}
+
+.column-panel {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  background: #fff;
   display: flex;
   flex-direction: column;
 }
-.first-inventory-page ::v-deep .inventory-column-dialog-inpage .el-dialog__body {
+
+.column-panel-head {
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-bottom: 1px solid #e4e7ed;
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.column-panel-head-actions .el-button {
+  padding: 0 4px;
+  font-size: 12px;
+}
+
+.column-panel-body {
   flex: 1;
   overflow: auto;
+  max-height: 420px;
+  padding: 6px 0;
+}
+
+.column-panel-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: #909399;
+  font-size: 13px;
+}
+
+.column-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.column-row:hover,
+.column-row.is-selected {
+  background: #f0f7ff;
+}
+
+.column-row-label {
+  flex: 1;
+  min-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #303133;
+}
+
+.column-row-sortable {
+  flex-shrink: 0;
+  margin-right: 0;
+  white-space: nowrap;
+}
+
+.column-row-sortable ::v-deep .el-checkbox__label {
+  padding-left: 4px;
+  font-size: 12px;
+  color: #606266;
+}
+
+.column-row-width {
+  width: 96px;
+  flex-shrink: 0;
+}
+
+.column-row-width ::v-deep .el-input__inner {
+  padding-left: 4px;
+  padding-right: 28px;
+}
+
+.column-row-align {
+  flex-shrink: 0;
+}
+
+.column-row-align ::v-deep .el-radio-button__inner {
+  padding: 5px 8px;
 }
 </style>

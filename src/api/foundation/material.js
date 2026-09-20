@@ -138,7 +138,7 @@ export function getMaterial(id) {
   })
 }
 
-// 根据主条码(udi_no)或耗材编码查询产品档案（用于入库扫码带出产品）
+// 根据主条码(udi_no)或产品编码查询产品档案（用于入库扫码带出产品）
 export function getMaterialByMainBarcode(mainBarcode) {
   return request({
     url: '/foundation/material/getByMainBarcode',

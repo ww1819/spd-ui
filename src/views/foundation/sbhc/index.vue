@@ -29,7 +29,7 @@
               <el-input
                 v-else-if="t === 'consumable'"
                 v-model="searchForm.consumable"
-                placeholder="耗材名称/编码..."
+                placeholder="产品名称/编码..."
                 clearable
                 class="more-search-input more-search-input--dynamic"
                 @keyup.enter.native="handleSearch"
@@ -99,7 +99,7 @@
             ref="instrumentConsumableTable">
             <el-table-column type="selection" width="55"></el-table-column>
             <el-table-column type="index" label="序" width="50"></el-table-column>
-            <el-table-column prop="name" label="耗材名称"></el-table-column>
+            <el-table-column prop="name" label="产品名称"></el-table-column>
             <el-table-column prop="code" label="耗材编号"></el-table-column>
           </el-table>
         </div>
@@ -108,7 +108,7 @@
         <div class="consumable-list">
           <div class="panel-header">耗材列表</div>
           <div class="list-header">
-            <el-input v-model="consumableSearch" placeholder="耗材名称、编码" clearable></el-input>
+            <el-input v-model="consumableSearch" placeholder="产品名称、编码" clearable></el-input>
             <div class="button-group">
               <el-button circle @click="handleMoveLeft"></el-button>
               <el-button circle @click="handleMoveRight"></el-button>
@@ -126,7 +126,7 @@
             ref="consumableTable">
             <el-table-column type="selection" width="55"></el-table-column>
             <el-table-column type="index" label="序" width="50"></el-table-column>
-            <el-table-column prop="name" label="耗材名称"></el-table-column>
+            <el-table-column prop="name" label="产品名称"></el-table-column>
             <el-table-column prop="code" label="耗材编号"></el-table-column>
             <el-table-column prop="category" label="耗材分类"></el-table-column>
           </el-table>

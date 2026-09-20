@@ -342,7 +342,7 @@
             </template>
           </el-table-column>-->
 
-          <el-table-column label="名称" align="left" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="产品名称" align="left" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="left" prop="material.speci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="型号" align="left" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="单位" align="left" prop="material.fdUnit.unitName" width="90" show-overflow-tooltip resizable>
@@ -563,7 +563,7 @@
                   height="48vh"
         >
           <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
+          <el-table-column label="产品名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="型号" align="center" prop="material.name" width="180" show-overflow-tooltip resizable/>
           <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="180" show-overflow-tooltip resizable>

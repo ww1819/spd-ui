@@ -145,10 +145,10 @@
                 :height="entryTableHeight"
               >
                 <el-table-column type="selection" width="50" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" :selectable="isEntrySelectable" />
-                <el-table-column label="耗材编码" width="120" show-overflow-tooltip>
+                <el-table-column label="产品编码" width="120" show-overflow-tooltip>
                   <template slot-scope="scope">{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</template>
                 </el-table-column>
-                <el-table-column label="耗材名称" prop="materialName" width="180" show-overflow-tooltip />
+                <el-table-column label="产品名称" prop="materialName" width="180" show-overflow-tooltip />
                 <el-table-column label="规格" prop="materialSpec" width="120" show-overflow-tooltip />
                 <el-table-column label="型号" prop="model" width="120" show-overflow-tooltip />
                 <el-table-column label="单位" prop="unit" width="80" show-overflow-tooltip />
@@ -214,6 +214,16 @@ import { formatIsGzLabel } from '@/utils/purchaseAggEntry'
 const ENTRY_PAGE_SIZE = 200
 const RELOAD_DEBOUNCE_MS = 320
 
+/** 止=今天，起=今天往前 5 天 */
+function defaultRefPurchaseDateRange() {
+  const end = new Date()
+  const begin = new Date()
+  begin.setDate(begin.getDate() - 5)
+  const pad = n => (n < 10 ? `0${n}` : `${n}`)
+  const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return { beginDate: fmt(begin), endDate: fmt(end) }
+}
+
 export default {
   name: 'ReferencePurchaseDialog',
   components: { SelectDepartment },
@@ -226,6 +236,7 @@ export default {
     referencedEntryIdSet: { type: Object, default: () => new Set() }
   },
   data() {
+    const defaultRange = defaultRefPurchaseDateRange()
     return {
       loading: false,
       entryLoading: false,
@@ -238,8 +249,8 @@ export default {
         warehouseId: null,
         departmentId: null,
         purchaseBillNo: null,
-        beginDate: null,
-        endDate: null,
+        beginDate: defaultRange.beginDate,
+        endDate: defaultRange.endDate,
         purchasePlanRefStatus: null,
         purchaseBillStatus: 2
       },
@@ -298,13 +309,17 @@ export default {
     }
   },
   watch: {
-    visible(val) {
-      if (val) {
-        this.initOpen()
-        this.$nextTick(() => this.bindLayoutResize())
-      } else {
-        this.clearCache()
-        this.unbindLayoutResize()
+    // 父级 v-if 打开时 visible 已为 true，必须 immediate，否则 initOpen 不会执行、日期空白
+    visible: {
+      immediate: true,
+      handler(val) {
+        if (val) {
+          this.initOpen()
+          this.$nextTick(() => this.bindLayoutResize())
+        } else {
+          this.clearCache()
+          this.unbindLayoutResize()
+        }
       }
     },
     entryTotal() {
@@ -361,7 +376,18 @@ export default {
       this.syncWarehouseFromProp()
       this.queryParams.pageNum = 1
       this.clearCache()
+      this.applyDefaultDateRange()
       this.resolveWarehouseLabel().finally(() => this.loadList())
+    },
+    /** 日期默认：止=今天，起=今天往前 5 天，缩小首屏查询范围避免卡顿 */
+    applyDefaultDateRange() {
+      const range = defaultRefPurchaseDateRange()
+      this.$set(this.queryParams, 'beginDate', range.beginDate)
+      this.$set(this.queryParams, 'endDate', range.endDate)
+    },
+    formatDateYmd(d) {
+      const pad = n => (n < 10 ? `0${n}` : `${n}`)
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
     },
     syncWarehouseFromProp() {
       const wid = this.warehouseId
@@ -411,8 +437,7 @@ export default {
     resetQuery() {
       this.queryParams.departmentId = null
       this.queryParams.purchaseBillNo = null
-      this.queryParams.beginDate = null
-      this.queryParams.endDate = null
+      this.applyDefaultDateRange()
       this.queryParams.purchasePlanRefStatus = null
       this.queryParams.pageNum = 1
       this.syncWarehouseFromProp()

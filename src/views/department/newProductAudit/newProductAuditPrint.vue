@@ -20,7 +20,7 @@
       </div>
 
       <div class="form-row">
-        <div class="form-label required">*医用耗材名称:</div>
+        <div class="form-label required">*医用产品名称:</div>
         <div class="form-value full-width">{{ getMaterialName() }}</div>
       </div>
 

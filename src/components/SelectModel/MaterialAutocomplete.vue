@@ -2,7 +2,7 @@
   <el-autocomplete
     v-model="materialName"
     :fetch-suggestions="querySearchAsync"
-    placeholder="内容"
+    :placeholder="placeholder || '产品编码/名称/简码'"
     :trigger-on-focus="false"
   ></el-autocomplete>
 </template>
@@ -11,7 +11,11 @@
 import { listMaterialDeptSafe } from "@/api/foundation/material";
 
 export default {
-  props: ['value','value2'],
+  props: {
+    value: { default: null },
+    value2: { default: null },
+    placeholder: { type: String, default: '' }
+  },
   data() {
     return {
       restaurants: [],

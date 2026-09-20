@@ -31,10 +31,10 @@
         <div class="form-fields-container list-query-panel apply-modal-query-panel">
           <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="耗材编码" prop="code" label-width="84px">
+              <el-form-item label="产品编码" prop="code" label-width="84px">
                 <el-input
                   v-model="queryParams.code"
-                  placeholder="耗材编码"
+                  placeholder="产品编码"
                   clearable
                   size="small"
                   @keyup.enter.native="handleQuery"
@@ -42,10 +42,10 @@
               </el-form-item>
             </el-col>
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="耗材名称" prop="name" label-width="84px">
+              <el-form-item label="产品名称" prop="name" label-width="84px">
                 <el-input
                   v-model="queryParams.name"
-                  placeholder="耗材名称"
+                  placeholder="产品名称"
                   clearable
                   size="small"
                   @keyup.enter.native="handleQuery"
@@ -116,8 +116,8 @@
               </template>
             </el-table-column>
             <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByStr(a,b,'warehouseName')" />
-            <el-table-column label="耗材编码" align="center" prop="code" width="130" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByStr(a,b,'code')" />
-            <el-table-column label="耗材名称" align="center" prop="name" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByStr(a,b,'name')" />
+            <el-table-column label="产品编码" align="center" prop="code" width="130" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByStr(a,b,'code')" />
+            <el-table-column label="产品名称" align="center" prop="name" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByStr(a,b,'name')" />
             <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByStr(a,b,'speci')" />
             <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable />
             <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
@@ -186,8 +186,8 @@
                 </template>
               </el-table-column>
               <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable />
-              <el-table-column label="耗材编码" align="center" prop="code" width="130" show-overflow-tooltip resizable />
-              <el-table-column label="耗材名称" align="center" prop="name" width="150" show-overflow-tooltip resizable />
+              <el-table-column label="产品编码" align="center" prop="code" width="130" show-overflow-tooltip resizable />
+              <el-table-column label="产品名称" align="center" prop="name" width="150" show-overflow-tooltip resizable />
               <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable />
               <el-table-column label="型号" align="center" prop="model" width="120" show-overflow-tooltip resizable />
               <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>

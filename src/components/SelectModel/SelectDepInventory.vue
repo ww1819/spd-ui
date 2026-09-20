@@ -44,7 +44,7 @@
               <el-form-item label="关键字" prop="materialKeyword">
                 <el-input
                   v-model="queryParams.materialKeyword"
-                  placeholder="耗材编码/名称/简码"
+                  placeholder="产品编码/名称/简码"
                   clearable
                   size="small"
                   @keyup.enter.native="handleQuery"
@@ -125,13 +125,13 @@
                 {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材编码" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.code')">
+            <el-table-column label="产品编码" align="center" width="130" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.code')">
               <template slot-scope="scope">
                 <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
               </template>
             </el-table-column>
             <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-            <el-table-column label="名称" align="center" prop="material.name" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
+            <el-table-column label="产品名称" align="center" prop="material.name" width="150" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
             <el-table-column label="规格" align="center" prop="material.speci" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
             <el-table-column label="型号" align="center" prop="material.model" width="100" show-overflow-tooltip resizable />
             <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdUnit.unitName')" />
@@ -224,13 +224,13 @@
                   {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
                 </template>
               </el-table-column>
-              <el-table-column label="耗材编码" align="center" width="130" show-overflow-tooltip resizable>
+              <el-table-column label="产品编码" align="center" width="130" show-overflow-tooltip resizable>
                 <template slot-scope="scope">
                   <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
                 </template>
               </el-table-column>
               <el-table-column label="科室" align="center" prop="department.name" width="120" show-overflow-tooltip resizable />
-              <el-table-column label="名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable />
+              <el-table-column label="产品名称" align="center" prop="material.name" width="180" show-overflow-tooltip resizable />
               <el-table-column label="规格" align="center" prop="material.speci" width="180" show-overflow-tooltip resizable />
               <el-table-column label="型号" align="center" prop="material.model" width="180" show-overflow-tooltip resizable />
               <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="100" show-overflow-tooltip resizable />

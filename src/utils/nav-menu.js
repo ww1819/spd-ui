@@ -82,6 +82,16 @@ export function isLeafMenu(item) {
   return kids.length === 1 && visibleChildren(kids[0]).length === 0
 }
 
+/** 可点击进页的菜单；按钮权限（path 为空/#、无页面组件）不进京东分栏链接 */
+export function isNavigableMenuLink(item) {
+  if (!item || item.hidden) return false
+  const path = item.path == null ? '' : String(item.path).trim()
+  if (!path || path === '#') return false
+  const comp = item.component
+  if (comp === false) return false
+  return true
+}
+
 export function collectLeafMenus(routers, limit) {
   const max = limit == null ? 8 : limit
   const acc = []
@@ -92,7 +102,7 @@ export function collectLeafMenus(routers, limit) {
       const kids = visibleChildren(route)
       if (!kids.length) {
         const title = menuTitle(route)
-        if (title && title !== '首页' && full && !isExternal(full)) {
+        if (title && title !== '首页' && full && !isExternal(full) && isNavigableMenuLink(route)) {
           acc.push({
             path: full,
             title,
@@ -177,8 +187,10 @@ export function buildMegaGroups(item) {
       icon: menuIcon(child),
       to: null,
       children: grand.flatMap((g) => {
-        const gKids = visibleChildren(g)
+        const gKids = visibleChildren(g).filter(isNavigableMenuLink)
+        // 仅有按钮子级时，仍展示本级页面入口，不把「期初新增」等按钮展平成菜单
         if (!gKids.length) {
+          if (!isNavigableMenuLink(g)) return []
           return [{
             title: menuTitle(g),
             to: resolveMenuTo(g, childBase)
@@ -193,6 +205,7 @@ export function buildMegaGroups(item) {
     })
   })
   const groups = folders.slice()
+  // 目录分组在前、叶子分组在后：库房为「入库 | 出库 / 盘点 | 库房」
   if (leafLinks.length) {
     groups.push({
       title: menuTitle(item) || '功能菜单',

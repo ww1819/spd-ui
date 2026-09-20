@@ -124,9 +124,9 @@
             >
               <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
               <el-table-column type="index" label="序号" align="center" width="80" />
-              <el-table-column label="耗材编码" align="center" prop="code" width="120" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="产品编码" align="center" prop="code" width="120" sortable="custom" show-overflow-tooltip />
               <el-table-column label="收费项目ID" align="center" prop="hisChargeItemId" width="120" show-overflow-tooltip />
-              <el-table-column label="耗材名称" align="center" prop="name" min-width="200" sortable="custom" show-overflow-tooltip />
+              <el-table-column label="产品名称" align="center" prop="name" min-width="200" sortable="custom" show-overflow-tooltip />
               <el-table-column label="收费名称" align="center" prop="hisChargeItemName" min-width="180" show-overflow-tooltip />
               <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip />
               <el-table-column label="收费规格" align="center" prop="hisChargeItemSpeci" width="120" sortable="custom" show-overflow-tooltip />

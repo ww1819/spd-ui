@@ -48,8 +48,8 @@
           ref="entryTable"
         >
           <el-table-column type="selection" width="50" align="center" :selectable="rowSelectable" />
-          <el-table-column label="耗材编码" prop="materialCode" min-width="110" show-overflow-tooltip />
-          <el-table-column label="耗材名称" prop="materialName" min-width="140" show-overflow-tooltip />
+          <el-table-column label="产品编码" prop="materialCode" min-width="110" show-overflow-tooltip />
+          <el-table-column label="产品名称" prop="materialName" min-width="140" show-overflow-tooltip />
           <el-table-column label="规格" prop="speci" width="100" show-overflow-tooltip />
           <el-table-column label="型号" prop="model" width="90" show-overflow-tooltip />
           <el-table-column label="单位" prop="unitName" width="60" align="center" />
