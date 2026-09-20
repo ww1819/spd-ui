@@ -15,8 +15,8 @@
               <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -62,12 +62,14 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
         >新增</el-button>
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleBatchAudit"
@@ -85,8 +87,10 @@
           </div>
         </el-tooltip>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['department:batchConsume:export']"
         >导出</el-button>
@@ -101,6 +105,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -167,6 +172,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-view"
               @click="handleView(scope.row)"
               v-if="scope.row.consumeBillStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -174,6 +180,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-refresh-left"
               class="reverse-action-btn"
               @click="handleRowReverse(scope.row)"
               v-hasPermi="['department:batchConsume:reverse']"
@@ -183,6 +190,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:batchConsume:edit']"
               v-if="scope.row.consumeBillStatus != 2"
@@ -191,6 +199,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:batchConsume:remove']"
               v-if="scope.row.consumeBillStatus != 2"
@@ -201,7 +210,10 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
       <pagination
         :total="total"
         :page.sync="queryParams.pageNum"
@@ -616,6 +628,7 @@ export default {
       selectedRowMap: {},
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 科室批量消耗表格数据
       consumeList: [],
       tenantDepartmentList: [],
@@ -657,6 +670,20 @@ export default {
     };
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.consumeList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     /** 与到货验收弹窗一致：固定明细表高度，表体滚动、合计贴在表底 */
     detailTableHeight() {
       return 'max(240px, calc(100vh - 384px))';
@@ -970,19 +997,38 @@ export default {
       listConsume(queryParams).then(response => {
         this.consumeList = response.rows || [];
         this.total = response.total || 0;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
         this.$nextTick(() => {
           this.restoreMainPageSelection();
           this.scheduleApplyLayoutRefresh();
         });
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(queryParams);
+        }
       }).catch(error => {
         console.error('查询科室批量消耗列表失败:', error);
         this.consumeList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
         this.$modal.msgError('查询失败：' + (error.msg || error.message || '未知错误'));
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listConsume({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     nameBtn() {
       if(!this.form.departmentId) {
@@ -1167,6 +1213,18 @@ export default {
       this.ids = ids;
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'consumeBillNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row){

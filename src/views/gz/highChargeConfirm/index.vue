@@ -190,7 +190,10 @@
           <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip />
         </el-table>
 
-        <div class="apply-pagination-wrap">
+        <div class="apply-pagination-wrap apply-pager-bar">
+          <div class="pagination-summary">
+            <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+          </div>
           <pagination
             v-show="total > 0"
             :total="total"
@@ -259,6 +262,7 @@ export default {
       mainTableHeight: 400,
       list: [],
       total: 0,
+      totalInfo: { totalAmt: 0 },
       deptOptions: [],
       allDeptOptions: [],
       permDeptOptions: [],
@@ -291,6 +295,20 @@ export default {
     }
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.list || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.amt != null ? row.amt : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     selectedTotalQty() {
       return this.formatQty(this.selectedRows.reduce((s, r) => s + Number(r.entryQty || 0), 0))
     },
@@ -495,10 +513,32 @@ export default {
       listHighChargeConfirm(q).then(res => {
         this.list = res.rows || []
         this.total = res.total || 0
+        const ti = res.totalInfo || {}
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0
+        const amt = Number(raw)
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 }
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(q)
+        }
+      }).catch(() => {
+        this.list = []
+        this.total = 0
+        this.totalInfo = { totalAmt: 0 }
       }).finally(() => {
         this.loading = false
         this.$nextTick(() => this.updateMainTableHeight())
       })
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000)
+      if (pageSize <= 0) return
+      listHighChargeConfirm({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || []
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.amt != null ? row.amt : 0), 0)
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum }
+        }
+      }).catch(() => {})
     },
     openConfirmDialog() {
       if (!this.canConfirm) {
@@ -699,13 +739,33 @@ export default {
   background: #fff;
   padding: 12px 14px;
   box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.apply-pagination-wrap .pagination-summary {
+  margin-left: 0;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .apply-pagination-wrap ::v-deep .pagination-container {
   position: relative !important;
   height: auto !important;
   min-height: 0 !important;
-  margin: 0 !important;
+  margin: 0 0 0 auto !important;
   padding: 0 !important;
   background: transparent !important;
   border: none !important;

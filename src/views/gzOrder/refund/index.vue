@@ -15,8 +15,8 @@
               <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -66,26 +66,32 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['gzOrder:goodsApply:add']"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['gzOrder:goodsApply:export']"
         >导出</el-button>
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           v-hasPermi="['gzOrder:goodsApply:audit']"
         >审核</el-button>
         <el-button
+          type="info"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-printer"
+          class="spd-btn"
           :disabled="multiple"
           @click="handleBatchPrint"
         >批量打印</el-button>
@@ -101,6 +107,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" width="60" min-width="60" show-overflow-tooltip resizable />
@@ -154,6 +161,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.goodsStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -161,6 +169,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['gzOrder:goodsApply:edit']"
               v-if="scope.row.goodsStatus != 2"
@@ -169,6 +178,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['gzOrder:goodsApply:remove']"
               v-if="scope.row.goodsStatus != 2"
@@ -179,13 +189,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="handlePagination"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="handlePagination"
+      />
     </div>
     </div>
 
@@ -551,6 +564,7 @@ export default {
       _lastSidebarNavTick: null,
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 高值退货表格数据
       goodsList: [],
       userOptions: [],
@@ -602,6 +616,20 @@ export default {
     };
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.goodsList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmt != null ? row.totalAmt : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     warehouseDeptLocked() {
       return this.gzRefundGoodsEntryList && this.gzRefundGoodsEntryList.length > 0;
     },
@@ -1032,7 +1060,14 @@ export default {
       listGoods(params).then(response => {
         this.goodsList = response.rows || [];
         this.total = response.total || 0;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(params);
+        }
         this.$nextTick(() => {
           this.restoreMainPageSelection();
           this.scheduleApplyLayoutRefresh();
@@ -1041,10 +1076,22 @@ export default {
         console.error('查询失败:', error);
         this.goodsList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
         this.$modal.msgError('查询失败：' + (error.message || '未知错误'));
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listGoods({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmt != null ? row.totalAmt : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     checkMaterialBtn() {
       // 检查是否选择了仓库
@@ -1335,6 +1382,18 @@ export default {
       });
       
       console.log('mapEntryData - 最终数据:', this.gzRefundGoodsEntryList);
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'goodsNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row){

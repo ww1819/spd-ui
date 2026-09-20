@@ -18,8 +18,8 @@
               <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -66,27 +66,33 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['gzOrder:apply:add']"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['gzOrder:apply:export']"
         >导出</el-button>
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
         <el-button
+          type="info"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-printer"
+          class="spd-btn"
           :disabled="multiple"
           @click="handleBatchPrint"
         >批量打印</el-button>
@@ -102,6 +108,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" width="60" min-width="60" show-overflow-tooltip resizable />
@@ -151,11 +158,13 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-tickets"
               @click="handlePrintBarcode(scope.row)"
             >打印条码</el-button>
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
               @click="handlePrint(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >打印</el-button>
@@ -164,12 +173,14 @@
           <el-button
             size="small"
             type="text"
+              icon="el-icon-edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['gzOrder:apply:edit']"
           >修改</el-button>
           <el-button
             size="small"
             type="text"
+              icon="el-icon-delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['gzOrder:apply:remove']"
           >删除</el-button>
@@ -178,13 +189,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -334,12 +348,12 @@
                           :height="detailTableHeight">
                   <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                   <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                  <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                  <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="产品名称" align="center" prop="materialName" width="150" resizable sortable :sort-method="sortByDetailMaterialName">
+                  <el-table-column label="耗材名称" align="center" prop="materialName" width="150" resizable sortable :sort-method="sortByDetailMaterialName">
                     <template slot-scope="scope">
                       <el-tooltip effect="dark" placement="top" :enterable="false" :content="(scope.row.materialName || '') || '—'">
                         <span class="gz-detail-line-clip">{{ scope.row.materialName }}</span>
@@ -645,12 +659,12 @@
             empty-text="请点击「解析」自动检索产品；列与单据明细一致，批号/生产日期/有效期可编辑"
             class="udi-scan-preview-table"
           >
-            <el-table-column label="产品编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
+            <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
               <template slot-scope="scope">
                 {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
               </template>
             </el-table-column>
-            <el-table-column label="产品名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
+            <el-table-column label="耗材名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
               <template slot-scope="scope">{{ scope.row.materialName || '--' }}</template>
             </el-table-column>
             <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip>
@@ -825,6 +839,7 @@ export default {
       mainListSelectionTick: 0,
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 高值入库表格数据
       orderList: [],
       // 高值退货明细表格数据
@@ -919,6 +934,20 @@ export default {
     };
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.orderList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmt != null ? row.totalAmt : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     /** 与到货验收弹窗明细表高度一致 */
     detailTableHeight() {
       return 'max(240px, calc(100vh - 384px))';
@@ -1227,7 +1256,7 @@ export default {
       this.$set(this.form, 'creatorName', creatorName || (this.form.createBy != null && String(this.form.createBy).trim() !== '' ? String(this.form.createBy) : '--'));
       this.$set(this.form, 'auditorName', this.getAuditorName(this.form) || '');
     },
-    /** 将 getOrder 返回的 materialList 合并到 this.gzOrderEntryList（后端明细表无产品名称/编码等展示字段） */
+    /** 将 getOrder 返回的 materialList 合并到 this.gzOrderEntryList（后端明细表无耗材名称/编码等展示字段） */
     applyMaterialListToGzOrderEntries(orderData) {
       const materialList = orderData && orderData.materialList;
       const entries = this.gzOrderEntryList || [];
@@ -1789,8 +1818,8 @@ export default {
       let obj = {};
       obj.materialId = item.id;
       obj.material = item; // 保存完整的物料对象，方便访问嵌套属性
-      obj.materialName = item.name || ""; // 保存产品名称
-      obj.materialCode = item.code || ""; // 保存产品编码
+      obj.materialName = item.name || ""; // 保存耗材名称
+      obj.materialCode = item.code || ""; // 保存耗材编码
       obj.speci = item.speci || ""; // 保存规格
       obj.model = item.model || ""; // 保存型号
       obj.unit = item.unit || item.fdUnit || null; // 保存单位
@@ -1994,7 +2023,14 @@ export default {
         console.log('查询响应:', response);
         this.orderList = response.rows || [];
         this.total = response.total || 0;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(params);
+        }
         console.log('查询结果数量:', this.orderList.length, '总条数:', this.total);
         // 调试：打印总金额信息
         if (this.orderList && this.orderList.length > 0) {
@@ -2015,10 +2051,22 @@ export default {
         console.error('查询失败:', error);
         this.orderList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
         this.$modal.msgError('查询失败：' + (error.message || '未知错误'));
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listOrder({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmt != null ? row.totalAmt : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     checkMaterialBtn() {
       if(!this.form.supplerId) {
@@ -2041,8 +2089,8 @@ export default {
         let obj = {};
         obj.materialId = item.id;
         obj.material = item; // 保存完整的物料对象，方便访问嵌套属性
-        obj.materialName = item.name || ""; // 保存产品名称
-        obj.materialCode = item.code || ""; // 保存产品编码
+        obj.materialName = item.name || ""; // 保存耗材名称
+        obj.materialCode = item.code || ""; // 保存耗材编码
         obj.speci = item.speci || ""; // 保存规格
         obj.model = item.model || ""; // 保存型号
         obj.unit = item.unit || item.fdUnit || null; // 保存单位
@@ -2239,6 +2287,18 @@ export default {
         if (table && table.$forceUpdate) table.$forceUpdate();
         if (table && table.doLayout) table.doLayout();
       });
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'orderNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -4072,6 +4132,26 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
 .app-container.gz-order-apply-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.gz-order-apply-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.gz-order-apply-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.gz-order-apply-page .apply-pagination-wrap .pagination-container {
@@ -4079,6 +4159,7 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

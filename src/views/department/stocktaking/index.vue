@@ -15,8 +15,8 @@
               <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -52,13 +52,16 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['department:stocktaking:add']"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['department:stocktaking:export']"
         >导出</el-button>
@@ -73,6 +76,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -151,12 +155,14 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-download"
               @click="handleExportRow(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >导出</el-button>
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
               @click="handlePrint(scope.row,true)"
               v-if="scope.row.stockStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -164,6 +170,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['department:stocktaking:edit']"
               v-if="scope.row.stockStatus != 2"
@@ -172,6 +179,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['department:stocktaking:remove']"
               v-if="scope.row.stockStatus != 2"
@@ -182,13 +190,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -742,6 +753,10 @@ export default {
       selectedRowMap: {},
       // 总条数
       total: 0,
+      /** 列表全量合计（后端 totalInfo） */
+      totalInfo: {
+        totalAmt: 0
+      },
       // 盘点表格数据
       stocktakingList: [],
       selectRow: [],
@@ -842,6 +857,22 @@ export default {
     }
   },
   computed: {
+    /** 列表全量总金额（后端合计） */
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    /** 当前页金额合计 */
+    pageTotalAmtFormatted() {
+      const list = this.stocktakingList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     departmentLocked() {
       return this.departmentLockedByAction;
     },
@@ -1386,19 +1417,39 @@ export default {
         .then((response) => {
           this.stocktakingList = (response && response.rows) || [];
           this.total = (response && response.total) || 0;
+          const ti = (response && response.totalInfo) || {};
+          const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+          const amt = Number(raw);
+          this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
           this.$nextTick(() => {
             this.restoreMainPageSelection();
             this.scheduleApplyLayoutRefresh();
           });
+          if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+            this.fillListTotalAmtFallback(queryParams);
+          }
         })
         .catch(() => {
           this.stocktakingList = [];
           this.total = 0;
+          this.totalInfo = { totalAmt: 0 };
           this.scheduleApplyLayoutRefresh();
         })
         .finally(() => {
           this.loading = false;
         });
+    },
+    /** 总金额兜底：按当前筛选条件取全量行汇总金额 */
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listStocktaking({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     openAddLossEntry() {
       if(!this.form.departmentId) {
@@ -2100,6 +2151,18 @@ export default {
       this.ids = ids;
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'stockNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row) {

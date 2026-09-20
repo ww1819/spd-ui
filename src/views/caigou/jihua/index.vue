@@ -18,8 +18,8 @@
               <SelectWarehouse v-model="queryParams.warehouseId" excludeWarehouseType="设备"/>
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -86,25 +86,31 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['caigou:jihua:add']"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['caigou:jihua:export']"
         >导出计划明细</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExportSummary"
           v-hasPermi="['caigou:jihua:export']"
         >导出汇总</el-button>
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-upload2"
           class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleBatchSubmit"
@@ -122,6 +128,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" width="60" min-width="60" show-overflow-tooltip resizable />
@@ -195,6 +202,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['caigou:jihua:edit']"
               v-if="isPlanEditable(scope.row)"
@@ -203,6 +211,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-view"
               @click="handleView(scope.row)"
               v-if="!isPlanEditable(scope.row)"
               style="padding: 0 5px; margin: 0;"
@@ -210,6 +219,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['caigou:jihua:remove']"
               v-if="isPlanEditable(scope.row)"
@@ -218,6 +228,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-s-data"
               @click="handleProgress(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >进度</el-button>
@@ -226,13 +237,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="getList"
+      />
     </div>
     </div>
 
@@ -356,6 +370,7 @@ export default {
       mainListSelectionTick: 0,
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 计划表格数据
       warehouseList: [],
       stkMaterialList: [],
@@ -448,6 +463,20 @@ export default {
     }
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.warehouseList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     /** 当前计划明细已关联的科室申购明细 id */
     planReferencedDepApplyEntryIdSet() {
       const set = new Set();
@@ -868,7 +897,14 @@ listPurchasePlan(queryParams).then(response => {
           planDateText: item.planDate ? this.parseTime(item.planDate, '{y}-{m}-{d}') : ''
         }));
         this.total = response.total;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(queryParams);
+        }
         const t2 = performance.now();
         console.log('[Plan] list size=', rows.length, 'network(ms)=', (t1 - t0).toFixed(1), 'assign(ms)=', (t2 - t1).toFixed(1));
         console.timeEnd('[Plan] getList total');
@@ -879,9 +915,21 @@ listPurchasePlan(queryParams).then(response => {
       }).catch(() => {
         this.warehouseList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listPurchasePlan({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     // 查询按钮（支持外部调用防抖）
     handleQueryDebounced() {
@@ -1278,6 +1326,18 @@ listPurchasePlan(queryParams).then(response => {
       (this.stkIoBillEntryList || []).forEach(row => {
         row.planSource = resolvePlanEntrySource(row);
       });
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'planNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -3164,6 +3224,26 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
 .app-container.caigou-jihua-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.caigou-jihua-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.caigou-jihua-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.caigou-jihua-page .apply-pagination-wrap .pagination-container {
@@ -3171,6 +3251,7 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

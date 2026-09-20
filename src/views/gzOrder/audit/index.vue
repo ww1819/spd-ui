@@ -15,8 +15,8 @@
               <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -66,26 +66,32 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['gzOrder:apply:add']"
         >新增</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['gzOrder:apply:export']"
         >导出</el-button>
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
         <el-button
+          type="info"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-printer"
+          class="spd-btn"
           :disabled="multiple"
           @click="handleBatchPrint"
         >批量打印</el-button>
@@ -100,7 +106,9 @@
               class="table-compact apply-main-table"
               row-key="id"
               :row-class-name="applyMainRowClassName"
-              @selection-change="handleSelectionChange" :height="mainTableHeight" border stripe>
+              @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
+              :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" width="60" min-width="60" show-overflow-tooltip resizable />
       <el-table-column label="出库单号" align="center" prop="orderNo" width="180" min-width="160" show-overflow-tooltip resizable sortable>
@@ -153,6 +161,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
               @click="handlePrint(scope.row)"
               v-if="scope.row.orderStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -160,6 +169,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['gzOrder:apply:edit']"
               v-if="scope.row.orderStatus != 2"
@@ -168,6 +178,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-delete"
               @click="handleDelete(scope.row)"
               v-hasPermi="['gzOrder:apply:remove']"
               v-if="scope.row.orderStatus != 2"
@@ -178,13 +189,16 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
-    <pagination
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="handlePagination"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        @pagination="handlePagination"
+      />
     </div>
     </div>
 
@@ -575,13 +589,15 @@
         <el-table-column label="变更前" min-width="260">
           <template slot-scope="scope">
             <span>{{ jsonPreview(scope.row.beforeJson) }}</span>
-            <el-button v-if="scope.row.beforeJson" type="text" size="mini" @click="showJsonDetail('变更前', scope.row.beforeJson)">查看</el-button>
+            <el-button v-if="scope.row.beforeJson" type="text"
+              icon="el-icon-view" size="mini" @click="showJsonDetail('变更前', scope.row.beforeJson)">查看</el-button>
           </template>
         </el-table-column>
         <el-table-column label="变更后" min-width="260">
           <template slot-scope="scope">
             <span>{{ jsonPreview(scope.row.afterJson) }}</span>
-            <el-button v-if="scope.row.afterJson" type="text" size="mini" @click="showJsonDetail('变更后', scope.row.afterJson)">查看</el-button>
+            <el-button v-if="scope.row.afterJson" type="text"
+              icon="el-icon-view" size="mini" @click="showJsonDetail('变更后', scope.row.afterJson)">查看</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -669,6 +685,7 @@ export default {
       mainListSelectionTick: 0,
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 高值入库表格数据
       orderList: [],
       userOptions: [],
@@ -747,6 +764,20 @@ export default {
     };
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.orderList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmt != null ? row.totalAmt : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     refMode() {
       return !!(this.form && this.form.refAcceptanceId);
     },
@@ -1327,7 +1358,14 @@ export default {
       listOrder(params).then(response => {
         this.orderList = response.rows || [];
         this.total = response.total || 0;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(params);
+        }
         if (this.total > 0 && this.orderList.length === 0) {
           console.warn('备货出库列表：总条数为', this.total, '但当前页 rows 为空，请检查分页或筛选条件');
         }
@@ -1339,10 +1377,22 @@ export default {
         console.error('查询失败:', error);
         this.orderList = [];
         this.total = 0;
+        this.totalInfo = { totalAmt: 0 };
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
         this.$modal.msgError('查询失败：' + (error.message || '未知错误'));
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listOrder({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmt != null ? row.totalAmt : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     checkMaterialBtn() {
       if (this.refMode) {
@@ -1555,6 +1605,18 @@ export default {
         if (table && table.$forceUpdate) table.$forceUpdate();
         if (table && table.doLayout) table.doLayout();
       });
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'orderNo')) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
     handleView(row){
@@ -2763,6 +2825,26 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
 .app-container.gz-order-audit-page .apply-pagination-wrap {
   flex: 0 0 auto;
   border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.app-container.gz-order-audit-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 180px;
+}
+
+.app-container.gz-order-audit-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133;
 }
 
 .app-container.gz-order-audit-page .apply-pagination-wrap .pagination-container {
@@ -2770,6 +2852,7 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   min-height: 52px;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  margin-left: auto;
   padding: 10px 14px 14px !important;
   background: #fff;
   border: none;

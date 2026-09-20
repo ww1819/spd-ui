@@ -25,8 +25,8 @@
               @keyup.enter.native="handleQuery"
             />
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -82,11 +82,20 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           :disabled="multiple"
           @click="handleBatchAudit"
           v-hasPermi="['inWarehouse:apply:audit']"
         >审核</el-button>
+        <el-button
+          type="warning"
+          size="small"
+          icon="el-icon-download"
+          class="spd-btn"
+          @click="handleExport"
+          v-hasPermi="['inWarehouse:apply:export']"
+        >导出</el-button>
       </div>
       <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
@@ -98,6 +107,7 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
@@ -180,6 +190,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-edit"
               @click="handleUpdate(scope.row)"
               v-hasPermi="['inWarehouse:apply:edit']"
               v-if="scope.row.billStatus != 2"
@@ -188,6 +199,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-printer"
               @click="handlePrint(scope.row)"
               v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
@@ -195,6 +207,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-document"
               @click="handleShowEntryChangeLog(scope.row)"
               v-hasPermi="['inWarehouse:apply:query']"
               style="padding: 0 5px; margin: 0;"
@@ -1754,6 +1767,21 @@ export default {
       this.ids = ids;
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
+    },
+    /** 双击行切换勾选（操作列/单号列除外；已审核不可勾选） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'billNo')) {
+        return;
+      }
+      if (typeof this.selectableAuditRow === 'function' && !this.selectableAuditRow(row)) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 仅待审核的单据可勾选，已审核的不可勾选 */
     selectableAuditRow(row) {

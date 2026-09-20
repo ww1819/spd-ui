@@ -4,13 +4,16 @@
  */
 
 $apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-audit-page,
-  departmentTransfer-apply-page, d-audit-page, batch-consume-page, stocktaking-apply-page, d-apply-audit-page,
+  departmentTransfer-apply-page, d-audit-page, batch-consume-page, stocktaking-apply-page, stocktaking-audit-page,
+  d-apply-page, d-apply-audit-page, d-purchase-page, d-purchase-audit-page,
   gzOrder-goodsApply-page, gzOrder-refund-page, gzOrder-follow-page,
   settlement-apply-page, settlement-audit-page,
   finance-invoice-page, finance-wh-settlement-page, finance-supp-settlement-page,
   inWarehouse-apply-page, inWarehouse-audit-page, inWarehouse-refundGoodsApply-page, inWarehouse-refundGoodsAudit-page,
-  outWarehouse-refundDepotAudit-page, stocktaking-page, stocktaking-profit-page, profit-loss-page,
-  initial-stock-import-page, stocktaking-in-page, warehouseTransfer-apply-page, warehouseTransfer-audit-page,
+  outWarehouse-apply-page, outWarehouse-audit-page, outWarehouse-refundDepotApply-page, outWarehouse-refundDepotAudit-page,
+  warehouseTransfer-apply-page, warehouseTransfer-audit-page,
+  stocktaking-page, stocktaking-profit-page, profit-loss-page,
+  initial-stock-import-page, stocktaking-in-page,
   new-product-apply-page, new-product-audit-page, wh-warehouse-apply-page,
   patient-charge-page;
 

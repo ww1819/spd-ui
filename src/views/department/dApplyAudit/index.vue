@@ -18,8 +18,8 @@
               <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
             </div>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -67,13 +67,16 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           @click="handleBatchAudit"
           v-hasPermi="['department:dApplyAudit:audit']"
         >审核</el-button>
         <el-button
+          type="warning"
           size="small"
-          class="spd-btn spd-btn--secondary"
+          icon="el-icon-download"
+          class="spd-btn"
           @click="handleExport"
           v-hasPermi="['department:dApplyAudit:export']"
         >导出</el-button>
@@ -88,8 +91,9 @@
               row-key="id"
               :row-class-name="applyMainRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
-      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
+      <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
       <el-table-column label="单号" align="center" prop="applyBillNo" width="180" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
@@ -144,6 +148,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-view"
               @click="handleView(scope.row)"
               style="padding: 0 5px; margin: 0;"
             >查看</el-button>
@@ -158,6 +163,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-check"
              
               @click="handleAudit(scope.row)"
               v-hasPermi="['department:dApplyAudit:audit']"
@@ -167,6 +173,7 @@
             <el-button
               size="small"
               type="text"
+              icon="el-icon-close"
               @click="handleReject(scope.row)"
               v-hasPermi="['department:dApplyAudit:reject']"
               v-if="canShowAuditReject(scope.row)"
@@ -177,7 +184,10 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap" ref="paginationWrap">
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
       <pagination
         :total="total"
         :page.sync="queryParams.pageNum"
@@ -425,6 +435,7 @@ export default {
       selectedRowMap: {},
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 科室申领表格数据
       applyList: [],
       // 科室申领明细表格数据
@@ -468,6 +479,20 @@ export default {
     };
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.applyList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     /** 详情弹窗：状态显示值（与列表一致：未审核但有驳回原因也视为已驳回） */
     detailApplyStatusValue() {
       return this.getApplyStatusValue(this.form);
@@ -736,6 +761,10 @@ export default {
         const rawRows = response.rows || [];
         // 分页总数必须用服务端 total（PageHelper），不能用当前页过滤后的条数，否则「共 N 条」与页码错误
         const serverTotal = response.total != null ? Number(response.total) : 0;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         // 前端二次过滤：确保只显示SL开头的单号，排除ZK开头的转科申请
         if (rawRows.length > 0) {
           this.applyList = rawRows.filter(item => {
@@ -754,10 +783,24 @@ export default {
           this.syncSelectedRowsFromMap();
           this.scheduleApplyLayoutRefresh();
         });
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(params);
+        }
       }).catch(() => {
         this.loading = false;
         this.scheduleApplyLayoutRefresh();
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listApplyAudit({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     // 取消按钮
     cancel() {
@@ -908,6 +951,25 @@ export default {
         map[key] = true;
       });
       this.detailSelectedRowMap = map;
+    },
+    /** 双击行切换勾选（操作列/单号列除外） */
+    handleMainRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.type === 'selection' || column.label === '操作' || column.property === 'applyBillNo')) {
+        return;
+      }
+      if (typeof this.selectableAuditRow === 'function' && !this.selectableAuditRow(row)) {
+        return;
+      }
+      const table = this.$refs.applyMainTable;
+      if (!table) return;
+      const key = this.getApplyMainRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
+    /** 仅待审核单据可勾选 */
+    selectableAuditRow(row) {
+      return row.applyBillStatus != 2 && row.applyBillStatus != '2' && row.applyBillStatus != 3 && row.applyBillStatus != '3';
     },
     /** 查看按钮操作 */
     handleView(row, options = {}) {

@@ -99,7 +99,8 @@
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="purchaseList" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
+    <div class="apply-table-panel" ref="tablePanel">
+    <el-table v-loading="loading" :data="purchaseList" class="table-compact apply-main-table" :row-class-name="rowPurchaseIndex" @selection-change="handleSelectionChange" height="64vh" border stripe>
       <el-table-column type="selection" width="60" align="center" resizable />
       <el-table-column label="序号" align="center" prop="index" width="80" show-overflow-tooltip resizable />
       <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="180" show-overflow-tooltip resizable>
@@ -214,14 +215,17 @@
       </el-table-column>
     </el-table>
 
-    <div class="pagination-bottom-wrap">
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
+      </div>
       <pagination
-        v-show="total>0"
         :total="total"
         :page.sync="queryParams.pageNum"
         :limit.sync="queryParams.pageSize"
         @pagination="getList"
       />
+    </div>
     </div>
 
     <!-- 添加或修改科室申购对话框 -->
@@ -370,7 +374,7 @@
                     <span>{{ scope.row.purchaseBillNo || (form && form.purchaseBillNo) || '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                   <template slot-scope="scope">
                     <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
                   </template>
@@ -515,6 +519,7 @@ export default {
       ],
       // 总条数
       total: 0,
+      totalInfo: { totalAmt: 0 },
       // 科室申购表格数据
       purchaseList: [],
       // 科室申购明细表格数据
@@ -560,6 +565,20 @@ export default {
     };
   },
   computed: {
+    listTotalAmtFormatted() {
+      const v = this.totalInfo && this.totalInfo.totalAmt != null ? this.totalInfo.totalAmt : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : Number(v || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    pageTotalAmtFormatted() {
+      const list = this.purchaseList || [];
+      const s = list.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+      const v = Number.isFinite(s) ? s : 0;
+      return this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(v)
+        : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
     moreSearchStorageKey() {
       return "spd.department.dPurchase.moreSearchTypes";
     },
@@ -661,8 +680,26 @@ export default {
       listPurchase(queryParams).then(response => {
         this.purchaseList = response.rows;
         this.total = response.total;
+        const ti = response.totalInfo || {};
+        const raw = ti.totalAmt != null ? ti.totalAmt : 0;
+        const amt = Number(raw);
+        this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 };
         this.loading = false;
+        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
+          this.fillListTotalAmtFallback(queryParams);
+        }
       });
+    },
+    fillListTotalAmtFallback(queryParams) {
+      const pageSize = Math.min(Number(this.total) || 0, 5000);
+      if (pageSize <= 0) return;
+      listPurchase({ ...queryParams, pageNum: 1, pageSize }).then(res => {
+        const rows = (res && res.rows) || [];
+        const sum = rows.reduce((acc, row) => acc + Number(row && row.totalAmount != null ? row.totalAmount : 0), 0);
+        if (Number.isFinite(sum) && sum !== 0) {
+          this.totalInfo = { totalAmt: sum };
+        }
+      }).catch(() => {});
     },
     //当天日期
     getBillDate(){
@@ -1749,36 +1786,29 @@ export default {
   margin-bottom: 8px !important;
 }
 
-/* 翻页：贴近表格；下方不留白（与科室申领一致） */
-.d-purchase-page .pagination-bottom-wrap {
+/* 翻页：贴近表格；下方不留白（与科室申领一致）——由非 scoped 块覆盖 ruoyi 绝对定位 */
+.d-purchase-page .apply-pagination-wrap {
   margin-top: 0 !important;
   margin-bottom: 0;
-  padding-bottom: 0;
-  transform: translateY(-8px);
-}
-
-::v-deep .d-purchase-page .pagination-bottom-wrap .pagination-container {
-  padding: 0 !important;
-  margin-top: 0 !important;
 }
 
 /* 仅列表主表滚动条（勿作用于弹窗内表） */
-::v-deep .d-purchase-page > .el-table .el-table__body-wrapper {
+::v-deep .d-purchase-page .apply-table-panel > .el-table .el-table__body-wrapper {
   overflow-x: auto !important;
   overflow-y: auto !important;
 }
 
-::v-deep .d-purchase-page > .el-table .el-table__body-wrapper::-webkit-scrollbar {
+::v-deep .d-purchase-page .apply-table-panel > .el-table .el-table__body-wrapper::-webkit-scrollbar {
   height: 12px !important;
 }
 
-::v-deep .d-purchase-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .d-purchase-page .apply-table-panel > .el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
   height: 12px !important;
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.25) !important;
 }
 
-::v-deep .d-purchase-page > .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
+::v-deep .d-purchase-page .apply-table-panel > .el-table .el-table__body-wrapper::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.06) !important;
 }
 
@@ -1828,11 +1858,11 @@ export default {
   min-height: calc(100vh - 84px);
 }
 
-.app-container.d-purchase-page > .el-table {
+.app-container.d-purchase-page > .apply-table-panel > .el-table {
   margin-bottom: 1px;
 }
 
-.app-container.d-purchase-page > .el-table th {
+.app-container.d-purchase-page > .apply-table-panel > .el-table th {
   background-color: #EBEEF5 !important;
   color: #606266;
   font-weight: 600 !important;
@@ -1843,7 +1873,7 @@ export default {
   border-bottom: 1px solid #EBEEF5;
 }
 
-.app-container.d-purchase-page > .el-table th .cell {
+.app-container.d-purchase-page > .apply-table-panel > .el-table th .cell {
   font-weight: 600 !important;
   font-size: 15px !important;
   font-family: 'Roboto', sans-serif !important;
@@ -1861,8 +1891,70 @@ export default {
   overflow: hidden;
 }
 
+/* 翻页：合计在左、分页在右；覆盖 ruoyi 绝对定位分页 */
+.app-container.d-purchase-page .apply-table-panel {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.app-container.d-purchase-page .apply-pagination-wrap {
+  flex: 0 0 auto;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 8px 0 4px !important;
+  transform: none !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  min-height: 48px;
+  box-sizing: border-box;
+}
+
+.app-container.d-purchase-page .apply-pagination-wrap .pagination-summary {
+  margin-left: 14px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #606266 !important;
+  line-height: 28px;
+  flex: 1 1 auto;
+  min-width: 200px;
+  z-index: 2;
+  position: relative;
+}
+
+.app-container.d-purchase-page .apply-pagination-wrap .pagination-summary .summary-label {
+  font-weight: 600;
+  color: #303133 !important;
+}
+
+.app-container.d-purchase-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 40px !important;
+  margin: 0 14px 0 auto !important;
+  padding: 4px 0 !important;
+  background: transparent !important;
+  display: flex !important;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible !important;
+}
+
+.app-container.d-purchase-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
 /* 弹窗打开时，隐藏底层分页/横向滚动区域，避免半透明遮罩下透出“蓝色条” */
-.app-container.d-purchase-page.is-modal-open .pagination-bottom-wrap {
-  display: none;
+.app-container.d-purchase-page.is-modal-open .apply-pagination-wrap {
+  display: none !important;
 }
 </style>
