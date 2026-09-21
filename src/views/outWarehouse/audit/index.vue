@@ -80,7 +80,7 @@
           size="small"
           icon="el-icon-check"
           class="spd-btn spd-btn--primary"
-          :disabled="multiple"
+          :disabled="!canBatchAudit"
           @click="handleBatchAudit"
           v-hasPermi="['outWarehouse:apply:audit']"
         >审核</el-button>
@@ -90,7 +90,7 @@
           size="small"
           icon="el-icon-upload2"
           class="spd-btn"
-          :disabled="multiple"
+          :disabled="!canBatchHisPush"
           @click="handleBatchHisPush"
         >推送HIS</el-button>
         <el-button
@@ -716,7 +716,7 @@ import {
   cloneDocRefRowForDuplicate
 } from '@/utils/outWarehouseBillRow'
 import {STOCK_OUT_TEMPLATE} from '@/utils/printData'
-import { isZaoqiangTenant, msunPushStatusMeta } from '@/utils/msunHis'
+import { isZaoqiangTenant, msunPushStatusMeta, canMsunRepush } from '@/utils/msunHis'
 import { pushMsunOutbound } from '@/api/foundation/msunHisBill'
 import MsunHisEntryView from '@/components/MsunHisEntryView'
 import MsunHisBillView from '@/components/MsunHisBillView'
@@ -850,6 +850,20 @@ export default {
     },
     isZaoqiangTenant() {
       return isZaoqiangTenant(this.$store.getters.customerId)
+    },
+    selectedMainRows() {
+      return Object.values(this.selectedRowMap || {})
+    },
+    /** 勾选全是未审核才可批量审核 */
+    canBatchAudit() {
+      const rows = this.selectedMainRows
+      return rows.length > 0 && rows.every(r => r && r.billStatus != 2)
+    },
+    /** 勾选全是已审核且未推送/推送失败才可批量推送 HIS；与未审核混选时关闭 */
+    canBatchHisPush() {
+      if (!this.isZaoqiangTenant) return false
+      const rows = this.selectedMainRows
+      return rows.length > 0 && rows.every(r => r && r.billStatus == 2 && canMsunRepush(r.hisPushStatus))
     },
     /** 预览弹窗或已选「浏览器打印」时显示方向 */
     showPrintOrientation() {
@@ -1033,10 +1047,10 @@ export default {
     /** 批量推送 HIS（仅已审核） */
     handleBatchHisPush() {
       if (!this.isZaoqiangTenant) return
-      const selected = this.warehouseList.filter(r => this.ids.includes(r.id))
-      const pushable = selected.filter(r => r.billStatus == 2)
+      const selected = Object.values(this.selectedRowMap || {})
+      const pushable = selected.filter(r => r.billStatus == 2 && canMsunRepush(r.hisPushStatus))
       if (!pushable.length) {
-        this.$modal.msgWarning('请勾选已审核的出库单')
+        this.$modal.msgWarning('请勾选已审核且未推送或推送失败的出库单')
         return
       }
       this.$modal.confirm('确认对选中的 ' + pushable.length + ' 条出库单执行 HIS 推送？').then(() => {
@@ -1523,9 +1537,11 @@ export default {
       const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
       table.toggleRowSelection(row, !selected);
     },
-    /** 仅待审核的单据可勾选，已审核的不可勾选 */
+    /** 待审核可勾选（批量审核）；已接入 HIS 的租户，已审核且未推送/推送失败也可勾选（批量推送 HIS） */
     selectableAuditRow(row) {
-      return row.billStatus != 2
+      if (!row) return false
+      if (row.billStatus != 2) return true
+      return this.isZaoqiangTenant && canMsunRepush(row.hisPushStatus)
     },
     /** 查看按钮操作 */
     handleView(row){
