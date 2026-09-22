@@ -23,12 +23,12 @@ function resolveNavPosition(storage) {
   return navPosition || 'side'
 }
 
-/** 旧默认深色侧栏与右侧列表风格冲突；新版默认浅色，已保存过新版的才沿用深色 */
+/** 默认深色侧栏；layoutStyleVer>=3 且已保存过的才沿用用户选择 */
 function resolveSideTheme(storage) {
-  if (storage.layoutStyleVer >= 2 && (storage.sideTheme === 'theme-dark' || storage.sideTheme === 'theme-light')) {
+  if (storage.layoutStyleVer >= 3 && (storage.sideTheme === 'theme-dark' || storage.sideTheme === 'theme-light')) {
     return storage.sideTheme
   }
-  return sideTheme || 'theme-light'
+  return sideTheme || 'theme-dark'
 }
 
 /** 旧默认 #409EFF 与列表主按钮不一致，未自定义过的迁到 #2563eb */

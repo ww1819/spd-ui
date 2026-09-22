@@ -180,7 +180,7 @@ export default {
         "layout-setting",
         `{
             "navPosition":"${this.navPosition}",
-            "layoutStyleVer":2,
+            "layoutStyleVer":3,
             "tagsView":${this.tagsView},
             "fixedHeader":${this.fixedHeader},
             "sidebarLogo":${this.sidebarLogo},
