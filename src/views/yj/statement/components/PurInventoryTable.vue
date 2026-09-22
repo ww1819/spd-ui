@@ -146,7 +146,7 @@
         </el-table-column>
         <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" prop="materialSpeci" width="120" show-overflow-tooltip resizable/>
         <el-table-column label="型号" align="left" header-align="center" class-name="ctk-col-left" prop="materialModel" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="出库数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable/>
+        <el-table-column label="数量" align="center" prop="materialQty" width="100" show-overflow-tooltip resizable/>
         <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable/>
         <el-table-column label="单价" align="center" prop="price" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -158,7 +158,7 @@
             <span v-else>--</span>
           </template>
         </el-table-column>
-        <el-table-column label="出库金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
             <span v-else>--</span>
