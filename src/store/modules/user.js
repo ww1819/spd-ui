@@ -24,7 +24,12 @@ const user = {
      */
     messageReminderKeys: null,
     /** 登录后自动弹窗的消息提醒 keys；null=未配置；[]=不弹窗 */
-    messageReminderPopupKeys: null
+    messageReminderPopupKeys: null,
+    /**
+     * 首页设置 keys：simple / full
+     * null=从未配置（默认完整）；[]=未单独授权（默认完整）；有值则仅显示已授权页
+     */
+    homePageKeys: null
   },
 
   mutations: {
@@ -77,6 +82,15 @@ const user = {
         state.messageReminderPopupKeys = keys.slice()
       } else {
         state.messageReminderPopupKeys = []
+      }
+    },
+    SET_HOME_PAGE_KEYS: (state, keys) => {
+      if (keys == null) {
+        state.homePageKeys = null
+      } else if (Array.isArray(keys)) {
+        state.homePageKeys = keys.slice()
+      } else {
+        state.homePageKeys = []
       }
     }
   },
@@ -146,6 +160,11 @@ const user = {
           } else {
             commit('SET_MESSAGE_REMINDER_POPUP_KEYS', null)
           }
+          if (Object.prototype.hasOwnProperty.call(res, 'homePageKeys')) {
+            commit('SET_HOME_PAGE_KEYS', res.homePageKeys)
+          } else {
+            commit('SET_HOME_PAGE_KEYS', null)
+          }
           resolve(res)
         }).catch(error => {
           reject(error)
@@ -166,6 +185,7 @@ const user = {
           commit('SET_TENANT_SUPER', false)
           commit('SET_MESSAGE_REMINDER_KEYS', null)
           commit('SET_MESSAGE_REMINDER_POPUP_KEYS', null)
+          commit('SET_HOME_PAGE_KEYS', null)
           clearMessageReminderAutoOpenFlag()
           removeToken()
           resolve()
@@ -182,6 +202,7 @@ const user = {
         commit('SET_TENANT', null)
         commit('SET_TENANT_SYNCED_AT', 0)
         commit('SET_MESSAGE_REMINDER_POPUP_KEYS', null)
+        commit('SET_HOME_PAGE_KEYS', null)
         clearMessageReminderAutoOpenFlag()
         removeToken()
         resolve()

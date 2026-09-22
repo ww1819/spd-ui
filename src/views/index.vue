@@ -1,27 +1,5 @@
 <template>
   <div class="app-container home home-workbench" :class="'is-' + homeView">
-    <div class="home-toolbar">
-      <div class="home-view-switch" role="tablist">
-        <button
-          v-for="item in viewOptions"
-          :key="item.value"
-          type="button"
-          class="home-view-btn"
-          :class="{ active: homeView === item.value }"
-          @click="switchView(item.value)"
-        >{{ item.label }}</button>
-      </div>
-      <el-button
-        size="small"
-        type="primary"
-        plain
-        class="home-save-default"
-        :disabled="homeView === savedView"
-        :loading="savingPref"
-        @click="saveDefaultView"
-      >{{ homeView === savedView ? '已是默认首页' : '保存为默认首页' }}</el-button>
-    </div>
-
     <div class="home-todo-grid" :class="{ 'is-full': isFull }">
       <div
         v-for="todo in visibleTodos"
@@ -216,17 +194,17 @@
 
 const HOME_VIEW_UI_KEY = "spd.homeView";
 const PIE_COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#1d4ed8", "#38bdf8", "#818cf8"];
+const ALL_HOME_VIEW_OPTIONS = [
+  { value: "simple", label: "简洁" },
+  { value: "full", label: "完整" }
+];
 
 export default {
   name: "Index",
   data() {
     return {
-      viewOptions: [
-        { value: "simple", label: "简洁" },
-        { value: "full", label: "完整" }
-      ],
-      homeView: "simple",
-      savedView: "simple",
+      homeView: "full",
+      savedView: "full",
       savingPref: false,
       chartsReady: false,
       deptCounts: {
@@ -288,6 +266,21 @@ export default {
     };
   },
   computed: {
+    /** 授权可用首页：未配置/空 → 默认仅完整 */
+    allowedHomeViews() {
+      const raw = this.$store.getters.homePageKeys;
+      if (raw == null || !Array.isArray(raw) || raw.length === 0) {
+        return ["full"];
+      }
+      const allow = raw
+        .map(k => String(k).toLowerCase())
+        .map(k => (k === "complete" ? "full" : k))
+        .filter(k => k === "simple" || k === "full");
+      return allow.length ? allow : ["full"];
+    },
+    viewOptions() {
+      return ALL_HOME_VIEW_OPTIONS.filter(o => this.allowedHomeViews.includes(o.value));
+    },
     isFull() {
       return this.homeView === "full";
     },
@@ -365,6 +358,9 @@ export default {
           this.disposeChart("inPie");
         }
       });
+    },
+    allowedHomeViews() {
+      this.ensureHomeViewAllowed();
     }
   },
   mounted() {
@@ -397,6 +393,17 @@ export default {
       }
       return "simple";
     },
+    /** 当前视图不在授权范围内时回落到完整（或首个可用） */
+    ensureHomeViewAllowed() {
+      const allow = this.allowedHomeViews;
+      if (!allow.includes(this.homeView)) {
+        const next = allow.includes("full") ? "full" : allow[0];
+        this.homeView = next || "full";
+      }
+      if (!allow.includes(this.savedView)) {
+        this.savedView = allow.includes("full") ? "full" : (allow[0] || "full");
+      }
+    },
     async readUiHomeView() {
       try {
         const res = await getUserUiConfig(HOME_VIEW_UI_KEY);
@@ -422,26 +429,34 @@ export default {
         prefApiOk = false;
       }
       const uiView = await this.readUiHomeView();
-      let view = "simple";
-      if (prefApiOk && prefView && prefView !== "simple") {
+      // 未单独授权时默认完整；有授权则优先个人偏好（须在授权范围内）
+      let view = this.allowedHomeViews.includes("full") ? "full" : (this.allowedHomeViews[0] || "full");
+      if (prefApiOk && prefView && this.allowedHomeViews.includes(prefView)) {
         view = prefView;
-      } else if (uiView) {
+      } else if (uiView && this.allowedHomeViews.includes(uiView)) {
         view = uiView;
         if (prefApiOk && prefView !== uiView) {
           saveHomePref(uiView).catch(() => {});
         }
-      } else if (prefApiOk) {
-        view = prefView || "simple";
       }
       this.homeView = view;
       this.savedView = view;
+      this.ensureHomeViewAllowed();
     },
     switchView(view) {
-      this.homeView = this.normalizeView(view);
+      const next = this.normalizeView(view);
+      if (!this.allowedHomeViews.includes(next)) {
+        return;
+      }
+      this.homeView = next;
     },
     async saveDefaultView() {
       this.savingPref = true;
       const view = this.normalizeView(this.homeView);
+      if (!this.allowedHomeViews.includes(view)) {
+        this.savingPref = false;
+        return;
+      }
       try {
         try {
           await saveHomePref(view);
@@ -1094,41 +1109,6 @@ export default {
   color: #334155;
   font-size: 13px;
   overflow-x: hidden;
-
-  .home-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .home-view-switch {
-    display: inline-flex;
-    padding: 3px;
-    background: #e8eef7;
-    border-radius: 10px;
-  }
-
-  .home-view-btn {
-    border: 0;
-    background: transparent;
-    height: 32px;
-    padding: 0 18px;
-    font-size: 13px;
-    color: #64748b;
-    border-radius: 8px;
-    cursor: pointer;
-    line-height: 32px;
-  }
-
-  .home-view-btn.active {
-    background: #fff;
-    color: var(--current-color, #2563eb);
-    font-weight: 600;
-    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-  }
 
   .home-todo-grid,
   .home-kpi-grid {

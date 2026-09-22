@@ -210,14 +210,30 @@ export function updateUserWarehouses(userId, warehouseIds) {
   })
 }
 
-/** 仅更新用户消息提醒权限（warehouse / department / data） */
-export function updateUserMessageReminders(userId, messageReminderKeys, messageReminderPopupKeys) {
+/** 仅更新用户消息提醒权限；可选一并保存首页设置 homePageKeys（simple/full） */
+export function updateUserMessageReminders(userId, messageReminderKeys, messageReminderPopupKeys, homePageKeys) {
+  const data = {
+    messageReminderKeys: messageReminderKeys || [],
+    messageReminderPopupKeys: messageReminderPopupKeys || []
+  }
+  if (homePageKeys !== undefined) {
+    data.homePageKeys = homePageKeys || []
+  }
   return request({
     url: '/system/user/' + parseStrEmpty(userId) + '/messageReminders',
     method: 'put',
+    data,
+    timeout: 60000
+  })
+}
+
+/** 仅更新用户首页设置权限（simple / full） */
+export function updateUserHomePages(userId, homePageKeys) {
+  return request({
+    url: '/system/user/' + parseStrEmpty(userId) + '/homePages',
+    method: 'put',
     data: {
-      messageReminderKeys: messageReminderKeys || [],
-      messageReminderPopupKeys: messageReminderPopupKeys || []
+      homePageKeys: homePageKeys || []
     },
     timeout: 60000
   })

@@ -17,6 +17,7 @@ const getters = {
   postIds: state => state.user.postIds,
   messageReminderKeys: state => state.user.messageReminderKeys,
   messageReminderPopupKeys: state => state.user.messageReminderPopupKeys,
+  homePageKeys: state => state.user.homePageKeys,
   customerId: state => (state.user.tenant && state.user.tenant.customerId) ? state.user.tenant.customerId : '',
   /** 科室导入：衡水市第三人民医院须填 HIS 科室 ID（tenantKey=HS_003 或 customerId 与 TenantEnum.HS_003 一致） */
   departImportRequiresHisDeptId: state => {

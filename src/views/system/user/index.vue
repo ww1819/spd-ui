@@ -483,6 +483,23 @@
           </div>
         </div>
       </el-tab-pane>
+      <el-tab-pane label="首页设置">
+        <p class="auth-home-page-tip">勾选用户可切换的首页；均未勾选时默认显示「完整」首页。</p>
+        <div style="margin-bottom: 8px;">
+          <el-button size="mini" @click="handleAuthHomePageAll(true)">全选</el-button>
+          <el-button size="mini" @click="handleAuthHomePageAll(false)">取消</el-button>
+        </div>
+        <div class="auth-checkbox-container">
+          <el-checkbox-group v-model="authForm.homePageKeys" class="auth-checkbox-group">
+            <el-checkbox
+              v-for="item in homePageOptions"
+              :key="item.value"
+              :label="item.value"
+              class="auth-checkbox-item"
+            >{{ item.label }}</el-checkbox>
+          </el-checkbox-group>
+        </div>
+      </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
       <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
@@ -714,12 +731,17 @@ export default {
         departmentIds: [],
         warehouseIds: [],
         messageReminderKeys: [],
-        messageReminderPopupKeys: []
+        messageReminderPopupKeys: [],
+        homePageKeys: []
       },
       messageReminderOptions: [
         { label: '仓库预警', value: 'warehouse' },
         { label: '科室预警', value: 'department' },
         { label: '数据异常预警', value: 'data' }
+      ],
+      homePageOptions: [
+        { label: '简洁', value: 'simple' },
+        { label: '完整', value: 'full' }
       ],
       authMenuCheckAll: false,
       authMenuIndeterminate: false,
@@ -1254,6 +1276,13 @@ export default {
             ? this.messageReminderOptions.map(o => o.value)
             : this.parseMessageReminderKeys(rawReminderKeys);
           const messageReminderPopupKeys = this.parseMessageReminderPopupKeys(rawPopupKeys);
+          const rawHomePageKeys = Object.prototype.hasOwnProperty.call(response, 'homePageKeys')
+            ? response.homePageKeys
+            : (response.data && response.data.homePageKeys);
+          // null/undefined：从未配置→授权页为空（未勾选默认完整）；[]：未单独授权
+          const homePageKeys = rawHomePageKeys == null
+            ? []
+            : this.parseHomePageKeys(rawHomePageKeys);
           this.authReminderSyncing = true;
           this.authForm = {
             userId: response.data.userId,
@@ -1261,7 +1290,8 @@ export default {
             departmentIds: response.departmentIds || [],
             warehouseIds: response.warehouseIds || [],
             messageReminderKeys,
-            messageReminderPopupKeys
+            messageReminderPopupKeys,
+            homePageKeys
           };
           this.$nextTick(() => {
             this.authReminderSyncing = false;
@@ -1355,6 +1385,12 @@ export default {
         this.authForm.messageReminderPopupKeys = [];
       }
     },
+    /** 授权首页设置全选/取消 */
+    handleAuthHomePageAll(val) {
+      this.authForm.homePageKeys = val
+        ? this.homePageOptions.map(item => item.value)
+        : [];
+    },
     /** 解析消息提醒授权 keys（null=未配置；[]/空串=明确未授权） */
     parseMessageReminderKeys(raw) {
       const all = this.messageReminderOptions.map(o => o.value);
@@ -1382,7 +1418,23 @@ export default {
       }
       return text.split(',').map(s => s.trim().toLowerCase()).filter(k => all.includes(k));
     },
-    /** 授权提交（菜单/科室/仓库/消息提醒分接口保存，不调用用户主表 updateUser） */
+    /** 解析首页设置 keys */
+    parseHomePageKeys(raw) {
+      const all = this.homePageOptions.map(o => o.value);
+      if (Array.isArray(raw)) {
+        return raw.map(s => String(s).trim().toLowerCase())
+          .map(k => (k === 'complete' ? 'full' : k))
+          .filter(k => all.includes(k));
+      }
+      const text = String(raw == null ? '' : raw).trim();
+      if (!text) {
+        return [];
+      }
+      return text.split(',').map(s => s.trim().toLowerCase())
+        .map(k => (k === 'complete' ? 'full' : k))
+        .filter(k => all.includes(k));
+    },
+    /** 授权提交（菜单/科室/仓库/消息提醒/首页设置分接口保存，不调用用户主表 updateUser） */
     submitAuth() {
       const allowedSet = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
       let menuIds = [];
@@ -1403,19 +1455,21 @@ export default {
       const messageReminderKeys = (this.authForm.messageReminderKeys || []).filter(k => allowReminder.has(k));
       const messageReminderPopupKeys = (this.authForm.messageReminderPopupKeys || [])
         .filter(k => allowReminder.has(k) && messageReminderKeys.includes(k));
+      const allowHome = new Set(this.homePageOptions.map(o => o.value));
+      const homePageKeys = (this.authForm.homePageKeys || []).filter(k => allowHome.has(k));
       const loading = this.$loading({ lock: true, text: '保存授权中...', background: 'rgba(0, 0, 0, 0.15)' });
       Promise.all([
         updateUserMenus(userId, finalMenuIds),
         updateUserDepartments(userId, departmentIds),
         updateUserWarehouses(userId, warehouseIds),
-        updateUserMessageReminders(userId, messageReminderKeys, messageReminderPopupKeys)
+        updateUserMessageReminders(userId, messageReminderKeys, messageReminderPopupKeys, homePageKeys)
       ]).then(() => {
         this.$modal.msgSuccess("授权成功");
         this.authForm.menuIds = finalMenuIds.slice();
         this.authExistingMenuIds = finalMenuIds.slice();
         this.authForm.messageReminderKeys = messageReminderKeys.slice();
         this.authForm.messageReminderPopupKeys = messageReminderPopupKeys.slice();
-        // 若改的是当前登录用户，刷新 getInfo 使消息弹窗立即按新权限生效
+        this.authForm.homePageKeys = homePageKeys.slice();
         if (String(userId) === String(this.$store.state.user.userId)) {
           this.$store.dispatch('GetInfo').catch(() => {});
         }
@@ -1426,7 +1480,12 @@ export default {
           this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
         });
       }).catch(error => {
-        this.$modal.msgError("授权保存失败：" + (error.msg || error.message || error || '未知错误'));
+        const m = (error && (error.msg || error.message)) ? String(error.msg || error.message) : String(error || '');
+        if (m.includes('404')) {
+          this.$modal.msgError("授权保存失败（404）：请重新编译并重启 spd-admin 后再试（首页设置需后端接口）");
+        } else {
+          this.$modal.msgError("授权保存失败：" + (m || '未知错误'));
+        }
       }).finally(() => {
         loading.close();
       });
@@ -2201,6 +2260,13 @@ export default {
   border: 1px solid #DCDFE6;
   border-radius: 4px;
   background-color: #fff;
+}
+
+.auth-home-page-tip {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
 }
 
 .auth-checkbox-group {
