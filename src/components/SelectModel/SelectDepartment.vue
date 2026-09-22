@@ -27,7 +27,7 @@ export default {
     value: {},
     value2: {},
     /**
-     * 空态占位文案；不传则固定为「编码/名称/简码搜索」。
+     * 空态占位文案；不传则固定为「科室」。
      * 使用独立 prop 名，避免与 DOM attribute `placeholder` 在部分场景下冲突。
      */
     fieldPlaceholder: {
@@ -72,7 +72,7 @@ export default {
     },
     selectPlaceholder() {
       const t = this.fieldPlaceholder != null ? String(this.fieldPlaceholder).trim() : '';
-      return t || '科室编码/名称/简码搜索';
+      return t || '科室';
     },
     department: {
       get() {

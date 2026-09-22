@@ -1,5 +1,10 @@
 <template>
   <div class="app-container home home-workbench" :class="'is-' + homeView">
+    <div v-if="isPlaceholderHome" class="home-placeholder-board">
+      <p class="home-placeholder-title">{{ placeholderTitle }}</p>
+      <p class="home-placeholder-hint">内容建设中，后续按角色逐步完善</p>
+    </div>
+    <template v-else>
     <div class="home-todo-grid" :class="{ 'is-full': isFull }">
       <div
         v-for="todo in visibleTodos"
@@ -167,6 +172,7 @@
         <p class="home-cabin-empty-text">暂无常用菜单，使用功能后按频率出现在这里</p>
       </div>
     </div>
+    </template>
   </div>
 </template>
 <style>
@@ -194,10 +200,15 @@
 
 const HOME_VIEW_UI_KEY = "spd.homeView";
 const PIE_COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#1d4ed8", "#38bdf8", "#818cf8"];
+const ROLE_HOME_VIEWS = ["purchase", "warehouse", "department"];
 const ALL_HOME_VIEW_OPTIONS = [
-  { value: "simple", label: "简洁" },
-  { value: "full", label: "完整" }
+  { value: "simple", label: "默认" },
+  { value: "full", label: "完整" },
+  { value: "purchase", label: "采购" },
+  { value: "warehouse", label: "库房" },
+  { value: "department", label: "科室" }
 ];
+const HOME_VIEW_ALLOW = ALL_HOME_VIEW_OPTIONS.map(o => o.value);
 
 export default {
   name: "Index",
@@ -275,7 +286,7 @@ export default {
       const allow = raw
         .map(k => String(k).toLowerCase())
         .map(k => (k === "complete" ? "full" : k))
-        .filter(k => k === "simple" || k === "full");
+        .filter(k => HOME_VIEW_ALLOW.includes(k));
       return allow.length ? allow : ["full"];
     },
     viewOptions() {
@@ -283,6 +294,13 @@ export default {
     },
     isFull() {
       return this.homeView === "full";
+    },
+    isPlaceholderHome() {
+      return ROLE_HOME_VIEWS.includes(this.homeView);
+    },
+    placeholderTitle() {
+      const hit = ALL_HOME_VIEW_OPTIONS.find(o => o.value === this.homeView);
+      return hit ? `${hit.label}首页` : "首页";
     },
     allTodos() {
       return [
@@ -349,6 +367,13 @@ export default {
   watch: {
     homeView(val) {
       this.$nextTick(() => {
+        if (ROLE_HOME_VIEWS.includes(val)) {
+          this.disposeChart("trend");
+          this.disposeChart("pie");
+          this.disposeChart("usage");
+          this.disposeChart("inPie");
+          return;
+        }
         this.initTrendChart();
         this.initPieChart();
         if (val === "full") {
@@ -377,6 +402,9 @@ export default {
       const { day } = this.buildTodayRange();
       this.restoreTodayStatsFromCache(day);
       await this.loadPref();
+      if (this.isPlaceholderHome) {
+        return;
+      }
       this.loadTodayStats();
       this.loadKpiTrend().then(() => this.$nextTick(() => this.initTrendChart()));
       this.loadTodoCounts();
@@ -390,6 +418,9 @@ export default {
       const v = view ? String(view).toLowerCase() : "";
       if (v === "full" || v === "complete") {
         return "full";
+      }
+      if (ROLE_HOME_VIEWS.includes(v)) {
+        return v;
       }
       return "simple";
     },
@@ -448,7 +479,18 @@ export default {
       if (!this.allowedHomeViews.includes(next)) {
         return;
       }
+      const wasPlaceholder = this.isPlaceholderHome;
       this.homeView = next;
+      if (wasPlaceholder && !ROLE_HOME_VIEWS.includes(next)) {
+        this.loadTodayStats();
+        this.loadKpiTrend().then(() => this.$nextTick(() => this.initTrendChart()));
+        this.loadTodoCounts();
+        this.loadFrequentMenus();
+        this.loadOutboundProportionChart();
+        if (next === "full") {
+          this.ensureFullExtras();
+        }
+      }
     },
     async saveDefaultView() {
       this.savingPref = true;
@@ -1413,6 +1455,31 @@ export default {
     color: #94a3b8;
     font-size: 13px;
     text-align: center;
+  }
+
+  .home-placeholder-board {
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+
+  .home-placeholder-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #334155;
+  }
+
+  .home-placeholder-hint {
+    margin: 0;
+    font-size: 13px;
+    color: #94a3b8;
   }
 
   @media (max-width: 1400px) {

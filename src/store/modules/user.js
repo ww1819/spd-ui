@@ -26,7 +26,7 @@ const user = {
     /** 登录后自动弹窗的消息提醒 keys；null=未配置；[]=不弹窗 */
     messageReminderPopupKeys: null,
     /**
-     * 首页设置 keys：simple / full
+     * 首页设置 keys：simple=默认 / full=完整 / purchase|warehouse|department=角色首页
      * null=从未配置（默认完整）；[]=未单独授权（默认完整）；有值则仅显示已授权页
      */
     homePageKeys: null

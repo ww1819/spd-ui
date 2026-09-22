@@ -210,7 +210,7 @@ export function updateUserWarehouses(userId, warehouseIds) {
   })
 }
 
-/** 仅更新用户消息提醒权限；可选一并保存首页设置 homePageKeys（simple/full） */
+/** 仅更新用户消息提醒权限；可选一并保存首页设置 homePageKeys（simple/full/purchase/warehouse/department） */
 export function updateUserMessageReminders(userId, messageReminderKeys, messageReminderPopupKeys, homePageKeys) {
   const data = {
     messageReminderKeys: messageReminderKeys || [],
@@ -227,7 +227,7 @@ export function updateUserMessageReminders(userId, messageReminderKeys, messageR
   })
 }
 
-/** 仅更新用户首页设置权限（simple / full） */
+/** 仅更新用户首页设置权限（simple / full / purchase / warehouse / department） */
 export function updateUserHomePages(userId, homePageKeys) {
   return request({
     url: '/system/user/' + parseStrEmpty(userId) + '/homePages',

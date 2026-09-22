@@ -6,7 +6,7 @@
           <div class="more-search-dynamic-field more-search-field--text">
             <el-input
               v-model="queryParams.supplierKeyword"
-              placeholder="供应商编码/名称"
+              placeholder="供应商"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -23,10 +23,34 @@
                 <SelectWarehouse
                   v-model="queryParams.warehouseId"
                   :excludeWarehouseType="['设备', '高值']"
-                  placeholder="仓库编码/名称/简码搜索"
+                  placeholder="仓库"
                 />
               </div>
             </template>
+            <el-input
+              v-else-if="t === 'factoryKeyword'"
+              v-model="queryParams.factoryKeyword"
+              placeholder="生产厂家"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else-if="t === 'registerNo'"
+              v-model="queryParams.registerNo"
+              placeholder="注册证号"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-input
+              v-else-if="t === 'createrName'"
+              v-model="queryParams.createrName"
+              placeholder="制单人"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
             <el-input
               v-else
               v-model="moreSearchKeywords[t]"
@@ -78,7 +102,7 @@
                 <SelectFinanceCategoryLow
                   v-model="queryParams.financeCategoryIds"
                   :multiple="true"
-                  placeholder="财务分类多选"
+                  placeholder="财务分类"
                 />
               </div>
             </el-form-item>
@@ -857,7 +881,10 @@ export default {
         warehouseCategoryId: null,
         financeCategoryIds: [],
         materialIsUse: null,
-        hisChargeItemId: null
+        hisChargeItemId: null,
+        factoryKeyword: null,
+        registerNo: null,
+        createrName: null
       },
       // 表单参数
       form: {},
@@ -882,6 +909,9 @@ export default {
         { value: "materialName", label: "产品" },
         { value: "materialSpeci", label: "规格" },
         { value: "materialModel", label: "型号" },
+        { value: "factoryKeyword", label: "生产厂家" },
+        { value: "registerNo", label: "注册证号" },
+        { value: "createrName", label: "制单人" },
         { value: "hisChargeItemId", label: "收费项目ID" },
         { value: "batchNumber", label: "生产批号" }
       ]
@@ -1238,15 +1268,30 @@ export default {
       params.materialModel = null;
       params.hisChargeItemId = null;
       params.batchNumber = null;
-      // 供应商固定首行
+      // 供应商固定首行；厂家/注册证/制单人走 queryParams（与供应商一致，避免仅存 moreSearchKeywords 未带上）
       const supplierKw = params.supplierKeyword != null ? String(params.supplierKeyword).trim() : '';
       params.supplierKeyword = supplierKw || null;
+      const factoryKw = params.factoryKeyword != null ? String(params.factoryKeyword).trim() : '';
+      params.factoryKeyword = factoryKw || null;
+      const registerKw = params.registerNo != null ? String(params.registerNo).trim() : '';
+      params.registerNo = registerKw || null;
+      const createrKw = params.createrName != null ? String(params.createrName).trim() : '';
+      params.createrName = createrKw || null;
       const types = this.moreSearchTypes || [];
       if (!types.includes('warehouse')) {
         params.warehouseId = null;
       }
+      if (!types.includes('factoryKeyword')) {
+        params.factoryKeyword = null;
+      }
+      if (!types.includes('registerNo')) {
+        params.registerNo = null;
+      }
+      if (!types.includes('createrName')) {
+        params.createrName = null;
+      }
       types.forEach(t => {
-        if (t === 'warehouse' || t === 'supplier') {
+        if (t === 'warehouse' || t === 'supplier' || t === 'factoryKeyword' || t === 'registerNo' || t === 'createrName') {
           return;
         }
         const raw = this.moreSearchKeywords[t];
@@ -1313,13 +1358,22 @@ export default {
       if (!set.has('warehouse')) {
         this.queryParams.warehouseId = null;
       }
+      if (!set.has('factoryKeyword')) {
+        this.queryParams.factoryKeyword = null;
+      }
+      if (!set.has('registerNo')) {
+        this.queryParams.registerNo = null;
+      }
+      if (!set.has('createrName')) {
+        this.queryParams.createrName = null;
+      }
       Object.keys(this.moreSearchKeywords).forEach(k => {
-        if (!set.has(k) || k === 'supplier') {
+        if (!set.has(k) || k === 'supplier' || k === 'factoryKeyword' || k === 'registerNo' || k === 'createrName') {
           this.$delete(this.moreSearchKeywords, k);
         }
       });
       Array.from(set).forEach(k => {
-        if (k === 'warehouse') {
+        if (k === 'warehouse' || k === 'factoryKeyword' || k === 'registerNo' || k === 'createrName') {
           return;
         }
         if (!Object.prototype.hasOwnProperty.call(this.moreSearchKeywords, k)) {
@@ -1334,6 +1388,9 @@ export default {
         materialName: '产品',
         materialSpeci: '规格',
         materialModel: '型号',
+        factoryKeyword: '生产厂家',
+        registerNo: '注册证号',
+        createrName: '制单人',
         hisChargeItemId: '收费项目ID',
         batchNumber: '生产批号'
       };
@@ -1341,12 +1398,15 @@ export default {
     },
     moreSearchPlaceholderFor(t) {
       const map = {
-        receiptOrderNo: '入库单号模糊',
-        materialName: '产品编码/名称/简码',
-        materialSpeci: '规格模糊',
-        materialModel: '型号模糊',
-        hisChargeItemId: '收费项目ID模糊',
-        batchNumber: '生产批号模糊'
+        receiptOrderNo: '入库单号',
+        materialName: '产品',
+        materialSpeci: '规格',
+        materialModel: '型号',
+        factoryKeyword: '生产厂家',
+        registerNo: '注册证号',
+        createrName: '制单人',
+        hisChargeItemId: '收费项目ID',
+        batchNumber: '生产批号'
       };
       return map[t] || '请输入关键字';
     },
@@ -1487,6 +1547,9 @@ export default {
       this.queryParams.isBilling = null;
       this.queryParams.materialIsUse = null;
       this.queryParams.batchNumber = null;
+      this.queryParams.factoryKeyword = null;
+      this.queryParams.registerNo = null;
+      this.queryParams.createrName = null;
       this.showZeroStock = false;
       this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.moreSearchKeywords = {};

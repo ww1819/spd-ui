@@ -7,7 +7,7 @@
     :multiple="multiple"
     collapse-tags
     collapse-tags-tooltip
-    :placeholder="placeholder || '财务分类编码/名称/简拼搜索'"
+    :placeholder="placeholder || '财务分类'"
     :disabled="disabled"
   >
     <el-option

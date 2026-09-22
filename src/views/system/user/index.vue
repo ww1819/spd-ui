@@ -740,8 +740,11 @@ export default {
         { label: '数据异常预警', value: 'data' }
       ],
       homePageOptions: [
-        { label: '简洁', value: 'simple' },
-        { label: '完整', value: 'full' }
+        { label: '默认', value: 'simple' },
+        { label: '完整', value: 'full' },
+        { label: '采购', value: 'purchase' },
+        { label: '库房', value: 'warehouse' },
+        { label: '科室', value: 'department' }
       ],
       authMenuCheckAll: false,
       authMenuIndeterminate: false,

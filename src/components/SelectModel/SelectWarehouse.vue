@@ -6,7 +6,7 @@
              :multiple="multiple"
              :collapse-tags="multiple"
              :collapse-tags-tooltip="multiple"
-             :placeholder="placeholder || (multiple ? '仓库多选' : '仓库编码/名称/简码搜索')"
+             :placeholder="placeholder || '仓库'"
              :disabled="value2"
   >
     <el-option
