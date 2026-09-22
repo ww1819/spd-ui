@@ -69,6 +69,7 @@
         >审核</el-button>
         <el-button
           size="small"
+          icon="el-icon-close"
           class="spd-btn spd-btn--danger"
           @click="handleToolbarReject"
           v-hasPermi="['department:purchaseAudit:reject']"
