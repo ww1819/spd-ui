@@ -7,6 +7,7 @@ import { getToken } from '@/utils/auth'
 import { isRelogin } from '@/utils/request'
 import { scheduleMainContentScrollReset } from '@/utils/reset-main-scroll'
 import { tryAutoOpenMessageReminder } from '@/utils/messageReminderAutoOpen'
+import { trackRouteMenuHit } from '@/utils/menu-hit'
 
 NProgress.configure({ showSpinner: false })
 
@@ -74,7 +75,8 @@ router.beforeEach((to, from, next) => {
   }
 })
 
-router.afterEach(() => {
+router.afterEach((to) => {
   NProgress.done()
   scheduleMainContentScrollReset()
+  trackRouteMenuHit(to)
 })

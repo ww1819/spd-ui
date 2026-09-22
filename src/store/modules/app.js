@@ -96,7 +96,7 @@ const actions = {
   openWarehouseReminder({ commit }, payload) {
     const mainAllowed = ['warehouse', 'department', 'data']
     const warehouseSubAllowed = ['apply', 'purchase', 'inventory', 'nearExpiry']
-    const departmentSubAllowed = ['unreceivedConfirm', 'inventory', 'expiry']
+  const departmentSubAllowed = ['unreceivedConfirm', 'inventory', 'expiry', 'consume']
     let cat = 'warehouse'
     let warehouseSub = 'apply'
     let departmentSub = 'unreceivedConfirm'

@@ -92,6 +92,32 @@ export function isNavigableMenuLink(item) {
   return true
 }
 
+export function collectLeafMenus(routers, limit) {
+  const max = limit == null ? 8 : limit
+  const acc = []
+  const walk = (routes, parentPath) => {
+    (routes || []).forEach((route) => {
+      if (!route || route.hidden || acc.length >= max) return
+      const full = joinMenuPath(parentPath, route.path)
+      const kids = visibleChildren(route)
+      if (!kids.length) {
+        const title = menuTitle(route)
+        if (title && title !== '首页' && full && !isExternal(full) && isNavigableMenuLink(route)) {
+          acc.push({
+            path: full,
+            title,
+            icon: menuIcon(route)
+          })
+        }
+        return
+      }
+      walk(kids, full)
+    })
+  }
+  walk(getFirstLevelMenus(routers), '')
+  return acc
+}
+
 export function getFirstLevelMenus(routers) {
   const list = []
   ;(routers || []).forEach((menu) => {

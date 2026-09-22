@@ -144,3 +144,57 @@ export function fetchHomeDepartmentReminderConsumeList() {
     headers: { hideError: true }
   })
 }
+
+export function fetchHomePref() {
+  return request({
+    url: '/dashboard/home/pref',
+    method: 'get',
+    headers: { hideError: true }
+  })
+}
+
+export function saveHomePref(homeView) {
+  return request({
+    url: '/dashboard/home/pref',
+    method: 'put',
+    data: { homeView },
+    headers: { hideError: true }
+  })
+}
+
+export function reportMenuHit(data) {
+  return request({
+    url: '/dashboard/home/menuHit',
+    method: 'post',
+    data,
+    headers: { hideError: true }
+  })
+}
+
+export function fetchFrequentMenus(limit) {
+  return request({
+    url: '/dashboard/home/frequentMenus',
+    method: 'get',
+    params: { limit: limit || 8 },
+    headers: { hideError: true }
+  })
+}
+
+export function fetchHomeKpiTrend(days) {
+  return request({
+    url: '/dashboard/home/kpiTrend',
+    method: 'get',
+    params: { days: days || 7 },
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+export function fetchHomeDepartmentReminderCounts() {
+  return request({
+    url: '/dashboard/home/departmentReminderCounts',
+    method: 'get',
+    timeout: 30000,
+    headers: { hideError: true }
+  })
+}
