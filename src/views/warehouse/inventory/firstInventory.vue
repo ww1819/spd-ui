@@ -28,30 +28,6 @@
               </div>
             </template>
             <el-input
-              v-else-if="t === 'factoryKeyword'"
-              v-model="queryParams.factoryKeyword"
-              placeholder="生产厂家"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else-if="t === 'registerNo'"
-              v-model="queryParams.registerNo"
-              placeholder="注册证号"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else-if="t === 'createrName'"
-              v-model="queryParams.createrName"
-              placeholder="制单人"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
               v-else
               v-model="moreSearchKeywords[t]"
               :placeholder="moreSearchPlaceholderFor(t)"
@@ -1268,30 +1244,18 @@ export default {
       params.materialModel = null;
       params.hisChargeItemId = null;
       params.batchNumber = null;
-      // 供应商固定首行；厂家/注册证/制单人走 queryParams（与供应商一致，避免仅存 moreSearchKeywords 未带上）
+      params.factoryKeyword = null;
+      params.registerNo = null;
+      params.createrName = null;
+      // 供应商固定首行
       const supplierKw = params.supplierKeyword != null ? String(params.supplierKeyword).trim() : '';
       params.supplierKeyword = supplierKw || null;
-      const factoryKw = params.factoryKeyword != null ? String(params.factoryKeyword).trim() : '';
-      params.factoryKeyword = factoryKw || null;
-      const registerKw = params.registerNo != null ? String(params.registerNo).trim() : '';
-      params.registerNo = registerKw || null;
-      const createrKw = params.createrName != null ? String(params.createrName).trim() : '';
-      params.createrName = createrKw || null;
       const types = this.moreSearchTypes || [];
       if (!types.includes('warehouse')) {
         params.warehouseId = null;
       }
-      if (!types.includes('factoryKeyword')) {
-        params.factoryKeyword = null;
-      }
-      if (!types.includes('registerNo')) {
-        params.registerNo = null;
-      }
-      if (!types.includes('createrName')) {
-        params.createrName = null;
-      }
       types.forEach(t => {
-        if (t === 'warehouse' || t === 'supplier' || t === 'factoryKeyword' || t === 'registerNo' || t === 'createrName') {
+        if (t === 'warehouse' || t === 'supplier') {
           return;
         }
         const raw = this.moreSearchKeywords[t];
@@ -1312,6 +1276,15 @@ export default {
           case 'materialModel':
             params.materialModel = kw;
             break;
+          case 'factoryKeyword':
+            params.factoryKeyword = kw;
+            break;
+          case 'registerNo':
+            params.registerNo = kw;
+            break;
+          case 'createrName':
+            params.createrName = kw;
+            break;
           case 'hisChargeItemId':
             params.hisChargeItemId = kw;
             break;
@@ -1322,6 +1295,14 @@ export default {
             break;
         }
       });
+      // 兜底：输入框有值但 types 偶发未带上时仍传厂家条件
+      if (!params.factoryKeyword) {
+        const fb = this.moreSearchKeywords && this.moreSearchKeywords.factoryKeyword;
+        const fbKw = fb != null ? String(fb).trim() : '';
+        if (fbKw) {
+          params.factoryKeyword = fbKw;
+        }
+      }
       if (Array.isArray(params.financeCategoryIds) && params.financeCategoryIds.length === 0) {
         params.financeCategoryIds = null;
       }
@@ -1358,22 +1339,13 @@ export default {
       if (!set.has('warehouse')) {
         this.queryParams.warehouseId = null;
       }
-      if (!set.has('factoryKeyword')) {
-        this.queryParams.factoryKeyword = null;
-      }
-      if (!set.has('registerNo')) {
-        this.queryParams.registerNo = null;
-      }
-      if (!set.has('createrName')) {
-        this.queryParams.createrName = null;
-      }
       Object.keys(this.moreSearchKeywords).forEach(k => {
-        if (!set.has(k) || k === 'supplier' || k === 'factoryKeyword' || k === 'registerNo' || k === 'createrName') {
+        if (!set.has(k) || k === 'supplier') {
           this.$delete(this.moreSearchKeywords, k);
         }
       });
       Array.from(set).forEach(k => {
-        if (k === 'warehouse' || k === 'factoryKeyword' || k === 'registerNo' || k === 'createrName') {
+        if (k === 'warehouse') {
           return;
         }
         if (!Object.prototype.hasOwnProperty.call(this.moreSearchKeywords, k)) {
