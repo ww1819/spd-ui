@@ -17,6 +17,7 @@ $app-font-color: #404854;
 
 body {
   height: 100%;
+  overflow: hidden;
   /* Windows 下用默认渲染，减少发糊 */
   -moz-osx-font-smoothing: auto;
   -webkit-font-smoothing: auto;
@@ -126,10 +127,12 @@ label {
 html {
   height: 100%;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 #app {
   height: 100%;
+  overflow: hidden;
 }
 
 *,

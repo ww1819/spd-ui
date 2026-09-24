@@ -25,9 +25,9 @@ module.exports = {
   tagsView: true,
 
   /**
-   * 是否固定头部
+   * 是否固定头部（顶部导航栏 + 标签栏滚动时保持置顶）
    */
-  fixedHeader: false,
+  fixedHeader: true,
 
   /**
    * 是否显示logo

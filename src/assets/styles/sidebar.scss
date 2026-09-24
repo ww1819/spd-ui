@@ -5,6 +5,9 @@
     transition: margin-left .28s;
     margin-left: $base-sidebar-width;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   .sidebarHide {

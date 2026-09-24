@@ -1350,24 +1350,12 @@ export default {
 
 <style lang="scss" scoped>
 .app-main {
-  min-height: calc(100vh - 50px);
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
   position: relative;
-  overflow: hidden;
-}
-
-.fixed-header + .app-main {
-  padding-top: 50px;
-}
-
-.hasTagsView {
-  .app-main {
-    min-height: calc(100vh - 84px);
-  }
-
-  .fixed-header + .app-main {
-    padding-top: 84px;
-  }
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .wh-reminder-local-mask {
@@ -1735,12 +1723,6 @@ export default {
 </style>
 
 <style lang="scss">
-.el-popup-parent--hidden {
-  .fixed-header {
-    padding-right: 6px;
-  }
-}
-
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

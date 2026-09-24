@@ -47,7 +47,8 @@ const state = {
   showSettings: showSettings,
   navPosition: resolveNavPosition(storageSetting),
   tagsView: storageSetting.tagsView === undefined ? tagsView : storageSetting.tagsView,
-  fixedHeader: storageSetting.fixedHeader === undefined ? fixedHeader : storageSetting.fixedHeader,
+  // 产品要求顶部菜单栏固定；旧缓存 fixedHeader:false 一并迁到 true
+  fixedHeader: true,
   sidebarLogo: storageSetting.sidebarLogo === undefined ? sidebarLogo : storageSetting.sidebarLogo,
   dynamicTitle: storageSetting.dynamicTitle === undefined ? dynamicTitle : storageSetting.dynamicTitle
 }

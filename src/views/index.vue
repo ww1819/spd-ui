@@ -5,12 +5,97 @@
       <p class="home-placeholder-hint">内容建设中，后续按角色逐步完善</p>
     </div>
     <template v-else>
-    <div class="home-todo-grid" :class="{ 'is-full': isFull }">
+    <div
+      class="home-top-grid"
+      :class="(isPurchaseHome || isWarehouseHome || isDepartmentHome) ? 'cols-5' : (isFull ? 'cols-12' : 'cols-8')"
+    >
+      <template v-if="isPurchaseHome">
+        <div
+          v-for="(card, idx) in purchaseCards"
+          :key="card.key"
+          class="home-todo-card home-purchase-card"
+          :class="['tone-' + (idx % 6), { warn: card.warn }]"
+          role="button"
+          tabindex="0"
+          @click="openPurchaseCard(card)"
+          @keyup.enter="openPurchaseCard(card)"
+        >
+          <div class="home-todo-copy">
+            <div class="home-todo-title">{{ card.label }}</div>
+            <div class="home-todo-hint">{{ card.hint }}</div>
+          </div>
+          <div class="home-todo-badge" :class="{ 'is-num': card.showCount }">
+            <span v-if="card.showCount">{{ card.display }}</span>
+            <i v-else :class="card.icon" />
+          </div>
+        </div>
+      </template>
+      <template v-else-if="isWarehouseHome">
+        <div
+          v-for="(card, idx) in warehouseCards"
+          :key="card.key"
+          class="home-todo-card home-purchase-card"
+          :class="['tone-' + (idx % 6), { warn: card.warn }]"
+          role="button"
+          tabindex="0"
+          @click="openWarehouseCard(card)"
+          @keyup.enter="openWarehouseCard(card)"
+        >
+          <div class="home-todo-copy">
+            <div class="home-todo-title">{{ card.label }}</div>
+            <div class="home-todo-hint">{{ card.hint }}</div>
+          </div>
+          <div class="home-todo-badge" :class="{ 'is-num': card.showCount }">
+            <span v-if="card.showCount">{{ card.display }}</span>
+            <i v-else :class="card.icon" />
+          </div>
+        </div>
+      </template>
+      <template v-else-if="isDepartmentHome">
+        <div
+          v-for="(card, idx) in departmentCards"
+          :key="card.key"
+          class="home-todo-card home-purchase-card"
+          :class="['tone-' + (idx % 6), { warn: card.warn }]"
+          role="button"
+          tabindex="0"
+          @click="openDepartmentCard(card)"
+          @keyup.enter="openDepartmentCard(card)"
+        >
+          <div class="home-todo-copy">
+            <div class="home-todo-title">{{ card.label }}</div>
+            <div class="home-todo-hint">{{ card.hint }}</div>
+          </div>
+          <div class="home-todo-badge" :class="{ 'is-num': card.showCount }">
+            <span v-if="card.showCount">{{ card.display }}</span>
+            <i v-else :class="card.icon" />
+          </div>
+        </div>
+      </template>
+      <template v-else>
       <div
-        v-for="todo in visibleTodos"
+        v-for="(kpi, idx) in visibleKpis"
+        :key="kpi.key"
+        class="home-kpi-card"
+        :class="['tone-' + (idx % 6), { warn: kpi.deltaClass === 'is-down' }]"
+      >
+        <div class="home-kpi-icon-box">
+          <i :class="kpi.icon || 'el-icon-data-line'" />
+        </div>
+        <div class="home-kpi-copy">
+          <div class="home-kpi-label">{{ kpi.label }}</div>
+          <div class="home-kpi-delta" :class="kpi.deltaClass">{{ kpi.deltaText }}</div>
+        </div>
+        <div class="home-kpi-nums">
+          <div class="home-kpi-num">{{ formatStatQty(kpi.value) }}</div>
+          <div v-if="kpi.sideText" class="home-kpi-side" :class="kpi.deltaClass">{{ kpi.sideText }}</div>
+        </div>
+      </div>
+      <div
+        v-for="(todo, idx) in visibleTodos"
         :key="todo.key"
         class="home-todo-card"
-        :class="{ warn: todo.count > 0 }"
+        :class="['tone-' + (idx % 6), { warn: todo.count > 0 }]"
         role="button"
         tabindex="0"
         @click="openTodo(todo)"
@@ -25,26 +110,13 @@
           <i v-else :class="todo.icon" />
         </div>
       </div>
-    </div>
-
-    <div class="home-kpi-grid" :class="isFull ? 'cols-6' : 'cols-4'">
-      <div v-for="kpi in visibleKpis" :key="kpi.key" class="home-kpi-card" :class="{ warn: kpi.deltaClass === 'is-down' }">
-        <div class="home-kpi-copy">
-          <div class="home-kpi-row">
-            <span class="home-kpi-num">{{ formatStatQty(kpi.value) }}</span>
-            <span v-if="kpi.icon" class="home-kpi-icon"><i :class="kpi.icon" /></span>
-          </div>
-          <div class="home-kpi-label">{{ kpi.label }}</div>
-          <div class="home-kpi-delta" :class="kpi.deltaClass">{{ kpi.deltaText }}</div>
-        </div>
-        <div v-if="kpi.sideText" class="home-kpi-side" :class="kpi.deltaClass">{{ kpi.sideText }}</div>
-      </div>
+      </template>
     </div>
 
     <div class="home-chart-row">
       <div class="home-board home-trend-board">
         <div class="home-board-head">
-          <span>近七日耗材消耗趋势</span>
+          <span>{{ trendChartTitle }}</span>
           <span class="home-board-sub">{{ trendDeltaHint }}</span>
         </div>
         <div v-if="trendEmptyHint" class="home-cabin-empty">
@@ -55,8 +127,8 @@
       </div>
       <div class="home-board home-pie-board">
         <div class="home-board-head">
-          <span>库存结构占比</span>
-          <span class="home-board-sub">当月财务分类出退库</span>
+          <span>{{ pieChartTitle }}</span>
+          <span class="home-board-sub">{{ pieChartSub }}</span>
         </div>
         <div v-if="outChartEmptyHint" class="home-cabin-empty home-cabin-empty--pie">
           <div class="home-cabin-empty-ring" aria-hidden="true" />
@@ -152,32 +224,131 @@
     </template>
 
     <div class="home-board home-menu-board">
-      <div class="home-board-head">常用菜单</div>
-      <div v-if="displayMenus.length" class="home-menu-grid">
+      <div class="home-board-head">
+        <span>常用菜单</span>
         <button
-          v-for="m in displayMenus"
-          :key="m.path"
           type="button"
-          class="home-menu-tile"
-          @click="goMenu(m)"
+          class="home-menu-edit-btn"
+          title="设置常用菜单"
+          @click="openMenuSetting"
         >
-          <span class="home-menu-tile-icon">
-            <svg-icon v-if="menuSvgName(m)" :icon-class="menuSvgName(m)" />
-            <i v-else class="el-icon-menu" />
-          </span>
-          <span class="home-menu-tile-title">{{ m.title }}</span>
+          <i class="el-icon-edit-outline" />
         </button>
       </div>
+      <div v-if="displayMenus.length" class="home-menu-carousel-wrap">
+        <el-carousel
+          v-if="menuPages.length > 1"
+          :interval="4000"
+          :autoplay="true"
+          arrow="hover"
+          indicator-position="outside"
+          height="196px"
+          class="home-menu-carousel"
+        >
+          <el-carousel-item v-for="(page, pIdx) in menuPages" :key="'menu-page-' + pIdx">
+            <div class="home-menu-grid">
+              <button
+                v-for="(m, idx) in page"
+                :key="m.path"
+                type="button"
+                class="home-menu-tile"
+                :class="'tone-' + ((pIdx * FREQUENT_MENU_PAGE_SIZE + idx) % 8)"
+                @click="goMenu(m)"
+              >
+                <span class="home-menu-tile-icon">
+                  <span class="home-menu-tile-icon-inner">
+                    <svg-icon v-if="menuSvgName(m)" :icon-class="menuSvgName(m)" />
+                    <i v-else class="el-icon-menu" />
+                  </span>
+                </span>
+                <span class="home-menu-tile-title">{{ m.title }}</span>
+              </button>
+            </div>
+          </el-carousel-item>
+        </el-carousel>
+        <div v-else class="home-menu-grid">
+          <button
+            v-for="(m, idx) in displayMenus"
+            :key="m.path"
+            type="button"
+            class="home-menu-tile"
+            :class="'tone-' + (idx % 8)"
+            @click="goMenu(m)"
+          >
+            <span class="home-menu-tile-icon">
+              <span class="home-menu-tile-icon-inner">
+                <svg-icon v-if="menuSvgName(m)" :icon-class="menuSvgName(m)" />
+                <i v-else class="el-icon-menu" />
+              </span>
+            </span>
+            <span class="home-menu-tile-title">{{ m.title }}</span>
+          </button>
+        </div>
+      </div>
       <div v-else class="home-cabin-empty home-cabin-empty--menu">
-        <p class="home-cabin-empty-text">暂无常用菜单，使用功能后按频率出现在这里</p>
+        <p class="home-cabin-empty-text">{{ menuEmptyHint }}</p>
       </div>
     </div>
+
+    <el-dialog
+      title="设置常用菜单"
+      :visible.sync="menuSettingVisible"
+      width="560px"
+      append-to-body
+      custom-class="home-menu-setting-dialog"
+    >
+      <p class="home-menu-setting-hint">仅列出当前账号有权限的菜单，最多选择 {{ FREQUENT_MENU_MAX }} 个；首页两行×8列，超出自动左右轮播</p>
+      <el-checkbox-group
+        v-if="permittedMenus.length"
+        v-model="menuSettingChecked"
+        class="home-menu-setting-list"
+      >
+        <el-checkbox
+          v-for="m in permittedMenus"
+          :key="m.path"
+          :label="m.path"
+          :disabled="menuSettingChecked.length >= FREQUENT_MENU_MAX && menuSettingChecked.indexOf(m.path) === -1"
+        >{{ m.title }}</el-checkbox>
+      </el-checkbox-group>
+      <div v-else class="home-cabin-empty home-cabin-empty--menu">
+        <p class="home-cabin-empty-text">当前账号暂无可设置的菜单权限</p>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button :disabled="menuSettingSaving" @click="resetMenuSetting">恢复自动</el-button>
+        <el-button :disabled="menuSettingSaving" @click="menuSettingVisible = false">取消</el-button>
+        <el-button type="primary" :loading="menuSettingSaving" @click="saveMenuSetting">确定</el-button>
+      </div>
+    </el-dialog>
     </template>
   </div>
 </template>
 <style>
   a:hover {
     color: blue;
+  }
+
+  .home-menu-setting-dialog .home-menu-setting-hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  .home-menu-setting-dialog .home-menu-setting-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+    max-height: 360px;
+    overflow: auto;
+    padding: 4px 2px;
+  }
+
+  .home-menu-setting-dialog .home-menu-setting-list .el-checkbox {
+    margin-right: 0;
+    display: flex;
+    align-items: flex-start;
+    white-space: normal;
+    line-height: 1.4;
   }
 </style>
 <script>
@@ -192,6 +363,9 @@
     fetchHomePref,
     saveHomePref,
     fetchFrequentMenus,
+    fetchPurchaseHomeStats,
+    fetchWarehouseHomeStats,
+    fetchDepartmentHomeStats,
     fetchHomeKpiTrend,
     fetchHomeDepartmentReminderCounts
   } from "@/api/dashboard/home";
@@ -199,8 +373,14 @@
   import { collectLeafMenus } from "@/utils/nav-menu";
 
 const HOME_VIEW_UI_KEY = "spd.homeView";
+const FREQUENT_MENU_UI_KEY = "spd.homeFrequentMenus";
+/** 可选上限：两行×8列一页，多页轮播 */
+const FREQUENT_MENU_MAX = 48;
+const FREQUENT_MENU_COLS = 8;
+const FREQUENT_MENU_ROWS = 2;
+const FREQUENT_MENU_PAGE_SIZE = FREQUENT_MENU_COLS * FREQUENT_MENU_ROWS;
 const PIE_COLORS = ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#1d4ed8", "#38bdf8", "#818cf8"];
-const ROLE_HOME_VIEWS = ["purchase", "warehouse", "department"];
+const ROLE_HOME_VIEWS = [];
 const ALL_HOME_VIEW_OPTIONS = [
   { value: "simple", label: "默认" },
   { value: "full", label: "完整" },
@@ -231,6 +411,34 @@ export default {
         inventoryAlertLineCount: 0
       },
       frequentMenus: [],
+      /** null=按点击频率自动；数组=用户自定义（仅展示仍有权限的项） */
+      customMenuPaths: null,
+      menuSettingVisible: false,
+      menuSettingChecked: [],
+      menuSettingSaving: false,
+      FREQUENT_MENU_MAX,
+      FREQUENT_MENU_PAGE_SIZE,
+      purchaseStats: {
+        pendingIssuePurchaseApplyCount: 0,
+        inTransitPurchaseOrderCount: 0,
+        overdueSupplierDeliveryCount: 0,
+        arrivalOnTimeRateText: "--",
+        pendingPriceCompareCount: 0
+      },
+      warehouseStats: {
+        pendingStocktakingTaskCount: 0,
+        stocktakingDiffLineCount: 0,
+        pendingTransferBillCount: 0,
+        pendingReturnAcceptQty: 0,
+        overstockMaterialCount: 0
+      },
+      departmentStats: {
+        pendingApplyAuditBillCount: 0,
+        unreceivedOutboundBillCount: 0,
+        nearExpiryLineCount: 0,
+        departmentInventoryQty: 0,
+        recentConsumeEntryCount: 0
+      },
       todayStats: {
         inCount: 0,
         outCount: 0,
@@ -295,12 +503,199 @@ export default {
     isFull() {
       return this.homeView === "full";
     },
+    isPurchaseHome() {
+      return this.homeView === "purchase";
+    },
+    isWarehouseHome() {
+      return this.homeView === "warehouse";
+    },
+    isDepartmentHome() {
+      return this.homeView === "department";
+    },
     isPlaceholderHome() {
       return ROLE_HOME_VIEWS.includes(this.homeView);
     },
     placeholderTitle() {
       const hit = ALL_HOME_VIEW_OPTIONS.find(o => o.value === this.homeView);
       return hit ? `${hit.label}首页` : "首页";
+    },
+    purchaseCards() {
+      const s = this.purchaseStats || {};
+      return [
+        {
+          key: "pendingIssue",
+          label: "待下达采购申请",
+          hint: "已审未完全编入计划",
+          icon: "el-icon-s-order",
+          showCount: true,
+          display: this.formatStatQty(s.pendingIssuePurchaseApplyCount),
+          warn: Number(s.pendingIssuePurchaseApplyCount) > 0,
+          pathKeys: ["jihua"]
+        },
+        {
+          key: "inTransit",
+          label: "在途采购订单",
+          hint: "已审尚未按单入库",
+          icon: "el-icon-s-promotion",
+          showCount: true,
+          display: this.formatStatQty(s.inTransitPurchaseOrderCount),
+          warn: Number(s.inTransitPurchaseOrderCount) > 0,
+          pathKeys: ["dingdan"]
+        },
+        {
+          key: "overdue",
+          label: "供应商逾期到货预警",
+          hint: "约定到货日已过",
+          icon: "el-icon-warning-outline",
+          showCount: true,
+          display: this.formatStatQty(s.overdueSupplierDeliveryCount),
+          warn: Number(s.overdueSupplierDeliveryCount) > 0,
+          pathKeys: ["dingdan"]
+        },
+        {
+          key: "onTimeRate",
+          label: "采购到货及时率",
+          hint: "近90天约定到货样本",
+          icon: "el-icon-data-analysis",
+          showCount: true,
+          display: s.arrivalOnTimeRateText || "--",
+          warn: false,
+          pathKeys: ["purchaseReport"]
+        },
+        {
+          key: "priceCompare",
+          label: "待比价单据",
+          hint: "比价业务待建设",
+          icon: "el-icon-s-finance",
+          showCount: true,
+          display: this.formatStatQty(s.pendingPriceCompareCount),
+          warn: false,
+          pathKeys: []
+        }
+      ];
+    },
+    warehouseCards() {
+      const s = this.warehouseStats || {};
+      return [
+        {
+          key: "pendingStocktaking",
+          label: "待盘点任务数量",
+          hint: "仓库盘点未审核",
+          icon: "el-icon-notebook-2",
+          showCount: true,
+          display: this.formatStatQty(s.pendingStocktakingTaskCount),
+          warn: Number(s.pendingStocktakingTaskCount) > 0,
+          pathKeys: ["stkIn"],
+          titleKeys: ["仓库盘点", "盘点入库"]
+        },
+        {
+          key: "stocktakingDiff",
+          label: "盘点差异条目数",
+          hint: "待盈亏处理明细",
+          icon: "el-icon-s-data",
+          showCount: true,
+          display: this.formatStatQty(s.stocktakingDiffLineCount),
+          warn: Number(s.stocktakingDiffLineCount) > 0,
+          pathKeys: ["profitLoss", "profitLossPending"],
+          titleKeys: ["盈亏单", "盘盈待入账"]
+        },
+        {
+          key: "pendingTransfer",
+          label: "移库待处理单据",
+          hint: "调拨未审核",
+          icon: "el-icon-sort",
+          showCount: true,
+          display: this.formatStatQty(s.pendingTransferBillCount),
+          warn: Number(s.pendingTransferBillCount) > 0,
+          pathKeys: [],
+          titleKeys: ["调拨审核", "移库审核", "调拨申请"]
+        },
+        {
+          key: "pendingReturn",
+          label: "退货待验收数量",
+          hint: "退货未审核数量",
+          icon: "el-icon-refresh-left",
+          showCount: true,
+          display: this.formatStatQty(s.pendingReturnAcceptQty),
+          warn: Number(s.pendingReturnAcceptQty) > 0,
+          pathKeys: ["refundGoodsApply", "refundGoodsAudit"],
+          titleKeys: ["入退货申请", "退货审核"]
+        },
+        {
+          key: "overstock",
+          label: "库区超储物资数量",
+          hint: "高于定数上限",
+          icon: "el-icon-warning-outline",
+          showCount: true,
+          display: this.formatStatQty(s.overstockMaterialCount),
+          warn: Number(s.overstockMaterialCount) > 0,
+          pathKeys: [],
+          titleKeys: ["库存查询"],
+          query: { tab: "alert" }
+        }
+      ];
+    },
+    departmentCards() {
+      const s = this.departmentStats || {};
+      return [
+        {
+          key: "pendingApply",
+          label: "科室待申领审批",
+          hint: "申领单待审核",
+          icon: "el-icon-s-order",
+          showCount: true,
+          display: this.formatStatQty(s.pendingApplyAuditBillCount),
+          warn: Number(s.pendingApplyAuditBillCount) > 0,
+          pathKeys: ["dApplyAudit", "dApply"],
+          titleKeys: ["科室申领审核", "科室申领"]
+        },
+        {
+          key: "unreceived",
+          label: "科室申领在途物资",
+          hint: "出库待收货确认",
+          icon: "el-icon-s-promotion",
+          showCount: true,
+          display: this.formatStatQty(s.unreceivedOutboundBillCount),
+          warn: Number(s.unreceivedOutboundBillCount) > 0,
+          pathKeys: ["receiptConfirm"],
+          titleKeys: ["收货确认"]
+        },
+        {
+          key: "nearExpiry",
+          label: "科室耗材近效期",
+          hint: "30天内近效期行",
+          icon: "el-icon-time",
+          showCount: true,
+          display: this.formatStatQty(s.nearExpiryLineCount),
+          warn: Number(s.nearExpiryLineCount) > 0,
+          pathKeys: ["depInventory"],
+          titleKeys: ["科室库存查询"],
+          query: { tab: "nearExpiry" }
+        },
+        {
+          key: "inventoryQty",
+          label: "科室库存余量",
+          hint: "当前库存数量合计",
+          icon: "el-icon-office-building",
+          showCount: true,
+          display: this.formatStatQty(s.departmentInventoryQty),
+          warn: false,
+          pathKeys: ["depInventory"],
+          titleKeys: ["科室库存查询"],
+          query: { tab: "detail" }
+        },
+        {
+          key: "recentConsume",
+          label: "科室近期消耗条数",
+          hint: "近7日已审明细",
+          icon: "el-icon-finished",
+          showCount: true,
+          display: this.formatStatQty(s.recentConsumeEntryCount),
+          warn: Number(s.recentConsumeEntryCount) > 0,
+          pathKeys: ["batchConsume"],
+          titleKeys: ["科室批量消耗", "批量消耗"]
+        }
+      ];
     },
     allTodos() {
       return [
@@ -330,22 +725,77 @@ export default {
         this.buildKpiCard("returnCount", "今日退库数量", "el-icon-refresh-left")
       ]);
     },
+    permittedMenus() {
+      return collectLeafMenus(this.$store.getters.sidebarRouters, 200);
+    },
     displayMenus() {
-      const leaves = collectLeafMenus(this.$store.getters.sidebarRouters, 40);
-      const iconMap = {};
+      const leaves = this.permittedMenus;
+      const byPath = {};
       leaves.forEach((item) => {
         if (item && item.path) {
-          iconMap[item.path] = item.icon;
+          byPath[item.path] = item;
         }
       });
-      const source = this.frequentMenus.length ? this.frequentMenus.slice(0, 8) : leaves.slice(0, 8);
+      let source = [];
+      if (Array.isArray(this.customMenuPaths)) {
+        source = this.customMenuPaths
+          .map((path) => byPath[path])
+          .filter(Boolean)
+          .slice(0, FREQUENT_MENU_MAX);
+      } else if (this.frequentMenus.length) {
+        source = this.frequentMenus
+          .filter((item) => item && item.path && byPath[item.path])
+          .slice(0, FREQUENT_MENU_MAX)
+          .map((item) => ({
+            path: item.path,
+            title: byPath[item.path].title || item.title,
+            icon: item.icon || byPath[item.path].icon || ""
+          }));
+      } else {
+        source = leaves.slice(0, FREQUENT_MENU_PAGE_SIZE);
+      }
       return source.map((item) => ({
         path: item.path,
         title: item.title,
-        icon: item.icon || iconMap[item.path] || ""
+        icon: item.icon || (byPath[item.path] && byPath[item.path].icon) || ""
       }));
     },
+    menuPages() {
+      const list = this.displayMenus;
+      const size = FREQUENT_MENU_PAGE_SIZE;
+      if (!list.length) {
+        return [];
+      }
+      const pages = [];
+      for (let i = 0; i < list.length; i += size) {
+        pages.push(list.slice(i, i + size));
+      }
+      return pages;
+    },
+    menuEmptyHint() {
+      if (Array.isArray(this.customMenuPaths)) {
+        return "暂无可用常用菜单，请点击右上角编辑重新设置";
+      }
+      return "暂无常用菜单，使用功能后按频率出现在这里，也可点击右上角编辑设置";
+    },
+    trendChartTitle() {
+      return this.isPurchaseHome ? "近7日采购到货趋势" : "近七日耗材领用趋势";
+    },
+    pieChartTitle() {
+      return this.isPurchaseHome ? "当月采购分类金额占比" : "库存结构占比";
+    },
+    pieChartSub() {
+      return this.isPurchaseHome ? "当月财务分类入退货" : "当月财务分类出退库";
+    },
     trendDeltaHint() {
+      if (this.isPurchaseHome) {
+        const series = this.kpiSeries.inCount || [];
+        const today = series.length ? Number(series[series.length - 1]) || 0 : Number(this.todayStats.inCount) || 0;
+        const yesterday = series.length > 1
+          ? Number(series[series.length - 2]) || 0
+          : Number(this.kpiYesterday.inCount) || 0;
+        return this.formatKpiDelta(today, yesterday).text;
+      }
       const delta = this.formatKpiDelta(this.todayStats.outCount, this.kpiYesterday.outCount);
       return delta.text;
     },
@@ -405,10 +855,19 @@ export default {
       if (this.isPlaceholderHome) {
         return;
       }
-      this.loadTodayStats();
+      if (this.isPurchaseHome) {
+        this.loadPurchaseHomeStats();
+      } else if (this.isWarehouseHome) {
+        this.loadWarehouseHomeStats();
+      } else if (this.isDepartmentHome) {
+        this.loadDepartmentHomeStats();
+      } else {
+        this.loadTodayStats();
+        this.loadTodoCounts();
+      }
       this.loadKpiTrend().then(() => this.$nextTick(() => this.initTrendChart()));
-      this.loadTodoCounts();
       this.loadFrequentMenus();
+      this.loadCustomMenus();
       this.loadOutboundProportionChart();
       if (this.homeView === "full") {
         this.ensureFullExtras();
@@ -418,6 +877,15 @@ export default {
       const v = view ? String(view).toLowerCase() : "";
       if (v === "full" || v === "complete") {
         return "full";
+      }
+      if (v === "purchase") {
+        return "purchase";
+      }
+      if (v === "warehouse") {
+        return "warehouse";
+      }
+      if (v === "department") {
+        return "department";
       }
       if (ROLE_HOME_VIEWS.includes(v)) {
         return v;
@@ -479,17 +947,55 @@ export default {
       if (!this.allowedHomeViews.includes(next)) {
         return;
       }
-      const wasPlaceholder = this.isPlaceholderHome;
+      const prev = this.homeView;
       this.homeView = next;
-      if (wasPlaceholder && !ROLE_HOME_VIEWS.includes(next)) {
-        this.loadTodayStats();
+      if (ROLE_HOME_VIEWS.includes(next)) {
+        return;
+      }
+      if (prev === next) {
+        return;
+      }
+      if (next === "purchase") {
+        this.loadPurchaseHomeStats();
         this.loadKpiTrend().then(() => this.$nextTick(() => this.initTrendChart()));
-        this.loadTodoCounts();
         this.loadFrequentMenus();
+        this.loadCustomMenus();
         this.loadOutboundProportionChart();
-        if (next === "full") {
-          this.ensureFullExtras();
-        }
+        this.disposeChart("usage");
+        this.disposeChart("inPie");
+        return;
+      }
+      if (next === "warehouse") {
+        this.loadWarehouseHomeStats();
+        this.loadKpiTrend().then(() => this.$nextTick(() => this.initTrendChart()));
+        this.loadFrequentMenus();
+        this.loadCustomMenus();
+        this.loadOutboundProportionChart();
+        this.disposeChart("usage");
+        this.disposeChart("inPie");
+        return;
+      }
+      if (next === "department") {
+        this.loadDepartmentHomeStats();
+        this.loadKpiTrend().then(() => this.$nextTick(() => this.initTrendChart()));
+        this.loadFrequentMenus();
+        this.loadCustomMenus();
+        this.loadOutboundProportionChart();
+        this.disposeChart("usage");
+        this.disposeChart("inPie");
+        return;
+      }
+      this.loadTodayStats();
+      this.loadKpiTrend().then(() => this.$nextTick(() => this.initTrendChart()));
+      this.loadTodoCounts();
+      this.loadFrequentMenus();
+      this.loadCustomMenus();
+      this.loadOutboundProportionChart();
+      if (next === "full") {
+        this.ensureFullExtras();
+      } else {
+        this.disposeChart("usage");
+        this.disposeChart("inPie");
       }
     },
     async saveDefaultView() {
@@ -535,9 +1041,125 @@ export default {
         console.error("加载首页待办失败", e);
       }
     },
+    async loadPurchaseHomeStats() {
+      try {
+        const res = await fetchPurchaseHomeStats();
+        const d = (res && res.data) || {};
+        this.purchaseStats = {
+          pendingIssuePurchaseApplyCount: Number(d.pendingIssuePurchaseApplyCount) || 0,
+          inTransitPurchaseOrderCount: Number(d.inTransitPurchaseOrderCount) || 0,
+          overdueSupplierDeliveryCount: Number(d.overdueSupplierDeliveryCount) || 0,
+          arrivalOnTimeRateText: d.arrivalOnTimeRateText || "--",
+          pendingPriceCompareCount: Number(d.pendingPriceCompareCount) || 0
+        };
+      } catch (e) {
+        console.error("加载采购首页指标失败", e);
+      }
+    },
+    async loadWarehouseHomeStats() {
+      try {
+        const res = await fetchWarehouseHomeStats();
+        const d = (res && res.data) || {};
+        this.warehouseStats = {
+          pendingStocktakingTaskCount: Number(d.pendingStocktakingTaskCount) || 0,
+          stocktakingDiffLineCount: Number(d.stocktakingDiffLineCount) || 0,
+          pendingTransferBillCount: Number(d.pendingTransferBillCount) || 0,
+          pendingReturnAcceptQty: Number(d.pendingReturnAcceptQty) || 0,
+          overstockMaterialCount: Number(d.overstockMaterialCount) || 0
+        };
+      } catch (e) {
+        console.error("加载库房首页指标失败", e);
+      }
+    },
+    async loadDepartmentHomeStats() {
+      try {
+        const res = await fetchDepartmentHomeStats();
+        const d = (res && res.data) || {};
+        this.departmentStats = {
+          pendingApplyAuditBillCount: Number(d.pendingApplyAuditBillCount) || 0,
+          unreceivedOutboundBillCount: Number(d.unreceivedOutboundBillCount) || 0,
+          nearExpiryLineCount: Number(d.nearExpiryLineCount) || 0,
+          departmentInventoryQty: Number(d.departmentInventoryQty) || 0,
+          recentConsumeEntryCount: Number(d.recentConsumeEntryCount) || 0
+        };
+      } catch (e) {
+        console.error("加载科室首页指标失败", e);
+      }
+    },
+    findMenuPathByKeys(pathKeys, titleKeys) {
+      const keys = Array.isArray(pathKeys) ? pathKeys : [];
+      const titles = Array.isArray(titleKeys) ? titleKeys : [];
+      const leaves = this.permittedMenus || [];
+      for (let i = 0; i < keys.length; i++) {
+        const key = String(keys[i] || "").replace(/^\/+|\/+$/g, "");
+        if (!key) continue;
+        const hit = leaves.find((m) => {
+          if (!m || !m.path) return false;
+          const p = String(m.path);
+          return p === key || p === "/" + key || p.endsWith("/" + key);
+        });
+        if (hit) {
+          return hit.path;
+        }
+      }
+      for (let i = 0; i < titles.length; i++) {
+        const title = String(titles[i] || "").trim();
+        if (!title) continue;
+        const hit = leaves.find((m) => m && m.title === title);
+        if (hit && hit.path) {
+          return hit.path;
+        }
+      }
+      return "";
+    },
+    openPurchaseCard(card) {
+      if (!card) {
+        return;
+      }
+      if (!card.pathKeys || !card.pathKeys.length) {
+        this.$message.info("待比价业务建设中");
+        return;
+      }
+      const path = this.findMenuPathByKeys(card.pathKeys, card.titleKeys);
+      if (!path) {
+        this.$message.warning("未找到对应菜单权限，请联系管理员授权");
+        return;
+      }
+      this.$router.push(path).catch(() => {});
+    },
+    openWarehouseCard(card) {
+      if (!card) {
+        return;
+      }
+      const path = this.findMenuPathByKeys(card.pathKeys, card.titleKeys);
+      if (!path) {
+        this.$message.warning("未找到对应菜单权限，请联系管理员授权");
+        return;
+      }
+      if (card.query) {
+        this.$router.push({ path, query: card.query }).catch(() => {});
+        return;
+      }
+      this.$router.push(path).catch(() => {});
+    },
+    openDepartmentCard(card) {
+      if (!card) {
+        return;
+      }
+      const path = this.findMenuPathByKeys(card.pathKeys, card.titleKeys);
+      if (!path) {
+        this.$message.warning("未找到对应菜单权限，请联系管理员授权");
+        return;
+      }
+      if (card.query) {
+        this.$router.push({ path, query: card.query }).catch(() => {});
+        return;
+      }
+      this.$router.push(path).catch(() => {});
+    },
     async loadFrequentMenus() {
       try {
-        const res = await fetchFrequentMenus(8);
+        const res = await fetchFrequentMenus(FREQUENT_MENU_MAX);
         const list = (res && res.data) || [];
         this.frequentMenus = (Array.isArray(list) ? list : [])
           .map((item) => ({
@@ -549,6 +1171,70 @@ export default {
           .filter((item) => item.path);
       } catch (e) {
         this.frequentMenus = [];
+      }
+    },
+    async loadCustomMenus() {
+      try {
+        const res = await getUserUiConfig(FREQUENT_MENU_UI_KEY);
+        const raw = res && res.data && res.data.configValue;
+        if (!raw) {
+          this.customMenuPaths = null;
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) {
+          this.customMenuPaths = null;
+          return;
+        }
+        this.customMenuPaths = parsed
+          .map((item) => (typeof item === "string" ? item : (item && item.path)))
+          .filter((path) => path && typeof path === "string")
+          .slice(0, FREQUENT_MENU_MAX);
+      } catch (e) {
+        this.customMenuPaths = null;
+      }
+    },
+    openMenuSetting() {
+      const selected = Array.isArray(this.customMenuPaths) && this.customMenuPaths.length
+        ? this.customMenuPaths.filter((path) => this.permittedMenus.some((m) => m.path === path))
+        : this.displayMenus.map((m) => m.path);
+      this.menuSettingChecked = selected.slice(0, FREQUENT_MENU_MAX);
+      this.menuSettingVisible = true;
+    },
+    async saveMenuSetting() {
+      const allowed = new Set(this.permittedMenus.map((m) => m.path));
+      const paths = (this.menuSettingChecked || [])
+        .filter((path) => allowed.has(path))
+        .slice(0, FREQUENT_MENU_MAX);
+      this.menuSettingSaving = true;
+      try {
+        await saveUserUiConfig({
+          configKey: FREQUENT_MENU_UI_KEY,
+          configValue: JSON.stringify(paths)
+        });
+        this.customMenuPaths = paths;
+        this.menuSettingVisible = false;
+        this.$message.success("常用菜单已保存");
+      } catch (e) {
+        this.$message.error("保存常用菜单失败");
+      } finally {
+        this.menuSettingSaving = false;
+      }
+    },
+    async resetMenuSetting() {
+      this.menuSettingSaving = true;
+      try {
+        await saveUserUiConfig({
+          configKey: FREQUENT_MENU_UI_KEY,
+          configValue: ""
+        });
+        this.customMenuPaths = null;
+        this.menuSettingVisible = false;
+        this.$message.success("已恢复为按使用频率自动展示");
+      } catch (e) {
+        this.$message.error("恢复失败");
+      } finally {
+        this.menuSettingSaving = false;
       }
     },
     openWarehouseNearExpiry() {
@@ -864,18 +1550,22 @@ export default {
     },
     async loadOutboundProportionChart() {
       this.outChartEmptyHint = "";
+      const purchase = this.isPurchaseHome;
       try {
-        const res = await fetchHomeOutboundFinanceCategoryProportion();
+        const res = purchase
+          ? await fetchHomeInboundFinanceCategoryProportion()
+          : await fetchHomeOutboundFinanceCategoryProportion();
         const rows = (res && res.data) || [];
-        this.outChartSlices = this.buildFinancePieSlices(rows, "暂无当月出库");
-        if (this.outChartSlices.length === 1 && this.outChartSlices[0].name === "暂无当月出库") {
+        const emptyLabel = purchase ? "暂无当月采购" : "暂无当月出库";
+        this.outChartSlices = this.buildFinancePieSlices(rows, emptyLabel);
+        if (this.outChartSlices.length === 1 && this.outChartSlices[0].name === emptyLabel) {
           this.outChartEmptyHint = "本月暂无分类数据";
           this.initPieChart();
           return;
         }
         this.$nextTick(() => this.initPieChart());
       } catch (e) {
-        console.error("加载出库统计占比失败", e);
+        console.error(purchase ? "加载采购分类占比失败" : "加载出库统计占比失败", e);
         this.outChartSlices = [];
         this.outChartEmptyHint = "本月暂无分类数据";
         this.initPieChart();
@@ -904,11 +1594,14 @@ export default {
       }
     },
     initTrendChart() {
-      const series = this.kpiSeries.outCount || this.zeroSeries(7);
+      const purchase = this.isPurchaseHome;
+      const series = purchase
+        ? (this.kpiSeries.inCount || this.zeroSeries(7))
+        : (this.kpiSeries.outCount || this.zeroSeries(7));
       const allZero = series.every((v) => !Number(v));
       this.trendEmptyHint = "";
-      if (allZero && !this.kpiDays.length) {
-        this.trendEmptyHint = "今日暂无业务流动";
+      if (allZero) {
+        this.trendEmptyHint = purchase ? "近7日暂无到货入库" : "今日暂无业务流动";
         this.disposeChart("trend");
         return;
       }
@@ -918,17 +1611,18 @@ export default {
         return;
       }
       const labels = this.trendLabels();
+      const seriesName = purchase ? "到货数量" : "消耗数量";
       const applySeries = this.kpiSeries.applyCount || this.zeroSeries(series.length);
       const option = this.isFull
         ? {
             color: ["#3b82f6", "#94a3b8"],
             tooltip: { trigger: "axis" },
-            legend: { data: ["消耗数量", "申领数量"], top: 0, right: 8, textStyle: { color: "#64748b", fontSize: 11 } },
+            legend: { data: [seriesName, "申领数量"], top: 0, right: 8, textStyle: { color: "#64748b", fontSize: 11 } },
             grid: { left: 36, right: 16, top: 36, bottom: 28 },
             xAxis: { type: "category", data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: "#e2e8f0" } }, axisLabel: { color: "#94a3b8" } },
             yAxis: { type: "value", splitLine: { lineStyle: { color: "#f1f5f9" } }, axisLabel: { color: "#94a3b8" } },
             series: [
-              { name: "消耗数量", type: "bar", barWidth: 18, itemStyle: { color: "#3b82f6", borderRadius: [6, 6, 0, 0] }, data: series },
+              { name: seriesName, type: "bar", barWidth: 18, itemStyle: { color: "#3b82f6", borderRadius: [6, 6, 0, 0] }, data: series },
               { name: "申领数量", type: "line", smooth: true, symbol: "circle", symbolSize: 6, lineStyle: { width: 2, color: "#94a3b8" }, data: applySeries }
             ]
           }
@@ -940,7 +1634,7 @@ export default {
             yAxis: { type: "value", splitLine: { lineStyle: { color: "#f1f5f9" } }, axisLabel: { color: "#94a3b8" } },
             series: [
               {
-                name: "消耗数量",
+                name: seriesName,
                 type: "line",
                 smooth: true,
                 symbol: "circle",
@@ -968,7 +1662,7 @@ export default {
         }
       } catch (e) {
         console.error("initTrendChart", e);
-        this.trendEmptyHint = "今日暂无业务流动";
+        this.trendEmptyHint = purchase ? "近7日暂无到货入库" : "今日暂无业务流动";
       }
     },
     initPieChart() {
@@ -1152,35 +1846,37 @@ export default {
   font-size: 13px;
   overflow-x: hidden;
 
-  .home-todo-grid,
-  .home-kpi-grid {
+  .home-top-grid {
     display: grid;
-    gap: 14px;
+    gap: 12px;
     margin-bottom: 14px;
   }
 
-  .home-todo-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .home-top-grid.cols-8 {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
   }
 
-  .home-todo-grid.is-full {
+  .home-top-grid.cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .home-top-grid.cols-12 {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .home-kpi-grid.cols-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .home-kpi-grid.cols-6 {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+  .home-purchase-card .home-todo-badge.is-num {
+    min-width: 52px;
+    padding: 0 6px;
+    border-radius: 12px;
+    font-size: 16px;
   }
 
   .home-todo-card,
   .home-kpi-card,
   .home-board {
     background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 8px 28px rgba(37, 99, 235, 0.06);
+    border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
     border: 1px solid #eef2f7;
     box-sizing: border-box;
   }
@@ -1189,104 +1885,189 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 18px 16px;
-    min-height: 92px;
+    gap: 8px;
+    padding: 18px 14px;
+    min-height: 112px;
     cursor: pointer;
     min-width: 0;
     transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
 
   .home-todo-card:hover {
-    box-shadow: 0 10px 32px rgba(37, 99, 235, 0.12);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .home-todo-copy {
+    min-width: 0;
+    flex: 1;
   }
 
   .home-todo-title {
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 650;
     color: #0f172a;
+    line-height: 1.3;
   }
 
   .home-todo-hint {
-    margin-top: 6px;
-    font-size: 12px;
+    margin-top: 4px;
+    font-size: 11px;
     color: #94a3b8;
+    line-height: 1.3;
   }
 
   .home-todo-badge {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: #edf4ff;
+    background: #eff6ff;
     color: #2563eb;
+    border: 1.5px solid rgba(37, 99, 235, 0.22);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .home-todo-badge.is-num {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
 
-  .home-todo-card.warn .home-todo-badge {
+  .home-todo-card.tone-0 .home-todo-badge {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: rgba(37, 99, 235, 0.28);
+  }
+  .home-todo-card.tone-1 .home-todo-badge {
+    background: #fff7ed;
+    color: #ea580c;
+    border-color: rgba(234, 88, 12, 0.28);
+  }
+  .home-todo-card.tone-2 .home-todo-badge {
+    background: #eef2ff;
+    color: #4f46e5;
+    border-color: rgba(79, 70, 229, 0.28);
+  }
+  .home-todo-card.tone-3 .home-todo-badge {
     background: #fff1f2;
     color: #e11d48;
+    border-color: rgba(225, 29, 72, 0.28);
+  }
+  .home-todo-card.tone-4 .home-todo-badge {
+    background: #ecfeff;
+    color: #0891b2;
+    border-color: rgba(8, 145, 178, 0.28);
+  }
+  .home-todo-card.tone-5 .home-todo-badge {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: rgba(22, 163, 74, 0.28);
+  }
+
+  .home-todo-card.warn .home-todo-badge.is-num {
+    background: #fff1f2;
+    color: #e11d48;
+    border-color: rgba(225, 29, 72, 0.35);
   }
 
   .home-kpi-card {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 16px 16px 14px;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 12px;
     min-width: 0;
-    min-height: 108px;
+    min-height: 112px;
   }
 
-  .home-kpi-row {
+  .home-kpi-icon-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 15px;
+    background: #eff6ff;
+    color: #2563eb;
   }
 
-  .home-kpi-num {
-    font-size: 26px;
-    font-weight: 700;
-    color: #0f172a;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
+  .home-kpi-card.tone-0 .home-kpi-icon-box {
+    background: #eff6ff;
+    color: #2563eb;
+  }
+  .home-kpi-card.tone-1 .home-kpi-icon-box {
+    background: #fff7ed;
+    color: #ea580c;
+  }
+  .home-kpi-card.tone-2 .home-kpi-icon-box {
+    background: #fff1f2;
+    color: #e11d48;
+  }
+  .home-kpi-card.tone-3 .home-kpi-icon-box {
+    background: #eef2ff;
+    color: #4f46e5;
+  }
+  .home-kpi-card.tone-4 .home-kpi-icon-box {
+    background: #ecfeff;
+    color: #0891b2;
+  }
+  .home-kpi-card.tone-5 .home-kpi-icon-box {
+    background: #f0fdf4;
+    color: #16a34a;
   }
 
-  .home-kpi-icon {
-    margin-left: 8px;
-    color: #93c5fd;
-    font-size: 16px;
+  .home-kpi-copy {
+    min-width: 0;
+    flex: 1;
   }
 
   .home-kpi-label {
-    margin-top: 8px;
-    color: #64748b;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.3;
   }
 
   .home-kpi-delta {
-    margin-top: 6px;
+    margin-top: 4px;
     font-size: 12px;
     color: #94a3b8;
   }
   .home-kpi-delta.is-up { color: #16a34a; }
   .home-kpi-delta.is-down { color: #e11d48; }
 
-  .home-kpi-side {
-    font-size: 22px;
-    font-weight: 650;
-    color: #2563eb;
+  .home-kpi-nums {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .home-kpi-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e3a8a;
     font-variant-numeric: tabular-nums;
-    padding-top: 2px;
+    line-height: 1.1;
+  }
+
+  .home-kpi-card.tone-1 .home-kpi-num { color: #c2410c; }
+  .home-kpi-card.tone-2 .home-kpi-num { color: #be123c; }
+  .home-kpi-card.warn .home-kpi-num { color: #e11d48; }
+
+  .home-kpi-side {
+    margin-top: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    font-variant-numeric: tabular-nums;
   }
   .home-kpi-side.is-down { color: #e11d48; }
   .home-kpi-side.is-flat { color: #94a3b8; }
+  .home-kpi-card.tone-1 .home-kpi-side { color: #ea580c; }
 
   .home-chart-row {
     display: grid;
@@ -1302,7 +2083,7 @@ export default {
 
   .home-board-head {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
     font-size: 15px;
@@ -1315,6 +2096,27 @@ export default {
     font-size: 12px;
     font-weight: 400;
     color: #94a3b8;
+  }
+
+  .home-menu-edit-btn {
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: color 0.15s ease, background 0.15s ease;
+  }
+
+  .home-menu-edit-btn:hover {
+    color: #2563eb;
+    background: #eff6ff;
   }
 
   .home-trend-chart {
@@ -1367,41 +2169,136 @@ export default {
     color: #c2410c;
   }
 
+  .home-menu-carousel-wrap {
+    min-height: 196px;
+  }
+
+  .home-menu-carousel {
+    width: 100%;
+  }
+
+  ::v-deep .home-menu-carousel {
+    .el-carousel__indicators--outside {
+      margin-top: 2px;
+    }
+    .el-carousel__button {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #94a3b8;
+      opacity: 0.45;
+    }
+    .el-carousel__indicator.is-active .el-carousel__button {
+      opacity: 1;
+      background: #2563eb;
+    }
+    .el-carousel__arrow {
+      width: 28px;
+      height: 28px;
+      background: rgba(15, 23, 42, 0.35);
+    }
+  }
+
   .home-menu-grid {
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 8px;
-    padding: 8px 0 6px;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 4px 12px;
+    padding: 4px 4px 2px;
+    min-height: 188px;
+    align-content: start;
   }
 
   .home-menu-tile {
     border: 0;
     background: transparent;
     cursor: pointer;
-    padding: 10px 4px 8px;
+    padding: 8px 4px 6px;
     border-radius: 12px;
     color: #334155;
+    transition: transform 0.15s ease, background 0.15s ease;
   }
 
   .home-menu-tile:hover {
     background: #f8fafc;
-    color: var(--current-color, #2563eb);
+    transform: translateY(-1px);
+  }
+
+  .home-menu-tile:hover .home-menu-tile-title {
+    color: #0f172a;
   }
 
   .home-menu-tile-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 36px;
-    font-size: 22px;
-    color: #2563eb;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto;
+    border-radius: 14px;
+    background: linear-gradient(145deg, #38bdf8, #2563eb);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.18);
+  }
+
+  .home-menu-tile-icon-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.28);
+    color: #fff;
+    font-size: 16px;
+  }
+
+  .home-menu-tile-icon-inner .svg-icon {
+    width: 1.15em;
+    height: 1.15em;
+    color: #fff;
+    fill: currentColor;
+  }
+
+  .home-menu-tile.tone-0 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #38bdf8, #2563eb);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+  }
+  .home-menu-tile.tone-1 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #a3e635, #16a34a);
+    box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
+  }
+  .home-menu-tile.tone-2 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #fb923c, #f43f5e);
+    box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2);
+  }
+  .home-menu-tile.tone-3 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #facc15, #f97316);
+    box-shadow: 0 4px 10px rgba(249, 115, 22, 0.2);
+  }
+  .home-menu-tile.tone-4 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #22d3ee, #1d4ed8);
+    box-shadow: 0 4px 10px rgba(29, 78, 216, 0.2);
+  }
+  .home-menu-tile.tone-5 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #86efac, #059669);
+    box-shadow: 0 4px 10px rgba(5, 150, 105, 0.2);
+  }
+  .home-menu-tile.tone-6 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #fb7185, #e11d48);
+    box-shadow: 0 4px 10px rgba(225, 29, 72, 0.2);
+  }
+  .home-menu-tile.tone-7 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #fde047, #ea580c);
+    box-shadow: 0 4px 10px rgba(234, 88, 12, 0.2);
   }
 
   .home-menu-tile-title {
     display: block;
-    margin-top: 4px;
+    margin-top: 8px;
     font-size: 12px;
-    line-height: 1.3;
+    line-height: 1.35;
+    color: #334155;
+    text-align: center;
   }
 
   .home-cabin-empty {
@@ -1482,18 +2379,29 @@ export default {
     color: #94a3b8;
   }
 
-  @media (max-width: 1400px) {
-    .home-todo-grid,
-    .home-todo-grid.is-full,
-    .home-kpi-grid.cols-4,
-    .home-kpi-grid.cols-6 {
+  @media (max-width: 1360px) {
+    .home-top-grid.cols-8 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .home-top-grid.cols-5 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .home-top-grid.cols-12 {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1100px) {
+    .home-top-grid.cols-8,
+    .home-top-grid.cols-5,
+    .home-top-grid.cols-12 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .home-chart-row {
       grid-template-columns: 1fr;
     }
     .home-menu-grid {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(8, minmax(0, 1fr));
     }
   }
 }

@@ -3,7 +3,7 @@
     <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside"/>
     <sidebar v-if="showSidebar" class="sidebar-container"/>
     <div :class="{hasTagsView:needTagsView,sidebarHide: !showSidebar}" class="main-container">
-      <div :class="{'fixed-header':fixedHeader}">
+      <div class="fixed-header">
         <navbar/>
         <tags-view v-if="needTagsView"/>
       </div>
@@ -40,8 +40,7 @@ export default {
       navPosition: state => state.settings.navPosition,
       sidebar: state => state.app.sidebar,
       device: state => state.app.device,
-      needTagsView: state => state.settings.tagsView,
-      fixedHeader: state => state.settings.fixedHeader
+      needTagsView: state => state.settings.tagsView
     }),
     showSidebar() {
       return this.navPosition !== 'top' && !this.sidebar.hide
@@ -112,26 +111,16 @@ export default {
   }
 
   .fixed-header {
-    position: fixed;
-    top: 0;
-    right: 0;
+    position: relative;
+    flex-shrink: 0;
     z-index: 9;
-    width: calc(100% - #{$base-sidebar-width});
-    transition: width 0.28s;
-  }
-
-  .hideSidebar .fixed-header {
-    width: calc(100% - 54px);
-  }
-
-  .sidebarHide .fixed-header {
     width: 100%;
+    background: #fff;
   }
 
-  .navTop .fixed-header {
-    width: 100%;
-  }
-
+  .hideSidebar .fixed-header,
+  .sidebarHide .fixed-header,
+  .navTop .fixed-header,
   .mobile .fixed-header {
     width: 100%;
   }

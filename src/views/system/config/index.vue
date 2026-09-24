@@ -2,64 +2,43 @@
   <div class="app-container list-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--text"
-          >
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-if="t === 'configKey'"
-              v-model="queryParams.configKey"
-              placeholder="参数键名"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.configName"
               placeholder="参数名称"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
-
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item prop="configType" class="query-item-inline">
-              <el-select v-model="queryParams.configType" placeholder="系统内置" clearable class="more-search-select-wrap">
-                <el-option
-                  v-for="dict in dict.type.sys_yes_no"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item class="query-item-inline query-item-date-range">
-              <el-date-picker
-                v-model="dateRange"
-                value-format="yyyy-MM-dd"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                class="query-date-picker"
+            <el-input
+              v-model="queryParams.configKey"
+              placeholder="参数键名"
+              clearable
+              class="more-search-input more-search-input--dynamic"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-select v-model="queryParams.configType" placeholder="系统内置" clearable class="more-search-select-wrap">
+              <el-option
+                v-for="dict in dict.type.sys_yes_no"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
               />
-            </el-form-item>
+            </el-select>
+            <el-date-picker
+              v-model="dateRange"
+              value-format="yyyy-MM-dd"
+              type="daterange"
+              range-separator="至"
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              class="query-date-picker"
+            />
+            <div class="query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -195,11 +174,6 @@ export default {
       multiple: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '参数名称', value: 'configName' },
-        { label: '参数键名', value: 'configKey' }
-      ],
       // 总条数
       total: 0,
       // 参数表格数据
@@ -247,17 +221,7 @@ export default {
       }
     };
   },
-  computed: {
-    moreSearchStorageKey() {
-      return 'spd.system.config.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
-    }
-  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
     this.loadHcCustomerOptions();
   },
@@ -272,9 +236,7 @@ export default {
     /** 查询参数列表 */
     getList() {
       this.loading = true;
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      listConfig(this.addDateRange(params, this.dateRange)).then(response => {
+      listConfig(this.addDateRange({ ...this.queryParams }, this.dateRange)).then(response => {
           this.configList = response.rows;
           this.total = response.total;
           this.loading = false;
@@ -307,39 +269,10 @@ export default {
     resetQuery() {
       this.dateRange = [];
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
+      this.queryParams.configName = undefined;
+      this.queryParams.configKey = undefined;
+      this.queryParams.configType = undefined;
       this.handleQuery();
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = { configName: 'configName', configKey: 'configKey' };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     /** 新增按钮操作 */
     handleAdd() {
@@ -395,9 +328,9 @@ export default {
     },
     /** 导出按钮操作 */
     handleExport() {
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('system/config/export', params, `config_${new Date().getTime()}.xlsx`)
+      this.download('system/config/export', {
+        ...this.queryParams
+      }, `config_${new Date().getTime()}.xlsx`)
     },
     /** 刷新缓存按钮操作 */
     handleRefreshCache() {

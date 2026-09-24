@@ -180,6 +180,36 @@ export function fetchFrequentMenus(limit) {
   })
 }
 
+/** 采购首页顶部指标 */
+export function fetchPurchaseHomeStats() {
+  return request({
+    url: '/dashboard/home/purchaseHomeStats',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+/** 库房首页顶部指标 */
+export function fetchWarehouseHomeStats() {
+  return request({
+    url: '/dashboard/home/warehouseHomeStats',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
+/** 科室首页顶部指标 */
+export function fetchDepartmentHomeStats() {
+  return request({
+    url: '/dashboard/home/departmentHomeStats',
+    method: 'get',
+    timeout: 60000,
+    headers: { hideError: true }
+  })
+}
+
 export function fetchHomeKpiTrend(days) {
   return request({
     url: '/dashboard/home/kpiTrend',
