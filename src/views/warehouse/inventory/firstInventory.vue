@@ -295,6 +295,7 @@
       :data="inventoryList"
       :row-key="getDetailRowKey"
       :row-class-name="invDetailRowClassName"
+      :empty-text="inventoryEmptyText"
       @selection-change="handleSelectionChange"
       @row-dblclick="handleDetailRowDblclick"
       :height="tableHeight"
@@ -957,6 +958,18 @@ export default {
       return this.$options.filters && this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(amt)
         : String(this.formatAmount(amt));
+    },
+    inventoryEmptyText() {
+      if (this.loading) {
+        return "加载中…";
+      }
+      if (this.queryParams.warehouseId && !this.showZeroStock) {
+        return "该仓库当前无可用库存（数量>0）；可点「零库存」看零数量明细，或到「科室库存查询」查看已出到科室的库存";
+      }
+      if (this.queryParams.warehouseId && this.showZeroStock) {
+        return "该仓库无库存明细";
+      }
+      return "暂无数据";
     },
   },
   created() {

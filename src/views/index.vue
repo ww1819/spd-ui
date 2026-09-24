@@ -252,7 +252,7 @@
                 :key="m.path"
                 type="button"
                 class="home-menu-tile"
-                :class="'tone-' + ((pIdx * FREQUENT_MENU_PAGE_SIZE + idx) % 8)"
+                :class="'tone-' + ((pIdx * FREQUENT_MENU_PAGE_SIZE + idx) % FREQUENT_MENU_PAGE_SIZE)"
                 @click="goMenu(m)"
               >
                 <span class="home-menu-tile-icon">
@@ -272,7 +272,7 @@
             :key="m.path"
             type="button"
             class="home-menu-tile"
-            :class="'tone-' + (idx % 8)"
+            :class="'tone-' + (idx % FREQUENT_MENU_PAGE_SIZE)"
             @click="goMenu(m)"
           >
             <span class="home-menu-tile-icon">
@@ -394,8 +394,8 @@ export default {
   name: "Index",
   data() {
     return {
-      homeView: "full",
-      savedView: "full",
+      homeView: "simple",
+      savedView: "simple",
       savingPref: false,
       chartsReady: false,
       deptCounts: {
@@ -459,7 +459,9 @@ export default {
         outCount: [0, 0, 0, 0, 0, 0, 0],
         returnCount: [0, 0, 0, 0, 0, 0, 0],
         applyCount: [0, 0, 0, 0, 0, 0, 0],
-        purchaseCount: [0, 0, 0, 0, 0, 0, 0]
+        purchaseCount: [0, 0, 0, 0, 0, 0, 0],
+        outAmt: [0, 0, 0, 0, 0, 0, 0],
+        inAmt: [0, 0, 0, 0, 0, 0, 0]
       },
       kpiDays: [],
       trendChartInstance: null,
@@ -485,17 +487,17 @@ export default {
     };
   },
   computed: {
-    /** 授权可用首页：未配置/空 → 默认仅完整 */
+    /** 授权可用首页：未配置/空 → 仅「默认」 */
     allowedHomeViews() {
       const raw = this.$store.getters.homePageKeys;
       if (raw == null || !Array.isArray(raw) || raw.length === 0) {
-        return ["full"];
+        return ["simple"];
       }
       const allow = raw
         .map(k => String(k).toLowerCase())
         .map(k => (k === "complete" ? "full" : k))
         .filter(k => HOME_VIEW_ALLOW.includes(k));
-      return allow.length ? allow : ["full"];
+      return allow.length ? allow : ["simple"];
     },
     viewOptions() {
       return ALL_HOME_VIEW_OPTIONS.filter(o => this.allowedHomeViews.includes(o.value));
@@ -841,7 +843,7 @@ export default {
       return "暂无常用菜单，使用功能后按频率出现在这里，也可点击右上角编辑设置";
     },
     trendChartTitle() {
-      return this.isPurchaseHome ? "近7日采购到货趋势" : "近七日耗材领用趋势";
+      return this.isPurchaseHome ? "近7日采购到货趋势" : "近七日耗材出库趋势";
     },
     pieChartTitle() {
       return this.isPurchaseHome ? "当月采购分类金额占比" : "库存结构占比";
@@ -954,15 +956,15 @@ export default {
       }
       return "simple";
     },
-    /** 当前视图不在授权范围内时回落到完整（或首个可用） */
+    /** 当前视图不在授权范围内时回落到「默认」（或首个可用） */
     ensureHomeViewAllowed() {
       const allow = this.allowedHomeViews;
       if (!allow.includes(this.homeView)) {
-        const next = allow.includes("full") ? "full" : allow[0];
-        this.homeView = next || "full";
+        const next = allow.includes("simple") ? "simple" : allow[0];
+        this.homeView = next || "simple";
       }
       if (!allow.includes(this.savedView)) {
-        this.savedView = allow.includes("full") ? "full" : (allow[0] || "full");
+        this.savedView = allow.includes("simple") ? "simple" : (allow[0] || "simple");
       }
     },
     async readUiHomeView() {
@@ -990,8 +992,8 @@ export default {
         prefApiOk = false;
       }
       const uiView = await this.readUiHomeView();
-      // 未单独授权时默认完整；有授权则优先个人偏好（须在授权范围内）
-      let view = this.allowedHomeViews.includes("full") ? "full" : (this.allowedHomeViews[0] || "full");
+      // 未单独授权时默认「默认」首页；有授权则优先个人偏好（须在授权范围内）
+      let view = this.allowedHomeViews.includes("simple") ? "simple" : (this.allowedHomeViews[0] || "simple");
       if (prefApiOk && prefView && this.allowedHomeViews.includes(prefView)) {
         view = prefView;
       } else if (uiView && this.allowedHomeViews.includes(uiView)) {
@@ -1512,6 +1514,8 @@ export default {
       this.kpiSeries.returnCount = this.parseNumList(d.returnCount);
       this.kpiSeries.applyCount = this.parseNumList(d.applyCount);
       this.kpiSeries.purchaseCount = this.parseNumList(d.purchaseCount);
+      this.kpiSeries.outAmt = this.parseNumList(d.outAmt);
+      this.kpiSeries.inAmt = this.parseNumList(d.inAmt);
       this.kpiDays = Array.isArray(d.days) ? d.days.slice() : [];
       const y = d.yesterday || {};
       this.kpiYesterday.inCount = Number(y.inCount) || 0;
@@ -1609,9 +1613,10 @@ export default {
     buildFinancePieSlices(rows, emptyLabel) {
       const list = (rows || [])
         .map((item) => {
-          const name = item.financeCategoryName || item.finance_category_name || "未分类";
-          const amt = Math.abs(parseFloat(item.totalAmt || item.total_amt || 0) || 0);
-          return { name, value: amt };
+          const name = this.pickMapVal(item, ["financeCategoryName", "finance_category_name", "financecategoryname"]) || "未分类";
+          const amtRaw = this.pickMapVal(item, ["totalAmt", "total_amt", "totalamt"]);
+          const amt = Math.abs(parseFloat(amtRaw != null ? amtRaw : 0) || 0);
+          return { name: String(name), value: amt };
         })
         .filter((item) => item.value > 0)
         .sort((a, b) => b.value - a.value);
@@ -1625,6 +1630,28 @@ export default {
         return [{ name: emptyLabel, value: 0 }];
       }
       return top;
+    },
+    pickMapVal(obj, keys) {
+      if (!obj || typeof obj !== "object" || !Array.isArray(keys)) {
+        return null;
+      }
+      for (let i = 0; i < keys.length; i++) {
+        const k = keys[i];
+        if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null && obj[k] !== "") {
+          return obj[k];
+        }
+      }
+      const lowerMap = {};
+      Object.keys(obj).forEach((k) => {
+        lowerMap[String(k).toLowerCase()] = obj[k];
+      });
+      for (let i = 0; i < keys.length; i++) {
+        const hit = lowerMap[String(keys[i]).toLowerCase()];
+        if (hit != null && hit !== "") {
+          return hit;
+        }
+      }
+      return null;
     },
     async loadOutboundProportionChart() {
       this.outChartEmptyHint = "";
@@ -1673,13 +1700,17 @@ export default {
     },
     initTrendChart() {
       const purchase = this.isPurchaseHome;
-      const series = purchase
+      const qtySeries = purchase
         ? (this.kpiSeries.inCount || this.zeroSeries(7))
         : (this.kpiSeries.outCount || this.zeroSeries(7));
-      const allZero = series.every((v) => !Number(v));
+      const amtSeries = purchase
+        ? (this.kpiSeries.inAmt || this.zeroSeries(qtySeries.length))
+        : (this.kpiSeries.outAmt || this.zeroSeries(qtySeries.length));
+      const qtyAllZero = qtySeries.every((v) => !Number(v));
+      const amtAllZero = amtSeries.every((v) => !Number(v));
       this.trendEmptyHint = "";
-      if (allZero) {
-        this.trendEmptyHint = purchase ? "近7日暂无到货入库" : "今日暂无业务流动";
+      if (qtyAllZero && (purchase || amtAllZero)) {
+        this.trendEmptyHint = purchase ? "近7日暂无到货入库" : "近7日暂无出库";
         this.disposeChart("trend");
         return;
       }
@@ -1689,42 +1720,107 @@ export default {
         return;
       }
       const labels = this.trendLabels();
-      const seriesName = purchase ? "到货数量" : "消耗数量";
-      const applySeries = this.kpiSeries.applyCount || this.zeroSeries(series.length);
+      const qtyName = purchase ? "到货数量" : "出库数量";
+      const amtName = purchase ? "到货金额" : "出库金额";
+      const applySeries = this.kpiSeries.applyCount || this.zeroSeries(qtySeries.length);
       const option = this.isFull
         ? {
             color: ["#3b82f6", "#94a3b8"],
             tooltip: { trigger: "axis" },
-            legend: { data: [seriesName, "申领数量"], top: 0, right: 8, textStyle: { color: "#64748b", fontSize: 11 } },
+            legend: { data: [qtyName, "申领数量"], top: 0, right: 8, textStyle: { color: "#64748b", fontSize: 11 } },
             grid: { left: 36, right: 16, top: 36, bottom: 28 },
             xAxis: { type: "category", data: labels, axisTick: { show: false }, axisLine: { lineStyle: { color: "#e2e8f0" } }, axisLabel: { color: "#94a3b8" } },
             yAxis: { type: "value", splitLine: { lineStyle: { color: "#f1f5f9" } }, axisLabel: { color: "#94a3b8" } },
             series: [
-              { name: seriesName, type: "bar", barWidth: 18, itemStyle: { color: "#3b82f6", borderRadius: [6, 6, 0, 0] }, data: series },
+              { name: qtyName, type: "bar", barWidth: 18, itemStyle: { color: "#3b82f6", borderRadius: [6, 6, 0, 0] }, data: qtySeries },
               { name: "申领数量", type: "line", smooth: true, symbol: "circle", symbolSize: 6, lineStyle: { width: 2, color: "#94a3b8" }, data: applySeries }
             ]
           }
         : {
-            color: ["#2563eb"],
-            tooltip: { trigger: "axis" },
-            grid: { left: 36, right: 16, top: 24, bottom: 28 },
-            xAxis: { type: "category", data: labels, boundaryGap: false, axisTick: { show: false }, axisLine: { lineStyle: { color: "#e2e8f0" } }, axisLabel: { color: "#94a3b8" } },
-            yAxis: { type: "value", splitLine: { lineStyle: { color: "#f1f5f9" } }, axisLabel: { color: "#94a3b8" } },
+            color: ["#2563eb", "#ea580c"],
+            tooltip: {
+              trigger: "axis",
+              formatter: (params) => {
+                const list = Array.isArray(params) ? params : [params];
+                if (!list.length) {
+                  return "";
+                }
+                let html = `${list[0].axisValue}<br/>`;
+                list.forEach((p) => {
+                  const val = Number(p.value) || 0;
+                  const text = p.seriesName && p.seriesName.indexOf("金额") >= 0
+                    ? ("¥" + this.formatAmount(val))
+                    : this.formatStatQty(val);
+                  html += `${p.marker}${p.seriesName} ${text}<br/>`;
+                });
+                return html;
+              }
+            },
+            legend: {
+              data: [qtyName, amtName],
+              top: 0,
+              left: "center",
+              itemGap: 20,
+              textStyle: { color: "#64748b", fontSize: 11 }
+            },
+            grid: { left: 52, right: 56, top: 40, bottom: 28 },
+            xAxis: {
+              type: "category",
+              data: labels,
+              boundaryGap: false,
+              axisTick: { show: false },
+              axisLine: { lineStyle: { color: "#e2e8f0" } },
+              axisLabel: { color: "#94a3b8" }
+            },
+            yAxis: [
+              {
+                type: "value",
+                splitLine: { lineStyle: { color: "#f1f5f9" } },
+                axisLabel: { color: "#94a3b8" }
+              },
+              {
+                type: "value",
+                splitLine: { show: false },
+                axisLabel: {
+                  color: "#94a3b8",
+                  formatter: (v) => {
+                    const n = Number(v) || 0;
+                    if (Math.abs(n) >= 10000) {
+                      return (n / 10000).toFixed(1) + "万";
+                    }
+                    return String(n);
+                  }
+                }
+              }
+            ],
             series: [
               {
-                name: seriesName,
+                name: qtyName,
                 type: "line",
                 smooth: true,
                 symbol: "circle",
                 symbolSize: 8,
+                yAxisIndex: 0,
                 lineStyle: { width: 3, color: "#2563eb" },
+                itemStyle: { color: "#2563eb" },
                 areaStyle: {
                   color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: "rgba(37,99,235,0.28)" },
+                    { offset: 0, color: "rgba(37,99,235,0.22)" },
                     { offset: 1, color: "rgba(37,99,235,0.02)" }
                   ])
                 },
-                data: series
+                data: qtySeries
+              },
+              {
+                name: amtName,
+                type: "line",
+                smooth: true,
+                symbol: "circle",
+                symbolSize: 7,
+                yAxisIndex: 1,
+                lineStyle: { width: 3, color: "#ea580c" },
+                itemStyle: { color: "#ea580c" },
+                data: amtSeries
               }
             ]
           };
@@ -1733,14 +1829,23 @@ export default {
           this.trendChartInstance = echarts.init(el);
         }
         this.trendChartInstance.setOption(option, true);
-        this.$nextTick(() => this.trendChartInstance && this.trendChartInstance.resize());
+        this.$nextTick(() => {
+          if (this.trendChartInstance) {
+            this.trendChartInstance.resize();
+          }
+        });
+        setTimeout(() => {
+          if (this.trendChartInstance) {
+            this.trendChartInstance.resize();
+          }
+        }, 80);
         if (!this.trendResizeHandler) {
           this.trendResizeHandler = () => this.trendChartInstance && this.trendChartInstance.resize();
           window.addEventListener("resize", this.trendResizeHandler);
         }
       } catch (e) {
         console.error("initTrendChart", e);
-        this.trendEmptyHint = purchase ? "近7日暂无到货入库" : "今日暂无业务流动";
+        this.trendEmptyHint = purchase ? "近7日暂无到货入库" : "近7日暂无出库";
       }
     },
     initPieChart() {
@@ -1797,7 +1902,16 @@ export default {
           this.pieChartInstance = echarts.init(el);
         }
         this.pieChartInstance.setOption(option, true);
-        this.$nextTick(() => this.pieChartInstance && this.pieChartInstance.resize());
+        this.$nextTick(() => {
+          if (this.pieChartInstance) {
+            this.pieChartInstance.resize();
+          }
+        });
+        setTimeout(() => {
+          if (this.pieChartInstance) {
+            this.pieChartInstance.resize();
+          }
+        }, 80);
         if (!this.pieResizeHandler) {
           this.pieResizeHandler = () => this.pieChartInstance && this.pieChartInstance.resize();
           window.addEventListener("resize", this.pieResizeHandler);
@@ -2368,6 +2482,38 @@ export default {
   .home-menu-tile.tone-7 .home-menu-tile-icon {
     background: linear-gradient(145deg, #fde047, #ea580c);
     box-shadow: 0 4px 10px rgba(234, 88, 12, 0.2);
+  }
+  .home-menu-tile.tone-8 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #c084fc, #7c3aed);
+    box-shadow: 0 4px 10px rgba(124, 58, 237, 0.2);
+  }
+  .home-menu-tile.tone-9 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #818cf8, #4338ca);
+    box-shadow: 0 4px 10px rgba(67, 56, 202, 0.2);
+  }
+  .home-menu-tile.tone-10 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #2dd4bf, #0f766e);
+    box-shadow: 0 4px 10px rgba(15, 118, 110, 0.2);
+  }
+  .home-menu-tile.tone-11 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #fbbf24, #b45309);
+    box-shadow: 0 4px 10px rgba(180, 83, 9, 0.2);
+  }
+  .home-menu-tile.tone-12 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #e879f9, #a21caf);
+    box-shadow: 0 4px 10px rgba(162, 28, 175, 0.2);
+  }
+  .home-menu-tile.tone-13 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #94a3b8, #334155);
+    box-shadow: 0 4px 10px rgba(51, 65, 85, 0.22);
+  }
+  .home-menu-tile.tone-14 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #34d399, #047857);
+    box-shadow: 0 4px 10px rgba(4, 120, 87, 0.2);
+  }
+  .home-menu-tile.tone-15 .home-menu-tile-icon {
+    background: linear-gradient(145deg, #fdba74, #c2410c);
+    box-shadow: 0 4px 10px rgba(194, 65, 12, 0.2);
   }
 
   .home-menu-tile-title {

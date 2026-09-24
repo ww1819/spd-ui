@@ -18,10 +18,6 @@
               class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </el-col>
-        </el-row>
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
             <el-select v-model="queryParams.status" placeholder="工作组状态" clearable class="more-search-select-wrap apply-query-field">
               <el-option
                 v-for="dict in dict.type.sys_normal_disable"
@@ -31,8 +27,8 @@
               />
             </el-select>
             <div class="query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </el-col>
         </el-row>
@@ -41,14 +37,15 @@
 
     <el-row :gutter="0" class="mb8 list-toolbar">
       <div class="list-toolbar-left">
-        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:post:add']">新增</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['system:post:edit']">修改</el-button>
-        <el-button size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:post:remove']">删除</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['system:post:export']">导出</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncWarehouse" v-hasPermi="['system:post:edit', 'system:post:sync']">同步仓库</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncDepartment" v-hasPermi="['system:post:edit', 'system:post:sync']">同步科室</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncMenu" v-hasPermi="['system:post:edit', 'system:post:sync']">同步菜单</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleSyncMessageReminder" v-hasPermi="['system:post:edit', 'system:post:sync']">同步消息提醒</el-button>
+        <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:post:add']">新增</el-button>
+        <el-button type="success" icon="el-icon-edit" size="small" class="spd-btn spd-btn--success" :disabled="single" @click="handleUpdate" v-hasPermi="['system:post:edit']">修改</el-button>
+        <el-button type="danger" icon="el-icon-delete" size="small" class="spd-btn spd-btn--danger-solid" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:post:remove']">删除</el-button>
+        <el-button type="warning" icon="el-icon-download" size="small" class="spd-btn spd-btn--warning" @click="handleExport" v-hasPermi="['system:post:export']">导出</el-button>
+        <el-button type="info" icon="el-icon-office-building" size="small" class="spd-btn spd-btn--info" :disabled="multiple" @click="handleSyncWarehouse" v-hasPermi="['system:post:edit', 'system:post:sync']">同步仓库</el-button>
+        <el-button type="info" icon="el-icon-s-home" size="small" class="spd-btn spd-btn--info" :disabled="multiple" @click="handleSyncDepartment" v-hasPermi="['system:post:edit', 'system:post:sync']">同步科室</el-button>
+        <el-button type="info" icon="el-icon-menu" size="small" class="spd-btn spd-btn--info" :disabled="multiple" @click="handleSyncMenu" v-hasPermi="['system:post:edit', 'system:post:sync']">同步菜单</el-button>
+        <el-button type="info" icon="el-icon-bell" size="small" class="spd-btn spd-btn--info" :disabled="multiple" @click="handleSyncMessageReminder" v-hasPermi="['system:post:edit', 'system:post:sync']">同步消息提醒</el-button>
+        <el-button type="info" icon="el-icon-monitor" size="small" class="spd-btn spd-btn--info" :disabled="multiple" @click="handleSyncHomePage" v-hasPermi="['system:post:edit', 'system:post:sync']">同步首页设置</el-button>
       </div>
       <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
@@ -234,6 +231,25 @@
           </div>
         </div>
       </el-tab-pane>
+      <el-tab-pane label="首页设置">
+        <div class="user-auth-pane">
+          <p class="auth-home-page-tip">勾选工作组可切换的首页；均未勾选时默认显示「默认」首页。保存后可通过「同步首页设置」下发到组内账号。</p>
+          <div style="margin-bottom: 8px;">
+            <el-button size="mini" @click="handleAuthHomePageAll(true)">全选</el-button>
+            <el-button size="mini" @click="handleAuthHomePageAll(false)">取消</el-button>
+          </div>
+          <div class="auth-checkbox-container">
+            <el-checkbox-group v-model="authForm.homePageKeys" class="auth-checkbox-group">
+              <el-checkbox
+                v-for="item in homePageOptions"
+                :key="item.value"
+                :label="item.value"
+                class="auth-checkbox-item"
+              >{{ item.label }}</el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+      </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
       <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth">保 存</el-button>
@@ -244,7 +260,7 @@
 </template>
 
 <script>
-import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost, syncPostMenuToUsers, getPostMenuSyncStatus, syncPostDepartmentToUsers, getPostDepartmentSyncStatus, syncPostWarehouseToUsers, getPostWarehouseSyncStatus, syncPostMessageReminderToUsers, getPostMessageReminderSyncStatus } from "@/api/system/post";
+import { listPost, getPost, delPost, addPost, updatePost, roleMenuTreeselectPost, syncPostMenuToUsers, getPostMenuSyncStatus, syncPostDepartmentToUsers, getPostDepartmentSyncStatus, syncPostWarehouseToUsers, getPostWarehouseSyncStatus, syncPostMessageReminderToUsers, getPostMessageReminderSyncStatus, syncPostHomePageToUsers, getPostHomePageSyncStatus } from "@/api/system/post";
 import { deptTreeSelect } from "@/api/system/user";
 import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
@@ -295,12 +311,20 @@ export default {
         departmentIds: [],
         warehouseIds: [],
         messageReminderKeys: [],
-        messageReminderPopupKeys: []
+        messageReminderPopupKeys: [],
+        homePageKeys: []
       },
       messageReminderOptions: [
         { value: 'warehouse', label: '仓库预警' },
         { value: 'department', label: '科室预警' },
         { value: 'data', label: '数据异常预警' }
+      ],
+      homePageOptions: [
+        { label: '默认', value: 'simple' },
+        { label: '完整', value: 'full' },
+        { label: '采购', value: 'purchase' },
+        { label: '库房', value: 'warehouse' },
+        { label: '科室', value: 'department' }
       ],
       // 保存的工作组权限（用于同步）
       savedPostPermissions: {},
@@ -570,6 +594,29 @@ export default {
         this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
       });
     },
+    /** 同步首页设置：支持多选工作组 */
+    handleSyncHomePage() {
+      const postIds = this.getSelectedPostIdsOrWarn();
+      if (!postIds) return;
+      Promise.all(postIds.map(pid => getPost(pid))).then(responses => {
+        for (let i = 0; i < responses.length; i++) {
+          const raw = responses[i].data.homePageKeys;
+          if (raw == null) {
+            const name = responses[i].data.postName || postIds[i];
+            this.$modal.msgError("工作组「" + name + "」尚未配置首页设置，请先在授权中配置并保存");
+            return;
+          }
+        }
+        this.chooseSyncMode("homePage").then((syncMode) => {
+          return Promise.all(postIds.map(pid => syncPostHomePageToUsers(pid, syncMode))).then(() => syncMode);
+        }).then((syncMode) => {
+          this.notifySyncSubmitted("homePage", syncMode);
+          this.startSyncMenuPolling(postIds, "homePage", syncMode);
+        }).catch(() => {});
+      }).catch(error => {
+        this.$modal.msgError("获取工作组信息失败：" + (error.msg || error.message || '未知错误'));
+      });
+    },
     getSelectedPostIdsOrWarn() {
       if (!this.ids || this.ids.length === 0) {
         this.$modal.msgWarning("请先勾选至少一个工作组");
@@ -603,7 +650,8 @@ export default {
         menu: "菜单权限",
         department: "科室权限",
         warehouse: "仓库权限",
-        messageReminder: "消息提醒权限"
+        messageReminder: "消息提醒权限",
+        homePage: "首页设置"
       };
       return labelMap[type] || "权限";
     },
@@ -651,7 +699,8 @@ export default {
         menu: getPostMenuSyncStatus,
         department: getPostDepartmentSyncStatus,
         warehouse: getPostWarehouseSyncStatus,
-        messageReminder: getPostMessageReminderSyncStatus
+        messageReminder: getPostMessageReminderSyncStatus,
+        homePage: getPostHomePageSyncStatus
       };
       const statusApi = statusApiMap[syncType] || getPostMenuSyncStatus;
       const successText = this.getSyncTypeLabel(syncType);
@@ -749,6 +798,8 @@ export default {
         const warehouseIds = post.warehouseIds || [];
         const messageReminderKeys = this.parseMessageReminderKeys(post.messageReminderKeys);
         const messageReminderPopupKeys = this.parseMessageReminderPopupKeys(post.messageReminderPopupKeys);
+        const parsedHomePageKeys = this.parseHomePageKeys(post.homePageKeys);
+        const homePageKeys = parsedHomePageKeys.length ? parsedHomePageKeys : ['simple'];
 
         this.authReminderSyncing = true;
         this.authForm = {
@@ -757,7 +808,8 @@ export default {
           departmentIds: departmentIds,
           warehouseIds: warehouseIds,
           messageReminderKeys,
-          messageReminderPopupKeys
+          messageReminderPopupKeys,
+          homePageKeys
         };
         this.$nextTick(() => {
           this.authReminderSyncing = false;
@@ -912,6 +964,12 @@ export default {
         this.authForm.messageReminderPopupKeys = [];
       }
     },
+    /** 授权首页设置全选/取消 */
+    handleAuthHomePageAll(val) {
+      this.authForm.homePageKeys = val
+        ? this.homePageOptions.map(item => item.value)
+        : [];
+    },
     /** 解析工作组消息提醒 keys（null=未配置默认全选；空串=明确无权限） */
     parseMessageReminderKeys(raw) {
       const all = this.messageReminderOptions.map(o => o.value);
@@ -941,6 +999,25 @@ export default {
       const allow = new Set(all);
       return text.split(',').map(s => s.trim().toLowerCase()).filter(k => allow.has(k));
     },
+    /** 解析首页设置 keys */
+    parseHomePageKeys(raw) {
+      const all = this.homePageOptions.map(o => o.value);
+      if (Array.isArray(raw)) {
+        return raw.map(s => String(s).trim().toLowerCase())
+          .map(k => (k === 'complete' ? 'full' : k))
+          .filter(k => all.includes(k));
+      }
+      if (raw == null) {
+        return [];
+      }
+      const text = String(raw).trim();
+      if (!text) {
+        return [];
+      }
+      return text.split(',').map(s => s.trim().toLowerCase())
+        .map(k => (k === 'complete' ? 'full' : k))
+        .filter(k => all.includes(k));
+    },
     /** 授权提交 */
     submitAuth() {
       const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
@@ -965,6 +1042,9 @@ export default {
         .filter(k => allowReminder.has(k) && messageReminderKeys.includes(k));
       const messageReminderKeysCsv = messageReminderKeys.join(',');
       const messageReminderPopupKeysCsv = messageReminderPopupKeys.join(',');
+      const allowHome = new Set(this.homePageOptions.map(o => o.value));
+      const homePageKeys = (this.authForm.homePageKeys || []).filter(k => allowHome.has(k));
+      const homePageKeysCsv = homePageKeys.join(',');
       
       // 保存工作组权限到本地状态（用于后续同步）
       this.savedPostPermissions[this.authForm.postId] = {
@@ -972,7 +1052,8 @@ export default {
         departmentIds: departmentIds,
         warehouseIds: warehouseIds,
         messageReminderKeys,
-        messageReminderPopupKeys
+        messageReminderPopupKeys,
+        homePageKeys
       };
       
       // 先获取完整的工作组信息，然后更新权限字段
@@ -990,7 +1071,8 @@ export default {
           departmentIds: departmentIds,  // 科室权限
           warehouseIds: warehouseIds,       // 仓库权限
           messageReminderKeys: messageReminderKeysCsv,
-          messageReminderPopupKeys: messageReminderPopupKeysCsv
+          messageReminderPopupKeys: messageReminderPopupKeysCsv,
+          homePageKeys: homePageKeysCsv
         };
         
         // 保存工作组授权
@@ -1008,12 +1090,14 @@ export default {
         const post = response.data;
         console.log('重新获取工作组信息 - post:', post);
         // 更新本地保存的权限和授权表单
-        if (post.menuIds || post.departmentIds || post.warehouseIds || post.messageReminderKeys != null || post.messageReminderPopupKeys != null) {
+        if (post.menuIds || post.departmentIds || post.warehouseIds || post.messageReminderKeys != null || post.messageReminderPopupKeys != null || post.homePageKeys != null) {
           this.authForm.menuIds = post.menuIds || [];
           this.authForm.departmentIds = post.departmentIds || [];
           this.authForm.warehouseIds = post.warehouseIds || [];
           this.authForm.messageReminderKeys = this.parseMessageReminderKeys(post.messageReminderKeys);
           this.authForm.messageReminderPopupKeys = this.parseMessageReminderPopupKeys(post.messageReminderPopupKeys);
+          const parsedHome = this.parseHomePageKeys(post.homePageKeys);
+          this.authForm.homePageKeys = parsedHome.length ? parsedHome : ['simple'];
           const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
           const filtered = filterMenuIdsByAllowed(post.menuIds || [], allowed);
           this.authExistingMenuIds = filtered.slice();
@@ -1038,6 +1122,10 @@ export default {
             this.authForm.messageReminderPopupKeys = Array.isArray(savedPermissions.messageReminderPopupKeys)
               ? savedPermissions.messageReminderPopupKeys
               : this.parseMessageReminderPopupKeys(savedPermissions.messageReminderPopupKeys);
+            const savedHome = Array.isArray(savedPermissions.homePageKeys)
+              ? savedPermissions.homePageKeys
+              : this.parseHomePageKeys(savedPermissions.homePageKeys);
+            this.authForm.homePageKeys = savedHome.length ? savedHome : ['simple'];
             const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
             const filtered = filterMenuIdsByAllowed(savedPermissions.menuIds || [], allowed);
             this.authExistingMenuIds = filtered.slice();
@@ -1066,18 +1154,45 @@ export default {
   margin-top: -20px;
 }
 
-.list-query-panel .query-row-first-inner,
-.list-query-panel .query-row-second-inner {
+.list-query-panel .query-row-first-inner {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
-.list-query-panel .query-row-second {
-  margin-top: 8px;
-  margin-bottom: 0;
+.list-query-panel .apply-query-field,
+.list-query-panel .apply-query-input {
+  width: 170px;
+  flex-shrink: 0;
 }
+
+.list-query-panel .more-search-select-wrap.apply-query-field {
+  width: 170px;
+}
+
+.list-query-panel .more-search-select-wrap.apply-query-field >>> .el-input {
+  width: 100%;
+}
+
+.list-query-panel .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.list-query-panel .query-actions .el-button + .el-button {
+  margin-left: 0;
+}
+.auth-home-page-tip {
+  margin: 0 0 10px;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 /* 授权树：客户未开通的目录节点不显示勾选框 */
 .auth-menu-tree ::v-deep .el-tree-node:has(.menu-folder-only) > .el-tree-node__content > .el-checkbox {
   display: none;

@@ -127,6 +127,15 @@ $spd-control-h: 32px;
   color: #fff !important;
 }
 
+.spd-btn--warning.el-button--warning.is-disabled,
+.spd-btn--warning.el-button--warning.is-disabled:hover,
+.app-container .spd-btn--warning.el-button--warning.is-disabled,
+.app-container .spd-btn--warning.el-button--warning.is-disabled:hover {
+  background: #fdba74 !important;
+  border-color: #fdba74 !important;
+  color: #fff !important;
+}
+
 .spd-btn--danger-solid.el-button--danger,
 .app-container .spd-btn--danger-solid.el-button--danger {
   background: #dc2626 !important;
@@ -165,6 +174,15 @@ $spd-control-h: 32px;
 .app-container .spd-btn--info.el-button--info:focus {
   background: #475569 !important;
   border-color: #475569 !important;
+  color: #fff !important;
+}
+
+.spd-btn--info.el-button--info.is-disabled,
+.spd-btn--info.el-button--info.is-disabled:hover,
+.app-container .spd-btn--info.el-button--info.is-disabled,
+.app-container .spd-btn--info.el-button--info.is-disabled:hover {
+  background: #94a3b8 !important;
+  border-color: #94a3b8 !important;
   color: #fff !important;
 }
 

@@ -135,3 +135,20 @@ export function getPostMessageReminderSyncStatus(postId) {
     method: 'get'
   })
 }
+
+/** 工作组首页设置同步（后台异步） */
+export function syncPostHomePageToUsers(postId, syncMode) {
+  return request({
+    url: '/system/post/sync/homePage/' + postId,
+    method: 'post',
+    params: { syncMode }
+  })
+}
+
+/** 查询工作组首页设置同步状态 */
+export function getPostHomePageSyncStatus(postId) {
+  return request({
+    url: '/system/post/sync/homePage/status/' + postId,
+    method: 'get'
+  })
+}

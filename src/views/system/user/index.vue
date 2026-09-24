@@ -509,7 +509,7 @@
       </el-tab-pane>
       <el-tab-pane label="首页设置">
         <div class="user-auth-pane">
-          <p class="auth-home-page-tip">勾选用户可切换的首页；均未勾选时默认显示「完整」首页。</p>
+          <p class="auth-home-page-tip">勾选用户可切换的首页；均未勾选时默认显示「默认」首页。</p>
           <div class="user-auth-pane-toolbar">
             <el-button size="mini" @click="handleAuthHomePageAll(true)">全选</el-button>
             <el-button size="mini" @click="handleAuthHomePageAll(false)">取消</el-button>
@@ -1309,10 +1309,11 @@ export default {
           const rawHomePageKeys = Object.prototype.hasOwnProperty.call(response, 'homePageKeys')
             ? response.homePageKeys
             : (response.data && response.data.homePageKeys);
-          // null/undefined：从未配置→授权页为空（未勾选默认完整）；[]：未单独授权
-          const homePageKeys = rawHomePageKeys == null
+          // null/空：从未配置或未单独授权 → 授权页勾选并点亮「默认」（与首页回落一致）
+          const parsedHomePageKeys = rawHomePageKeys == null
             ? []
             : this.parseHomePageKeys(rawHomePageKeys);
+          const homePageKeys = parsedHomePageKeys.length ? parsedHomePageKeys : ['simple'];
           this.authReminderSyncing = true;
           this.authForm = {
             userId: response.data.userId,
