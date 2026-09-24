@@ -699,12 +699,74 @@ export default {
     },
     allTodos() {
       return [
-        { key: "unreceived", label: "待收货确认", hint: "待处理单据", icon: "el-icon-bottom", showCount: false, count: this.deptCounts.unreceivedBillCount, open: { category: "department", subTab: "unreceivedConfirm" } },
-        { key: "expiry", label: "近效期预警", hint: "临近效期耗材", icon: "el-icon-time", showCount: false, count: this.deptCounts.nearExpiryLineCount, open: { category: "department", subTab: "expiry" } },
-        { key: "alert", label: "库存预警", hint: "偏离安全库存", icon: "el-icon-warning-outline", showCount: false, count: this.deptCounts.inventoryAlertLineCount, open: { category: "department", subTab: "inventory" } },
-        { key: "consume", label: "待消耗核对", hint: "待核对记录", icon: "el-icon-finished", showCount: true, count: this.deptCounts.consumeLineCount, open: { category: "department", subTab: "consume" } },
-        { key: "apply", label: "待审申领", hint: "待审核申领单", icon: "el-icon-s-order", showCount: true, count: this.warehouseCounts.pendingApplyBillCount, open: { category: "warehouse", subTab: "apply" } },
-        { key: "purchase", label: "待审申购", hint: "待审核申购单", icon: "el-icon-s-goods", showCount: true, count: this.warehouseCounts.pendingPurchaseBillCount, open: { category: "warehouse", subTab: "purchase" } }
+        {
+          key: "unreceived",
+          label: "待收货确认",
+          hint: "待处理单据",
+          icon: "el-icon-bottom",
+          showCount: false,
+          count: this.deptCounts.unreceivedBillCount,
+          pathKeys: ["receiptConfirm"],
+          titleKeys: ["收货确认"],
+          fallbackPath: "/department/receiptConfirm/index"
+        },
+        {
+          key: "expiry",
+          label: "近效期预警",
+          hint: "临近效期耗材",
+          icon: "el-icon-time",
+          showCount: false,
+          count: this.deptCounts.nearExpiryLineCount,
+          pathKeys: ["depInventory"],
+          titleKeys: ["科室库存查询"],
+          query: { tab: "nearExpiry" },
+          fallbackPath: "/department/depInventory/index"
+        },
+        {
+          key: "alert",
+          label: "库存预警",
+          hint: "偏离安全库存",
+          icon: "el-icon-warning-outline",
+          showCount: false,
+          count: this.deptCounts.inventoryAlertLineCount,
+          pathKeys: ["depInventory"],
+          titleKeys: ["科室库存查询"],
+          query: { tab: "alert" },
+          fallbackPath: "/department/depInventory/index"
+        },
+        {
+          key: "consume",
+          label: "待消耗核对",
+          hint: "待核对记录",
+          icon: "el-icon-finished",
+          showCount: true,
+          count: this.deptCounts.consumeLineCount,
+          pathKeys: ["patientCharge"],
+          titleKeys: ["患者收费查询"],
+          fallbackPath: "/department/patientCharge/index"
+        },
+        {
+          key: "apply",
+          label: "待审申领",
+          hint: "待审核申领单",
+          icon: "el-icon-s-order",
+          showCount: true,
+          count: this.warehouseCounts.pendingApplyBillCount,
+          pathKeys: ["dApplyAudit"],
+          titleKeys: ["科室申领审核"],
+          fallbackPath: "/department/dApplyAudit/index"
+        },
+        {
+          key: "purchase",
+          label: "待审申购",
+          hint: "待审核申购单",
+          icon: "el-icon-s-goods",
+          showCount: true,
+          count: this.warehouseCounts.pendingPurchaseBillCount,
+          pathKeys: ["dPurchaseAggAudit", "dPurchaseAudit", "purchaseAudit"],
+          titleKeys: ["科室请购审核", "科室申购审核"],
+          fallbackPath: "/department/dPurchaseAggAudit/index"
+        }
       ];
     },
     visibleTodos() {
@@ -1329,7 +1391,23 @@ export default {
       }
     },
     openTodo(todo) {
-      if (!todo || !todo.open) {
+      if (!todo) {
+        return;
+      }
+      if (todo.pathKeys || todo.titleKeys || todo.fallbackPath) {
+        const path = this.findMenuPathByKeys(todo.pathKeys, todo.titleKeys) || todo.fallbackPath || "";
+        if (!path) {
+          this.$message.warning("未找到对应菜单权限，请联系管理员授权");
+          return;
+        }
+        if (todo.query) {
+          this.$router.push({ path, query: todo.query }).catch(() => {});
+          return;
+        }
+        this.$router.push(path).catch(() => {});
+        return;
+      }
+      if (!todo.open) {
         return;
       }
       this.$store.dispatch("app/openWarehouseReminder", todo.open);

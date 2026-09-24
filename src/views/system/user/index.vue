@@ -59,8 +59,8 @@
                   />
                 </div>
                 <div class="query-actions">
-                  <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-                  <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+                  <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+                  <el-button icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
                 </div>
               </el-col>
             </el-row>
@@ -106,14 +106,14 @@
         <el-row :gutter="0" class="mb8 list-toolbar">
           <div class="list-toolbar-left">
             <el-button v-if="!isZqTcmTenant" type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:user:add']">新增</el-button>
-            <el-button type="success" icon="el-icon-edit" size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
-            <el-button type="primary" icon="el-icon-s-custom" size="small" class="spd-btn spd-btn--secondary" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
-            <el-button v-if="isTenantSuper" type="warning" icon="el-icon-key" size="small" class="spd-btn spd-btn--secondary" @click="openBatchPassword">批量修改密码</el-button>
-            <el-button type="danger" icon="el-icon-delete" size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
-            <el-button type="primary" icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
+            <el-button type="success" icon="el-icon-edit" size="small" class="spd-btn spd-btn--success" :disabled="single" @click="handleUpdate" v-hasPermi="['system:user:edit']">修改</el-button>
+            <el-button type="primary" icon="el-icon-s-custom" size="small" class="spd-btn spd-btn--primary" @click="openBatchWorkgroup" v-hasPermi="['system:user:edit']">批量设置工作组</el-button>
+            <el-button v-if="isTenantSuper" type="warning" icon="el-icon-key" size="small" class="spd-btn spd-btn--warning" @click="openBatchPassword">批量修改密码</el-button>
+            <el-button type="danger" icon="el-icon-delete" size="small" class="spd-btn spd-btn--danger-solid" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:user:remove']">删除</el-button>
+            <el-button type="info" icon="el-icon-refresh" size="small" class="spd-btn spd-btn--info" :disabled="multiple" @click="handleUpdateReferred" v-hasPermi="['system:user:updateReferred']">更新简码</el-button>
             <msun-his-sync-button sync-type="identities" label="HIS人员同步" :refresh="getList" inline />
             <el-dropdown trigger="click" @command="handleMoreCommand">
-              <el-button size="small" class="spd-btn spd-btn--secondary">
+              <el-button type="info" size="small" class="spd-btn spd-btn--info">
                 更多功能<i class="el-icon-arrow-down el-icon--right"></i>
               </el-button>
               <el-dropdown-menu slot="dropdown">
@@ -390,120 +390,146 @@
       </span>
     </el-dialog>
 
-    <!-- 授权弹窗 -->
-    <el-dialog :title="authTitle || '授权'" :visible.sync="authOpen" width="700px" append-to-body>
-    <el-tabs type="card">
+    <!-- 授权弹窗：固定尺寸、可拖动、无灰色遮罩；各 Tab 内容区高度一致 -->
+    <el-dialog
+      v-dialogDrag
+      :title="authTitle || '授权'"
+      :visible.sync="authOpen"
+      width="900px"
+      top="8vh"
+      custom-class="user-auth-dialog"
+      append-to-body
+      :modal="false"
+      :close-on-click-modal="false"
+    >
+    <el-tabs type="card" class="user-auth-tabs">
       <el-tab-pane label="菜单权限">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
-          <el-checkbox v-model="authMenuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
+        <div class="user-auth-pane">
+          <div class="user-auth-pane-toolbar">
+            <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
+            <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
+            <el-checkbox v-model="authMenuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
+          </div>
+          <div class="user-auth-pane-body">
+            <menu-auth-dual-tree
+              ref="menuAuthDualTree"
+              v-model="authForm.menuIds"
+              :data="menuOptions"
+              node-key="id"
+              :tree-props="defaultProps"
+              :existing-menu-ids="authExistingMenuIds"
+              :parent-child-linked="authMenuParentChildLinked"
+              max-height="360px"
+            />
+          </div>
         </div>
-        <menu-auth-dual-tree
-          ref="menuAuthDualTree"
-          v-model="authForm.menuIds"
-          :data="menuOptions"
-          node-key="id"
-          :tree-props="defaultProps"
-          :existing-menu-ids="authExistingMenuIds"
-          :parent-child-linked="authMenuParentChildLinked"
-          max-height="300px"
-        />
       </el-tab-pane>
       <el-tab-pane label="科室权限">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthDepartmentAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthDepartmentAll(false)">取消</el-button>
-          <el-input
-            v-model="departmentKeyword"
-            size="mini"
-            clearable
-            placeholder="搜索科室"
-            style="width: 180px; margin-left: 10px;"
-          />
-        </div>
-        <div class="auth-checkbox-container">
-          <el-checkbox-group v-model="authForm.departmentIds" class="auth-checkbox-group">
-            <el-checkbox v-for="item in filteredDepartmentOptions"
-                         :key="item.id"
-                         :label="item.id"
-                         class="auth-checkbox-item">{{item.name}}
-            </el-checkbox>
-          </el-checkbox-group>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="仓库权限">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthWarehouseAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthWarehouseAll(false)">取消</el-button>
-        </div>
-        <div style="max-height: 300px; overflow-y: auto;">
-          <el-checkbox-group v-model="authForm.warehouseIds">
-            <el-checkbox v-for="item in userWarehouseOptions"
-                         :key="item.id"
-                         :label="item.id">{{item.name}}
-            </el-checkbox>
-          </el-checkbox-group>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="单位权限">
-        <div style="max-height: 300px; overflow-y: auto;">
-          <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="待办事项">
-        <div style="max-height: 300px; overflow-y: auto;">
-          <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="消息提醒">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthMessageReminderAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthMessageReminderAll(false)">取消</el-button>
-        </div>
-        <div class="auth-message-reminder-list">
-          <div class="auth-message-reminder-grid">
-            <el-checkbox-group v-model="authForm.messageReminderKeys" class="auth-message-reminder-col">
-              <el-checkbox
-                v-for="item in messageReminderOptions"
-                :key="item.value"
-                :label="item.value"
-                class="auth-message-reminder-cell"
-              >{{ item.label }}</el-checkbox>
-            </el-checkbox-group>
-            <el-checkbox-group v-model="authForm.messageReminderPopupKeys" class="auth-message-reminder-col">
-              <el-checkbox
-                v-for="item in messageReminderOptions"
-                :key="'popup-' + item.value"
-                :label="item.value"
-                class="auth-message-reminder-cell auth-message-reminder-popup"
-                :disabled="!(authForm.messageReminderKeys || []).includes(item.value)"
-              >登录弹窗</el-checkbox>
+        <div class="user-auth-pane">
+          <div class="user-auth-pane-toolbar">
+            <el-button size="mini" @click="handleAuthDepartmentAll(true)">全选</el-button>
+            <el-button size="mini" @click="handleAuthDepartmentAll(false)">取消</el-button>
+            <el-input
+              v-model="departmentKeyword"
+              size="mini"
+              clearable
+              placeholder="搜索科室"
+              style="width: 180px; margin-left: 10px;"
+            />
+          </div>
+          <div class="user-auth-pane-body auth-checkbox-container">
+            <el-checkbox-group v-model="authForm.departmentIds" class="auth-checkbox-group">
+              <el-checkbox v-for="item in filteredDepartmentOptions"
+                           :key="item.id"
+                           :label="item.id"
+                           class="auth-checkbox-item">{{item.name}}
+              </el-checkbox>
             </el-checkbox-group>
           </div>
         </div>
       </el-tab-pane>
-      <el-tab-pane label="首页设置">
-        <p class="auth-home-page-tip">勾选用户可切换的首页；均未勾选时默认显示「完整」首页。</p>
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthHomePageAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthHomePageAll(false)">取消</el-button>
+      <el-tab-pane label="仓库权限">
+        <div class="user-auth-pane">
+          <div class="user-auth-pane-toolbar">
+            <el-button size="mini" @click="handleAuthWarehouseAll(true)">全选</el-button>
+            <el-button size="mini" @click="handleAuthWarehouseAll(false)">取消</el-button>
+          </div>
+          <div class="user-auth-pane-body auth-scroll-pane">
+            <el-checkbox-group v-model="authForm.warehouseIds">
+              <el-checkbox v-for="item in userWarehouseOptions"
+                           :key="item.id"
+                           :label="item.id">{{item.name}}
+              </el-checkbox>
+            </el-checkbox-group>
+          </div>
         </div>
-        <div class="auth-checkbox-container">
-          <el-checkbox-group v-model="authForm.homePageKeys" class="auth-checkbox-group">
-            <el-checkbox
-              v-for="item in homePageOptions"
-              :key="item.value"
-              :label="item.value"
-              class="auth-checkbox-item"
-            >{{ item.label }}</el-checkbox>
-          </el-checkbox-group>
+      </el-tab-pane>
+      <el-tab-pane label="单位权限">
+        <div class="user-auth-pane">
+          <div class="user-auth-pane-body auth-scroll-pane user-auth-pane-empty">
+            <div class="user-auth-empty-text">暂无数据</div>
+          </div>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="待办事项">
+        <div class="user-auth-pane">
+          <div class="user-auth-pane-body auth-scroll-pane user-auth-pane-empty">
+            <div class="user-auth-empty-text">暂无数据</div>
+          </div>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="消息提醒">
+        <div class="user-auth-pane">
+          <div class="user-auth-pane-toolbar">
+            <el-button size="mini" @click="handleAuthMessageReminderAll(true)">全选</el-button>
+            <el-button size="mini" @click="handleAuthMessageReminderAll(false)">取消</el-button>
+          </div>
+          <div class="user-auth-pane-body auth-message-reminder-list">
+            <div class="auth-message-reminder-grid">
+              <el-checkbox-group v-model="authForm.messageReminderKeys" class="auth-message-reminder-col">
+                <el-checkbox
+                  v-for="item in messageReminderOptions"
+                  :key="item.value"
+                  :label="item.value"
+                  class="auth-message-reminder-cell"
+                >{{ item.label }}</el-checkbox>
+              </el-checkbox-group>
+              <el-checkbox-group v-model="authForm.messageReminderPopupKeys" class="auth-message-reminder-col">
+                <el-checkbox
+                  v-for="item in messageReminderOptions"
+                  :key="'popup-' + item.value"
+                  :label="item.value"
+                  class="auth-message-reminder-cell auth-message-reminder-popup"
+                  :disabled="!(authForm.messageReminderKeys || []).includes(item.value)"
+                >登录弹窗</el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+        </div>
+      </el-tab-pane>
+      <el-tab-pane label="首页设置">
+        <div class="user-auth-pane">
+          <p class="auth-home-page-tip">勾选用户可切换的首页；均未勾选时默认显示「完整」首页。</p>
+          <div class="user-auth-pane-toolbar">
+            <el-button size="mini" @click="handleAuthHomePageAll(true)">全选</el-button>
+            <el-button size="mini" @click="handleAuthHomePageAll(false)">取消</el-button>
+          </div>
+          <div class="user-auth-pane-body auth-checkbox-container">
+            <el-checkbox-group v-model="authForm.homePageKeys" class="auth-checkbox-group">
+              <el-checkbox
+                v-for="item in homePageOptions"
+                :key="item.value"
+                :label="item.value"
+                class="auth-checkbox-item"
+              >{{ item.label }}</el-checkbox>
+            </el-checkbox-group>
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
     <span slot="footer" class="dialog-footer">
-      <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
-      <el-button class="spd-btn spd-btn--secondary" @click="authOpen = false">取 消</el-button>
+      <el-button type="primary" icon="el-icon-check" class="spd-btn spd-btn--primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
+      <el-button icon="el-icon-close" class="spd-btn spd-btn--secondary" @click="authOpen = false">取 消</el-button>
     </span>
     </el-dialog>
 
@@ -1256,7 +1282,8 @@ export default {
       this.authOpen = false;
       const userId = row.userId || row;
       const userName = row.userName || (typeof row === 'string' ? row : '');
-      this.authTitle = `授权 - ${userName || userId}`;
+      const nickName = (row && row.nickName) || '';
+      this.authTitle = `授权 账号 ${userName || userId} 姓名 ${nickName || '—'}`;
       const loading = this.$loading({ lock: true, text: '加载授权数据...', background: 'rgba(0, 0, 0, 0.15)' });
       Promise.all([getUser(userId), roleMenuTreeselectUser(userId)])
         .then(([response, menuRes]) => {
@@ -1314,15 +1341,35 @@ export default {
           }
           this.authOpen = true;
           this.$nextTick(() => {
+            this.centerAuthDialog();
             if (this.$refs.menuAuthDualTree) {
               this.$refs.menuAuthDualTree.resetAutoPreselectState();
             }
-            this.$nextTick(() => this.applyAuthMenuSelectionFromForm());
+            this.$nextTick(() => {
+              this.centerAuthDialog();
+              this.applyAuthMenuSelectionFromForm();
+            });
           });
         })
         .finally(() => {
           loading.close();
         });
+    },
+    /** 授权弹窗默认居中（拖拽指令会清掉 margin-top，需显式设 top/left） */
+    centerAuthDialog() {
+      const dialog = document.querySelector('.user-auth-dialog.el-dialog');
+      if (!dialog) {
+        return;
+      }
+      const width = dialog.offsetWidth || 900;
+      const height = dialog.offsetHeight || 580;
+      const left = Math.max(16, Math.round((window.innerWidth - width) / 2));
+      const top = Math.max(96, Math.round((window.innerHeight - height) / 2));
+      dialog.style.position = 'absolute';
+      dialog.style.marginTop = '0px';
+      dialog.style.transform = 'none';
+      dialog.style.left = left + 'px';
+      dialog.style.top = top + 'px';
     },
     applyAuthMenuSelectionFromForm() {
       const allowed = new Set((this.getCheckableMenuIds(this.menuOptions) || []).map(Number));
@@ -2257,12 +2304,17 @@ export default {
 
 /* 授权复选框容器样式 */
 .auth-checkbox-container {
-  max-height: 300px;
   overflow-y: auto;
   padding: 10px;
   border: 1px solid #DCDFE6;
   border-radius: 4px;
   background-color: #fff;
+  box-sizing: border-box;
+}
+
+.auth-scroll-pane {
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .auth-home-page-tip {
@@ -2634,6 +2686,126 @@ export default {
 
 .system-user-page .apply-main-table ::v-deep .descending .sort-caret.descending {
   border-top-color: #2563EB;
+}
+</style>
+
+<style lang="scss">
+/* 授权弹窗挂到 body：须非 scoped，固定尺寸 + 拖动标题栏 */
+.user-auth-dialog.el-dialog {
+  width: 900px !important;
+  height: 580px !important;
+  max-height: 580px !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  box-shadow: 0 8px 28px rgba(16, 24, 40, 0.18);
+  border: 1px solid #e8ecf1;
+  border-radius: 8px;
+  overflow: hidden;
+  /* 拖拽前的兜底位置，打开后由 centerAuthDialog 再精确定位 */
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.user-auth-dialog .el-dialog__header {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-bottom: 1px solid #EBEEF5;
+  background: #F8FAFC;
+  cursor: move;
+  user-select: none;
+}
+
+.user-auth-dialog .el-dialog__title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+.user-auth-dialog .el-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+  max-height: none !important;
+  overflow: hidden;
+  padding: 10px 16px 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-auth-dialog .el-dialog__footer {
+  flex-shrink: 0;
+  padding: 10px 16px 14px;
+  border-top: 1px solid #EBEEF5;
+  background: #fff;
+}
+
+.user-auth-dialog .user-auth-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-auth-dialog .user-auth-tabs > .el-tabs__header {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.user-auth-dialog .user-auth-tabs > .el-tabs__header .el-tabs__nav {
+  white-space: nowrap;
+}
+
+.user-auth-dialog .user-auth-tabs > .el-tabs__content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.user-auth-dialog .user-auth-tabs .el-tab-pane {
+  height: 100%;
+}
+
+.user-auth-dialog .user-auth-pane {
+  height: 100%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.user-auth-dialog .user-auth-pane-toolbar {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.user-auth-dialog .user-auth-pane-body {
+  flex: 1;
+  min-height: 0;
+  height: 400px;
+  overflow: auto;
+}
+
+.user-auth-dialog .user-auth-pane-empty {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  border: 1px solid #DCDFE6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.user-auth-dialog .user-auth-empty-text {
+  color: #909399;
+  padding: 20px;
+  text-align: center;
+}
+
+.user-auth-dialog .auth-home-page-tip {
+  margin: 0 0 8px;
+  flex-shrink: 0;
 }
 </style>
 
