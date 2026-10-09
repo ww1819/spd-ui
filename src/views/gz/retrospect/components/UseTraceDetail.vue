@@ -275,8 +275,10 @@
     </div>
 
     <div class="pagination-wrapper">
-      <div class="pagination-summary" v-if="total > 0">
-        <span class="summary-label">合计：</span>当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额:
+        {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额:
+        {{ pageTotalAmtFormatted }}
       </div>
       <div class="pagination-container" v-show="total > 0">
         <el-pagination
@@ -314,6 +316,10 @@ export default {
       loading: true,
       traceList: [],
       total: 0,
+      totalInfo: {
+        totalQty: 0,
+        totalAmt: 0
+      },
       ids: [],
       selectedRowKeys: [],
       tableHeight: 400
@@ -508,9 +514,11 @@ export default {
             return row;
           });
           this.total = response.total || 0;
+          this.totalInfo = response.totalInfo || { totalQty: 0, totalAmt: 0 };
         } else {
           this.traceList = [];
           this.total = 0;
+          this.totalInfo = { totalQty: 0, totalAmt: 0 };
         }
         this.selectedRowKeys = [];
         this.loading = false;
@@ -527,6 +535,7 @@ export default {
         console.error('获取使用追溯明细表数据失败:', error);
         this.traceList = [];
         this.total = 0;
+        this.totalInfo = { totalQty: 0, totalAmt: 0 };
         this.selectedRowKeys = [];
         this.loading = false;
         this.$nextTick(() => this.updateTableHeight());

@@ -38,7 +38,12 @@
           </template>
         </el-table-column>
         <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" prop="materialSpeci" width="120" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci"/>
-        <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName"/>
+        <el-table-column label="型号" align="left" header-align="center" class-name="ctk-col-left" prop="materialModel" width="120" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
+        <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName">
+          <template slot-scope="scope">
+            <span>{{ scope.row.unitName || '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice">
           <template slot-scope="scope">
             <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
@@ -53,12 +58,48 @@
           </template>
         </el-table-column>
         <el-table-column label="科室" align="left" header-align="center" class-name="ctk-col-left" prop="departmentName" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="生产厂家" align="left" header-align="center" class-name="ctk-col-left" prop="factoryName" width="160" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.factoryName || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="供应商" align="left" header-align="center" class-name="ctk-col-left" prop="supplierName" width="160" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.supplierName || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="注册证号" align="left" header-align="center" class-name="ctk-col-left" prop="registerNo" width="180" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.registerNo || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="注册证有效期" align="left" header-align="center" class-name="ctk-col-left" width="140" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.periodDate">{{ parseTime(scope.row.periodDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="包装规格" align="left" header-align="center" class-name="ctk-col-left" prop="packageSpeci" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.packageSpeci || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="财务分类" align="left" header-align="center" class-name="ctk-col-left" prop="financeCategoryName" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.financeCategoryName || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="库房分类" align="left" header-align="center" class-name="ctk-col-left" prop="warehouseCategoryName" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.warehouseCategoryName || '--' }}</span>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
 
     <div class="pagination-wrapper">
       <div class="pagination-summary" v-if="total > 0">
-        <span class="summary-label">合计：</span>总数量: {{ calculateTotalQty }}，总金额: {{ calculateTotalAmt }}
+        <span class="summary-label">合计：</span>总数量: {{ calculateTotalQty }}，总金额: {{ calculateTotalAmt }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
       <div class="pagination-container" v-show="total > 0">
         <el-pagination
@@ -94,6 +135,7 @@ export default {
     return {
       hisChargeFlatRow: true,
       loading: true,
+      allSummaryRows: [],
       summaryList: [],
       total: 0,
       selectedRowKeys: [],
@@ -102,18 +144,29 @@ export default {
   },
   computed: {
     calculateTotalQty() {
-      const totalQty = this.summaryList.reduce((sum, item) => {
-        const qty = Number(item.totalQty) || 0;
-        return sum + qty;
+      const totalQty = (this.allSummaryRows || []).reduce((sum, item) => {
+        return sum + (Number(item.totalQty) || 0);
       }, 0);
       return this.formatQty(totalQty);
     },
     calculateTotalAmt() {
-      const totalAmt = this.summaryList.reduce((sum, item) => {
-        const amt = Number(item.totalAmt) || 0;
-        return sum + amt;
+      const totalAmt = (this.allSummaryRows || []).reduce((sum, item) => {
+        return sum + (Number(item.totalAmt) || 0);
       }, 0);
       return '¥' + this.formatAmount(totalAmt);
+    },
+    pageTotalQty() {
+      return this.formatQty((this.summaryList || []).reduce((sum, item) => {
+        return sum + (Number(item.totalQty) || 0);
+      }, 0));
+    },
+    pageTotalAmtFormatted() {
+      const amt = (this.summaryList || []).reduce((sum, item) => {
+        return sum + (Number(item.totalAmt) || 0);
+      }, 0);
+      return this.$options.filters && this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(amt)
+        : ('¥' + this.formatAmount(amt));
     }
   },
   watch: {
@@ -123,13 +176,20 @@ export default {
           this.getList();
           return;
         }
+        const pageOnly = val.pageNum !== oldVal.pageNum || val.pageSize !== oldVal.pageSize;
         const ignore = ['pageNum', 'pageSize'];
         const keys = Object.keys(val || {});
-        const changed = keys.some(k => {
+        const filterChanged = keys.some(k => {
           if (ignore.includes(k)) return false;
           return val[k] !== oldVal[k];
         });
-        if (changed) this.getList();
+        if (filterChanged) {
+          this.getList();
+          return;
+        }
+        if (pageOnly) {
+          this.applySummaryPagination();
+        }
       },
       deep: true
     }
@@ -228,6 +288,9 @@ export default {
     sortBySpeci(a, b) {
       return this.sortByStr(a, b, r => r.materialSpeci || '');
     },
+    sortByModel(a, b) {
+      return this.sortByStr(a, b, r => r.materialModel || '');
+    },
     sortByUnitName(a, b) {
       return this.sortByStr(a, b, r => r.unitName || '');
     },
@@ -250,6 +313,20 @@ export default {
       params.pageSize = 10000;
       return params;
     },
+    applySummaryPagination() {
+      const pageNum = Number(this.queryParams.pageNum) || 1;
+      const pageSize = Number(this.queryParams.pageSize) || 10;
+      const allRows = this.allSummaryRows || [];
+      this.total = allRows.length;
+      const start = (pageNum - 1) * pageSize;
+      this.summaryList = allRows.slice(start, start + pageSize);
+      this.$nextTick(() => {
+        this.updateTableHeight();
+        if (this.$refs.table) {
+          this.$refs.table.doLayout();
+        }
+      });
+    },
     getList() {
       this.loading = true;
       listGzDepInventory(this.buildListQuery()).then(response => {
@@ -262,8 +339,9 @@ export default {
           const materialName = material.name || '';
           const materialCode = material.code || material.id || '';
           const materialSpeci = material.speci || '';
+          const materialModel = material.model || '';
           const departmentName = (item.department && item.department.name) || '';
-          const unitName = material.unitName || '';
+          const unitName = (material.fdUnit && material.fdUnit.unitName) || material.unitName || '';
 
           const key = `${materialId}_${departmentName}`;
 
@@ -273,11 +351,19 @@ export default {
               materialCode: materialCode,
               materialName: materialName,
               materialSpeci: materialSpeci,
+              materialModel: materialModel,
               unitName: unitName,
               unitPrice: item.unitPrice || 0,
               totalQty: 0,
               totalAmt: 0,
               departmentName: departmentName,
+              factoryName: (material.fdFactory && material.fdFactory.factoryName) || '',
+              supplierName: (material.supplier && material.supplier.name) || '',
+              registerNo: material.registerNo || '',
+              periodDate: material.periodDate || null,
+              packageSpeci: material.packageSpeci || '',
+              financeCategoryName: (material.fdFinanceCategory && material.fdFinanceCategory.financeCategoryName) || '',
+              warehouseCategoryName: (material.fdWarehouseCategory && material.fdWarehouseCategory.warehouseCategoryName) || '',
               hisChargeItemCode: material.hisChargeItemCode || material.hisChargeItemId || '',
               hisChargeItemName: material.hisChargeItemName || '',
               hisChargeItemSpeci: material.hisChargeItemSpeci || '',
@@ -290,12 +376,15 @@ export default {
           summaryMap[key].totalAmt += Number(item.amt) || 0;
         });
 
-        this.summaryList = Object.values(summaryMap).map((row, idx) => {
+        this.allSummaryRows = Object.values(summaryMap).map((row, idx) => {
           row._rowKey = `gz-dep-sum-${idx}-${row.materialCode || ''}-${row.departmentName || ''}`;
           return row;
         });
-        this.total = this.summaryList.length;
+        if (Number(this.queryParams.pageNum) !== 1) {
+          this.queryParams.pageNum = 1;
+        }
         this.selectedRowKeys = [];
+        this.applySummaryPagination();
         this.loading = false;
         this.$nextTick(() => {
           this.syncTableScroll();
@@ -305,6 +394,7 @@ export default {
           }
         });
       }).catch(() => {
+        this.allSummaryRows = [];
         this.summaryList = [];
         this.total = 0;
         this.selectedRowKeys = [];

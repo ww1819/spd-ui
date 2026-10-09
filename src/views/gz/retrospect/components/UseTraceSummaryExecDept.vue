@@ -73,6 +73,11 @@
     </div>
 
     <div class="pagination-wrapper">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额:
+        {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额:
+        {{ pageTotalAmtFormatted }}
+      </div>
       <div class="pagination-container" v-show="total > 0">
         <el-pagination
           background
@@ -109,9 +114,24 @@ export default {
       loading: true,
       summaryList: [],
       total: 0,
+      totalInfo: {
+        totalQty: 0,
+        totalAmt: 0
+      },
       selectedRowKeys: [],
       tableHeight: 400
     };
+  },
+  computed: {
+    pageTotalQty() {
+      return (this.summaryList || []).reduce((s, r) => s + Number(r.quantity || 0), 0);
+    },
+    pageTotalAmtFormatted() {
+      const amt = (this.summaryList || []).reduce((s, r) => s + Number(r.amount || 0), 0);
+      return this.$options.filters && this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(amt)
+        : String(amt);
+    }
   },
   watch: {
     queryParams: {
@@ -255,6 +275,7 @@ export default {
           return row;
         });
         this.total = response.total || 0;
+        this.totalInfo = response.totalInfo || { totalQty: 0, totalAmt: 0 };
         this.selectedRowKeys = [];
         this.loading = false;
         this.$nextTick(() => {
@@ -267,6 +288,7 @@ export default {
       }).catch(() => {
         this.summaryList = [];
         this.total = 0;
+        this.totalInfo = { totalQty: 0, totalAmt: 0 };
         this.selectedRowKeys = [];
         this.loading = false;
         this.$nextTick(() => this.updateTableHeight());

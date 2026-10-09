@@ -41,7 +41,7 @@
         <el-table-column label="型号" align="left" header-align="center" class-name="ctk-col-left" prop="material.model" width="120" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel"/>
         <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName">
           <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
+            <span>{{ materialUnitName(scope.row) || '--' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable sortable :sort-method="sortByQty"/>
@@ -74,8 +74,6 @@
         <el-table-column label="主条码" align="left" header-align="center" class-name="ctk-col-left" prop="masterBarcode" width="180" show-overflow-tooltip resizable/>
         <el-table-column label="辅条码" align="left" header-align="center" class-name="ctk-col-left" prop="secondaryBarcode" width="150" show-overflow-tooltip resizable/>
         <el-table-column label="科室" align="left" header-align="center" class-name="ctk-col-left" prop="department.name" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="仓库" align="left" header-align="center" class-name="ctk-col-left" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
-        <el-table-column label="批次" align="left" header-align="center" class-name="ctk-col-left" prop="batchNo" width="150" show-overflow-tooltip resizable/>
         <el-table-column label="生产厂家" align="left" header-align="center" class-name="ctk-col-left" width="160" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
@@ -86,6 +84,34 @@
             <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="注册证号" align="left" header-align="center" class-name="ctk-col-left" width="180" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="注册证有效期" align="left" header-align="center" class-name="ctk-col-left" width="140" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="包装规格" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="财务分类" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="库房分类" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="仓库" align="left" header-align="center" class-name="ctk-col-left" prop="warehouse.name" width="120" show-overflow-tooltip resizable/>
+        <el-table-column label="批次" align="left" header-align="center" class-name="ctk-col-left" prop="batchNo" width="150" show-overflow-tooltip resizable/>
         <el-table-column label="出库单号" align="left" header-align="center" class-name="ctk-col-left" prop="shipmentNo" width="180" show-overflow-tooltip resizable/>
         <el-table-column label="制单人" align="left" header-align="center" class-name="ctk-col-left" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
@@ -266,8 +292,13 @@ export default {
     sortByModel(a, b) {
       return this.sortByStr(a, b, r => (r.material && r.material.model) || '');
     },
+    materialUnitName(row) {
+      const m = row && row.material;
+      if (!m) return '';
+      return (m.fdUnit && m.fdUnit.unitName) || m.unitName || '';
+    },
     sortByUnitName(a, b) {
-      return this.sortByStr(a, b, r => (r.material && r.material.fdUnit && r.material.fdUnit.unitName) || '');
+      return this.sortByStr(a, b, r => this.materialUnitName(r));
     },
     sortByQty(a, b) {
       return this.sortByNum(a, b, r => r.qty);
