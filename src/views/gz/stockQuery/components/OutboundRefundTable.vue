@@ -167,6 +167,11 @@
     </div>
 
     <div class="pagination-wrapper">
+      <div class="pagination-summary">
+        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额:
+        {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额:
+        {{ pageTotalAmtFormatted }}
+      </div>
       <div class="pagination-container" v-show="total > 0">
         <el-pagination
           background
@@ -212,6 +217,27 @@ export default {
       /** 未按耗材关键词过滤前的明细缓存 */
       cachedDetailRows: []
     };
+  },
+  computed: {
+    totalInfo() {
+      const rows = this.allDetailRows || [];
+      let totalQty = 0;
+      let totalAmt = 0;
+      rows.forEach(r => {
+        totalQty += Number(r && r.qty != null ? r.qty : 0) || 0;
+        totalAmt += Number(r && r.amt != null ? r.amt : 0) || 0;
+      });
+      return { totalQty, totalAmt };
+    },
+    pageTotalQty() {
+      return (this.tableList || []).reduce((s, r) => s + (Number(r && r.qty != null ? r.qty : 0) || 0), 0);
+    },
+    pageTotalAmtFormatted() {
+      const amt = (this.tableList || []).reduce((s, r) => s + (Number(r && r.amt != null ? r.amt : 0) || 0), 0);
+      return this.$options.filters && this.$options.filters.formatCurrency
+        ? this.$options.filters.formatCurrency(amt)
+        : String(amt);
+    }
   },
   watch: {
     'queryParams.materialKeyword'() {

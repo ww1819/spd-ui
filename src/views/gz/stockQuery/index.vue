@@ -431,6 +431,19 @@ body.inventory-query-fixed .main-container {
   min-height: 40px !important;
   overflow: visible !important;
 }
+.gz-stock-query .pagination-wrapper .pagination-summary {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 32px;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gz-stock-query .pagination-wrapper .pagination-summary .summary-label {
+  font-weight: 700;
+}
 .gz-stock-query .pagination-wrapper .pagination-container {
   position: relative !important;
   height: auto !important;
