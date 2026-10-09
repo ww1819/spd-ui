@@ -1,9 +1,28 @@
 <template>
   <div class="gz-retrospect-table-panel">
+    <table-column-setting-dialog
+      :visible.sync="columnDialogVisible"
+      :ordered-columns="orderedColumns"
+      :visible-count="visibleColumnList.length"
+      :total-count="columns.length"
+      :active-key="columnActiveKey"
+      :can-move-up="canMoveColumnUp"
+      :can-move-down="canMoveColumnDown"
+      @select-row="selectColumnRow"
+      @move="moveColumn"
+      @set-visible="setColumnVisible"
+      @set-sortable="setColumnSortable"
+      @set-width="setColumnWidth"
+      @set-align="setColumnAlign"
+      @save="saveColumnConfig"
+      @init="initColumnConfig"
+    />
+
     <div class="table-container" ref="tablePanel">
       <el-table
         ref="table"
         class="gz-retrospect-main-table"
+        :key="'gz-trace-apply-table-' + tableColumnEpoch"
         v-loading="loading"
         :data="summaryList"
         :height="tableHeight"
@@ -20,55 +39,197 @@
             <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="开单科室" align="left" header-align="center" class-name="ctk-col-left" prop="applyDeptName" width="160" show-overflow-tooltip resizable/>
-        <el-table-column label="产品编码" align="left" header-align="center" class-name="ctk-col-left" prop="material.code" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialCode"/>
-        <el-table-column label="产品名称" align="left" header-align="center" class-name="ctk-col-left" prop="material.name" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortTraceMaterialName"/>
-        <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" width="130" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortTraceSpeci">
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.specification || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="型号" align="left" header-align="center" class-name="ctk-col-left" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortTraceModel">
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="数量" align="center" prop="quantity" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortSummaryQuantity"/>
-        <el-table-column label="金额" align="center" prop="amount" width="130" min-width="120" show-overflow-tooltip resizable sortable :sort-method="sortSummaryAmount">
-          <template slot-scope="scope">
-            <span v-if="scope.row.amount != null && scope.row.amount !== ''">{{ scope.row.amount | formatCurrency}}</span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="生产厂家" align="left" header-align="center" class-name="ctk-col-left" width="160" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span>{{ scope.row.factoryName || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="供应商" align="left" header-align="center" class-name="ctk-col-left" width="160" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span>{{ scope.row.supplierName || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="注册证号" align="left" header-align="center" class-name="ctk-col-left" width="180" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="注册证有效期" align="left" header-align="center" class-name="ctk-col-left" width="160" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="集采" align="center" width="80" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span
-              class="material-yn-btn"
-              :class="isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
-            >{{ isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? '是' : '否' }}</span>
-          </template>
-        </el-table-column>
+        <template v-for="item in tableColumnItems">
+          <el-table-column
+            v-if="Number(item.col.key) === 0"
+            :key="'tc-' + tableColumnEpoch + '-0'"
+            label="开单科室"
+            prop="applyDeptName"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 1"
+            :key="'tc-' + tableColumnEpoch + '-1'"
+            label="产品编码"
+            prop="material.code"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :sort-method="sortTraceMaterialCode"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 2"
+            :key="'tc-' + tableColumnEpoch + '-2'"
+            label="产品名称"
+            prop="material.name"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :sort-method="sortTraceMaterialName"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 3"
+            :key="'tc-' + tableColumnEpoch + '-3'"
+            label="规格"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :sort-method="sortTraceSpeci"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.specification || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 4"
+            :key="'tc-' + tableColumnEpoch + '-4'"
+            label="型号"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :sort-method="sortTraceModel"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 5"
+            :key="'tc-' + tableColumnEpoch + '-5'"
+            label="数量"
+            prop="quantity"
+            show-overflow-tooltip
+            resizable
+            :sortable="!!item.col.sortable"
+            :sort-method="sortSummaryQuantity"
+            :align="item.col.align || 'center'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 6"
+            :key="'tc-' + tableColumnEpoch + '-6'"
+            label="金额"
+            prop="amount"
+            show-overflow-tooltip
+            resizable
+            :sortable="!!item.col.sortable"
+            :sort-method="sortSummaryAmount"
+            :align="item.col.align || 'center'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span v-if="scope.row.amount != null && scope.row.amount !== ''">{{ scope.row.amount | formatCurrency}}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 7"
+            :key="'tc-' + tableColumnEpoch + '-7'"
+            label="生产厂家"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span>{{ scope.row.factoryName || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 8"
+            :key="'tc-' + tableColumnEpoch + '-8'"
+            label="供应商"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span>{{ scope.row.supplierName || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 9"
+            :key="'tc-' + tableColumnEpoch + '-9'"
+            label="注册证号"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 10"
+            :key="'tc-' + tableColumnEpoch + '-10'"
+            label="注册证有效期"
+            show-overflow-tooltip
+            resizable
+            :class-name="colClassName(item.col)"
+            :sortable="!!item.col.sortable"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span v-if="scope.row.material && scope.row.material.periodDate">{{ parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 11"
+            :key="'tc-' + tableColumnEpoch + '-11'"
+            label="集采"
+            show-overflow-tooltip
+            resizable
+            :sortable="!!item.col.sortable"
+            :align="item.col.align || 'center'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span
+                class="material-yn-btn"
+                :class="isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+              >{{ isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? '是' : '否' }}</span>
+            </template>
+          </el-table-column>
+        </template>
       </el-table>
     </div>
 
@@ -99,10 +260,37 @@
 import { listTraceSummaryApplyDept } from "@/api/gz/traceability";
 import { exportTraceSummaryApplyDeptTable } from "../retrospectExport";
 import retrospectSortMixin from "../retrospectSortMixin";
+import TableColumnSettingDialog from "@/components/TableColumnSettingDialog";
+import { createTableColumnSettingsMixin } from "@/mixins/tableColumnSettings";
+
+function createDefaultApplyDeptColumns() {
+  return [
+    { key: 0, label: "开单科室", visible: true, width: 160, align: "left", sortable: false },
+    { key: 1, label: "产品编码", visible: true, width: 145, align: "left", sortable: true },
+    { key: 2, label: "产品名称", visible: true, width: 185, align: "left", sortable: true },
+    { key: 3, label: "规格", visible: true, width: 130, align: "left", sortable: true },
+    { key: 4, label: "型号", visible: true, width: 110, align: "left", sortable: true },
+    { key: 5, label: "数量", visible: true, width: 110, align: "center", sortable: true },
+    { key: 6, label: "金额", visible: true, width: 130, align: "center", sortable: true },
+    { key: 7, label: "生产厂家", visible: true, width: 160, align: "left", sortable: false },
+    { key: 8, label: "供应商", visible: true, width: 160, align: "left", sortable: false },
+    { key: 9, label: "注册证号", visible: true, width: 180, align: "left", sortable: false },
+    { key: 10, label: "注册证有效期", visible: true, width: 160, align: "left", sortable: false },
+    { key: 11, label: "集采", visible: true, width: 80, align: "center", sortable: false }
+  ];
+}
 
 export default {
   name: "UseTraceSummaryApplyDept",
-  mixins: [retrospectSortMixin],
+  mixins: [
+    retrospectSortMixin,
+    createTableColumnSettingsMixin({
+      createDefaultColumns: createDefaultApplyDeptColumns,
+      configKey: "gz_retrospect_summary_apply_dept_columns",
+      tableRef: "table"
+    })
+  ],
+  components: { TableColumnSettingDialog },
   props: {
     queryParams: {
       type: Object,
@@ -142,7 +330,9 @@ export default {
     }
   },
   created() {
-    this.getList();
+    this.loadUserColumnConfig().finally(() => {
+      this.getList();
+    });
   },
   mounted() {
     this.$nextTick(() => {
@@ -167,6 +357,9 @@ export default {
     }
   },
   methods: {
+    colClassName(col) {
+      return (col && (col.align || 'left') === 'left') ? 'ctk-col-left' : '';
+    },
     updateTableHeight() {
       this.$nextTick(() => {
         const panel = this.$refs.tablePanel;

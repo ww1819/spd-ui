@@ -164,6 +164,9 @@
           </div>
           <el-button type="success" size="small" icon="el-icon-check" class="spd-btn" @click="saveMoreSearchDefaults">保存查询条件</el-button>
           <right-toolbar :showSearch.sync="showSearch" @queryTable="handleQuery"></right-toolbar>
+          <el-tooltip v-if="columnSettingsEnabled" class="item" effect="dark" content="显隐列" placement="top">
+            <el-button size="small" circle icon="el-icon-menu" @click="openActiveColumnDialog" />
+          </el-tooltip>
         </div>
       </el-row>
 
@@ -288,6 +291,9 @@ export default {
     },
     builtInMoreSearchDefaults() {
       return [];
+    },
+    columnSettingsEnabled() {
+      return this.activeName === 'detail' || this.activeName === 'execDept' || this.activeName === 'applyDept';
     }
   },
   watch: {
@@ -316,6 +322,18 @@ export default {
     this.clearToolbarMoreCloseTimer();
   },
   methods: {
+    openActiveColumnDialog() {
+      const refMap = {
+        detail: 'detailTable',
+        execDept: 'execDeptTable',
+        applyDept: 'applyDeptTable'
+      };
+      const refName = refMap[this.activeName];
+      const panel = refName ? this.$refs[refName] : null;
+      if (panel && typeof panel.openColumnDialog === 'function') {
+        panel.openColumnDialog();
+      }
+    },
     formatScanDate(date) {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');

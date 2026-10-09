@@ -259,14 +259,36 @@
             >推送档案</el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-tooltip class="item" effect="dark" content="显隐列" placement="top">
+          <el-button size="small" circle icon="el-icon-menu" @click="openColumnDialog" />
+        </el-tooltip>
       </div>
     </el-row>
+
+    <table-column-setting-dialog
+      :visible.sync="columnDialogVisible"
+      :ordered-columns="orderedColumns"
+      :visible-count="visibleColumnList.length"
+      :total-count="columns.length"
+      :active-key="columnActiveKey"
+      :can-move-up="canMoveColumnUp"
+      :can-move-down="canMoveColumnDown"
+      @select-row="selectColumnRow"
+      @move="moveColumn"
+      @set-visible="setColumnVisible"
+      @set-sortable="setColumnSortable"
+      @set-width="setColumnWidth"
+      @set-align="setColumnAlign"
+      @save="saveColumnConfig"
+      @init="initColumnConfig"
+    />
 
       <div class="material-table-panel" ref="tablePanel">
       <el-table
         ref="materialTable"
         class="material-main-table"
+        :key="'material-table-' + tableColumnEpoch"
         :class="{ 'material-main-table--heavy': !materialTableLightMode }"
         v-loading="loading"
         :data="materialList"
@@ -280,160 +302,513 @@
         :stripe="materialTableLightMode"
       >
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="material-col-center material-select-col" />
-      <el-table-column type="index" label="序号" align="center" header-align="center" width="80" key="index" v-if="columns[0].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
+      <el-table-column type="index" label="序号" align="center" header-align="center" width="80" key="index" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="启用" align="center" header-align="center" prop="isUse" width="72" key="isUse" v-if="columns[12].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
-        <template slot-scope="scope">
-          <span
-            class="material-yn-btn"
-            :class="isMaterialYesValue(scope.row.isUse) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
-          >{{ isMaterialYesValue(scope.row.isUse) ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="计费" align="center" header-align="center" prop="isBilling" width="72" key="isBilling" v-if="columns[19].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
-        <template slot-scope="scope">
-          <span
-            class="material-yn-btn"
-            :class="isMaterialYesValue(scope.row.isBilling) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
-          >{{ isMaterialYesValue(scope.row.isBilling) ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="产品编码" align="center" prop="code" width="100" key="code" v-if="columns[1].visible" sortable="custom" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div
-            class="material-cell-top-left material-code-link link-type"
-            :title="scope.row.code || ''"
-            @click.stop="handleView(scope.row)"
-          >{{ scope.row.code }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="产品名称" align="center" prop="name" width="240" key="name" v-if="columns[2].visible" sortable="custom" resizable class-name="material-name-col cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-body-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="规格" align="center" prop="speci" width="200" key="speci" v-if="columns[3].visible" sortable="custom" resizable class-name="material-speci-col cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-body-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="单位" align="center" header-align="center" prop="fdUnit.unitName" width="80" key="unit" v-if="columns[6].visible" sortable="custom" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center cell-pad-tight"/>
-      <el-table-column label="价格" align="center" prop="price" width="130" key="price" v-if="columns[5].visible" sortable="custom" resizable class-name="material-price-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.price) || '')">{{ formatPrice4(scope.row.price) }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="生产厂家" align="center" prop="fdFactory.factoryName" width="220" key="factory" v-if="columns[7].visible" sortable="custom" resizable class-name="material-factory-col material-top-cell">
-        <template slot-scope="scope">
-          <div class="material-cell-body-left" :title="(scope.row.fdFactory && scope.row.fdFactory.factoryName) ? scope.row.fdFactory.factoryName : ''">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="240" key="supplier" v-if="columns[8].visible" sortable="custom" resizable class-name="material-supplier-col material-top-cell">
-        <template slot-scope="scope">
-          <div class="material-cell-body-left" :title="(scope.row.supplier && scope.row.supplier.name) ? scope.row.supplier.name : ''">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="库房分类" align="center" prop="fdWarehouseCategory.warehouseCategoryName" width="120" key="warehouseCategory" v-if="columns[9].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
-      <el-table-column label="材料类别" align="center" prop="fdMaterialCategory.materialCategoryName" width="120" key="materialCategory" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="(scope.row.fdMaterialCategory && scope.row.fdMaterialCategory.materialCategoryName) ? scope.row.fdMaterialCategory.materialCategoryName : ''">
-            {{ scope.row.fdMaterialCategory && scope.row.fdMaterialCategory.materialCategoryName ? scope.row.fdMaterialCategory.materialCategoryName : '' }}
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="财务分类" align="center" prop="fdFinanceCategory.financeCategoryName" width="120" key="financeCategory" v-if="columns[25].visible" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="(scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName) ? scope.row.fdFinanceCategory.financeCategoryName : ''">
-            {{ scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName ? scope.row.fdFinanceCategory.financeCategoryName : '' }}
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column label="注册证号" align="center" prop="registerNo" width="190" key="registerNo" v-if="columns[24].visible" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.registerNo || ''">{{ scope.row.registerNo }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="医保编码" align="center" prop="medicalNo" width="190" key="medicalNo" v-if="columns[23].visible" resizable class-name="material-medical-no-col cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-body-left" :title="scope.row.medicalNo || ''">{{ scope.row.medicalNo }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="型号" align="center" prop="model" width="200" key="model" v-if="columns[4].visible" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.model || ''">{{ scope.row.model }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="储存方式" align="center" prop="isWay" width="100" key="storageMethod" v-if="columns[10].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
-        <template slot-scope="scope">
-          <span>{{ formatStorageWay(scope.row.isWay) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="货位" align="center" prop="fdLocation.locationName" width="120" key="location" v-if="columns[11].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.fdLocation && scope.row.fdLocation.locationName">{{ scope.row.fdLocation.locationName }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="高值" align="center" header-align="center" prop="isGz" width="80" key="isGz" v-if="columns[13].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
-        <template slot-scope="scope">
-          <span
-            class="material-yn-btn"
-            :class="isMaterialYesValue(scope.row.isGz) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
-          >{{ isMaterialYesValue(scope.row.isGz) ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="跟台" align="center" header-align="center" prop="isFollow" width="80" key="isFollow" v-if="columns[14].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
-        <template slot-scope="scope">
-          <span
-            class="material-yn-btn"
-            :class="isMaterialYesValue(scope.row.isFollow) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
-          >{{ isMaterialYesValue(scope.row.isFollow) ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="集采" align="center" header-align="center" prop="isProcure" width="80" key="isProcure" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
-        <template slot-scope="scope">
-          <span
-            class="material-yn-btn"
-            :class="isMaterialYesValue(scope.row.isProcure) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
-          >{{ isMaterialYesValue(scope.row.isProcure) ? '是' : '否' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="集采类型" align="center" prop="fdJcType.name" width="120" key="jcType" :show-overflow-tooltip="materialTableLightMode" resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.fdJcType && scope.row.fdJcType.name">{{ scope.row.fdJcType.name }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="品牌" align="center" prop="brand" width="120" key="brand" v-if="columns[22].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
-      <el-table-column label="创建日期" align="center" prop="createTime" width="100" key="createTime" v-if="columns[21].visible" :show-overflow-tooltip="materialTableLightMode" resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="his收费项目编码" align="center" prop="hisChargeItemId" width="150" key="hisChargeItemId" v-if="columns[26].visible" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.hisChargeItemId || ''">{{ scope.row.hisChargeItemId }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="收费项目名称" align="center" prop="hisChargeItemName" min-width="160" key="hisChargeItemName" v-if="columns[27].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.hisChargeItemName || ''">{{ scope.row.hisChargeItemName || '--' }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="收费项目规格" align="center" prop="hisChargeItemSpeci" width="140" key="hisChargeItemSpeci" v-if="columns[28].visible" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-top-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-top-left" :title="scope.row.hisChargeItemSpeci || ''">{{ scope.row.hisChargeItemSpeci || '--' }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="收费单价(HIS)" align="center" prop="hisChargeItemPrice" width="120" key="hisChargeItemPrice" v-if="columns[29].visible" resizable class-name="material-price-cell cell-pad-tight">
-        <template slot-scope="scope">
-          <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.hisChargeItemPrice) || '')">{{ scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== '' ? formatPrice4(scope.row.hisChargeItemPrice) : '--' }}</div>
-        </template>
-      </el-table-column>
-      <el-table-column label="最小包装数" align="center" prop="minPackageQty" width="110" key="minPackageQty" v-if="columns[30].visible" :show-overflow-tooltip="materialTableLightMode" resizable/>
+      <template v-for="item in tableColumnItems">
+        <el-table-column
+          v-if="Number(item.col.key) === 0"
+          :key="'tc-' + tableColumnEpoch + '-0'"
+          label="启用"
+          align="center"
+          header-align="center"
+          prop="isUse"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-col-center')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.isUse) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.isUse) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 1"
+          :key="'tc-' + tableColumnEpoch + '-1'"
+          label="计费"
+          align="center"
+          header-align="center"
+          prop="isBilling"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-col-center')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.isBilling) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.isBilling) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 2"
+          :key="'tc-' + tableColumnEpoch + '-2'"
+          label="产品编码"
+          align="center"
+          prop="code"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div
+              class="material-cell-top-left material-code-link link-type"
+              :title="scope.row.code || ''"
+              @click.stop="handleView(scope.row)"
+            >{{ scope.row.code }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 3"
+          :key="'tc-' + tableColumnEpoch + '-3'"
+          label="产品名称"
+          align="center"
+          prop="name"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-name-col cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-body-left" :title="scope.row.name || ''">{{ scope.row.name }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 4"
+          :key="'tc-' + tableColumnEpoch + '-4'"
+          label="规格"
+          align="center"
+          prop="speci"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-speci-col cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-body-left" :title="scope.row.speci || ''">{{ scope.row.speci }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 5"
+          :key="'tc-' + tableColumnEpoch + '-5'"
+          label="单位"
+          align="center"
+          header-align="center"
+          prop="fdUnit.unitName"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-col-center cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 6"
+          :key="'tc-' + tableColumnEpoch + '-6'"
+          label="价格"
+          align="center"
+          prop="price"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-price-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.price) || '')">{{ formatPrice4(scope.row.price) }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 7"
+          :key="'tc-' + tableColumnEpoch + '-7'"
+          label="生产厂家"
+          align="center"
+          prop="fdFactory.factoryName"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-factory-col material-top-cell')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-body-left" :title="(scope.row.fdFactory && scope.row.fdFactory.factoryName) ? scope.row.fdFactory.factoryName : ''">{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 8"
+          :key="'tc-' + tableColumnEpoch + '-8'"
+          label="供应商"
+          align="center"
+          prop="supplier.name"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-supplier-col material-top-cell')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-body-left" :title="(scope.row.supplier && scope.row.supplier.name) ? scope.row.supplier.name : ''">{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 9"
+          :key="'tc-' + tableColumnEpoch + '-9'"
+          label="库房分类"
+          align="center"
+          prop="fdWarehouseCategory.warehouseCategoryName"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col)"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 10"
+          :key="'tc-' + tableColumnEpoch + '-10'"
+          label="材料类别"
+          align="center"
+          prop="fdMaterialCategory.materialCategoryName"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-top-left" :title="(scope.row.fdMaterialCategory && scope.row.fdMaterialCategory.materialCategoryName) ? scope.row.fdMaterialCategory.materialCategoryName : ''">
+              {{ scope.row.fdMaterialCategory && scope.row.fdMaterialCategory.materialCategoryName ? scope.row.fdMaterialCategory.materialCategoryName : '' }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 11"
+          :key="'tc-' + tableColumnEpoch + '-11'"
+          label="财务分类"
+          align="center"
+          prop="fdFinanceCategory.financeCategoryName"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-top-left" :title="(scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName) ? scope.row.fdFinanceCategory.financeCategoryName : ''">
+              {{ scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName ? scope.row.fdFinanceCategory.financeCategoryName : '' }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 12"
+          :key="'tc-' + tableColumnEpoch + '-12'"
+          label="注册证号"
+          align="center"
+          prop="registerNo"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-top-left" :title="scope.row.registerNo || ''">{{ scope.row.registerNo }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 13"
+          :key="'tc-' + tableColumnEpoch + '-13'"
+          label="医保编码"
+          align="center"
+          prop="medicalNo"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-medical-no-col cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-body-left" :title="scope.row.medicalNo || ''">{{ scope.row.medicalNo }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 14"
+          :key="'tc-' + tableColumnEpoch + '-14'"
+          label="型号"
+          align="center"
+          prop="model"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-top-left" :title="scope.row.model || ''">{{ scope.row.model }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 15"
+          :key="'tc-' + tableColumnEpoch + '-15'"
+          label="储存方式"
+          align="center"
+          prop="isWay"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col)"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ formatStorageWay(scope.row.isWay) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 16"
+          :key="'tc-' + tableColumnEpoch + '-16'"
+          label="货位"
+          align="center"
+          prop="fdLocation.locationName"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col)"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.fdLocation && scope.row.fdLocation.locationName">{{ scope.row.fdLocation.locationName }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 17"
+          :key="'tc-' + tableColumnEpoch + '-17'"
+          label="高值"
+          align="center"
+          header-align="center"
+          prop="isGz"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-col-center')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.isGz) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.isGz) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 18"
+          :key="'tc-' + tableColumnEpoch + '-18'"
+          label="跟台"
+          align="center"
+          header-align="center"
+          prop="isFollow"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-col-center')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.isFollow) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.isFollow) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 19"
+          :key="'tc-' + tableColumnEpoch + '-19'"
+          label="集采"
+          align="center"
+          header-align="center"
+          prop="isProcure"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-col-center')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.isProcure) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.isProcure) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 20"
+          :key="'tc-' + tableColumnEpoch + '-20'"
+          label="集采类型"
+          align="center"
+          prop="fdJcType.name"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col)"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.fdJcType && scope.row.fdJcType.name">{{ scope.row.fdJcType.name }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 21"
+          :key="'tc-' + tableColumnEpoch + '-21'"
+          label="品牌"
+          align="center"
+          prop="brand"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col)"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 22"
+          :key="'tc-' + tableColumnEpoch + '-22'"
+          label="创建日期"
+          align="center"
+          prop="createTime"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col)"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 23"
+          :key="'tc-' + tableColumnEpoch + '-23'"
+          label="his收费项目编码"
+          align="center"
+          prop="hisChargeItemId"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-top-left" :title="scope.row.hisChargeItemId || ''">{{ scope.row.hisChargeItemId }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 24"
+          :key="'tc-' + tableColumnEpoch + '-24'"
+          label="收费项目名称"
+          align="center"
+          prop="hisChargeItemName"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-top-left" :title="scope.row.hisChargeItemName || ''">{{ scope.row.hisChargeItemName || '--' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 25"
+          :key="'tc-' + tableColumnEpoch + '-25'"
+          label="收费项目规格"
+          align="center"
+          prop="hisChargeItemSpeci"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-top-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-top-left" :title="scope.row.hisChargeItemSpeci || ''">{{ scope.row.hisChargeItemSpeci || '--' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 26"
+          :key="'tc-' + tableColumnEpoch + '-26'"
+          label="收费单价(HIS)"
+          align="center"
+          prop="hisChargeItemPrice"
+          resizable
+          :class-name="materialColClassName(item.col, 'material-price-cell cell-pad-tight')"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <div class="material-cell-price-right" :title="String(formatPrice4(scope.row.hisChargeItemPrice) || '')">{{ scope.row.hisChargeItemPrice != null && scope.row.hisChargeItemPrice !== '' ? formatPrice4(scope.row.hisChargeItemPrice) : '--' }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 27"
+          :key="'tc-' + tableColumnEpoch + '-27'"
+          label="最小包装数"
+          align="center"
+          prop="minPackageQty"
+          :show-overflow-tooltip="materialTableLightMode"
+          resizable
+          :class-name="materialColClassName(item.col)"
+          :sortable="item.col.sortable ? 'custom' : false"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+      </template>
       <!-- 操作列 sticky（单表）：视觉钉右，悬停/滚动与主列同行 -->
       <el-table-column label="操作" align="center" header-align="center" class-name="material-action-col material-col-center small-padding fixed-width" width="100">
         <template slot-scope="scope">
@@ -1800,11 +2175,54 @@ import { sanitizeUdiNo } from '@/utils/udi';
 import { normalizeCompactDateInput, readDatePickerInputValue, isValidYmd } from '@/utils/compactDateInput';
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 import { syncMsunHisMaterialSingle } from '@/api/foundation/msunHisSync';
+import TableColumnSettingDialog from "@/components/TableColumnSettingDialog";
+import { createTableColumnSettingsMixin } from "@/mixins/tableColumnSettings";
+
+function createDefaultMaterialColumns() {
+  return [
+    { key: 0, label: "启用", visible: true, width: 72, align: "center", sortable: false },
+    { key: 1, label: "计费", visible: true, width: 72, align: "center", sortable: false },
+    { key: 2, label: "产品编码", visible: true, width: 100, align: "center", sortable: true },
+    { key: 3, label: "产品名称", visible: true, width: 240, align: "center", sortable: true },
+    { key: 4, label: "规格", visible: true, width: 200, align: "center", sortable: true },
+    { key: 5, label: "单位", visible: true, width: 80, align: "center", sortable: true },
+    { key: 6, label: "价格", visible: true, width: 130, align: "center", sortable: true },
+    { key: 7, label: "生产厂家", visible: true, width: 220, align: "center", sortable: true },
+    { key: 8, label: "供应商", visible: true, width: 240, align: "center", sortable: true },
+    { key: 9, label: "库房分类", visible: true, width: 120, align: "center", sortable: false },
+    { key: 10, label: "材料类别", visible: true, width: 120, align: "center", sortable: false },
+    { key: 11, label: "财务分类", visible: true, width: 120, align: "center", sortable: false },
+    { key: 12, label: "注册证号", visible: true, width: 190, align: "center", sortable: false },
+    { key: 13, label: "医保编码", visible: true, width: 190, align: "center", sortable: false },
+    { key: 14, label: "型号", visible: true, width: 200, align: "center", sortable: false },
+    { key: 15, label: "储存方式", visible: true, width: 100, align: "center", sortable: false },
+    { key: 16, label: "货位", visible: true, width: 120, align: "center", sortable: false },
+    { key: 17, label: "高值", visible: true, width: 80, align: "center", sortable: false },
+    { key: 18, label: "跟台", visible: true, width: 80, align: "center", sortable: false },
+    { key: 19, label: "集采", visible: true, width: 80, align: "center", sortable: false },
+    { key: 20, label: "集采类型", visible: true, width: 120, align: "center", sortable: false },
+    { key: 21, label: "品牌", visible: false, width: 120, align: "center", sortable: false },
+    { key: 22, label: "创建日期", visible: true, width: 100, align: "center", sortable: false },
+    { key: 23, label: "his收费项目编码", visible: true, width: 150, align: "center", sortable: false },
+    { key: 24, label: "收费项目名称", visible: true, width: 160, align: "center", sortable: false },
+    { key: 25, label: "收费项目规格", visible: true, width: 140, align: "center", sortable: false },
+    { key: 26, label: "收费单价(HIS)", visible: true, width: 120, align: "center", sortable: false },
+    { key: 27, label: "最小包装数", visible: true, width: 110, align: "center", sortable: false }
+  ];
+}
+
 
 export default {
   name: "Material",
+  mixins: [
+    createTableColumnSettingsMixin({
+      createDefaultColumns: createDefaultMaterialColumns,
+      configKey: "foundation_material_columns",
+      tableRef: "materialTable"
+    })
+  ],
   dicts: ['is_use_status', 'is_yes_no','way_status','material_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation,SelectJcType, MaterialInboundRecords, MsunHisSyncButton},
+  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectMaterialCategory,SelectWarehouseCategory,SelectUnit,SelectLocation,SelectJcType, MaterialInboundRecords, MsunHisSyncButton, TableColumnSettingDialog},
   computed: {
     ...mapGetters(['customerId']),
     isHsThirdTenant() {
@@ -1941,40 +2359,6 @@ export default {
       statusLogList: [],
       changeLogList: [],
       timelineList: [],
-      // 显隐列数据
-      columns: [
-        { key: 0, label: `序号`, visible: true },
-        { key: 1, label: `产品编码`, visible: true },
-        { key: 2, label: `产品名称`, visible: true },
-        { key: 3, label: `规格`, visible: true },
-        { key: 4, label: `型号`, visible: true },
-        { key: 5, label: `价格`, visible: true },
-        { key: 6, label: `单位`, visible: true },
-        { key: 7, label: `生产厂家`, visible: true },
-        { key: 8, label: `供应商`, visible: true },
-        { key: 9, label: `库房分类`, visible: true },
-        { key: 10, label: `储存方式`, visible: true },
-        { key: 11, label: `货位`, visible: true },
-        { key: 12, label: `启用`, visible: true },
-        { key: 13, label: `高值`, visible: true },
-        { key: 14, label: `跟台`, visible: true },
-        { key: 15, label: `重点监测`, visible: false },
-        { key: 16, label: `集采`, visible: true },
-        { key: 17, label: `阳采`, visible: false },
-        { key: 18, label: `临购`, visible: false },
-        { key: 19, label: `计费`, visible: true },
-        { key: 20, label: `服务费`, visible: false },
-        { key: 21, label: `创建日期`, visible: true },
-        { key: 22, label: `品牌`, visible: false },
-        { key: 23, label: `医保编码`, visible: true },
-        { key: 24, label: `注册证号`, visible: true },
-        { key: 25, label: `财务分类`, visible: true },
-        { key: 26, label: `his收费项目编码`, visible: true },
-        { key: 27, label: `收费项目名称`, visible: true },
-        { key: 28, label: `收费项目规格`, visible: true },
-        { key: 29, label: `收费单价(HIS)`, visible: true },
-        { key: 30, label: `最小包装数`, visible: true }
-      ],
       // 表单校验：基本信息区多项必填；单价必填且为有效数字
       rules: {
         code: [
@@ -2141,7 +2525,9 @@ export default {
     }
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange(this.moreSearchTypes);
-    this.getList();
+    this.loadUserColumnConfig().finally(() => {
+      this.getList();
+    });
   },
   mounted() {
     this._materialJustMounted = true;
@@ -2188,6 +2574,13 @@ export default {
     }
   },
   methods: {
+    materialColClassName(col, base) {
+      const parts = (base || "").split(" ").filter(Boolean);
+      if (col && col.align === "left") {
+        parts.push("ctk-col-left");
+      }
+      return parts.join(" ") || undefined;
+    },
     bindMaterialLayoutObservers() {
       window.addEventListener('resize', this.onMaterialWindowResize);
       if (typeof ResizeObserver !== 'undefined') {
