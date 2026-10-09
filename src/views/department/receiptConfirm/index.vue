@@ -245,6 +245,17 @@
               <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
                 <div class="list-toolbar-left">
                   <span class="apply-modal-detail-title">出库明细信息</span>
+                  <el-button
+                    v-if="canConfirmCurrentBill"
+                    type="primary"
+                    size="small"
+                    icon="el-icon-check"
+                    class="spd-btn spd-btn--primary"
+                    style="margin-left: 12px;"
+                    :loading="detailConfirming"
+                    @click="handleDetailConfirm"
+                    v-hasPermi="['department:receiptConfirm:confirm']"
+                  >确认收货</el-button>
                 </div>
               </el-row>
 
@@ -379,6 +390,8 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      /** 详情内确认收货进行中 */
+      detailConfirming: false,
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -390,8 +403,7 @@ export default {
         departmentId: null,
         userId: null,
         receiptConfirmStatus: 0, // 默认未确认（0=未确认，1=已确认）
-        orderByColumn: 'create_time',
-        isAsc: 'desc',
+        // 不传 orderByColumn：后端 selectStkIoBillList 已有业务排序，再传会被 PageHelper 拼成双 ORDER BY 报错
       },
       // 表单参数
       form: {},
@@ -413,6 +425,13 @@ export default {
       return this.$options.filters.formatCurrency
         ? this.$options.filters.formatCurrency(v)
         : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    },
+    /** 详情弹窗：当前单未确认时可点确认收货 */
+    canConfirmCurrentBill() {
+      if (!this.open || !this.form || this.form.id == null) {
+        return false;
+      }
+      return Number(this.form.receiptConfirmStatus) !== 1;
     },
     /** 弹窗明细表高度：与到货验收 apply-modal 一致 */
     detailTableHeight() {
@@ -631,6 +650,9 @@ export default {
       if (params.receiptConfirmStatus === null || params.receiptConfirmStatus === '') {
         delete params.receiptConfirmStatus;
       }
+      // 避免与 Mapper 内 order by 叠成双 ORDER BY
+      delete params.orderByColumn;
+      delete params.isAsc;
       listReceiptConfirm(params).then(response => {
         this.receiptList = response.rows || [];
         this.total = response.total || 0;
@@ -784,6 +806,35 @@ export default {
           this.getList();
         });
       }).catch(() => {});
+    },
+    /** 详情弹窗内确认当前出库单收货 */
+    handleDetailConfirm() {
+      if (!this.canConfirmCurrentBill) {
+        this.$modal.msgWarning("当前单据已确认或不可确认");
+        return;
+      }
+      const billNo = this.form.billNo || "";
+      const tip = billNo
+        ? `确定要对出库单「${billNo}」确认收货吗？`
+        : "确定要确认收货吗？";
+      this.$modal.confirm(tip).then(() => {
+        this.detailConfirming = true;
+        const userId = this.$store.state.user.userId;
+        return confirmReceipt({
+          ids: String(this.form.id),
+          confirmBy: String(userId)
+        }).then(() => {
+          this.$modal.msgSuccess("确认成功");
+          return getReceiptConfirm(this.form.id).then((response) => {
+            this.form = response.data || this.form;
+            this.receiptEntryList = (response.data && response.data.stkIoBillEntryList) || this.receiptEntryList;
+            this.setReceiptStatusText(this.form.receiptConfirmStatus);
+            this.getList();
+          });
+        });
+      }).catch(() => {}).finally(() => {
+        this.detailConfirming = false;
+      });
     },
     /** 出库单明细序号 */
     rowReceiptEntryIndex({ row, rowIndex }) {
