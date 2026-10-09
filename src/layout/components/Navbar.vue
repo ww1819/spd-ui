@@ -49,6 +49,9 @@
           <i class="el-icon-caret-bottom" />
         </div>
         <el-dropdown-menu slot="dropdown">
+          <el-dropdown-item @click.native="createLoginShortcut">
+            <span>创建快捷</span>
+          </el-dropdown-item>
           <router-link to="/user/profile">
             <el-dropdown-item>个人中心</el-dropdown-item>
           </router-link>
@@ -61,6 +64,29 @@
         </el-dropdown-menu>
       </el-dropdown>
     </div>
+
+    <!-- Chrome 创建快捷方式引导（网页无法直接打开系统「创建此页面的快捷方式」弹窗） -->
+    <el-dialog
+      :visible.sync="shortcutGuideVisible"
+      width="480px"
+      append-to-body
+      :show-close="false"
+      custom-class="shortcut-guide-dialog"
+    >
+      <span slot="title" class="dialog-title">
+        <span>创建桌面快捷方式</span>
+        <el-button type="text" class="dialog-close-btn" @click="shortcutGuideVisible = false">关闭</el-button>
+      </span>
+      <div class="shortcut-guide">
+        <p class="shortcut-guide-lead">请使用 Chrome 自带功能创建（与浏览器菜单「创建此页面的快捷方式」相同，不是下载文件）：</p>
+        <ol class="shortcut-guide-steps">
+          <li>点击浏览器右上角 <b>⋮</b></li>
+          <li>选择 <b>保存并分享</b> → <b>创建快捷方式</b></li>
+          <li>在弹出窗口中确认名称后点击 <b>创建</b></li>
+        </ol>
+        <p class="shortcut-guide-tip">按上述步骤即可在桌面生成 Chrome 快捷方式（会在 Chrome 中打开），不是另存为文件。</p>
+      </div>
+    </el-dialog>
 
     <!-- 系统版本信息对话框 -->
     <el-dialog
@@ -133,6 +159,7 @@ export default {
       organizationUnit: '',
       // 系统版本信息对话框显示状态
       versionDialogVisible: false,
+      shortcutGuideVisible: false,
       backendAppName: '',
       backendVersion: '',
       backendBuildTime: ''
@@ -183,6 +210,27 @@ export default {
     },
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
+    },
+    /**
+     * 创建 Chrome 桌面快捷方式（非下载 .url 文件）。
+     * 优先唤起浏览器安装/快捷提示；网页无法直接打开「创建此页面的快捷方式」系统弹窗时给出菜单引导。
+     */
+    async createLoginShortcut() {
+      const deferred = window.__spdDeferredInstallPrompt
+      if (deferred && typeof deferred.prompt === 'function') {
+        try {
+          deferred.prompt()
+          const choice = await deferred.userChoice
+          window.__spdDeferredInstallPrompt = null
+          if (choice && choice.outcome === 'accepted') {
+            this.$modal.msgSuccess('已创建桌面快捷方式')
+          }
+          return
+        } catch (e) {
+          window.__spdDeferredInstallPrompt = null
+        }
+      }
+      this.shortcutGuideVisible = true
     },
     async logout() {
       this.$confirm('确定退出当前账户吗？', '提示', {
@@ -420,6 +468,32 @@ export default {
     &:hover {
       color: #303133;
     }
+  }
+}
+
+.shortcut-guide {
+  padding: 8px 0 4px;
+  font-size: 14px;
+  color: #303133;
+  line-height: 1.6;
+
+  .shortcut-guide-lead {
+    margin: 0 0 12px;
+  }
+
+  .shortcut-guide-steps {
+    margin: 0 0 12px;
+    padding-left: 22px;
+
+    li {
+      margin-bottom: 8px;
+    }
+  }
+
+  .shortcut-guide-tip {
+    margin: 0;
+    color: #909399;
+    font-size: 13px;
   }
 }
 

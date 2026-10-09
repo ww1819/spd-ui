@@ -169,6 +169,22 @@ Vue.use(Element, {
 
 Vue.config.productionTip = false
 
+/** Chrome 桌面快捷 / 安装提示（供顶栏「创建快捷」唤起） */
+window.__spdDeferredInstallPrompt = null
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  window.__spdDeferredInstallPrompt = e
+})
+window.addEventListener('appinstalled', () => {
+  window.__spdDeferredInstallPrompt = null
+})
+if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const swUrl = `${process.env.BASE_URL || '/'}sw-desktop-shortcut.js`.replace(/\/{2,}/g, '/')
+    navigator.serviceWorker.register(swUrl).catch(() => {})
+  })
+}
+
 new Vue({
   el: '#app',
   router,
