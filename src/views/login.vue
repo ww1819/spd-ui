@@ -486,6 +486,10 @@ export default {
             Cookies.remove("customerId");
           }
           this.$store.dispatch("Login", this.loginForm).then(() => {
+            // 无论是否记住密码，都记下所选机构，供平台管理员请求头 / 模式选择兜底
+            if (this.loginForm.customerId) {
+              Cookies.set("customerId", this.loginForm.customerId, { expires: 30 });
+            }
             const username = (this.loginForm.username || '').trim()
             const redirectPath = this.redirect || '/'
             if (username && username.toLowerCase() === 'admin') {

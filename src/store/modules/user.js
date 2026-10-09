@@ -1,6 +1,7 @@
-import { login, logout, getInfo, getCurrentTenant } from '@/api/login'
+import { login, logout, getInfo, getCurrentTenant, switchTenant } from '@/api/login'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { clearMessageReminderAutoOpenFlag } from '@/utils/messageReminderAutoOpen'
+import Cookies from 'js-cookie'
 
 const user = {
   state: {
@@ -143,7 +144,8 @@ const user = {
           commit('SET_AVATAR', avatar)
           if (res.tenant) {
             commit('SET_TENANT', res.tenant)
-          } else {
+          } else if (!(state.tenant && state.tenant.customerId)) {
+            // 平台管理员 getInfo 可能不带租户：保留登录时已选机构，避免清空后无法解析租户
             commit('SET_TENANT', null)
           }
           commit('SET_TENANT_SYNCED_AT', Date.now())
@@ -222,11 +224,58 @@ const user = {
         getCurrentTenant().then(res => {
           if (res && res.tenant) {
             commit('SET_TENANT', res.tenant)
+            resolve(res.tenant)
+            commit('SET_TENANT_SYNCED_AT', Date.now())
+            return
+          }
+          // 平台管理员无绑定 customerId：用登录记住的机构 Cookie 兜底，避免请求无 X-Tenant-Id
+          const cookieCid = Cookies.get('customerId')
+          if (cookieCid && !(state.tenant && state.tenant.customerId)) {
+            const fallback = { customerId: cookieCid }
+            commit('SET_TENANT', fallback)
+            commit('SET_TENANT_SYNCED_AT', Date.now())
+            resolve(fallback)
+            return
           }
           commit('SET_TENANT_SYNCED_AT', Date.now())
-          resolve(res && res.tenant ? res.tenant : null)
+          resolve(state.tenant || null)
         }).catch(() => {
+          const cookieCid = Cookies.get('customerId')
+          if (cookieCid && !(state.tenant && state.tenant.customerId)) {
+            const fallback = { customerId: cookieCid }
+            commit('SET_TENANT', fallback)
+            commit('SET_TENANT_SYNCED_AT', Date.now())
+            resolve(fallback)
+            return
+          }
           resolve(null)
+        })
+      })
+    },
+
+    /** 平台管理员 → 目标租户 super_01 */
+    SwitchTenant({ commit }, { customerId, systemType }) {
+      return new Promise((resolve, reject) => {
+        if (!customerId) {
+          reject(new Error('请选择租户'))
+          return
+        }
+        switchTenant(customerId, systemType || 'hc').then(res => {
+          setToken(res.token)
+          commit('SET_TOKEN', res.token)
+          if (res.tenant) {
+            commit('SET_TENANT', res.tenant)
+          } else {
+            commit('SET_TENANT', { customerId })
+          }
+          commit('SET_TENANT_SYNCED_AT', Date.now())
+          Cookies.set('customerId', customerId, { expires: 30 })
+          clearMessageReminderAutoOpenFlag()
+          // 强制下次走 GetInfo 重建角色/路由
+          commit('SET_ROLES', [])
+          resolve(res)
+        }).catch(err => {
+          reject(err)
         })
       })
     },

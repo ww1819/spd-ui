@@ -55,6 +55,18 @@ export function getCurrentTenant() {
   })
 }
 
+/** 平台管理员切换为指定租户的机构管理员（super_01） */
+export function switchTenant(customerId, systemType) {
+  return request({
+    url: '/switchTenant',
+    method: 'post',
+    data: {
+      customerId,
+      systemType: systemType != null ? systemType : 'hc'
+    }
+  })
+}
+
 // 退出方法
 export function logout() {
   return request({

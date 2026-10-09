@@ -3,6 +3,7 @@ import { Notification, MessageBox, Message, Loading } from 'element-ui'
 import router from '@/router'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
+import Cookies from 'js-cookie'
 import errorCode from '@/utils/errorCode'
 import { tansParams, blobValidate } from "@/utils/ruoyi";
 import cache from '@/plugins/cache'
@@ -49,9 +50,10 @@ service.interceptors.request.use(async config => {
     config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
     // 租户标识（与设备前端一致）：请求头携带，后端做数据隔离与校验
     const tenant = store.getters.tenant
-    if (tenant && tenant.customerId) {
-      config.headers['X-Tenant-Id'] = tenant.customerId
-      if (tenant.customerCode) config.headers['X-Tenant-Code'] = tenant.customerCode
+    const tenantId = (tenant && tenant.customerId) || Cookies.get('customerId') || ''
+    if (tenantId) {
+      config.headers['X-Tenant-Id'] = tenantId
+      if (tenant && tenant.customerCode) config.headers['X-Tenant-Code'] = tenant.customerCode
     }
     // 耗材端：科室/仓库数据范围仅走 sys_user_*（与 Token loginChannel 一致，旧会话兜底）
     config.headers['X-Login-Channel'] = 'hc'
