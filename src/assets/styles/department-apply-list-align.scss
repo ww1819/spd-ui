@@ -3,7 +3,7 @@
  * 科室管理 / 高值订单 / 结算 / 财务 等 page-class 见 $apply-list-pages
  */
 
-$apply-list-pages: receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-audit-page,
+$apply-list-pages: config-page, receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-audit-page,
   departmentTransfer-apply-page, d-audit-page, batch-consume-page, stocktaking-apply-page, stocktaking-audit-page,
   d-apply-page, d-apply-audit-page, d-purchase-page, d-purchase-audit-page,
   gzOrder-goodsApply-page, gzOrder-refund-page, gzOrder-follow-page,

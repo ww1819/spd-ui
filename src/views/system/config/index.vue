@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page">
+  <div class="app-container list-page config-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
         <el-row :gutter="16" class="query-row-first">
@@ -8,17 +8,17 @@
               v-model="queryParams.configName"
               placeholder="参数名称"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
             <el-input
               v-model="queryParams.configKey"
               placeholder="参数键名"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-            <el-select v-model="queryParams.configType" placeholder="系统内置" clearable class="more-search-select-wrap">
+            <el-select v-model="queryParams.configType" placeholder="系统内置" clearable class="more-search-select-wrap apply-query-field">
               <el-option
                 v-for="dict in dict.type.sys_yes_no"
                 :key="dict.value"
@@ -26,19 +26,34 @@
                 :value="dict.value"
               />
             </el-select>
-            <el-date-picker
-              v-model="dateRange"
-              value-format="yyyy-MM-dd"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              class="query-date-picker"
-            />
             <div class="query-actions">
               <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
               <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="16" class="query-row-second">
+          <el-col :span="24" class="query-row-second-inner">
+            <el-form-item class="query-date-range-form-item query-item-inline">
+              <span class="more-search-label">创建日期</span>
+              <el-date-picker
+                v-model="beginDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="开始日期"
+                clearable
+                class="query-date-picker apply-query-date"
+              />
+              <span class="query-date-sep">至</span>
+              <el-date-picker
+                v-model="endDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="结束日期"
+                clearable
+                class="query-date-picker apply-query-date"
+              />
+            </el-form-item>
           </el-col>
         </el-row>
       </el-form>
@@ -46,64 +61,82 @@
 
     <el-row :gutter="0" class="mb8 list-toolbar">
       <div class="list-toolbar-left">
-        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:config:add']">新增</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['system:config:edit']">修改</el-button>
-        <el-button size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['system:config:remove']">删除</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['system:config:export']">导出</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleRefreshCache" v-hasPermi="['system:config:remove']">刷新缓存</el-button>
+        <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['system:config:add']">新增</el-button>
+        <el-button type="warning" icon="el-icon-download" size="small" class="spd-btn" @click="handleExport" v-hasPermi="['system:config:export']">导出</el-button>
+        <el-button type="info" icon="el-icon-refresh" size="small" class="spd-btn spd-btn--info" @click="handleRefreshCache" v-hasPermi="['system:config:remove']">刷新缓存</el-button>
       </div>
       <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
+    <div class="apply-table-panel" ref="tablePanel">
     <el-table
+      ref="applyMainTable"
       v-loading="loading"
       :data="configList"
+      class="table-compact apply-main-table"
+      row-key="configId"
+      :row-class-name="applyMainRowClassName"
+      :height="mainTableHeight"
+      border
       stripe
       @selection-change="handleSelectionChange"
+      @sort-change="handleSortChange"
     >
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="参数主键" align="center" prop="configId" />
-      <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" />
-      <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" />
-      <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" />
-      <el-table-column label="系统内置" align="center" prop="configType">
+      <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+      <el-table-column type="index" label="序号" align="center" width="70" :index="indexMethod" show-overflow-tooltip />
+      <el-table-column label="参数主键" align="center" prop="configId" width="100" sortable="custom" show-overflow-tooltip />
+      <el-table-column label="参数名称" align="center" prop="configName" min-width="160" sortable="custom" show-overflow-tooltip />
+      <el-table-column label="参数键名" align="center" prop="configKey" min-width="180" show-overflow-tooltip />
+      <el-table-column label="参数键值" align="center" prop="configValue" min-width="160" show-overflow-tooltip />
+      <el-table-column label="系统内置" align="center" prop="configType" width="100">
         <template slot-scope="scope">
           <dict-tag :options="dict.type.sys_yes_no" :value="scope.row.configType"/>
         </template>
       </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="备注" align="center" prop="remark" min-width="160" show-overflow-tooltip />
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="140">
         <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['system:config:edit']"
-          >修改</el-button>
-          <el-button
-            size="small"
-            type="text"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['system:config:remove']"
-          >删除</el-button>
+          <span style="white-space: nowrap; display: inline-block;">
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-edit"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['system:config:edit']"
+              style="padding: 0 5px; margin: 0;"
+            >修改</el-button>
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-delete"
+              class="is-danger"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['system:config:remove']"
+              style="padding: 0 5px; margin: 0;"
+            >删除</el-button>
+          </span>
         </template>
       </el-table-column>
     </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+      <div class="pagination-summary"></div>
+      <pagination
+        :total="total"
+        :page.sync="queryParams.pageNum"
+        :limit.sync="queryParams.pageSize"
+        :pager-count="7"
+        @pagination="getList"
+      />
+    </div>
+    </div>
 
     <!-- 添加或修改参数配置对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
@@ -182,15 +215,18 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
-      // 日期范围
-      dateRange: [],
+      beginDate: undefined,
+      endDate: undefined,
+      mainTableHeight: 400,
       // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
         configName: undefined,
         configKey: undefined,
-        configType: undefined
+        configType: undefined,
+        orderByColumn: undefined,
+        isAsc: undefined
       },
       // 表单参数
       form: {},
@@ -225,7 +261,54 @@ export default {
     this.getList();
     this.loadHcCustomerOptions();
   },
+  mounted() {
+    this.$nextTick(() => {
+      this.updateMainTableHeight();
+      requestAnimationFrame(() => this.updateMainTableHeight());
+      [50, 120, 300].forEach((ms) => setTimeout(() => this.updateMainTableHeight(), ms));
+    });
+    window.addEventListener("resize", this.updateMainTableHeight);
+  },
+  beforeDestroy() {
+    window.removeEventListener("resize", this.updateMainTableHeight);
+  },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    },
+    total() {
+      this.$nextTick(() => this.updateMainTableHeight());
+    }
+  },
   methods: {
+    applyMainRowClassName({ row }) {
+      return this.ids.indexOf(row.configId) !== -1 ? "apply-row-selected" : "";
+    },
+    indexMethod(index) {
+      return (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1;
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) {
+        return;
+      }
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) {
+        return;
+      }
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const height = Math.max(200, Math.floor(panelH - pagH));
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+      });
+    },
     loadHcCustomerOptions() {
       getCustomerOptions("hc").then(res => {
         this.customerHcOptions = res.data || [];
@@ -236,10 +319,11 @@ export default {
     /** 查询参数列表 */
     getList() {
       this.loading = true;
-      listConfig(this.addDateRange({ ...this.queryParams }, this.dateRange)).then(response => {
+      listConfig(this.addDateRange({ ...this.queryParams }, [this.beginDate, this.endDate])).then(response => {
           this.configList = response.rows;
           this.total = response.total;
           this.loading = false;
+          this.$nextTick(() => this.updateMainTableHeight());
         }
       );
     },
@@ -265,13 +349,31 @@ export default {
       this.queryParams.pageNum = 1;
       this.getList();
     },
+    /** 表头排序 */
+    handleSortChange({ prop, order }) {
+      if (!order) {
+        this.queryParams.orderByColumn = undefined;
+        this.queryParams.isAsc = undefined;
+      } else {
+        this.queryParams.orderByColumn = prop;
+        this.queryParams.isAsc = order;
+      }
+      this.queryParams.pageNum = 1;
+      this.getList();
+    },
     /** 重置按钮操作 */
     resetQuery() {
-      this.dateRange = [];
+      this.beginDate = undefined;
+      this.endDate = undefined;
       this.resetForm("queryForm");
       this.queryParams.configName = undefined;
       this.queryParams.configKey = undefined;
       this.queryParams.configType = undefined;
+      this.queryParams.orderByColumn = undefined;
+      this.queryParams.isAsc = undefined;
+      if (this.$refs.applyMainTable) {
+        this.$refs.applyMainTable.clearSort();
+      }
       this.handleQuery();
     },
     /** 新增按钮操作 */
@@ -329,7 +431,7 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       this.download('system/config/export', {
-        ...this.queryParams
+        ...this.addDateRange({ ...this.queryParams }, [this.beginDate, this.endDate])
       }, `config_${new Date().getTime()}.xlsx`)
     },
     /** 刷新缓存按钮操作 */
@@ -343,7 +445,7 @@ export default {
 </script>
 
 <style scoped>
-.list-query-panel {
-  margin-top: -20px;
+.app-container.config-page .list-query-panel .el-form .apply-query-date.el-date-editor {
+  width: 150px;
 }
 </style>
