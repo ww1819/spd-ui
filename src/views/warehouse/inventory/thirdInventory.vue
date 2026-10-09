@@ -138,13 +138,35 @@
           @click="saveMoreSearchDefaults"
         >保存查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-tooltip class="item" effect="dark" content="显隐列" placement="top">
+          <el-button size="small" circle icon="el-icon-menu" @click="openColumnDialog" />
+        </el-tooltip>
       </div>
     </el-row>
+
+    <table-column-setting-dialog
+      :visible.sync="columnDialogVisible"
+      :ordered-columns="orderedColumns"
+      :visible-count="visibleColumnList.length"
+      :total-count="columns.length"
+      :active-key="columnActiveKey"
+      :can-move-up="canMoveColumnUp"
+      :can-move-down="canMoveColumnDown"
+      @select-row="selectColumnRow"
+      @move="moveColumn"
+      @set-visible="setColumnVisible"
+      @set-sortable="setColumnSortable"
+      @set-width="setColumnWidth"
+      @set-align="setColumnAlign"
+      @save="saveColumnConfig"
+      @init="initColumnConfig"
+    />
 
     <div class="table-container" ref="tablePanel">
     <el-table
       ref="invDetailTable"
       class="inv-detail-main-table"
+      :key="'inv-psi-table-' + tableColumnEpoch"
       v-loading="loading"
       :data="inventoryList"
       :row-key="getDetailRowKey"
@@ -161,43 +183,210 @@
           {{ (Number(queryParams.pageNum) - 1) * Number(queryParams.pageSize) + scope.$index + 1 }}
         </template>
       </el-table-column>
-      <el-table-column label="产品编码" align="center" prop="materialCode" width="100" min-width="100" show-overflow-tooltip resizable/>
-      <el-table-column label="产品名称" align="center" prop="materialName" width="160" min-width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="120" min-width="90" show-overflow-tooltip resizable/>
-      <el-table-column label="类型" align="center" prop="billType" width="100" min-width="80" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="业务单号" align="center" prop="billNo" width="180" min-width="100" show-overflow-tooltip resizable />
-      <el-table-column label="业务日期" align="center" prop="billDate" width="180" min-width="100" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="100" min-width="90" show-overflow-tooltip resizable/>
-      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable/>
-      <el-table-column label="单位" align="center" prop="unitName" width="80" min-width="70" show-overflow-tooltip resizable/>
-      <el-table-column label="单价" align="center" prop="price" width="120" min-width="90" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.price != null && scope.row.price !== undefined && scope.row.price !== '' && Number(scope.row.price) !== 0">{{ Number(scope.row.price) | formatCurrency}}</span>
-          <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatPrice }}</span>
-          <span v-else-if="scope.row.materialAmt != null && scope.row.materialQty != null && Number(scope.row.materialQty) !== 0">
-            {{ (Number(scope.row.materialAmt) / Number(scope.row.materialQty)) | formatCurrency}}
-          </span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="80" min-width="70" show-overflow-tooltip resizable/>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" min-width="90" show-overflow-tooltip resizable>
-        <template slot-scope="scope">
-          <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="厂家" align="center" prop="factoryName" width="120" min-width="90" show-overflow-tooltip resizable/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="160" min-width="100" show-overflow-tooltip resizable/>
-      <el-table-column label="科室" align="center" prop="departmentName" width="160" min-width="90" show-overflow-tooltip resizable/>
+      <template v-for="item in tableColumnItems">
+        <el-table-column
+          v-if="Number(item.col.key) === 0"
+          :key="'tc-' + tableColumnEpoch + '-0'"
+          label="产品编码"
+          prop="materialCode"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 1"
+          :key="'tc-' + tableColumnEpoch + '-1'"
+          label="产品名称"
+          prop="materialName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 2"
+          :key="'tc-' + tableColumnEpoch + '-2'"
+          label="仓库"
+          prop="warehouseName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 3"
+          :key="'tc-' + tableColumnEpoch + '-3'"
+          label="类型"
+          prop="billType"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.bill_type" :value="scope.row.billType"/>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 4"
+          :key="'tc-' + tableColumnEpoch + '-4'"
+          label="业务单号"
+          prop="billNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 5"
+          :key="'tc-' + tableColumnEpoch + '-5'"
+          label="业务日期"
+          prop="billDate"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 6"
+          :key="'tc-' + tableColumnEpoch + '-6'"
+          label="规格"
+          prop="materialSpeci"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 7"
+          :key="'tc-' + tableColumnEpoch + '-7'"
+          label="型号"
+          prop="materialModel"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 8"
+          :key="'tc-' + tableColumnEpoch + '-8'"
+          label="单位"
+          prop="unitName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 9"
+          :key="'tc-' + tableColumnEpoch + '-9'"
+          label="单价"
+          prop="price"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.price != null && scope.row.price !== undefined && scope.row.price !== '' && Number(scope.row.price) !== 0">{{ Number(scope.row.price) | formatCurrency}}</span>
+            <span v-else-if="scope.row.unitPrice != null && scope.row.unitPrice !== undefined && scope.row.unitPrice !== '' && Number(scope.row.unitPrice) !== 0">{{ Number(scope.row.unitPrice) | formatPrice }}</span>
+            <span v-else-if="scope.row.materialAmt != null && scope.row.materialQty != null && Number(scope.row.materialQty) !== 0">
+              {{ (Number(scope.row.materialAmt) / Number(scope.row.materialQty)) | formatCurrency}}
+            </span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 10"
+          :key="'tc-' + tableColumnEpoch + '-10'"
+          label="数量"
+          prop="materialQty"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 11"
+          :key="'tc-' + tableColumnEpoch + '-11'"
+          label="金额"
+          prop="materialAmt"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 12"
+          :key="'tc-' + tableColumnEpoch + '-12'"
+          label="厂家"
+          prop="factoryName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 13"
+          :key="'tc-' + tableColumnEpoch + '-13'"
+          label="供应商"
+          prop="supplierName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 14"
+          :key="'tc-' + tableColumnEpoch + '-14'"
+          label="科室"
+          prop="departmentName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+      </template>
 
     </el-table>
     </div>
@@ -225,12 +414,41 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import WarehouseAutocomplete from "@/components/SelectModel/WarehouseAutocomplete";
 import MaterialAutocomplete from "@/components/SelectModel/MaterialAutocomplete";
 import RightToolbar from "@/components/RightToolbar";
+import TableColumnSettingDialog from "@/components/TableColumnSettingDialog";
+import { createTableColumnSettingsMixin } from "@/mixins/tableColumnSettings";
 import { listWarehouse } from "@/api/foundation/warehouse";
+
+function createDefaultThirdJxcDetailColumns() {
+  return [
+    { key: 0, label: "产品编码", visible: true, width: 100, align: "center", sortable: false },
+    { key: 1, label: "产品名称", visible: true, width: 160, align: "center", sortable: false },
+    { key: 2, label: "仓库", visible: true, width: 120, align: "center", sortable: false },
+    { key: 3, label: "类型", visible: true, width: 100, align: "center", sortable: false },
+    { key: 4, label: "业务单号", visible: true, width: 180, align: "center", sortable: false },
+    { key: 5, label: "业务日期", visible: true, width: 180, align: "center", sortable: false },
+    { key: 6, label: "规格", visible: true, width: 100, align: "center", sortable: false },
+    { key: 7, label: "型号", visible: true, width: 100, align: "center", sortable: false },
+    { key: 8, label: "单位", visible: true, width: 80, align: "center", sortable: false },
+    { key: 9, label: "单价", visible: true, width: 120, align: "center", sortable: false },
+    { key: 10, label: "数量", visible: true, width: 80, align: "center", sortable: false },
+    { key: 11, label: "金额", visible: true, width: 120, align: "center", sortable: false },
+    { key: 12, label: "厂家", visible: true, width: 120, align: "center", sortable: false },
+    { key: 13, label: "供应商", visible: true, width: 160, align: "center", sortable: false },
+    { key: 14, label: "科室", visible: true, width: 160, align: "center", sortable: false }
+  ];
+}
 
 export default {
   name: "thirdInventory",
   dicts: ['bill_type'],
-  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar},
+  components: {SelectMaterial,SelectWarehouse,WarehouseAutocomplete,MaterialAutocomplete,RightToolbar,TableColumnSettingDialog},
+  mixins: [
+    createTableColumnSettingsMixin({
+      createDefaultColumns: createDefaultThirdJxcDetailColumns,
+      configKey: "inventory_third_jxc_detail_columns",
+      tableRef: "invDetailTable"
+    })
+  ],
   data() {
     return {
       loading: true,
@@ -298,7 +516,9 @@ export default {
   created() {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange();
-    this.getList();
+    this.loadUserColumnConfig().finally(() => {
+      this.getList();
+    });
   },
   mounted() {
     listWarehouse().then((res) => {

@@ -152,6 +152,7 @@
         <el-table-column label="生产厂家" align="left" header-align="center" class-name="ctk-col-left" prop="factoryName" width="160" min-width="160" show-overflow-tooltip resizable />
         <el-table-column label="供应商" align="left" header-align="center" class-name="ctk-col-left" prop="supplierName" width="160" min-width="160" show-overflow-tooltip resizable />
         <el-table-column label="财务分类" align="left" header-align="center" class-name="ctk-col-left" prop="financeCategoryName" width="120" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="库房分类" align="left" header-align="center" class-name="ctk-col-left" prop="warehouseCategoryName" width="120" min-width="120" show-overflow-tooltip resizable />
       </el-table>
     </div>
 

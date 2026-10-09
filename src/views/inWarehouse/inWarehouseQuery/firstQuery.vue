@@ -6,7 +6,7 @@
           <div class="more-search-dynamic-field more-search-field--text">
             <el-input
               v-model="queryParams.supplierKeyword"
-              placeholder="供应商编码/名称"
+              placeholder="供应商"
               clearable
               class="more-search-input more-search-input--dynamic"
               @keyup.enter.native="handleQuery"
@@ -24,7 +24,7 @@
                   v-model="queryParams.warehouseIds"
                   :multiple="true"
                   excludeWarehouseType="高值"
-                  placeholder="仓库多选"
+                  placeholder="仓库"
                 />
               </div>
             </template>
@@ -161,14 +161,36 @@
           class="spd-btn more-search-save-btn"
           @click="saveMoreSearchDefaults"
         >保存查询条件</el-button>
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList" :columns="columns"></right-toolbar>
+        <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-tooltip class="item" effect="dark" content="显隐列" placement="top">
+          <el-button size="small" circle icon="el-icon-menu" @click="openColumnDialog" />
+        </el-tooltip>
       </div>
     </el-row>
+
+    <table-column-setting-dialog
+      :visible.sync="columnDialogVisible"
+      :ordered-columns="orderedColumns"
+      :visible-count="visibleColumnList.length"
+      :total-count="columns.length"
+      :active-key="columnActiveKey"
+      :can-move-up="canMoveColumnUp"
+      :can-move-down="canMoveColumnDown"
+      @select-row="selectColumnRow"
+      @move="moveColumn"
+      @set-visible="setColumnVisible"
+      @set-sortable="setColumnSortable"
+      @set-width="setColumnWidth"
+      @set-align="setColumnAlign"
+      @save="saveColumnConfig"
+      @init="initColumnConfig"
+    />
 
     <div class="table-container" ref="tablePanel">
       <el-table
         ref="rthDetailTable"
         class="rth-detail-main-table"
+        :key="'rth-detail-table-' + tableColumnEpoch"
         v-loading="loading"
         :data="displayData"
         :row-key="getDetailRowKey"
@@ -186,76 +208,349 @@
           <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="产品编码" align="center" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialCode" v-if="columns[0].visible"/>
-      <el-table-column label="产品名称" align="center" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable :sort-method="sortByMaterialName" v-if="columns[1].visible"/>
-      <el-table-column label="仓库" align="center" prop="warehouseName" width="130" min-width="110" show-overflow-tooltip resizable sortable :sort-method="sortByWarehouse" v-if="columns[2].visible"/>
-      <el-table-column label="供应商" align="center" prop="supplierName" width="200" min-width="180" show-overflow-tooltip resizable sortable :sort-method="sortBySupplier" v-if="columns[3].visible"/>
-      <el-table-column label="业务单号" align="center" prop="billNo" width="200" min-width="180" show-overflow-tooltip resizable sortable :sort-method="sortByBillNo" v-if="columns[4].visible" />
-      <el-table-column label="业务日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable v-if="columns[5].visible">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="型号" align="center" prop="materialModel" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByModel" v-if="columns[6].visible"/>
-
-      <el-table-column label="规格" align="center" prop="materialSpeci" width="110" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortBySpeci" v-if="columns[7].visible"/>
-      <el-table-column label="单位" align="center" prop="unitName" width="100" min-width="90" show-overflow-tooltip resizable sortable :sort-method="sortByUnitName" v-if="columns[8].visible"/>
-      <el-table-column label="价格" align="center" prop="unitPrice" width="130" min-width="120" class-name="col-in-sum-price" show-overflow-tooltip resizable sortable :sort-method="sortByUnitPrice" v-if="columns[10].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="数量" align="center" prop="materialQty" width="120" class-name="col-in-sum-qty" show-overflow-tooltip resizable v-if="columns[11].visible">
-        <template slot-scope="scope">
-          {{ scope.row.materialQty }}
-        </template>
-      </el-table-column>
-      <el-table-column label="金额" align="center" prop="materialAmt" width="120" show-overflow-tooltip resizable v-if="columns[12].visible">
-        <template slot-scope="scope">
-          <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="批号" align="center" prop="batchNumber" width="80" show-overflow-tooltip resizable v-if="columns[14].visible"/>
-      <el-table-column label="生产日期" align="center" prop="beginDate" width="180" show-overflow-tooltip resizable v-if="columns[15].visible">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="有效期" align="center" prop="endDate" width="180" show-overflow-tooltip resizable v-if="columns[16].visible">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="生产厂家" align="center" prop="factoryName" width="120" show-overflow-tooltip resizable v-if="columns[9].visible"/>
-      <el-table-column label="批次" align="center" prop="batchNo" width="220" show-overflow-tooltip resizable v-if="columns[13].visible"/>
-
-      <el-table-column label="注册证号" align="center" prop="material.registerNo" width="180" show-overflow-tooltip resizable v-if="columns[17].visible"/>
-      <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="180" show-overflow-tooltip resizable v-if="columns[18].visible"/>
-      <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="180" show-overflow-tooltip resizable v-if="columns[19].visible"/>
-      <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="180" show-overflow-tooltip resizable v-if="columns[20].visible"/>
-      <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable v-if="columns[21].visible">
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="计费" align="center" header-align="center" width="80" class-name="col-yn-center" resizable v-if="columns[22].visible">
-        <template slot-scope="scope">
-          <span v-if="formatBillingYesNo(scope.row) === '--'">--</span>
-          <span
-            v-else
-            class="material-yn-btn"
-            :class="isBillingYes(scope.row) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
-          >{{ formatBillingYesNo(scope.row) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="备注" align="center" prop="remark" width="180" show-overflow-tooltip resizable v-if="columns[23].visible">
-        <template slot-scope="scope">
-          <span>{{ scope.row.remark || (scope.row.material && scope.row.material.remark) || '--' }}</span>
-        </template>
-      </el-table-column>
+      <template v-for="item in tableColumnItems">
+        <el-table-column
+          v-if="Number(item.col.key) === 0"
+          :key="'tc-' + tableColumnEpoch + '-0'"
+          label="产品编码"
+          prop="materialCode"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByMaterialCode"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 1"
+          :key="'tc-' + tableColumnEpoch + '-1'"
+          label="产品名称"
+          prop="materialName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByMaterialName"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 2"
+          :key="'tc-' + tableColumnEpoch + '-2'"
+          label="仓库"
+          prop="warehouseName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByWarehouse"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 3"
+          :key="'tc-' + tableColumnEpoch + '-3'"
+          label="供应商"
+          prop="supplierName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortBySupplier"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 4"
+          :key="'tc-' + tableColumnEpoch + '-4'"
+          label="业务单号"
+          prop="billNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByBillNo"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 5"
+          :key="'tc-' + tableColumnEpoch + '-5'"
+          label="业务日期"
+          prop="billDate"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 6"
+          :key="'tc-' + tableColumnEpoch + '-6'"
+          label="型号"
+          prop="materialModel"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByModel"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 7"
+          :key="'tc-' + tableColumnEpoch + '-7'"
+          label="规格"
+          prop="materialSpeci"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortBySpeci"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 8"
+          :key="'tc-' + tableColumnEpoch + '-8'"
+          label="单位"
+          prop="unitName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByUnitName"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 9"
+          :key="'tc-' + tableColumnEpoch + '-9'"
+          label="生产厂家"
+          prop="factoryName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 10"
+          :key="'tc-' + tableColumnEpoch + '-10'"
+          label="价格"
+          prop="unitPrice"
+          class-name="col-in-sum-price"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :sort-method="sortByUnitPrice"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.unitPrice">{{ scope.row.unitPrice | formatPrice }}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 11"
+          :key="'tc-' + tableColumnEpoch + '-11'"
+          label="数量"
+          prop="materialQty"
+          class-name="col-in-sum-qty"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            {{ scope.row.materialQty }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 12"
+          :key="'tc-' + tableColumnEpoch + '-12'"
+          label="金额"
+          prop="materialAmt"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="scope.row.materialAmt">{{ scope.row.materialAmt | formatCurrency}}</span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 13"
+          :key="'tc-' + tableColumnEpoch + '-13'"
+          label="批次"
+          prop="batchNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 14"
+          :key="'tc-' + tableColumnEpoch + '-14'"
+          label="批号"
+          prop="batchNumber"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 15"
+          :key="'tc-' + tableColumnEpoch + '-15'"
+          label="生产日期"
+          prop="beginDate"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.beginDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 16"
+          :key="'tc-' + tableColumnEpoch + '-16'"
+          label="有效期"
+          prop="endDate"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.endDate, '{y}-{m}-{d}') }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 17"
+          :key="'tc-' + tableColumnEpoch + '-17'"
+          label="注册证号"
+          prop="material.registerNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 18"
+          :key="'tc-' + tableColumnEpoch + '-18'"
+          label="包装规格"
+          prop="material.packageSpeci"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 19"
+          :key="'tc-' + tableColumnEpoch + '-19'"
+          label="库房分类"
+          prop="material.fdWarehouseCategory.warehouseCategoryName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 20"
+          :key="'tc-' + tableColumnEpoch + '-20'"
+          label="财务分类"
+          prop="material.fdFinanceCategory.financeCategoryName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        />
+        <el-table-column
+          v-else-if="Number(item.col.key) === 21"
+          :key="'tc-' + tableColumnEpoch + '-21'"
+          label="储存方式"
+          prop="material.isWay"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 22"
+          :key="'tc-' + tableColumnEpoch + '-22'"
+          label="计费"
+          class-name="col-yn-center"
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="formatBillingYesNo(scope.row) === '--'">--</span>
+            <span
+              v-else
+              class="material-yn-btn"
+              :class="isBillingYes(scope.row) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ formatBillingYesNo(scope.row) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 23"
+          :key="'tc-' + tableColumnEpoch + '-23'"
+          label="备注"
+          prop="remark"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ scope.row.remark || (scope.row.material && scope.row.material.remark) || '--' }}</span>
+          </template>
+        </el-table-column>
+      </template>
       </el-table>
     </div>
 
@@ -287,11 +582,49 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectFinanceCategoryLow from '@/components/SelectModel/SelectFinanceCategoryLow';
 import SelectWarehouseCategoryLow from '@/components/SelectModel/SelectWarehouseCategoryLow';
 import RightToolbar from "@/components/RightToolbar";
+import TableColumnSettingDialog from "@/components/TableColumnSettingDialog";
+import { createTableColumnSettingsMixin } from "@/mixins/tableColumnSettings";
+
+function createDefaultFirstQueryColumns() {
+  return [
+    { key: 0, label: "产品编码", visible: true, width: 145, align: "center", sortable: true },
+    { key: 1, label: "产品名称", visible: true, width: 185, align: "center", sortable: true },
+    { key: 2, label: "仓库", visible: true, width: 130, align: "center", sortable: true },
+    { key: 3, label: "供应商", visible: true, width: 200, align: "center", sortable: true },
+    { key: 4, label: "业务单号", visible: true, width: 200, align: "center", sortable: true },
+    { key: 5, label: "业务日期", visible: true, width: 180, align: "center", sortable: false },
+    { key: 6, label: "型号", visible: true, width: 100, align: "center", sortable: true },
+    { key: 7, label: "规格", visible: true, width: 110, align: "center", sortable: true },
+    { key: 8, label: "单位", visible: true, width: 100, align: "center", sortable: true },
+    { key: 9, label: "生产厂家", visible: true, width: 120, align: "center", sortable: false },
+    { key: 10, label: "价格", visible: true, width: 130, align: "center", sortable: true },
+    { key: 11, label: "数量", visible: true, width: 120, align: "center", sortable: false },
+    { key: 12, label: "金额", visible: true, width: 120, align: "center", sortable: false },
+    { key: 13, label: "批次", visible: true, width: 220, align: "center", sortable: false },
+    { key: 14, label: "批号", visible: true, width: 80, align: "center", sortable: false },
+    { key: 15, label: "生产日期", visible: true, width: 180, align: "center", sortable: false },
+    { key: 16, label: "有效期", visible: true, width: 180, align: "center", sortable: false },
+    { key: 17, label: "注册证号", visible: true, width: 180, align: "center", sortable: false },
+    { key: 18, label: "包装规格", visible: true, width: 180, align: "center", sortable: false },
+    { key: 19, label: "库房分类", visible: true, width: 180, align: "center", sortable: false },
+    { key: 20, label: "财务分类", visible: true, width: 180, align: "center", sortable: false },
+    { key: 21, label: "储存方式", visible: true, width: 180, align: "center", sortable: false },
+    { key: 22, label: "计费", visible: true, width: 80, align: "center", sortable: false },
+    { key: 23, label: "备注", visible: true, width: 180, align: "center", sortable: false }
+  ];
+}
 
 export default {
   name: "firstQuery",
   dicts: ['biz_status','bill_type','in_warehouse_bill_type','way_status'],
-  components: { SelectWarehouse, SelectFinanceCategoryLow, SelectWarehouseCategoryLow, RightToolbar },
+  components: { SelectWarehouse, SelectFinanceCategoryLow, SelectWarehouseCategoryLow, RightToolbar, TableColumnSettingDialog },
+  mixins: [
+    createTableColumnSettingsMixin({
+      createDefaultColumns: createDefaultFirstQueryColumns,
+      configKey: "in_warehouse_first_query_columns",
+      tableRef: "rthDetailTable"
+    })
+  ],
   data() {
       return {
         // 遮罩层
@@ -389,34 +722,7 @@ export default {
         billType: [
           { required: true, message: "入/退货类型不能为空", trigger: "change" }
         ],
-      },
-      // 列显隐配置
-      columns: [
-        { key: 0, label: `产品编码`, visible: true },
-        { key: 1, label: `产品名称`, visible: true },
-        { key: 2, label: `仓库`, visible: true },
-        { key: 3, label: `供应商`, visible: true },
-        { key: 4, label: `业务单号`, visible: true },
-        { key: 5, label: `业务日期`, visible: true },
-        { key: 6, label: `型号`, visible: true },
-        { key: 7, label: `规格`, visible: true },
-        { key: 8, label: `单位`, visible: true },
-        { key: 9, label: `生产厂家`, visible: true },
-        { key: 10, label: `价格`, visible: true },
-        { key: 11, label: `数量`, visible: true },
-        { key: 12, label: `金额`, visible: true },
-        { key: 13, label: `批次`, visible: true },
-        { key: 14, label: `批号`, visible: true },
-        { key: 15, label: `生产日期`, visible: true },
-        { key: 16, label: `有效期`, visible: true },
-        { key: 17, label: `注册证号`, visible: true },
-        { key: 18, label: `包装规格`, visible: true },
-        { key: 19, label: `库房分类`, visible: true },
-        { key: 20, label: `财务分类`, visible: true },
-        { key: 21, label: `储存方式`, visible: true },
-        { key: 22, label: `计费`, visible: true },
-        { key: 23, label: `备注`, visible: true }
-      ]
+      }
     };
   },
   computed: {
@@ -444,7 +750,9 @@ export default {
   created() {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange(this.moreSearchTypes);
-    this.getList();
+    this.loadUserColumnConfig().finally(() => {
+      this.getList();
+    });
   },
   mounted() {
     this.$nextTick(() => {
@@ -678,18 +986,8 @@ export default {
       return map[t] || t;
     },
     moreSearchPlaceholderFor(t) {
-      const map = {
-        factory: "生产厂家编码/名称/简码",
-        materialName: "产品编码/名称/简码",
-        billNo: "业务单号模糊",
-        materialSpeci: "规格模糊",
-        materialModel: "型号模糊",
-        batchNo: "入库明细批号(batch_no)",
-        batchNumber: "入库明细批次号(batch_number)",
-        financeCategoryKeyword: "财务分类编码/名称/简拼",
-        warehouseCategoryKeyword: "库房分类编码/名称/简拼"
-      };
-      return map[t] || "请输入关键字";
+      // 顶部检索框提示与「更多检索」选项名一致，仅短名
+      return this.moreSearchTypeLabel(t) || "请输入";
     },
     // 多选框选中数据
     handleSelectionChange(selection) {

@@ -2978,6 +2978,7 @@ export async function exportConsumeRankingStyledXlsx(options) {
     '生产厂家',
     '供应商',
     '财务分类',
+    '库房分类',
   ];
   const numericCols = [7, 8, 9];
   return exportInventoryQueryStyledXlsx({
@@ -3006,6 +3007,7 @@ export async function exportConsumeRankingStyledXlsx(options) {
       row.factoryName || '',
       row.supplierName || '',
       row.financeCategoryName || '',
+      row.warehouseCategoryName || '',
     ],
     fileName,
   });

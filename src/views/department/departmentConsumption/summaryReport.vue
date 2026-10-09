@@ -148,13 +148,35 @@
         </div>
         <el-button type="success" size="small" icon="el-icon-check" class="spd-btn" @click="saveMoreSearchDefaults">保存查询条件</el-button>
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
+        <el-tooltip class="item" effect="dark" content="显隐列" placement="top">
+          <el-button size="small" circle icon="el-icon-menu" @click="openColumnDialog" />
+        </el-tooltip>
       </div>
     </el-row>
+
+    <table-column-setting-dialog
+      :visible.sync="columnDialogVisible"
+      :ordered-columns="orderedColumns"
+      :visible-count="visibleColumnList.length"
+      :total-count="columns.length"
+      :active-key="columnActiveKey"
+      :can-move-up="canMoveColumnUp"
+      :can-move-down="canMoveColumnDown"
+      @select-row="selectColumnRow"
+      @move="moveColumn"
+      @set-visible="setColumnVisible"
+      @set-sortable="setColumnSortable"
+      @set-width="setColumnWidth"
+      @set-align="setColumnAlign"
+      @save="saveColumnConfig"
+      @init="initColumnConfig"
+    />
 
     <div class="table-container" ref="tablePanel">
       <el-table
         ref="reportTable"
         class="dept-consume-main-table"
+        :key="'dept-consume-summary-table-' + tableColumnEpoch"
         v-loading="loading"
         :data="tableData"
         :height="tableHeight"
@@ -172,33 +194,175 @@
             <span class="col-serial-center-text">{{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="科室" align="left" header-align="center" class-name="ctk-col-left" prop="departmentName" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="耗材编码" align="left" header-align="center" class-name="ctk-col-left" prop="materialCode" width="145" min-width="130" show-overflow-tooltip resizable sortable="custom" />
-        <el-table-column label="耗材名称" align="left" header-align="center" class-name="ctk-col-left" prop="materialName" width="185" min-width="170" show-overflow-tooltip resizable sortable="custom" />
-        <el-table-column label="规格" align="left" header-align="center" class-name="ctk-col-left" prop="specification" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" />
-        <el-table-column label="型号" align="left" header-align="center" class-name="ctk-col-left" prop="model" width="130" min-width="110" show-overflow-tooltip resizable sortable="custom" />
-        <el-table-column label="单位" align="left" header-align="center" class-name="ctk-col-left" prop="unit" width="100" min-width="90" show-overflow-tooltip resizable sortable="custom" />
-        <el-table-column label="消耗数量" align="center" prop="totalQuantity" width="120" min-width="110" show-overflow-tooltip resizable sortable="custom" />
-        <el-table-column label="消耗金额" align="center" prop="totalAmount" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom">
-          <template slot-scope="scope">
-            <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency }}</span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="平均单价" align="center" prop="averagePrice" width="130" min-width="120" show-overflow-tooltip resizable sortable="custom">
-          <template slot-scope="scope">
-            <span v-if="scope.row.averagePrice != null && scope.row.averagePrice !== ''">{{ scope.row.averagePrice | formatCurrency }}</span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="使用率(%)" align="center" prop="usageRate" width="120" show-overflow-tooltip resizable>
-          <template slot-scope="scope">
-            <span v-if="scope.row.usageRate !== null && scope.row.usageRate !== undefined">{{ formatPercentage(scope.row.usageRate) }}</span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="耗材分类" align="left" header-align="center" class-name="ctk-col-left" prop="category" width="120" show-overflow-tooltip resizable />
-        <el-table-column label="财务分类" align="left" header-align="center" class-name="ctk-col-left" prop="financialCategory" width="120" show-overflow-tooltip resizable />
+        <template v-for="item in tableColumnItems">
+          <el-table-column
+            v-if="Number(item.col.key) === 0"
+            :key="'tc-' + tableColumnEpoch + '-0'"
+            label="科室"
+            prop="departmentName"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 1"
+            :key="'tc-' + tableColumnEpoch + '-1'"
+            label="耗材编码"
+            prop="materialCode"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 2"
+            :key="'tc-' + tableColumnEpoch + '-2'"
+            label="耗材名称"
+            prop="materialName"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 3"
+            :key="'tc-' + tableColumnEpoch + '-3'"
+            label="规格"
+            prop="specification"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 4"
+            :key="'tc-' + tableColumnEpoch + '-4'"
+            label="型号"
+            prop="model"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 5"
+            :key="'tc-' + tableColumnEpoch + '-5'"
+            label="单位"
+            prop="unit"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 6"
+            :key="'tc-' + tableColumnEpoch + '-6'"
+            label="消耗数量"
+            prop="totalQuantity"
+            show-overflow-tooltip
+            resizable
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'center'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 7"
+            :key="'tc-' + tableColumnEpoch + '-7'"
+            label="消耗金额"
+            prop="totalAmount"
+            show-overflow-tooltip
+            resizable
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'center'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 8"
+            :key="'tc-' + tableColumnEpoch + '-8'"
+            label="平均单价"
+            prop="averagePrice"
+            show-overflow-tooltip
+            resizable
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'center'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span v-if="scope.row.averagePrice != null && scope.row.averagePrice !== ''">{{ scope.row.averagePrice | formatCurrency }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 9"
+            :key="'tc-' + tableColumnEpoch + '-9'"
+            label="使用率(%)"
+            prop="usageRate"
+            show-overflow-tooltip
+            resizable
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'center'"
+            header-align="center"
+            :width="item.col.width"
+          >
+            <template slot-scope="scope">
+              <span v-if="scope.row.usageRate !== null && scope.row.usageRate !== undefined">{{ formatPercentage(scope.row.usageRate) }}</span>
+              <span v-else>--</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            v-else-if="Number(item.col.key) === 10"
+            :key="'tc-' + tableColumnEpoch + '-10'"
+            label="耗材分类"
+            prop="category"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+          <el-table-column
+            v-else-if="Number(item.col.key) === 11"
+            :key="'tc-' + tableColumnEpoch + '-11'"
+            label="财务分类"
+            prop="financialCategory"
+            show-overflow-tooltip
+            resizable
+            :class-name="(item.col.align || 'left') === 'left' ? 'ctk-col-left' : ''"
+            :sortable="item.col.sortable ? 'custom' : false"
+            :align="item.col.align || 'left'"
+            header-align="center"
+            :width="item.col.width"
+          />
+        </template>
       </el-table>
     </div>
 
@@ -229,6 +393,8 @@
 import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import request from "@/utils/request";
 import RightToolbar from "@/components/RightToolbar";
+import TableColumnSettingDialog from "@/components/TableColumnSettingDialog";
+import { createTableColumnSettingsMixin } from "@/mixins/tableColumnSettings";
 import { exportDepartmentConsumptionSummaryStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { buildDefaultDateRange } from "@/utils/defaultDateRange";
 import deptConsumeLayoutMixin from "./mixins/deptConsumeLayoutMixin";
@@ -238,10 +404,34 @@ function createDefaultDates() {
   return { beginDate, endDate };
 }
 
+function createDefaultSummaryReportColumns() {
+  return [
+    { key: 0, label: "科室", visible: true, width: 120, align: "left", sortable: false },
+    { key: 1, label: "耗材编码", visible: true, width: 145, align: "left", sortable: true },
+    { key: 2, label: "耗材名称", visible: true, width: 185, align: "left", sortable: true },
+    { key: 3, label: "规格", visible: true, width: 130, align: "left", sortable: true },
+    { key: 4, label: "型号", visible: true, width: 130, align: "left", sortable: true },
+    { key: 5, label: "单位", visible: true, width: 100, align: "left", sortable: true },
+    { key: 6, label: "消耗数量", visible: true, width: 120, align: "center", sortable: true },
+    { key: 7, label: "消耗金额", visible: true, width: 130, align: "center", sortable: true },
+    { key: 8, label: "平均单价", visible: true, width: 130, align: "center", sortable: true },
+    { key: 9, label: "使用率(%)", visible: true, width: 120, align: "center", sortable: false },
+    { key: 10, label: "耗材分类", visible: true, width: 120, align: "left", sortable: false },
+    { key: 11, label: "财务分类", visible: true, width: 120, align: "left", sortable: false }
+  ];
+}
+
 export default {
   name: "SummaryReport",
-  mixins: [deptConsumeLayoutMixin],
-  components: { SelectDepartment, RightToolbar },
+  mixins: [
+    deptConsumeLayoutMixin,
+    createTableColumnSettingsMixin({
+      createDefaultColumns: createDefaultSummaryReportColumns,
+      configKey: "dept_consumption_summary_columns",
+      tableRef: "reportTable"
+    })
+  ],
+  components: { SelectDepartment, RightToolbar, TableColumnSettingDialog },
   data() {
     return {
       loading: true,
@@ -305,10 +495,14 @@ export default {
         : String(this.formatAmount(amt));
     }
   },
-  mounted() {
+  created() {
     this.moreSearchTypes = this.loadMoreSearchDefaults();
     this.onMoreSearchTypesChange();
-    this.getList();
+    this.loadUserColumnConfig().finally(() => {
+      this.getList();
+    });
+  },
+  mounted() {
     this.initDeptConsumeLayout();
   },
   methods: {
