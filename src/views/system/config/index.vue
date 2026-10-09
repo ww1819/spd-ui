@@ -163,7 +163,11 @@
               :value="item.customerId"
             />
           </el-select>
-          <el-input v-else v-model="form.configValue" placeholder="请输入参数键值" />
+          <el-input
+            v-else
+            v-model="form.configValue"
+            :placeholder="form.configKey === 'sys.index.sidebarLogo' ? '请输入 1（默认）或 2（aisipute-wide2）' : '请输入参数键值'"
+          />
         </el-form-item>
         <el-form-item label="系统内置" prop="configType">
           <el-radio-group v-model="form.configType">
@@ -243,6 +247,14 @@ export default {
             validator: (rule, value, callback) => {
               if (this.form.configKey === "hc.login.defaultCustomerId") {
                 callback();
+                return;
+              }
+              if (this.form.configKey === "sys.index.sidebarLogo") {
+                if (value !== "1" && value !== "2") {
+                  callback(new Error("侧边栏Logo参数值只能为 1 或 2"));
+                } else {
+                  callback();
+                }
                 return;
               }
               if (value === undefined || value === null || String(value).trim() === "") {

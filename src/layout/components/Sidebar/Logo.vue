@@ -10,7 +10,7 @@
           :src="collapse ? markLogo : logo"
           class="sidebar-logo"
           :class="{ 'is-mark': collapse }"
-          alt="艾思普特"
+          :alt="logoAlt"
         />
       </router-link>
     </transition>
@@ -18,8 +18,13 @@
 </template>
 
 <script>
-import logoImg from '@/assets/logo/aisipute-wide.png'
+import logoDefault from '@/assets/logo/aisipute-wide.png'
+import logoWide2 from '@/assets/logo/aisipute-wide2.png'
 import variables from '@/assets/styles/variables.scss'
+import { getConfigKey } from '@/api/system/config'
+
+/** 参数键：sys.index.sidebarLogo；1=默认 aisipute-wide.png，2=aisipute-wide2.png */
+const SIDEBAR_LOGO_CONFIG_KEY = 'sys.index.sidebarLogo'
 
 export default {
   name: 'SidebarLogo',
@@ -27,6 +32,11 @@ export default {
     collapse: {
       type: Boolean,
       required: true
+    }
+  },
+  data() {
+    return {
+      logoVariant: '1'
     }
   },
   computed: {
@@ -38,11 +48,27 @@ export default {
     },
     markLogo() {
       return `${process.env.BASE_URL || '/'}favicon.png`
+    },
+    logo() {
+      return String(this.logoVariant) === '2' ? logoWide2 : logoDefault
+    },
+    logoAlt() {
+      return String(this.logoVariant) === '2' ? '九州通医药集团' : '艾思普特'
     }
   },
-  data() {
-    return {
-      logo: logoImg
+  created() {
+    this.loadSidebarLogo()
+  },
+  methods: {
+    loadSidebarLogo() {
+      getConfigKey(SIDEBAR_LOGO_CONFIG_KEY).then(res => {
+        // 若依 getConfigKey：参数值放在 msg
+        const val = res && res.msg != null ? res.msg : ''
+        const v = String(val).trim()
+        this.logoVariant = v === '2' ? '2' : '1'
+      }).catch(() => {
+        this.logoVariant = '1'
+      })
     }
   }
 }
