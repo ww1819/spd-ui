@@ -88,6 +88,22 @@
           @click="handleAdd"
         >新增</el-button>
         <el-button
+          type="primary"
+          size="small"
+          icon="el-icon-upload2"
+          class="spd-btn spd-btn--primary"
+          :disabled="multiple"
+          @click="handleBatchSubmit"
+        >提交</el-button>
+        <el-button
+          type="success"
+          size="small"
+          icon="el-icon-s-check"
+          class="spd-btn"
+          :disabled="multiple"
+          @click="handleBatchAudit"
+        >审核</el-button>
+        <el-button
           type="warning"
           size="small"
           icon="el-icon-download"
@@ -110,12 +126,13 @@
         :height="mainTableHeight"
         border
         stripe
+        @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
         <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
         <el-table-column label="单号" align="center" prop="billNo" min-width="160" show-overflow-tooltip resizable sortable>
           <template slot-scope="scope">
-            <el-button type="text">
+            <el-button type="text" @click="handleView(scope.row)">
               <span>{{ scope.row.billNo || '--' }}</span>
             </el-button>
           </template>
@@ -125,6 +142,13 @@
         <el-table-column label="制单日期" align="center" prop="billDate" min-width="170" show-overflow-tooltip resizable sortable>
           <template slot-scope="scope">
             <span>{{ scope.row.billDate || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" align="center" prop="billStatus" min-width="100" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <el-tag :type="billStatusTagType(scope.row.billStatus)" size="small">
+              {{ billStatusLabel(scope.row.billStatus) }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="审核人" align="center" prop="auditByName" min-width="100" show-overflow-tooltip resizable />
@@ -146,6 +170,42 @@
         <el-table-column label="备注" align="center" prop="remark" min-width="160" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.remark || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          align="center"
+          header-align="center"
+          class-name="apply-action-col small-padding fixed-width"
+          width="140"
+          fixed="right"
+        >
+          <template slot-scope="scope">
+            <span style="white-space: nowrap; display: inline-block;">
+              <el-button
+                size="small"
+                type="text"
+                icon="el-icon-view"
+                style="padding: 0 5px; margin: 0;"
+                @click="handleView(scope.row)"
+              >查看</el-button>
+              <el-button
+                v-if="isEditableStatus(scope.row.billStatus)"
+                size="small"
+                type="text"
+                icon="el-icon-edit"
+                style="padding: 0 5px; margin: 0;"
+                @click="handleUpdate(scope.row)"
+              >修改</el-button>
+              <el-button
+                v-if="isAuditedStatus(scope.row.billStatus)"
+                size="small"
+                type="text"
+                icon="el-icon-printer"
+                style="padding: 0 5px; margin: 0;"
+                @click="handlePrint(scope.row)"
+              >打印</el-button>
+            </span>
           </template>
         </el-table-column>
       </el-table>
@@ -192,8 +252,8 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="供应商" prop="supplerId" class="form-item-header-supplier apply-modal-label-required">
-                      <SelectSupplier v-model="form.supplerId" :onlyEnabled="true" placeholder="供应商" class="header-field-select-compact" />
+                    <el-form-item label="供应商" prop="supplierId" class="form-item-header-supplier apply-modal-label-required">
+                      <SelectSupplier v-model="form.supplierId" :onlyEnabled="true" placeholder="供应商" class="header-field-select-compact" />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--date">
@@ -254,6 +314,7 @@
                 <div class="list-toolbar-left">
                   <span class="apply-modal-detail-title">调价明细信息</span>
                   <el-button
+                    v-if="!formReadonly"
                     type="primary"
                     size="small"
                     class="spd-btn spd-btn--primary"
@@ -261,16 +322,19 @@
                     @click="handleAddDetail"
                   >添加</el-button>
                   <el-button
+                    v-if="!formReadonly"
                     type="danger"
                     size="small"
                     icon="el-icon-delete"
                     @click="handleDeleteDetail"
                   >删除</el-button>
                   <el-button
+                    v-if="!formReadonly"
                     type="primary"
                     size="small"
                     class="spd-btn spd-btn--primary"
                     icon="el-icon-check"
+                    :loading="saving"
                     @click="submitForm"
                   >保 存</el-button>
                 </div>
@@ -374,7 +438,7 @@
               :nested="true"
               v-show="dialogMaterialShow"
               :DialogComponentShow="dialogMaterialShow"
-              :supplierValue="form.supplerId"
+              :supplierValue="form.supplierId"
               :excludeMaterialIds="excludeMaterialIds"
               :hideStockDetailColumns="true"
               column-preset="priceAdjust"
@@ -391,19 +455,34 @@
 
 <script>
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import {
+  listPriceAdjust,
+  getPriceAdjust,
+  addPriceAdjust,
+  updatePriceAdjust,
+  submitPriceAdjust,
+  auditPriceAdjust
+} from '@/api/caigou/priceAdjust';
 
 export default {
   name: "PriceAdjust",
-  components: { SelectMaterialFilter },
+  components: { SelectMaterialFilter, SelectSupplier },
   data() {
     return {
       loading: false,
+      saving: false,
       showSearch: true,
       mainTableHeight: 400,
       total: 0,
       dataList: [],
+      ids: [],
+      selectedRows: [],
+      single: true,
+      multiple: true,
       open: false,
       title: "",
+      formReadonly: false,
       dialogMaterialShow: false,
       detailList: [],
       detailSelection: [],
@@ -412,14 +491,17 @@ export default {
         { label: "仓库调价", value: "warehouse" },
         { label: "科室调价", value: "department" }
       ],
+      // 0未提交 → 提交后1未审核 → 审核后2已审核
       billStatusOptions: [
-        { label: "草稿", value: "0" },
+        { label: "未提交", value: "0" },
+        { label: "未审核", value: "1" },
         { label: "已审核", value: "2" }
       ],
       form: {
+        id: null,
         billNo: "",
         adjustType: null,
-        supplerId: null,
+        supplierId: null,
         billDate: null,
         createByName: "",
         contactName: "",
@@ -473,6 +555,30 @@ export default {
     }
   },
   methods: {
+    billStatusLabel(status) {
+      const hit = (this.billStatusOptions || []).find((item) => String(item.value) === String(status));
+      return (hit && hit.label) || "--";
+    },
+    billStatusTagType(status) {
+      const s = String(status == null ? "" : status);
+      if (s === "2") return "success";
+      if (s === "1") return "warning";
+      if (s === "0") return "info";
+      return "info";
+    },
+    isEditableStatus(status) {
+      const s = String(status == null ? "" : status);
+      return s === "0" || s === "1";
+    },
+    isAuditedStatus(status) {
+      return String(status == null ? "" : status) === "2";
+    },
+    handleSelectionChange(selection) {
+      this.selectedRows = selection || [];
+      this.ids = this.selectedRows.map((r) => r.id).filter((id) => id != null);
+      this.single = this.ids.length !== 1;
+      this.multiple = !this.ids.length;
+    },
     getStatDate() {
       const d = new Date();
       d.setDate(d.getDate() - 5);
@@ -504,12 +610,21 @@ export default {
         if (table && table.doLayout) table.doLayout();
       });
     },
-    /** 前端占位：暂不请求接口 */
     getList() {
-      this.loading = false;
-      this.dataList = [];
-      this.total = 0;
-      this.$nextTick(() => this.updateMainTableHeight());
+      this.loading = true;
+      listPriceAdjust(this.queryParams)
+        .then((res) => {
+          const rows = (res && res.rows) || [];
+          this.dataList = rows.map((r, idx) => ({
+            ...r,
+            index: (this.queryParams.pageNum - 1) * this.queryParams.pageSize + idx + 1
+          }));
+          this.total = (res && res.total) || 0;
+        })
+        .finally(() => {
+          this.loading = false;
+          this.$nextTick(() => this.updateMainTableHeight());
+        });
     },
     handleQuery() {
       this.queryParams.pageNum = 1;
@@ -531,7 +646,68 @@ export default {
     },
     handleAdd() {
       this.resetForm();
+      this.formReadonly = false;
       this.title = "添加调价";
+      this.open = true;
+    },
+    handleView(row) {
+      if (!row || row.id == null) return;
+      getPriceAdjust(row.id).then((res) => {
+        const data = (res && res.data) || res || {};
+        this.openEditForm(data, true);
+      });
+    },
+    handleUpdate(row) {
+      if (!row || row.id == null) return;
+      if (!this.isEditableStatus(row.billStatus)) {
+        this.$modal.msgWarning("已审核的单据不可修改");
+        return;
+      }
+      getPriceAdjust(row.id).then((res) => {
+        const data = (res && res.data) || res || {};
+        this.openEditForm(data, false);
+      });
+    },
+    openEditForm(data, readonly) {
+      const nick =
+        data.createByName ||
+        (this.$store.getters.nickName) ||
+        (this.$store.state.user && this.$store.state.user.nickName) ||
+        "";
+      this.formReadonly = !!readonly;
+      this.form = {
+        id: data.id || null,
+        billNo: data.billNo || "",
+        adjustType: data.adjustType || null,
+        supplierId: data.supplierId || null,
+        billDate: data.billDate || this.getEndDate(),
+        createByName: nick,
+        contactName: data.contactName || "",
+        contactPhone: data.contactPhone || "",
+        auditByName: data.auditByName || "",
+        auditDate: data.auditDate || null,
+        remark: data.remark || "",
+        billStatus: data.billStatus
+      };
+      const entries = data.entryList || [];
+      this.detailList = entries.map((e, idx) => ({
+        materialId: e.materialId,
+        materialCode: e.materialCode || "",
+        materialName: e.materialName || "",
+        speci: e.speci || "",
+        model: e.model || "",
+        unit: e.unitName || "",
+        oldPrice: e.oldPrice,
+        newPrice: e.newPrice,
+        financeClass: e.financeClass || "",
+        manufacturer: e.manufacturer || "",
+        regNo: e.regNo || "",
+        regValidDate: e.regValidDate || "",
+        packSpeci: e.packSpeci || "",
+        index: idx + 1
+      }));
+      this.detailSelection = [];
+      this.title = readonly ? "调价详情" : (data.id ? "修改调价" : "添加调价");
       this.open = true;
     },
     resetForm() {
@@ -539,17 +715,20 @@ export default {
         (this.$store.getters.nickName) ||
         (this.$store.state.user && this.$store.state.user.nickName) ||
         "";
+      this.formReadonly = false;
       this.form = {
+        id: null,
         billNo: "",
         adjustType: null,
-        supplerId: null,
+        supplierId: null,
         billDate: this.getEndDate(),
         createByName: nick,
         contactName: "",
         contactPhone: "",
         auditByName: "",
         auditDate: null,
-        remark: ""
+        remark: "",
+        billStatus: "0"
       };
       this.detailList = [];
       this.detailSelection = [];
@@ -559,8 +738,50 @@ export default {
       this.dialogMaterialShow = false;
       this.resetForm();
     },
+    handleBatchSubmit() {
+      if (!this.ids.length) {
+        this.$modal.msgError("请先选择要提交的单据");
+        return;
+      }
+      const invalid = (this.selectedRows || []).filter((r) => !this.isEditableStatus(r.billStatus) || String(r.billStatus) !== "0");
+      if (invalid.length) {
+        const info = invalid.map((r) => `${r.billNo || r.id}(${this.billStatusLabel(r.billStatus)})`).join("，");
+        this.$modal.msgError("只能提交未提交状态的单据：" + info);
+        return;
+      }
+      const nos = (this.selectedRows || []).map((r) => r.billNo).filter(Boolean).join("，");
+      this.$modal
+        .confirm("确定提交选中的 " + this.ids.length + " 张调价单吗？\n单号：" + nos)
+        .then(() => submitPriceAdjust(this.ids))
+        .then(() => {
+          this.$modal.msgSuccess("提交成功");
+          this.getList();
+        })
+        .catch(() => {});
+    },
+    handleBatchAudit() {
+      if (!this.ids.length) {
+        this.$modal.msgError("请先选择要审核的单据");
+        return;
+      }
+      const invalid = (this.selectedRows || []).filter((r) => String(r.billStatus) !== "1");
+      if (invalid.length) {
+        const info = invalid.map((r) => `${r.billNo || r.id}(${this.billStatusLabel(r.billStatus)})`).join("，");
+        this.$modal.msgError("只能审核未审核状态的单据：" + info);
+        return;
+      }
+      const nos = (this.selectedRows || []).map((r) => r.billNo).filter(Boolean).join("，");
+      this.$modal
+        .confirm("确定审核选中的 " + this.ids.length + " 张调价单吗？\n单号：" + nos)
+        .then(() => auditPriceAdjust(this.ids))
+        .then(() => {
+          this.$modal.msgSuccess("审核成功");
+          this.getList();
+        })
+        .catch(() => {});
+    },
     handleAddDetail() {
-      if (!this.form.supplerId) {
+      if (!this.form.supplierId) {
         this.$message({ message: "请先选择供应商", type: "warning" });
         return;
       }
@@ -652,11 +873,86 @@ export default {
       });
       return sums;
     },
+    buildSavePayload() {
+      return {
+        id: this.form.id || undefined,
+        billNo: this.form.billNo || undefined,
+        adjustType: this.form.adjustType,
+        supplierId: this.form.supplierId,
+        billDate: this.form.billDate,
+        contactName: this.form.contactName,
+        contactPhone: this.form.contactPhone,
+        remark: this.form.remark,
+        entryList: (this.detailList || []).map((d, idx) => ({
+          materialId: d.materialId,
+          materialCode: d.materialCode,
+          materialName: d.materialName,
+          speci: d.speci,
+          model: d.model,
+          unitName: d.unit,
+          oldPrice: d.oldPrice,
+          newPrice: d.newPrice === "" || d.newPrice == null ? null : Number(d.newPrice),
+          financeClass: d.financeClass,
+          manufacturer: d.manufacturer,
+          regNo: d.regNo,
+          regValidDate: d.regValidDate,
+          packSpeci: d.packSpeci,
+          lineNo: idx + 1
+        }))
+      };
+    },
     submitForm() {
-      this.$modal.msg("调价功能开发中，当前仅展示界面");
+      if (this.formReadonly) {
+        return;
+      }
+      if (this.form.id != null && this.isAuditedStatus(this.form.billStatus)) {
+        this.$modal.msgWarning("已审核的单据不可修改");
+        return;
+      }
+      if (!this.form.adjustType) {
+        this.$modal.msgError("请选择调价类型");
+        return;
+      }
+      if (!this.form.supplierId) {
+        this.$modal.msgError("请选择供应商");
+        return;
+      }
+      if (!this.detailList || !this.detailList.length) {
+        this.$modal.msgError("请添加调价明细");
+        return;
+      }
+      const missingPrice = this.detailList.some(
+        (d) => d.newPrice === "" || d.newPrice == null || Number.isNaN(Number(d.newPrice))
+      );
+      if (missingPrice) {
+        this.$modal.msgError("请填写现价");
+        return;
+      }
+      const payload = this.buildSavePayload();
+      const isUpdate = this.form.id != null;
+      this.saving = true;
+      const req = isUpdate ? updatePriceAdjust(payload) : addPriceAdjust(payload);
+      req
+        .then((res) => {
+          const data = (res && res.data) || res || {};
+          if (data.id != null) {
+            this.form.id = data.id;
+          }
+          if (data.billNo) {
+            this.form.billNo = data.billNo;
+          }
+          this.$modal.msgSuccess(isUpdate ? "保存成功" : "新增成功，单号：" + (this.form.billNo || ""));
+          this.getList();
+        })
+        .finally(() => {
+          this.saving = false;
+        });
+    },
+    handlePrint() {
+      // 打印功能后续实现
     },
     handleExport() {
-      this.$modal.msg("调价功能开发中，当前仅展示列表界面");
+      this.$modal.msg("导出功能开发中");
     }
   }
 };

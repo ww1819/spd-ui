@@ -2,44 +2,32 @@
   <div class="app-container list-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form class="query-form" :model="queryParams" ref="queryForm" size="small" :inline="true">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--text"
-          >
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
               v-model="queryParams.menuName"
               placeholder="菜单名称"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="menu-query-input"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
-
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item prop="status" class="query-item-inline">
-              <el-select v-model="queryParams.status" placeholder="菜单状态" clearable class="more-search-select-wrap">
-                <el-option
-                  v-for="dict in dict.type.sys_normal_disable"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
+            <el-select
+              v-model="queryParams.status"
+              placeholder="菜单状态"
+              clearable
+              class="menu-query-select"
+            >
+              <el-option
+                v-for="dict in dict.type.sys_normal_disable"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+            <div class="query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -493,10 +481,6 @@ export default {
       loading: true,
       // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '菜单名称', value: 'menuName' }
-      ],
       // 菜单表格树数据
       menuList: [],
       // 菜单树选项
@@ -534,7 +518,7 @@ export default {
       // 查询参数
       queryParams: {
         menuName: undefined,
-        visible: undefined
+        status: undefined
       },
       // 表单参数
       form: {},
@@ -553,17 +537,9 @@ export default {
     };
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
   computed: {
-    moreSearchStorageKey() {
-      return 'spd.system.menu.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
-    },
     /** 回显库中每条勾选态时强制父子不关联，避免仅父级勾选掩盖子级/按钮实际状态 */
     defaultOpenTreeCheckStrictly() {
       if (this.applyingDefaultOpenDbKeys) return true;
@@ -578,9 +554,7 @@ export default {
     /** 查询菜单列表 */
     getList() {
       this.loading = true;
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      listMenu(params).then(response => {
+      listMenu(this.queryParams).then(response => {
         this.menuList = this.handleTree(response.data, "menuId");
         this.loading = false;
       });
@@ -730,37 +704,12 @@ export default {
     },
     /** 重置按钮操作 */
     resetQuery() {
+      this.queryParams = {
+        menuName: undefined,
+        status: undefined
+      };
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      if (!set.has('menuName')) {
-        target.menuName = null;
-      }
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
     },
     /** 新增按钮操作 */
     handleAdd(row) {
@@ -957,5 +906,23 @@ export default {
 <style scoped>
 .list-query-panel {
   margin-top: -20px;
+}
+.query-row-first-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+.menu-query-input {
+  width: 200px;
+}
+.menu-query-select {
+  width: 160px;
+}
+.query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
 }
 </style>
