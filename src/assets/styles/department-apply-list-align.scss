@@ -15,7 +15,7 @@ $apply-list-pages: config-page, receipt-confirm-page, d-purchase-agg-page, d-pur
   stocktaking-page, stocktaking-profit-page, profit-loss-page,
   initial-stock-import-page, stocktaking-in-page,
   new-product-apply-page, new-product-audit-page, wh-warehouse-apply-page,
-  patient-charge-page;
+  patient-charge-page, price-adjust-page;
 
 @mixin department-apply-list-page($page) {
   .app-container.#{$page} {

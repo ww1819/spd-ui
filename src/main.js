@@ -38,6 +38,7 @@ import DictTag from '@/components/DictTag'
 import VueMeta from 'vue-meta'
 // 字典数据组件
 import DictData from '@/components/DictData'
+import { ensureDesktopShortcutSw } from '@/utils/desktopShortcut'
 // 供应商组件
 import SelectSupplier from '@/components/SelectModel/SelectSupplier'
 // 耗材组件
@@ -178,12 +179,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
 window.addEventListener('appinstalled', () => {
   window.__spdDeferredInstallPrompt = null
 })
-if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    const swUrl = `${process.env.BASE_URL || '/'}sw-desktop-shortcut.js`.replace(/\/{2,}/g, '/')
-    navigator.serviceWorker.register(swUrl).catch(() => {})
-  })
-}
+window.addEventListener('load', () => {
+  ensureDesktopShortcutSw()
+})
 
 new Vue({
   el: '#app',

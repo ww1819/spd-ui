@@ -66,7 +66,7 @@
                 />
               </el-form-item>
             </el-col>
-            <el-col class="apply-modal-field apply-modal-field--standard">
+            <el-col v-if="!isPriceAdjustColumns" class="apply-modal-field apply-modal-field--standard">
               <el-form-item label="按供应商过滤" prop="filterBySupplier" label-width="96px" class="material-filter-radio-item">
                 <el-radio-group v-model="queryParams.filterBySupplier">
                   <el-radio :label="true">是</el-radio>
@@ -116,6 +116,7 @@
             :data="materialList"
             :row-class-name="materialFilterDetailRowClassName"
             @selection-change="handleSelectionChange"
+            @row-dblclick="handleRowDblclick"
             :height="filterTableHeight"
             border
             stripe
@@ -147,9 +148,9 @@
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns || isPriceAdjustColumns" label="数量" align="center" prop="qty" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <span>{{ scope.row.qty || '--' }}</span>
+              <span>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="单价" align="center" prop="unitPrice" width="100" show-overflow-tooltip resizable>
@@ -158,50 +159,50 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
+          <el-table-column v-if="(!hideStockDetailColumns && showInboundExtraColumns) || isPriceAdjustColumns" label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.amt">{{ scope.row.amt | formatCurrency}}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="计费" align="center" prop="material.isBilling" width="70" show-overflow-tooltip resizable>
+          <el-table-column v-if="showInboundExtraColumns" label="计费" align="center" prop="material.isBilling" width="70" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1)) ? '是' : '否' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="院内码" align="center" prop="inHospitalCode" width="200" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns && showInboundExtraColumns" label="院内码" align="center" prop="inHospitalCode" width="200" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.inHospitalCode || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="生产日期" align="center" prop="materialDate" width="120" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns && showInboundExtraColumns" label="生产日期" align="center" prop="materialDate" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.materialDate">{{ formatDate(scope.row.materialDate) }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="有效期" align="center" prop="endTime" width="120" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns && showInboundExtraColumns" label="有效期" align="center" prop="endTime" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.endTime">{{ formatDate(scope.row.endTime) }}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="批号" align="center" prop="materialNo" width="150" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns && showInboundExtraColumns" label="批号" align="center" prop="materialNo" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.materialNo || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="批次号" align="center" prop="batchNo" width="150" show-overflow-tooltip resizable>
+          <el-table-column v-if="!hideStockDetailColumns && showInboundExtraColumns" label="批次号" align="center" prop="batchNo" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="库房分类" align="center" width="120" show-overflow-tooltip resizable>
+          <el-table-column v-if="showInboundExtraColumns" label="库房分类" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="财务分类" align="center" width="120" show-overflow-tooltip resizable>
+          <el-table-column v-if="showInboundExtraColumns" label="财务分类" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
             </template>
@@ -211,12 +212,13 @@
               <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="包装规格" align="center" width="120" show-overflow-tooltip resizable>
+          <!-- 到货验收：包装规格在厂家后；调价申请：厂家后为供应商，包装规格在注册证有效期后 -->
+          <el-table-column v-if="!isPriceAdjustColumns" label="包装规格" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column v-if="!hideStockDetailColumns" label="供应商" align="center" width="150" show-overflow-tooltip resizable>
+          <el-table-column v-if="showSupplierColumn" label="供应商" align="center" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
             </template>
@@ -226,7 +228,7 @@
               <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="注册证有效期" align="center" width="120" show-overflow-tooltip resizable>
+          <el-table-column :label="registerValidLabel" align="center" width="130" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span v-if="scope.row.material && scope.row.material.periodDate">
                 {{ formatDate(scope.row.material.periodDate) }}
@@ -234,7 +236,22 @@
               <span v-else>--</span>
             </template>
           </el-table-column>
-          <el-table-column label="存储方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
+          <el-table-column v-if="isPriceAdjustColumns" label="包装规格" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isPriceAdjustColumns" label="财务分类" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="isPriceAdjustColumns" label="库房分类" align="center" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="showInboundExtraColumns" label="存储方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <dict-tag v-if="scope.row.material && scope.row.material.isWay" :options="dict.type.way_status" :value="scope.row.material.isWay"/>
               <span v-else>--</span>
@@ -260,6 +277,7 @@
               :data="materialList"
               :row-class-name="materialFilterDetailRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleRowDblclick"
               height="calc(55vh)"
               border
             >
@@ -464,6 +482,25 @@ export default {
     modalTitle: {
       type: String,
       default: '添加明细'
+    },
+    /** 明细列预设：default=到货验收等同款；priceAdjust=调价申请添加明细指定列 */
+    columnPreset: {
+      type: String,
+      default: 'default'
+    }
+  },
+  computed: {
+    isPriceAdjustColumns() {
+      return this.columnPreset === 'priceAdjust';
+    },
+    showInboundExtraColumns() {
+      return !this.isPriceAdjustColumns;
+    },
+    showSupplierColumn() {
+      return this.isPriceAdjustColumns || !this.hideStockDetailColumns;
+    },
+    registerValidLabel() {
+      return this.isPriceAdjustColumns ? '注册证号有效期' : '注册证有效期';
     }
   },
   data() {
@@ -1056,6 +1093,16 @@ export default {
           this.$set(this.detailSelectedRowMap, idx, true);
         }
       });
+    },
+    /** 双击行切换勾选（再次双击取消） */
+    handleRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const table = this.$refs.singleTable;
+      if (!table) return;
+      const key = this.getRowKey(row);
+      const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     handleClose() {
       //关闭弹窗

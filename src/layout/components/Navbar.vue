@@ -49,14 +49,14 @@
           <i class="el-icon-caret-bottom" />
         </div>
         <el-dropdown-menu slot="dropdown">
-          <el-dropdown-item @click.native="createLoginShortcut">
-            <span>创建快捷</span>
-          </el-dropdown-item>
           <router-link to="/user/profile">
             <el-dropdown-item>个人中心</el-dropdown-item>
           </router-link>
           <el-dropdown-item @click.native="setting = true">
             <span>布局设置</span>
+          </el-dropdown-item>
+          <el-dropdown-item @click.native="createLoginShortcut">
+            <span>创建快捷</span>
           </el-dropdown-item>
           <el-dropdown-item divided @click.native="logout">
             <span>退出登录</span>
@@ -78,13 +78,16 @@
         <el-button type="text" class="dialog-close-btn" @click="shortcutGuideVisible = false">关闭</el-button>
       </span>
       <div class="shortcut-guide">
-        <p class="shortcut-guide-lead">请使用 Chrome 自带功能创建（与浏览器菜单「创建此页面的快捷方式」相同，不是下载文件）：</p>
+        <p class="shortcut-guide-lead">浏览器暂未给出一键安装提示。请先 <b>Ctrl+F5 强制刷新</b> 后再点一次「创建快捷」；若仍无系统弹窗，请按 Chrome 菜单手动创建：</p>
         <ol class="shortcut-guide-steps">
           <li>点击浏览器右上角 <b>⋮</b></li>
           <li>选择 <b>保存并分享</b> → <b>创建快捷方式</b></li>
           <li>在弹出窗口中确认名称后点击 <b>创建</b></li>
         </ol>
-        <p class="shortcut-guide-tip">按上述步骤即可在桌面生成 Chrome 快捷方式（会在 Chrome 中打开），不是另存为文件。</p>
+        <p class="shortcut-guide-tip">此方式与 Chrome 原生桌面快捷方式相同（在 Chrome 中打开），不是下载文件。</p>
+        <div class="shortcut-guide-actions">
+          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" :loading="shortcutCreating" @click="retryCreateShortcut">再试一次</el-button>
+        </div>
       </div>
     </el-dialog>
 
@@ -141,6 +144,7 @@ import RuoYiGit from '@/components/RuoYi/Git'
 import RuoYiDoc from '@/components/RuoYi/Doc'
 import { listConfig } from '@/api/system/config'
 import { getAppVersion } from '@/api/common/version'
+import { promptDesktopShortcut } from '@/utils/desktopShortcut'
 
 export default {
   components: {
@@ -160,6 +164,7 @@ export default {
       // 系统版本信息对话框显示状态
       versionDialogVisible: false,
       shortcutGuideVisible: false,
+      shortcutCreating: false,
       backendAppName: '',
       backendVersion: '',
       backendBuildTime: ''
@@ -212,25 +217,30 @@ export default {
       this.$store.dispatch('app/toggleSideBar')
     },
     /**
-     * 创建 Chrome 桌面快捷方式（非下载 .url 文件）。
-     * 优先唤起浏览器安装/快捷提示；网页无法直接打开「创建此页面的快捷方式」系统弹窗时给出菜单引导。
+     * 创建 Chrome 桌面快捷方式（非下载文件）。
+     * 能唤起浏览器安装提示则直接弹出；否则显示菜单引导。
      */
     async createLoginShortcut() {
-      const deferred = window.__spdDeferredInstallPrompt
-      if (deferred && typeof deferred.prompt === 'function') {
-        try {
-          deferred.prompt()
-          const choice = await deferred.userChoice
-          window.__spdDeferredInstallPrompt = null
-          if (choice && choice.outcome === 'accepted') {
-            this.$modal.msgSuccess('已创建桌面快捷方式')
-          }
+      if (this.shortcutCreating) return
+      this.shortcutCreating = true
+      try {
+        const outcome = await promptDesktopShortcut()
+        if (outcome === 'accepted') {
+          this.shortcutGuideVisible = false
+          this.$modal.msgSuccess('已创建桌面快捷方式')
           return
-        } catch (e) {
-          window.__spdDeferredInstallPrompt = null
         }
+        if (outcome === 'dismissed') {
+          this.shortcutGuideVisible = false
+          return
+        }
+        this.shortcutGuideVisible = true
+      } finally {
+        this.shortcutCreating = false
       }
-      this.shortcutGuideVisible = true
+    },
+    retryCreateShortcut() {
+      this.createLoginShortcut()
     },
     async logout() {
       this.$confirm('确定退出当前账户吗？', '提示', {
@@ -491,9 +501,13 @@ export default {
   }
 
   .shortcut-guide-tip {
-    margin: 0;
+    margin: 0 0 14px;
     color: #909399;
     font-size: 13px;
+  }
+
+  .shortcut-guide-actions {
+    text-align: right;
   }
 }
 
