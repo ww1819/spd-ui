@@ -53,3 +53,21 @@ export function delPriceAdjust(ids) {
     method: 'delete'
   })
 }
+
+/** 调价报表明细 */
+export function listPriceAdjustReportDetail(query) {
+  return request({
+    url: '/caigou/priceAdjust/report/detail',
+    method: 'get',
+    params: query
+  })
+}
+
+/** 调价报表汇总 */
+export function listPriceAdjustReportSummary(query) {
+  return request({
+    url: '/caigou/priceAdjust/report/summary',
+    method: 'get',
+    params: query
+  })
+}

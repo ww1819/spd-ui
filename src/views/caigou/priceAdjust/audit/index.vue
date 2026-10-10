@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page price-adjust-page" :class="{ 'is-modal-open': open }">
+  <div class="app-container list-page price-adjust-audit-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -83,18 +83,11 @@
         <el-button
           type="primary"
           size="small"
-          icon="el-icon-plus"
-          class="spd-btn spd-btn--primary"
-          @click="handleAdd"
-        >新增</el-button>
-        <el-button
-          type="primary"
-          size="small"
-          icon="el-icon-upload2"
+          icon="el-icon-check"
           class="spd-btn spd-btn--primary"
           :disabled="multiple"
-          @click="handleBatchSubmit"
-        >提交</el-button>
+          @click="handleBatchAudit"
+        >审核</el-button>
         <el-button
           type="warning"
           size="small"
@@ -120,7 +113,7 @@
         stripe
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+        <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" :selectable="selectableAuditRow" />
         <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
         <el-table-column label="单号" align="center" prop="billNo" min-width="160" show-overflow-tooltip resizable sortable>
           <template slot-scope="scope">
@@ -136,7 +129,7 @@
             <span>{{ scope.row.billDate || '--' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" align="center" prop="billStatus" min-width="100" show-overflow-tooltip resizable>
+        <el-table-column label="单据状态" align="center" prop="billStatus" min-width="100" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <el-tag :type="billStatusTagType(scope.row.billStatus)" size="small">
               {{ billStatusLabel(scope.row.billStatus) }}
@@ -182,13 +175,13 @@
                 @click="handleView(scope.row)"
               >查看</el-button>
               <el-button
-                v-if="isEditableStatus(scope.row.billStatus)"
+                v-if="isPendingAudit(scope.row.billStatus)"
                 size="small"
                 type="text"
-                icon="el-icon-edit"
+                icon="el-icon-check"
                 style="padding: 0 5px; margin: 0;"
-                @click="handleUpdate(scope.row)"
-              >修改</el-button>
+                @click="handleRowAudit(scope.row)"
+              >审核</el-button>
               <el-button
                 v-if="isAuditedStatus(scope.row.billStatus)"
                 size="small"
@@ -232,8 +225,8 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="调价类型" prop="adjustType" class="apply-modal-label-required">
-                      <el-select v-model="form.adjustType" placeholder="调价类型" clearable class="header-field-select-compact">
+                    <el-form-item label="调价类型" prop="adjustType">
+                      <el-select v-model="form.adjustType" placeholder="调价类型" disabled class="header-field-select-compact">
                         <el-option
                           v-for="item in adjustTypeOptions"
                           :key="item.value"
@@ -244,8 +237,8 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="供应商" prop="supplierId" class="form-item-header-supplier apply-modal-label-required">
-                      <SelectSupplier v-model="form.supplierId" :onlyEnabled="true" placeholder="供应商" class="header-field-select-compact" />
+                    <el-form-item label="供应商" prop="supplierName" class="form-item-header-supplier">
+                      <el-input v-model="form.supplierName" disabled placeholder="供应商" />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--date">
@@ -256,7 +249,7 @@
                         value-format="yyyy-MM-dd"
                         placeholder="制单日期"
                         style="width: 100%"
-                        clearable
+                        disabled
                       />
                     </el-form-item>
                   </el-col>
@@ -267,12 +260,12 @@
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="联系人" prop="contactName">
-                      <el-input v-model="form.contactName" placeholder="联系人" clearable />
+                      <el-input v-model="form.contactName" placeholder="联系人" disabled />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="联系方式" prop="contactPhone">
-                      <el-input v-model="form.contactPhone" placeholder="联系方式" clearable />
+                      <el-input v-model="form.contactPhone" placeholder="联系方式" disabled />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -296,7 +289,7 @@
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--remark">
                     <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" placeholder="备注" clearable />
+                      <el-input v-model="form.remark" placeholder="备注" disabled />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -306,29 +299,14 @@
                 <div class="list-toolbar-left">
                   <span class="apply-modal-detail-title">调价明细信息</span>
                   <el-button
-                    v-if="!formReadonly"
-                    type="primary"
-                    size="small"
-                    class="spd-btn spd-btn--primary"
-                    icon="el-icon-plus"
-                    @click="handleAddDetail"
-                  >添加</el-button>
-                  <el-button
-                    v-if="!formReadonly"
-                    type="danger"
-                    size="small"
-                    icon="el-icon-delete"
-                    @click="handleDeleteDetail"
-                  >删除</el-button>
-                  <el-button
-                    v-if="!formReadonly"
+                    v-if="isPendingAudit(form.billStatus)"
                     type="primary"
                     size="small"
                     class="spd-btn spd-btn--primary"
                     icon="el-icon-check"
-                    :loading="saving"
-                    @click="submitForm"
-                  >保 存</el-button>
+                    :loading="auditing"
+                    @click="handleFormAudit"
+                  >审 核</el-button>
                 </div>
               </el-row>
 
@@ -341,9 +319,7 @@
                     show-summary
                     :summary-method="getSummaries"
                     :height="detailTableHeight"
-                    @selection-change="handleDetailSelectionChange"
                   >
-                    <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
                     <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
                     <el-table-column label="产品编码" align="center" prop="materialCode" min-width="120" show-overflow-tooltip resizable sortable>
                       <template slot-scope="scope">
@@ -385,16 +361,9 @@
                         <span class="price-cell-red">{{ scope.row.oldPrice != null && scope.row.oldPrice !== '' ? scope.row.oldPrice : '--' }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="现价" align="center" prop="newPrice" min-width="110" resizable>
+                    <el-table-column label="现价" align="center" prop="newPrice" min-width="110" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
-                        <el-input
-                          v-model="scope.row.newPrice"
-                          size="small"
-                          class="detail-input-compact price-input-red"
-                          placeholder="现价"
-                          clearable
-                          @input="onNewPriceInput(scope.row)"
-                        />
+                        <span class="price-cell-red">{{ scope.row.newPrice != null && scope.row.newPrice !== '' ? scope.row.newPrice : '--' }}</span>
                       </template>
                     </el-table-column>
                     <el-table-column label="财务分类" align="center" prop="financeClass" min-width="110" show-overflow-tooltip resizable>
@@ -426,18 +395,6 @@
                 </div>
               </div>
             </el-form>
-            <SelectMaterialFilter
-              :nested="true"
-              v-show="dialogMaterialShow"
-              :DialogComponentShow="dialogMaterialShow"
-              :supplierValue="form.supplierId"
-              :excludeMaterialIds="excludeMaterialIds"
-              :hideStockDetailColumns="true"
-              column-preset="priceAdjust"
-              modal-title="TJ-添加明细"
-              @closeDialog="closeMaterialDialog"
-              @selectData="selectMaterialData"
-            />
           </div>
         </transition>
       </div>
@@ -446,23 +403,18 @@
 </template>
 
 <script>
-import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
-import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import {
   listPriceAdjust,
   getPriceAdjust,
-  addPriceAdjust,
-  updatePriceAdjust,
-  submitPriceAdjust
+  auditPriceAdjust
 } from '@/api/caigou/priceAdjust';
 
 export default {
-  name: "PriceAdjust",
-  components: { SelectMaterialFilter, SelectSupplier },
+  name: "PriceAdjustAudit",
   data() {
     return {
       loading: false,
-      saving: false,
+      auditing: false,
       showSearch: true,
       mainTableHeight: 400,
       total: 0,
@@ -473,16 +425,12 @@ export default {
       multiple: true,
       open: false,
       title: "",
-      formReadonly: false,
-      dialogMaterialShow: false,
       detailList: [],
-      detailSelection: [],
       adjustTypeOptions: [
         { label: "档案调价", value: "archive" },
         { label: "仓库调价", value: "warehouse" },
         { label: "科室调价", value: "department" }
       ],
-      // 0未提交 → 提交后1未审核 → 审核后2已审核
       billStatusOptions: [
         { label: "未提交", value: "0" },
         { label: "未审核", value: "1" },
@@ -493,13 +441,15 @@ export default {
         billNo: "",
         adjustType: null,
         supplierId: null,
+        supplierName: "",
         billDate: null,
         createByName: "",
         contactName: "",
         contactPhone: "",
         auditByName: "",
         auditDate: null,
-        remark: ""
+        remark: "",
+        billStatus: null
       },
       queryParams: {
         pageNum: 1,
@@ -507,7 +457,7 @@ export default {
         billNo: null,
         adjustType: null,
         createByName: null,
-        billStatus: null,
+        billStatus: "1",
         dateQueryType: "bill",
         beginDate: this.getStatDate(),
         endDate: this.getEndDate()
@@ -517,11 +467,6 @@ export default {
   computed: {
     detailTableHeight() {
       return "max(240px, calc(100vh - 360px))";
-    },
-    excludeMaterialIds() {
-      return (this.detailList || [])
-        .map((d) => d.materialId)
-        .filter((id) => id != null && id !== "");
     }
   },
   mounted() {
@@ -551,18 +496,20 @@ export default {
       return (hit && hit.label) || "--";
     },
     billStatusTagType(status) {
-      const s = String(status == null ? "" : status);
-      if (s === "2") return "success";
-      if (s === "1") return "warning";
-      if (s === "0") return "info";
+      const st = String(status == null ? "" : status);
+      if (st === "2") return "success";
+      if (st === "1") return "warning";
+      if (st === "0") return "info";
       return "info";
     },
-    isEditableStatus(status) {
-      const s = String(status == null ? "" : status);
-      return s === "0" || s === "1";
+    isPendingAudit(status) {
+      return String(status == null ? "" : status) === "1";
     },
     isAuditedStatus(status) {
       return String(status == null ? "" : status) === "2";
+    },
+    selectableAuditRow(row) {
+      return this.isPendingAudit(row && row.billStatus);
     },
     handleSelectionChange(selection) {
       this.selectedRows = selection || [];
@@ -628,50 +575,37 @@ export default {
         billNo: null,
         adjustType: null,
         createByName: null,
-        billStatus: null,
+        billStatus: "1",
         dateQueryType: "bill",
         beginDate: this.getStatDate(),
         endDate: this.getEndDate()
       };
       this.getList();
     },
-    handleAdd() {
-      this.resetForm();
-      this.formReadonly = false;
-      this.title = "添加调价";
-      this.open = true;
-    },
     handleView(row) {
       if (!row || row.id == null) return;
       getPriceAdjust(row.id).then((res) => {
         const data = (res && res.data) || res || {};
-        this.openEditForm(data, true);
+        this.openViewForm(data);
       });
     },
-    handleUpdate(row) {
-      if (!row || row.id == null) return;
-      if (!this.isEditableStatus(row.billStatus)) {
-        this.$modal.msgWarning("已审核的单据不可修改");
-        return;
-      }
-      getPriceAdjust(row.id).then((res) => {
-        const data = (res && res.data) || res || {};
-        this.openEditForm(data, false);
-      });
-    },
-    openEditForm(data, readonly) {
+    openViewForm(data) {
       const nick =
         data.createByName ||
         (this.$store.getters.nickName) ||
         (this.$store.state.user && this.$store.state.user.nickName) ||
         "";
-      this.formReadonly = !!readonly;
+      const supplierName =
+        data.supplierName ||
+        (data.supplier && data.supplier.name) ||
+        "";
       this.form = {
         id: data.id || null,
         billNo: data.billNo || "",
         adjustType: data.adjustType || null,
         supplierId: data.supplierId || null,
-        billDate: data.billDate || this.getEndDate(),
+        supplierName,
+        billDate: data.billDate || "",
         createByName: nick,
         contactName: data.contactName || "",
         contactPhone: data.contactPhone || "",
@@ -697,145 +631,89 @@ export default {
         packSpeci: e.packSpeci || "",
         index: idx + 1
       }));
-      this.detailSelection = [];
-      this.title = readonly ? "调价详情" : (data.id ? "修改调价" : "添加调价");
+      this.title = "调价审核详情";
       this.open = true;
     },
     resetForm() {
-      const nick =
-        (this.$store.getters.nickName) ||
-        (this.$store.state.user && this.$store.state.user.nickName) ||
-        "";
-      this.formReadonly = false;
       this.form = {
         id: null,
         billNo: "",
         adjustType: null,
         supplierId: null,
-        billDate: this.getEndDate(),
-        createByName: nick,
+        supplierName: "",
+        billDate: null,
+        createByName: "",
         contactName: "",
         contactPhone: "",
         auditByName: "",
         auditDate: null,
         remark: "",
-        billStatus: "0"
+        billStatus: null
       };
       this.detailList = [];
-      this.detailSelection = [];
     },
     cancel() {
       this.open = false;
-      this.dialogMaterialShow = false;
       this.resetForm();
     },
-    handleBatchSubmit() {
+    doAudit(ids) {
+      const idList = Array.isArray(ids) ? ids : [ids];
+      this.auditing = true;
+      return auditPriceAdjust(idList)
+        .then(() => {
+          this.$modal.msgSuccess("审核成功");
+          this.open = false;
+          this.resetForm();
+          this.getList();
+        })
+        .finally(() => {
+          this.auditing = false;
+        });
+    },
+    handleBatchAudit() {
       if (!this.ids.length) {
-        this.$modal.msgError("请先选择要提交的单据");
+        this.$modal.msgError("请先选择要审核的单据");
         return;
       }
-      const invalid = (this.selectedRows || []).filter((r) => !this.isEditableStatus(r.billStatus) || String(r.billStatus) !== "0");
+      const invalid = (this.selectedRows || []).filter((r) => !this.isPendingAudit(r.billStatus));
       if (invalid.length) {
-        const info = invalid.map((r) => `${r.billNo || r.id}(${this.billStatusLabel(r.billStatus)})`).join("，");
-        this.$modal.msgError("只能提交未提交状态的单据：" + info);
+        const info = invalid.map((r) => (r.billNo || r.id) + "(" + this.billStatusLabel(r.billStatus) + ")").join("，");
+        this.$modal.msgError("只能审核未审核状态的单据：" + info);
         return;
       }
       const nos = (this.selectedRows || []).map((r) => r.billNo).filter(Boolean).join("，");
       this.$modal
-        .confirm("确定提交选中的 " + this.ids.length + " 张调价单吗？\n单号：" + nos)
-        .then(() => submitPriceAdjust(this.ids))
-        .then(() => {
-          this.$modal.msgSuccess("提交成功");
-          this.getList();
-        })
+        .confirm("确定审核选中的 " + this.ids.length + " 张调价单吗？\n单号：" + nos)
+        .then(() => this.doAudit(this.ids))
         .catch(() => {});
     },
-    handleAddDetail() {
-      if (!this.form.supplierId) {
-        this.$message({ message: "请先选择供应商", type: "warning" });
+    handleRowAudit(row) {
+      if (!row || row.id == null) return;
+      if (!this.isPendingAudit(row.billStatus)) {
+        this.$modal.msgWarning("只能审核未审核状态的单据");
         return;
       }
-      this.dialogMaterialShow = true;
+      this.$modal
+        .confirm("确定审核调价单 " + (row.billNo || row.id) + " 吗？")
+        .then(() => this.doAudit([row.id]))
+        .catch(() => {});
     },
-    closeMaterialDialog() {
-      this.dialogMaterialShow = false;
-    },
-    selectMaterialData(val) {
-      const rows = Array.isArray(val) ? val : [];
-      rows.forEach((item) => {
-        const material = item.material || item;
-        const exists = this.detailList.some(
-          (d) => d.materialId != null && d.materialId === (material.id || item.id)
-        );
-        if (exists) return;
-        this.detailList.push({
-          materialId: material.id || item.id,
-          materialCode: material.code || "",
-          materialName: material.name || "",
-          speci: material.speci || "",
-          model: material.model || "",
-          unit: (material.fdUnit && material.fdUnit.unitName) || material.unitName || "",
-          oldPrice: item.unitPrice != null ? item.unitPrice : (material.price != null ? material.price : null),
-          newPrice: null,
-          financeClass:
-            (material.fdFinanceCategory && material.fdFinanceCategory.financeCategoryName) || "",
-          manufacturer:
-            (material.fdFactory && material.fdFactory.factoryName) || material.factoryName || "",
-          supplierName: (material.supplier && material.supplier.name) || "",
-          regNo: material.registerNo || "",
-          regValidDate: material.periodDate || "",
-          packSpeci: material.packageSpeci || ""
-        });
-      });
-      this.detailList.forEach((row, idx) => {
-        row.index = idx + 1;
-      });
-    },
-    onNewPriceInput(row) {
-      if (!row) return;
-      let v = row.newPrice;
-      if (v === "" || v == null) {
-        row.newPrice = null;
+    handleFormAudit() {
+      if (!this.form.id) return;
+      if (!this.isPendingAudit(this.form.billStatus)) {
+        this.$modal.msgWarning("只能审核未审核状态的单据");
         return;
       }
-      // 仅允许数字与小数点，与原价/单价同为数值类型
-      v = String(v).replace(/[^\d.]/g, "");
-      const parts = v.split(".");
-      if (parts.length > 2) {
-        v = parts[0] + "." + parts.slice(1).join("");
-      }
-      if (v === "" || v === ".") {
-        row.newPrice = v === "." ? "0." : null;
-        return;
-      }
-      const num = Number(v);
-      row.newPrice = Number.isNaN(num) ? null : (v.endsWith(".") ? v : num);
-    },
-    handleDeleteDetail() {
-      if (!this.detailSelection.length) {
-        this.$message({ message: "请先勾选要删除的明细", type: "warning" });
-        return;
-      }
-      const removeIds = new Set(
-        this.detailSelection.map((r) => r.materialId).filter((id) => id != null)
-      );
-      this.detailList = this.detailList
-        .filter((r) => !removeIds.has(r.materialId))
-        .map((r, idx) => ({ ...r, index: idx + 1 }));
-      this.detailSelection = [];
-    },
-    handleDetailSelectionChange(selection) {
-      this.detailSelection = selection || [];
+      this.$modal
+        .confirm("确定审核调价单 " + (this.form.billNo || this.form.id) + " 吗？")
+        .then(() => this.doAudit([this.form.id]))
+        .catch(() => {});
     },
     getSummaries(param) {
       const { columns } = param;
       const sums = columns.map(() => "");
       let placed = false;
       columns.forEach((column, index) => {
-        if (column.type === "selection") {
-          sums[index] = "";
-          return;
-        }
         if (!placed && (column.property === "index" || column.label === "序号")) {
           sums[index] = "合计";
           placed = true;
@@ -843,84 +721,7 @@ export default {
       });
       return sums;
     },
-    buildSavePayload() {
-      return {
-        id: this.form.id || undefined,
-        billNo: this.form.billNo || undefined,
-        adjustType: this.form.adjustType,
-        supplierId: this.form.supplierId,
-        billDate: this.form.billDate,
-        contactName: this.form.contactName,
-        contactPhone: this.form.contactPhone,
-        remark: this.form.remark,
-        entryList: (this.detailList || []).map((d, idx) => ({
-          materialId: d.materialId,
-          materialCode: d.materialCode,
-          materialName: d.materialName,
-          speci: d.speci,
-          model: d.model,
-          unitName: d.unit,
-          oldPrice: d.oldPrice,
-          newPrice: d.newPrice === "" || d.newPrice == null ? null : Number(d.newPrice),
-          financeClass: d.financeClass,
-          manufacturer: d.manufacturer,
-          regNo: d.regNo,
-          regValidDate: d.regValidDate,
-          packSpeci: d.packSpeci,
-          lineNo: idx + 1
-        }))
-      };
-    },
-    submitForm() {
-      if (this.formReadonly) {
-        return;
-      }
-      if (this.form.id != null && this.isAuditedStatus(this.form.billStatus)) {
-        this.$modal.msgWarning("已审核的单据不可修改");
-        return;
-      }
-      if (!this.form.adjustType) {
-        this.$modal.msgError("请选择调价类型");
-        return;
-      }
-      if (!this.form.supplierId) {
-        this.$modal.msgError("请选择供应商");
-        return;
-      }
-      if (!this.detailList || !this.detailList.length) {
-        this.$modal.msgError("请添加调价明细");
-        return;
-      }
-      const missingPrice = this.detailList.some(
-        (d) => d.newPrice === "" || d.newPrice == null || Number.isNaN(Number(d.newPrice))
-      );
-      if (missingPrice) {
-        this.$modal.msgError("请填写现价");
-        return;
-      }
-      const payload = this.buildSavePayload();
-      const isUpdate = this.form.id != null;
-      this.saving = true;
-      const req = isUpdate ? updatePriceAdjust(payload) : addPriceAdjust(payload);
-      req
-        .then((res) => {
-          const data = (res && res.data) || res || {};
-          if (data.id != null) {
-            this.form.id = data.id;
-          }
-          if (data.billNo) {
-            this.form.billNo = data.billNo;
-          }
-          this.$modal.msgSuccess(isUpdate ? "保存成功" : "新增成功，单号：" + (this.form.billNo || ""));
-          this.getList();
-        })
-        .finally(() => {
-          this.saving = false;
-        });
-    },
-    handlePrint() {
-      // 打印功能后续实现
-    },
+    handlePrint() {},
     handleExport() {
       this.$modal.msg("导出功能开发中");
     }
@@ -949,7 +750,7 @@ export default {
 }
 
 /* 弹窗打开时去掉页底留白，避免露出灰色底边 */
-.app-container.price-adjust-page.is-modal-open {
+.app-container.price-adjust-audit-page.is-modal-open {
   padding-bottom: 0 !important;
 }
 
@@ -1052,10 +853,10 @@ export default {
 /*
  * 非 scoped：对齐到货验收——通栏铺满、上下仅 4px 间距，左右无额外内缩
  */
-.app-container.price-adjust-page.is-modal-open {
+.app-container.price-adjust-audit-page.is-modal-open {
   padding-bottom: 0 !important;
 }
-.app-container.price-adjust-page .local-modal-mask {
+.app-container.price-adjust-audit-page .local-modal-mask {
   left: -8px !important;
   right: -8px !important;
   top: 0 !important;
@@ -1067,14 +868,14 @@ export default {
 }
 
 /* 仅主弹窗表单；勿覆盖添加明细嵌套层 material-filter-form 顶部 8px 留白 */
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) {
   padding: 8px 0 0 !important;
   box-sizing: border-box;
   background: #fff !important;
 }
 
 /* —— 1. 主弹窗表头容器（不含添加明细嵌套层） —— */
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-query-panel {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-query-panel {
   flex: 0 0 auto;
   margin: 0 !important;
   width: 100% !important;
@@ -1087,13 +888,13 @@ export default {
   box-shadow: none !important;
   background: #fff !important;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .el-row {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .el-row {
   margin-bottom: 10px;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .el-row:last-child {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .el-row:last-child {
   margin-bottom: 0;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -1103,21 +904,21 @@ export default {
   padding-left: 12px;
   box-sizing: border-box;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
   width: auto !important;
   flex: 0 0 auto;
   max-width: none;
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
   margin-bottom: 0;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   vertical-align: top;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
   float: none;
   width: auto !important;
   flex: 0 0 auto;
@@ -1127,61 +928,61 @@ export default {
   height: 28px;
   font-size: 13px;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
   line-height: 28px;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
   color: #f56c6c !important;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
   content: none !important;
   display: none !important;
 }
-.app-container.price-adjust-page .local-modal-content .modal-form-compact .el-input__inner {
+.app-container.price-adjust-audit-page .local-modal-content .modal-form-compact .el-input__inner {
   height: 28px !important;
   line-height: 28px !important;
   font-size: 13px !important;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .form-item-header-billno .el-input,
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-input,
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-select,
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .header-field-select-compact {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .form-item-header-billno .el-input,
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-input,
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-select,
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .header-field-select-compact {
   width: 162px !important;
   max-width: 162px !important;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--standard .el-input,
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--standard .el-select,
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--standard .el-date-editor {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--standard .el-input,
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--standard .el-select,
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--standard .el-date-editor {
   width: 140px !important;
   max-width: 140px !important;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--date .el-date-editor {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--date .el-date-editor {
   width: 150px !important;
   max-width: 150px !important;
 }
 /* 备注 ≈ 两个紧凑输入框 */
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark {
   width: auto !important;
   flex: 0 0 auto !important;
   max-width: none !important;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark .el-form-item {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark .el-form-item {
   width: auto;
   display: inline-flex;
   white-space: nowrap;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark .el-form-item__content {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark .el-form-item__content {
   flex: 0 0 auto;
 }
-.app-container.price-adjust-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark .el-input {
+.app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark .el-input {
   width: 336px !important;
   max-width: 336px !important;
 }
 
 /* —— 2. 主弹窗按钮行（不含添加明细嵌套层） —— */
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-toolbar.list-toolbar {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-toolbar.list-toolbar {
   flex: 0 0 auto !important;
   display: flex !important;
   flex-wrap: wrap;
@@ -1200,14 +1001,14 @@ export default {
   box-shadow: none !important;
   overflow: visible !important;
 }
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-toolbar .list-toolbar-left {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-toolbar .list-toolbar-left {
   display: inline-flex !important;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
   padding-left: 0;
 }
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-detail-title {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-detail-title {
   font-size: 14px;
   font-weight: 600;
   color: #334155;
@@ -1216,7 +1017,7 @@ export default {
 }
 
 /* —— 3. 主弹窗明细框 —— */
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-table-panel {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-table-panel {
   margin: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
@@ -1232,24 +1033,24 @@ export default {
   box-shadow: none !important;
   overflow: hidden;
 }
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-table-panel .table-wrapper {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-table-panel .table-wrapper {
   flex: 1;
   min-height: 0;
   overflow: hidden;
   width: 100%;
   box-sizing: border-box;
 }
-.app-container.price-adjust-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-table-panel .apply-detail-table {
+.app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-table-panel .apply-detail-table {
   margin-bottom: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
 /* 明细表头高度：与到货验收一致 34px */
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell {
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell {
   background-color: #f1f5f9 !important;
   color: #334155 !important;
   font-size: 13px !important;
@@ -1260,8 +1061,8 @@ export default {
   padding-bottom: 4px !important;
   height: 34px !important;
 }
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell {
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell {
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
@@ -1270,8 +1071,8 @@ export default {
 }
 
 /* 合计行 */
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper {
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -1279,11 +1080,11 @@ export default {
   position: relative;
   z-index: 30 !important;
 }
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr {
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr {
   height: 38px !important;
 }
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell {
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell {
   height: 38px !important;
   min-height: 38px !important;
   padding: 6px 0 !important;
@@ -1296,7 +1097,7 @@ export default {
   border-top: 1px solid #e2e8f0 !important;
   border-bottom: none !important;
 }
-.app-container.price-adjust-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell {
+.app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell {
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
@@ -1305,7 +1106,7 @@ export default {
 }
 
 /* 添加明细嵌套弹窗：与到货验收 RK-添加明细一致 */
-.app-container.price-adjust-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
+.app-container.price-adjust-audit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
   position: absolute;
   left: 0;
   right: -8px;
@@ -1315,24 +1116,24 @@ export default {
   box-sizing: border-box;
   z-index: 3100;
 }
-.app-container.price-adjust-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-header {
+.app-container.price-adjust-audit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-header {
   padding: 6px 8px !important;
   background: #ebeef5 !important;
   min-height: 40px !important;
   border-bottom: 1px solid #ebeef5 !important;
 }
-.app-container.price-adjust-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-title {
+.app-container.price-adjust-audit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-title {
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
-html body .app-container.price-adjust-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+html body .app-container.price-adjust-audit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
 }
-.app-container.price-adjust-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .material-filter-modal--nested {
+.app-container.price-adjust-audit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .material-filter-modal--nested {
   width: 100%;
   height: 100%;
   max-height: 100%;
@@ -1342,7 +1143,7 @@ html body .app-container.price-adjust-page .apply-modal-root-content > .material
   display: flex;
   flex-direction: column;
 }
-html body .app-container.price-adjust-page .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+html body .app-container.price-adjust-audit-page .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
   padding: 8px 0 12px !important;
   flex: 1;
   min-height: 0;
@@ -1353,7 +1154,7 @@ html body .app-container.price-adjust-page .apply-inbound-nested-modal > .materi
   box-sizing: border-box !important;
 }
 /* 标题栏与搜索容器之间可见留白（与到货验收 RK-添加明细一致） */
-html body .app-container.price-adjust-page .apply-inbound-nested-modal .material-filter-form > .apply-modal-query-panel {
+html body .app-container.price-adjust-audit-page .apply-inbound-nested-modal .material-filter-form > .apply-modal-query-panel {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   padding: 12px 8px !important;
@@ -1365,7 +1166,7 @@ html body .app-container.price-adjust-page .apply-inbound-nested-modal .material
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
   background: #fff !important;
 }
-.app-container.price-adjust-page .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
+.app-container.price-adjust-audit-page .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
   margin-top: 4px !important;
   margin-bottom: 4px !important;
   padding: 8px 14px !important;
@@ -1377,22 +1178,22 @@ html body .app-container.price-adjust-page .apply-inbound-nested-modal .material
   border-bottom: 1px solid #e8ecf1 !important;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
 }
-.app-container.price-adjust-page .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
+.app-container.price-adjust-audit-page .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
   flex: 1 1 auto;
   min-height: 0;
   margin-bottom: 0;
 }
 
 /* 原价/现价：仅单元格内容红色，表头不变色 */
-.app-container.price-adjust-page .apply-detail-table .price-cell-red {
+.app-container.price-adjust-audit-page .apply-detail-table .price-cell-red {
   color: #f56c6c;
   font-weight: 500;
 }
-.app-container.price-adjust-page .apply-detail-table .price-input-red .el-input__inner {
+.app-container.price-adjust-audit-page .apply-detail-table .price-input-red .el-input__inner {
   color: #f56c6c !important;
   font-weight: 500;
 }
-.app-container.price-adjust-page .apply-detail-table .detail-input-compact .el-input__inner {
+.app-container.price-adjust-audit-page .apply-detail-table .detail-input-compact .el-input__inner {
   height: 28px;
   line-height: 28px;
   padding: 0 8px;
