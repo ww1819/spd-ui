@@ -295,8 +295,13 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--remark">
+                    <el-form-item label="调价原因" prop="adjustReason">
+                      <el-input v-model="form.adjustReason" placeholder="调价原因" clearable :disabled="formReadonly" maxlength="500" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--remark">
                     <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" placeholder="备注" clearable />
+                      <el-input v-model="form.remark" placeholder="备注" clearable :disabled="formReadonly" maxlength="500" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -491,7 +496,7 @@ export default {
       form: {
         id: null,
         billNo: "",
-        adjustType: null,
+        adjustType: "archive",
         supplierId: null,
         billDate: null,
         createByName: "",
@@ -499,6 +504,7 @@ export default {
         contactPhone: "",
         auditByName: "",
         auditDate: null,
+        adjustReason: "",
         remark: ""
       },
       queryParams: {
@@ -669,7 +675,7 @@ export default {
       this.form = {
         id: data.id || null,
         billNo: data.billNo || "",
-        adjustType: data.adjustType || null,
+        adjustType: data.adjustType || "archive",
         supplierId: data.supplierId || null,
         billDate: data.billDate || this.getEndDate(),
         createByName: nick,
@@ -677,6 +683,7 @@ export default {
         contactPhone: data.contactPhone || "",
         auditByName: data.auditByName || "",
         auditDate: data.auditDate || null,
+        adjustReason: data.adjustReason || "",
         remark: data.remark || "",
         billStatus: data.billStatus
       };
@@ -710,7 +717,7 @@ export default {
       this.form = {
         id: null,
         billNo: "",
-        adjustType: null,
+        adjustType: "archive",
         supplierId: null,
         billDate: this.getEndDate(),
         createByName: nick,
@@ -718,6 +725,7 @@ export default {
         contactPhone: "",
         auditByName: "",
         auditDate: null,
+        adjustReason: "",
         remark: "",
         billStatus: "0"
       };
@@ -852,6 +860,7 @@ export default {
         billDate: this.form.billDate,
         contactName: this.form.contactName,
         contactPhone: this.form.contactPhone,
+        adjustReason: this.form.adjustReason,
         remark: this.form.remark,
         entryList: (this.detailList || []).map((d, idx) => ({
           materialId: d.materialId,

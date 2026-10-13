@@ -206,7 +206,7 @@
       </div>
     </div>
 
-    <!-- 新增/编辑调价弹窗（布局对齐到货验收 apply-modal） -->
+    <!-- ??/??????????????? apply-modal? -->
     <transition name="modal-fade">
       <div v-if="open" class="local-modal-mask">
         <transition name="modal-zoom">
@@ -285,6 +285,11 @@
                         style="width: 100%"
                         disabled
                       />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--remark">
+                    <el-form-item label="调价原因" prop="adjustReason">
+                      <el-input v-model="form.adjustReason" placeholder="调价原因" disabled />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--remark">
@@ -431,6 +436,7 @@ export default {
         { label: "仓库调价", value: "warehouse" },
         { label: "科室调价", value: "department" }
       ],
+      // ????????????????/???
       billStatusOptions: [
         { label: "未提交", value: "0" },
         { label: "未审核", value: "1" },
@@ -448,6 +454,7 @@ export default {
         contactPhone: "",
         auditByName: "",
         auditDate: null,
+        adjustReason: "",
         remark: "",
         billStatus: null
       },
@@ -496,10 +503,10 @@ export default {
       return (hit && hit.label) || "--";
     },
     billStatusTagType(status) {
-      const st = String(status == null ? "" : status);
-      if (st === "2") return "success";
-      if (st === "1") return "warning";
-      if (st === "0") return "info";
+      const s = String(status == null ? "" : status);
+      if (s === "2") return "success";
+      if (s === "1") return "warning";
+      if (s === "0") return "info";
       return "info";
     },
     isPendingAudit(status) {
@@ -611,6 +618,7 @@ export default {
         contactPhone: data.contactPhone || "",
         auditByName: data.auditByName || "",
         auditDate: data.auditDate || null,
+        adjustReason: data.adjustReason || "",
         remark: data.remark || "",
         billStatus: data.billStatus
       };
@@ -631,7 +639,7 @@ export default {
         packSpeci: e.packSpeci || "",
         index: idx + 1
       }));
-      this.title = "调价审核详情";
+      this.title = "调价审核";
       this.open = true;
     },
     resetForm() {
@@ -647,6 +655,7 @@ export default {
         contactPhone: "",
         auditByName: "",
         auditDate: null,
+        adjustReason: "",
         remark: "",
         billStatus: null
       };
@@ -656,7 +665,7 @@ export default {
       this.open = false;
       this.resetForm();
     },
-    doAudit(ids) {
+    doAudit(ids, nos) {
       const idList = Array.isArray(ids) ? ids : [ids];
       this.auditing = true;
       return auditPriceAdjust(idList)
@@ -672,41 +681,41 @@ export default {
     },
     handleBatchAudit() {
       if (!this.ids.length) {
-        this.$modal.msgError("请先选择要审核的单据");
+        this.$modal.msgError("请先勾选待审核单据");
         return;
       }
       const invalid = (this.selectedRows || []).filter((r) => !this.isPendingAudit(r.billStatus));
       if (invalid.length) {
-        const info = invalid.map((r) => (r.billNo || r.id) + "(" + this.billStatusLabel(r.billStatus) + ")").join("，");
-        this.$modal.msgError("只能审核未审核状态的单据：" + info);
+        const info = invalid.map((r) => `${r.billNo || r.id}(${this.billStatusLabel(r.billStatus)})`).join("、");
+        this.$modal.msgError("仅未审核状态可审核：" + info);
         return;
       }
-      const nos = (this.selectedRows || []).map((r) => r.billNo).filter(Boolean).join("，");
+      const nos = (this.selectedRows || []).map((r) => r.billNo).filter(Boolean).join("、");
       this.$modal
-        .confirm("确定审核选中的 " + this.ids.length + " 张调价单吗？\n单号：" + nos)
-        .then(() => this.doAudit(this.ids))
+        .confirm("确认审核选中的 " + this.ids.length + " 张调价单？\n单号：" + nos)
+        .then(() => this.doAudit(this.ids, nos))
         .catch(() => {});
     },
     handleRowAudit(row) {
       if (!row || row.id == null) return;
       if (!this.isPendingAudit(row.billStatus)) {
-        this.$modal.msgWarning("只能审核未审核状态的单据");
+        this.$modal.msgWarning("仅未审核状态可审核");
         return;
       }
       this.$modal
-        .confirm("确定审核调价单 " + (row.billNo || row.id) + " 吗？")
-        .then(() => this.doAudit([row.id]))
+        .confirm("确认审核调价单 " + (row.billNo || row.id) + " 吗？")
+        .then(() => this.doAudit([row.id], row.billNo))
         .catch(() => {});
     },
     handleFormAudit() {
       if (!this.form.id) return;
       if (!this.isPendingAudit(this.form.billStatus)) {
-        this.$modal.msgWarning("只能审核未审核状态的单据");
+        this.$modal.msgWarning("仅未审核状态可审核");
         return;
       }
       this.$modal
-        .confirm("确定审核调价单 " + (this.form.billNo || this.form.id) + " 吗？")
-        .then(() => this.doAudit([this.form.id]))
+        .confirm("确认审核调价单 " + (this.form.billNo || this.form.id) + " 吗？")
+        .then(() => this.doAudit([this.form.id], this.form.billNo))
         .catch(() => {});
     },
     getSummaries(param) {
@@ -721,7 +730,9 @@ export default {
       });
       return sums;
     },
-    handlePrint() {},
+    handlePrint() {
+      // ????????
+    },
     handleExport() {
       this.$modal.msg("导出功能开发中");
     }
@@ -749,12 +760,12 @@ export default {
   margin-left: auto;
 }
 
-/* 弹窗打开时去掉页底留白，避免露出灰色底边 */
+/* ???????????????????? */
 .app-container.price-adjust-audit-page.is-modal-open {
   padding-bottom: 0 !important;
 }
 
-/* 弹窗：对齐到货验收——左右外扩抵消 padding，顶部保留 8px 与页签间隙 */
+/* ????????????????? padding????? 8px ????? */
 .local-modal-mask {
   position: absolute;
   left: -8px;
@@ -809,7 +820,7 @@ export default {
 .close-btn:hover {
   background: rgba(0, 0, 0, 0.1);
 }
-/* 仅主弹窗表单，避免嵌套「添加明细」顶部留白被吃掉 */
+/* ???????????????????????? */
 .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) {
   flex: 1;
   min-height: 0;
@@ -851,7 +862,7 @@ export default {
 
 <style>
 /*
- * 非 scoped：对齐到货验收——通栏铺满、上下仅 4px 间距，左右无额外内缩
+ * ? scoped????????????????? 4px ??????????
  */
 .app-container.price-adjust-audit-page.is-modal-open {
   padding-bottom: 0 !important;
@@ -867,14 +878,14 @@ export default {
   overflow: hidden !important;
 }
 
-/* 仅主弹窗表单；勿覆盖添加明细嵌套层 material-filter-form 顶部 8px 留白 */
+/* ????????????????? material-filter-form ?? 8px ?? */
 .app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) {
   padding: 8px 0 0 !important;
   box-sizing: border-box;
   background: #fff !important;
 }
 
-/* —— 1. 主弹窗表头容器（不含添加明细嵌套层） —— */
+/* ?? 1. ?????????????????? ?? */
 .app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-query-panel {
   flex: 0 0 auto;
   margin: 0 !important;
@@ -962,7 +973,7 @@ export default {
   width: 150px !important;
   max-width: 150px !important;
 }
-/* 备注 ≈ 两个紧凑输入框 */
+/* ?? ? ??????? */
 .app-container.price-adjust-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-field--remark {
   width: auto !important;
   flex: 0 0 auto !important;
@@ -981,7 +992,7 @@ export default {
   max-width: 336px !important;
 }
 
-/* —— 2. 主弹窗按钮行（不含添加明细嵌套层） —— */
+/* ?? 2. ????????????????? ?? */
 .app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-toolbar.list-toolbar {
   flex: 0 0 auto !important;
   display: flex !important;
@@ -1016,7 +1027,7 @@ export default {
   line-height: 32px;
 }
 
-/* —— 3. 主弹窗明细框 —— */
+/* ?? 3. ?????? ?? */
 .app-container.price-adjust-audit-page .local-modal-content > .el-form.modal-form-compact:not(.material-filter-form) .apply-modal-table-panel {
   margin: 0 !important;
   width: 100% !important;
@@ -1046,7 +1057,7 @@ export default {
   box-shadow: none !important;
 }
 
-/* 明细表头高度：与到货验收一致 34px */
+/* ?????????????? 34px */
 .app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
 .app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
 .app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
@@ -1070,7 +1081,7 @@ export default {
   line-height: 20px !important;
 }
 
-/* 合计行 */
+/* ??? */
 .app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
 .app-container.price-adjust-audit-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper {
   display: block !important;
@@ -1105,7 +1116,7 @@ export default {
   text-align: center !important;
 }
 
-/* 添加明细嵌套弹窗：与到货验收 RK-添加明细一致 */
+/* ?????????????? RK-?????? */
 .app-container.price-adjust-audit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
   position: absolute;
   left: 0;
@@ -1153,7 +1164,7 @@ html body .app-container.price-adjust-audit-page .apply-inbound-nested-modal > .
   background: #fff !important;
   box-sizing: border-box !important;
 }
-/* 标题栏与搜索容器之间可见留白（与到货验收 RK-添加明细一致） */
+/* ???????????????????? RK-??????? */
 html body .app-container.price-adjust-audit-page .apply-inbound-nested-modal .material-filter-form > .apply-modal-query-panel {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
@@ -1184,7 +1195,7 @@ html body .app-container.price-adjust-audit-page .apply-inbound-nested-modal .ma
   margin-bottom: 0;
 }
 
-/* 原价/现价：仅单元格内容红色，表头不变色 */
+/* ??/????????????????? */
 .app-container.price-adjust-audit-page .apply-detail-table .price-cell-red {
   color: #f56c6c;
   font-weight: 500;

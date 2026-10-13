@@ -66,7 +66,7 @@
                 />
               </el-form-item>
             </el-col>
-            <el-col v-if="!isPriceAdjustColumns" class="apply-modal-field apply-modal-field--standard">
+            <el-col v-if="!isPriceAdjustColumns && !hideSupplierFilter" class="apply-modal-field apply-modal-field--standard">
               <el-form-item label="按供应商过滤" prop="filterBySupplier" label-width="96px" class="material-filter-radio-item">
                 <el-radio-group v-model="queryParams.filterBySupplier">
                   <el-radio :label="true">是</el-radio>
@@ -200,6 +200,11 @@
           <el-table-column v-if="showInboundExtraColumns" label="库房分类" align="center" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column v-if="showWarehouseColumn" label="仓库" align="center" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ warehouseDisplayName(scope.row) }}</span>
             </template>
           </el-table-column>
           <el-table-column v-if="showInboundExtraColumns" label="财务分类" align="center" width="120" show-overflow-tooltip resizable>
@@ -487,6 +492,21 @@ export default {
     columnPreset: {
       type: String,
       default: 'default'
+    },
+    /** 明细表「库房分类」后显示「仓库」列 */
+    showWarehouseColumn: {
+      type: Boolean,
+      default: false
+    },
+    /** 隐藏「按供应商过滤」 */
+    hideSupplierFilter: {
+      type: Boolean,
+      default: false
+    },
+    /** 低值仓库库存：仅查数量>0（传 excludeZeroQty） */
+    excludeZeroQty: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -580,6 +600,9 @@ export default {
     if (this.supplierValue) {
       this.queryParams.supplierId = this.supplierValue;
     }
+    if (this.hideSupplierFilter) {
+      this.queryParams.filterBySupplier = false;
+    }
     this.getList();
     if (this.nested) {
       window.addEventListener('resize', this.onFilterWindowResize);
@@ -607,6 +630,9 @@ export default {
         // 如果有供应商ID，设置查询参数（用于过滤，但不显示在搜索框中）
         if (this.supplierValue) {
           this.queryParams.supplierId = this.supplierValue;
+        }
+        if (this.hideSupplierFilter) {
+          this.queryParams.filterBySupplier = false;
         }
         this.getList();
         if (this.nested) {
@@ -944,6 +970,11 @@ export default {
       if (this.useDepInventory) {
         apiCall = listGzDepInventoryPick(params);
       } else if (this.useStkInventory) {
+        if (this.excludeZeroQty) {
+          params.excludeZeroQty = true;
+          params.onlyPositiveQty = true;
+          delete params.onlyZeroQty;
+        }
         apiCall = listInventory(params);
       } else {
         apiCall = listDepotInventory(params);
@@ -953,6 +984,22 @@ export default {
         let materialList = Array.isArray(response.rows) ? response.rows : (response.data && Array.isArray(response.data.rows) ? response.data.rows : []);
         const totalVal = response.total != null ? Number(response.total)
           : (response.data && response.data.total != null ? Number(response.data.total) : materialList.length);
+        // 统一数量字段，避免接口返回 quantity 等导致数量列显示异常
+        materialList = materialList.map((item) => {
+          const rawQty =
+            item.qty != null && item.qty !== ''
+              ? item.qty
+              : item.quantity != null && item.quantity !== ''
+                ? item.quantity
+                : item.stockQuantity != null && item.stockQuantity !== ''
+                  ? item.stockQuantity
+                  : 0;
+          return { ...item, qty: rawQty };
+        });
+        // 前端兜底：排除数量<=0（后端 excludeZeroQty 已过滤时仍可防脏数据）
+        if (this.excludeZeroQty) {
+          materialList = materialList.filter((item) => Number(item.qty) > 0);
+        }
         
         // 仅当父组件明确要求时（定数监测页）才按定数产品过滤；入库等页面不传 filterByFixedNumber，显示全部库存
         if (this.filterByFixedNumber && !this.useDepInventory && this.fixedNumberMaterialIds.length > 0) {
@@ -1056,9 +1103,18 @@ export default {
       this.queryParams.storeroomId = null;
       this.queryParams.financeCategoryId = null;
       this.queryParams.factoryId = null;
-      this.queryParams.filterBySupplier = true;
+      this.queryParams.filterBySupplier = this.hideSupplierFilter ? false : true;
       // 保留仓库ID或科室ID，不重置
       this.handleQuery();
+    },
+    warehouseDisplayName(row) {
+      if (!row) return '--';
+      if (row.warehouse && row.warehouse.name) return row.warehouse.name;
+      if (row.warehouseName) return row.warehouseName;
+      if (row.material && row.material.warehouse && row.material.warehouse.name) {
+        return row.material.warehouse.name;
+      }
+      return '--';
     },
     /** 耗材关键词输入处理 */
     handleMaterialKeywordInput(value) {

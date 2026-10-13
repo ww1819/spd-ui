@@ -121,7 +121,7 @@
         </div>
         <div class="version-item">
           <span class="version-label">版权所有：</span>
-          <span class="version-value">© 石家庄爱思普特科技有限公司 版本所有</span>
+          <span class="version-value">© 石家庄艾思普特科技有限公司 版本所有</span>
         </div>
         <div class="version-item version-about">
           <span class="version-label">关于版本：</span>

@@ -15,7 +15,9 @@ $apply-list-pages: config-page, receipt-confirm-page, d-purchase-agg-page, d-pur
   stocktaking-page, stocktaking-profit-page, profit-loss-page,
   initial-stock-import-page, stocktaking-in-page,
   new-product-apply-page, new-product-audit-page, wh-warehouse-apply-page,
-  patient-charge-page, price-adjust-page, price-adjust-audit-page, price-adjust-report-page;
+  patient-charge-page, price-adjust-page, price-adjust-audit-page,
+  scrap-apply-page;
+  /* price-adjust-report-page：嵌套在 Tab 壳内，留白对齐库存明细查询，不走本 mixin */
 
 @mixin department-apply-list-page($page) {
   .app-container.#{$page} {
