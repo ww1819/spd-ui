@@ -34,7 +34,7 @@ export function updateScrapBill(data) {
 export function submitScrapBill(ids) {
   return request({
     url: '/warehouse/scrap/submit',
-    method: 'put',
+    method: 'post',
     data: { ids: Array.isArray(ids) ? ids : [ids] }
   })
 }
