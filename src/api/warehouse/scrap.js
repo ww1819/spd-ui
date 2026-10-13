@@ -39,6 +39,30 @@ export function submitScrapBill(ids) {
   })
 }
 
+export function auditScrapBill(ids) {
+  return request({
+    url: '/warehouse/scrap/audit',
+    method: 'post',
+    data: { ids: Array.isArray(ids) ? ids : [ids] }
+  })
+}
+
+export function listScrapDetailQuery(query) {
+  return request({
+    url: '/warehouse/scrap/query/detail',
+    method: 'get',
+    params: query
+  })
+}
+
+export function listScrapSummaryQuery(query) {
+  return request({
+    url: '/warehouse/scrap/query/summary',
+    method: 'get',
+    params: query
+  })
+}
+
 export function delScrapBill(ids) {
   return request({
     url: '/warehouse/scrap/' + ids,
