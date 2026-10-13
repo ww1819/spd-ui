@@ -1,6 +1,6 @@
 <template>
   <div class="app-container">
-    <el-empty description="报废查询功能开发中" />
+    <el-empty description="报损查询功能开发中" />
   </div>
 </template>
 

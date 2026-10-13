@@ -6,7 +6,7 @@
           <el-col :span="24" class="query-row-first-inner">
             <el-input
               v-model="queryParams.billNo"
-              placeholder="报废单号"
+              placeholder="报损单号"
               clearable
               class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
@@ -27,7 +27,7 @@
             />
             <el-input
               v-model="queryParams.scrapReason"
-              placeholder="报废原因"
+              placeholder="报损原因"
               clearable
               class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
@@ -125,7 +125,7 @@
       >
         <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
         <el-table-column label="序号" align="center" prop="index" width="60" show-overflow-tooltip resizable />
-        <el-table-column label="报废单号" align="center" prop="billNo" min-width="160" show-overflow-tooltip resizable sortable>
+        <el-table-column label="报损单号" align="center" prop="billNo" min-width="160" show-overflow-tooltip resizable sortable>
           <template slot-scope="scope">
             <el-button
               type="text"
@@ -136,7 +136,7 @@
           </template>
         </el-table-column>
         <el-table-column label="仓库" align="center" prop="warehouseName" min-width="160" show-overflow-tooltip resizable />
-        <el-table-column label="报废原因" align="center" prop="scrapReason" min-width="140" show-overflow-tooltip resizable>
+        <el-table-column label="报损原因" align="center" prop="scrapReason" min-width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.scrapReason || '--' }}</span>
           </template>
@@ -252,8 +252,8 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="报废原因" prop="scrapReason">
-                      <el-input v-model="form.scrapReason" placeholder="报废原因" clearable :disabled="formReadonly" maxlength="200" />
+                    <el-form-item label="报损原因" prop="scrapReason">
+                      <el-input v-model="form.scrapReason" placeholder="报损原因" clearable :disabled="formReadonly" maxlength="200" />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
@@ -310,7 +310,7 @@
               <!-- 工具栏：独立于明细表，对齐到货验收 apply-modal-toolbar -->
               <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
                 <div class="list-toolbar-left">
-                  <span class="apply-modal-detail-title">报废明细信息</span>
+                  <span class="apply-modal-detail-title">报损明细信息</span>
                   <el-button
                     v-if="!formReadonly"
                     type="primary"
@@ -468,7 +468,7 @@
               :showWarehouseColumn="true"
               :hideSupplierFilter="true"
               :excludeMaterialIds="excludeMaterialIds"
-              modal-title="BF-添加明细"
+              modal-title="BS-添加明细"
               @closeDialog="closeMaterialDialog"
               @selectData="selectMaterialData"
             />
@@ -753,7 +753,7 @@ export default {
     },
     handleAdd() {
       this.resetForm();
-      this.title = "添加报废";
+      this.title = "添加报损";
       this.open = true;
     },
     handleBatchSubmit() {
@@ -840,7 +840,7 @@ export default {
         index: idx + 1
       }));
       this.detailSelection = [];
-      this.title = readonly ? "报废详情" : (data.id ? "修改报废" : "添加报废");
+      this.title = readonly ? "报损详情" : (data.id ? "修改报损" : "添加报损");
       this.open = true;
     },
     cancel() {
@@ -1007,7 +1007,7 @@ export default {
         return;
       }
       if (!this.detailList.length) {
-        this.$modal.msgError("请添加报废明细");
+        this.$modal.msgError("请添加报损明细");
         return;
       }
       const badQty = this.detailList.find(
@@ -1420,7 +1420,7 @@ export default {
   font-size: 13px !important;
 }
 
-/* BF-添加明细嵌套层：对齐到货验收 RK-添加明细 */
+/* BS-添加明细嵌套层：对齐到货验收 RK-添加明细 */
 .app-container.scrap-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
   position: absolute;
   left: 0;
