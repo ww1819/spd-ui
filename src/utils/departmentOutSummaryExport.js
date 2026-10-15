@@ -720,15 +720,59 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
 }
 
 /**
+ * 出/退库汇总简表聚合：按 产品名称 + 规格 + 单位 + 价格 合并，数量/金额求和；净数量为 0 的行丢弃。
+ * （供应商分段在导出函数内再分组）
+ */
+export function aggregateCtkRowsByNameSpeciUnitPrice(rows) {
+  if (!rows || !rows.length) return [];
+  const map = new Map();
+  rows.forEach((row) => {
+    const name = (row.materialName || '').trim();
+    const speci = (row.materialSpeci || '').trim();
+    const unit = (row.unitName || '').trim();
+    const priceNum = row.unitPrice == null || row.unitPrice === '' ? NaN : Number(row.unitPrice);
+    const priceKey = Number.isFinite(priceNum) ? priceNum.toFixed(6) : 'null';
+    const supplier = detailSupplierGroupKey(row);
+    const key = `${supplier}||${name}||${speci}||${unit}||${priceKey}`;
+    const exist = map.get(key);
+    if (!exist) {
+      map.set(key, {
+        ...row,
+        materialName: name,
+        materialSpeci: speci,
+        unitName: unit,
+        unitPrice: Number.isFinite(priceNum) ? priceNum : row.unitPrice,
+        materialQty: Number(row.materialQty || 0),
+        materialAmt: Number(row.materialAmt || 0),
+        supplierName: supplier === '未维护供应商' ? (row.supplierName || '') : supplier,
+      });
+      return;
+    }
+    exist.materialQty = Number(exist.materialQty || 0) + Number(row.materialQty || 0);
+    exist.materialAmt = Number(exist.materialAmt || 0) + Number(row.materialAmt || 0);
+  });
+  return Array.from(map.values()).filter((r) => Number(r.materialQty || 0) !== 0);
+}
+
+/**
  * 出/退库明细简表（按供应商）：与对账简表一致七列——序号、产品名称、规格、单位、价格、数量、金额；
  * 一供应商一段，标题「供应商名 + 出/退库明细 + 日期」；逐行明细不合并，段末仅合计数量与金额（红色）。
  * @param {Object[]} options.rows listCTKWarehouse 返回行
  * @param {string} [options.beginDate]
  * @param {string} [options.endDate]
  * @param {string} [options.fileName]
+ * @param {string} [options.sectionTitleSuffix] 段标题业务名，默认「出/退库明细」
+ * @param {string} [options.sheetName]
  */
 export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
-  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const {
+    rows = [],
+    beginDate = '',
+    endDate = '',
+    fileName,
+    sectionTitleSuffix = '出/退库明细',
+    sheetName = '出退库明细简表',
+  } = options;
   if (!rows.length) return;
 
   const headers = ['序号', '产品名称', '规格', '单位', '价格', '数量', '金额'];
@@ -748,7 +792,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
   );
 
   const wb = new ExcelJS.Workbook();
-  const ws = wb.addWorksheet('出退库明细简表', { views: [{ showGridLines: false }] });
+  const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
 
   const d1 = formatCnDate(beginDate);
   const d2 = formatCnDate(endDate || beginDate);
@@ -817,7 +861,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
     titleCell.value = {
       richText: [
         { font: { ...FONT_TITLE, bold: true }, text: supplierName },
-        { font: { ...FONT_TITLE, bold: false }, text: `出/退库明细${datePart || ''}` },
+        { font: { ...FONT_TITLE, bold: false }, text: `${sectionTitleSuffix}${datePart || ''}` },
       ],
     };
     titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
@@ -887,6 +931,22 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });
   saveAs(blob, fileName || `出退库明细简表_${Date.now()}.xlsx`);
+}
+
+/**
+ * 出/退库汇总表 — 供应商分段简表：版式同明细简表(供应商)；
+ * 段内按 产品名称+规格+单位+价格 聚合数量/金额。
+ */
+export async function exportCTKWarehouseSummarySupplierSimpleXlsx(options) {
+  const aggregated = aggregateCtkRowsByNameSpeciUnitPrice(options.rows || []);
+  if (!aggregated.length) return;
+  return exportCTKWarehouseDetailSupplierSimpleXlsx({
+    ...options,
+    rows: aggregated,
+    sectionTitleSuffix: '出/退库汇总',
+    sheetName: '出退库汇总简表',
+    fileName: options.fileName || `出退库汇总_供方名称规格单价_${Date.now()}.xlsx`,
+  });
 }
 
 /**

@@ -122,6 +122,15 @@
           class="spd-btn"
           @click="handleExport"
         >导出</el-button>
+        <el-tooltip content="按供应商分段：七列简表；段内按产品名称+规格+单位+价格聚合数量与金额，段末合计" placement="top">
+          <el-button
+            type="primary"
+            size="small"
+            icon="el-icon-s-order"
+            class="spd-btn"
+            @click="handleExportSupplierSimple"
+          >简表(供应商)</el-button>
+        </el-tooltip>
       </div>
       <div class="list-toolbar-right">
         <div
@@ -487,7 +496,10 @@
 
 <script>
 import { listCTKWarehouseSummary} from "@/api/warehouse/outWarehouse";
-import { exportCTKWarehouseSummaryListStyledXlsx } from "@/utils/departmentOutSummaryExport";
+import {
+  exportCTKWarehouseSummaryListStyledXlsx,
+  exportCTKWarehouseSummarySupplierSimpleXlsx,
+} from "@/utils/departmentOutSummaryExport";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectFinanceCategoryLow from '@/components/SelectModel/SelectFinanceCategoryLow';
@@ -1133,6 +1145,37 @@ export default {
           endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
           fileName: `出退库汇总表${dateStr}.xlsx`,
           resolveWay,
+        });
+      } catch (e) {
+        console.error(e);
+        this.$message && this.$message.error('导出失败，请稍后重试');
+      } finally {
+        this.loading = false;
+      }
+    },
+    /** 汇总简表(供应商)：版式同明细简表；段内按名称+规格+单位+价格聚合 */
+    async handleExportSupplierSimple() {
+      const requestParams = { ...this.buildListQueryParams(), pageNum: 1, pageSize: 10000 };
+      this.loading = true;
+      try {
+        const response = await listCTKWarehouseSummary(requestParams);
+        const rows = this.mergeSummaryRowsByWarehouseMaterial((response.rows || []).map(item => ({
+          ...item,
+          unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+          materialAmt: item.materialAmt != null ? Number(item.materialAmt) : null,
+          materialQty: item.materialQty != null ? Number(item.materialQty) : 0,
+        })));
+        if (!rows.length) {
+          this.$message && this.$message.warning('暂无数据可导出');
+          return;
+        }
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        await exportCTKWarehouseSummarySupplierSimpleXlsx({
+          rows,
+          beginDate: this.queryParams.beginDate || '',
+          endDate: this.queryParams.endDate || this.queryParams.beginDate || '',
+          fileName: `出退库汇总_供方名称规格单价_${dateStr}.xlsx`,
         });
       } catch (e) {
         console.error(e);
