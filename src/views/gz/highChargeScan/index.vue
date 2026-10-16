@@ -1150,6 +1150,19 @@ export default {
   width: 100%;
 }
 
+/*
+ * 固定列（左序号 / 右操作）默认会盖住底部横向滚动条。
+ * 固定列底部抬高，给滚动条留出空间，悬停加粗时也能完整露出。
+ */
+.high-charge-scan-page .hc-detail-table.el-table .el-table__fixed,
+.high-charge-scan-page .hc-detail-table.el-table .el-table__fixed-right {
+  height: auto !important;
+  bottom: 16px !important;
+}
+.high-charge-scan-page .hc-detail-table.el-table .el-table__fixed-right-patch {
+  background-color: transparent !important;
+}
+
 /* 横向滚动条：默认可见；鼠标移入表格数据区时加粗，便于拖拽（不用 padding 撑高页面） */
 .high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
   height: 8px !important;
