@@ -90,6 +90,33 @@
 <script>
 import { buildCode128Label, normalizeBarcodePayload } from "@/utils/code128DataUrl";
 
+/** 强制每个条码一页；覆盖 $print 注入的 div{height:auto} */
+const BARCODE_ONE_PER_PAGE_STYLE = [
+  ".barcode-item-wrap{",
+  "display:block!important;",
+  "width:60mm!important;",
+  "page-break-after:always!important;",
+  "break-after:page!important;",
+  "page-break-inside:avoid!important;",
+  "break-inside:avoid!important;",
+  "}",
+  ".barcode-item-wrap:last-child{",
+  "page-break-after:auto!important;",
+  "break-after:auto!important;",
+  "}",
+  ".barcode-page{",
+  "display:block!important;",
+  "width:60mm!important;",
+  "height:40mm!important;",
+  "min-height:40mm!important;",
+  "max-height:40mm!important;",
+  "overflow:hidden!important;",
+  "page-break-inside:avoid!important;",
+  "break-inside:avoid!important;",
+  "}",
+  ".screen-scan-panel,.no-print{display:none!important;}"
+].join("");
+
 export default {
   name: "BarcodePrint",
   props: {
@@ -150,6 +177,23 @@ export default {
         height: `${Math.max(44, Math.round(scanWidthPx * aspect))}px`,
       };
     },
+    /** 浏览器打印：60×40mm，每个条码单独一页 */
+    invokeBrowserPrint(root) {
+      if (typeof this.$print === "function") {
+        this.$print(
+          root,
+          {
+            waitForAssets: true,
+            beforePrintDelay: 320,
+            pageMargin: "0",
+            extraStyle: BARCODE_ONE_PER_PAGE_STYLE
+          },
+          "60mm 40mm"
+        );
+        return;
+      }
+      window.print();
+    },
     start() {
       this.$nextTick(() => {
         const root = this.$refs.barcodePrintRef || this.$el;
@@ -162,11 +206,7 @@ export default {
 
         const doPrint = () => {
           setTimeout(() => {
-            if (this.embedPreview) {
-              window.print();
-              return;
-            }
-            this.$print(root, { waitForAssets: true, beforePrintDelay: 320 }, "60mm 40mm");
+            this.invokeBrowserPrint(root);
           }, 100);
         };
 
@@ -176,11 +216,7 @@ export default {
         }
 
         if (totalImages === 0) {
-          if (this.embedPreview) {
-            window.print();
-          } else {
-            this.$print(root, { waitForAssets: true, beforePrintDelay: 320 }, "60mm 40mm");
-          }
+          this.invokeBrowserPrint(root);
           return;
         }
 
@@ -234,7 +270,22 @@ export default {
     -webkit-font-smoothing: antialiased;
   }
 
+  .barcode-item-wrap {
+    display: block !important;
+    width: 60mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .barcode-item-wrap:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
   .barcode-page {
+    display: block !important;
     width: 60mm !important;
     height: 40mm !important;
     min-height: 40mm !important;
@@ -244,13 +295,8 @@ export default {
     box-sizing: border-box;
     overflow: hidden;
     background-color: #fff;
-    page-break-after: always;
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  .barcode-page:last-child {
-    page-break-after: auto;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .container {
@@ -519,7 +565,22 @@ export default {
   -webkit-font-smoothing: antialiased;
 }
 
+.barcode-item-wrap {
+  display: block;
+  box-sizing: border-box;
+  page-break-after: always;
+  break-after: page;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.barcode-item-wrap:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
 .barcode-page {
+  display: block;
   width: 60mm;
   height: 40mm;
   max-height: 40mm;
@@ -528,13 +589,8 @@ export default {
   box-sizing: border-box;
   overflow: hidden;
   background-color: #fff;
-  page-break-after: always;
   page-break-inside: avoid;
   break-inside: avoid;
-}
-
-.barcode-page:last-child {
-  page-break-after: auto;
 }
 
 .container {
@@ -786,10 +842,6 @@ export default {
   box-sizing: border-box;
 }
 
-.barcode-item-wrap {
-  box-sizing: border-box;
-}
-
 .screen-scan-panel {
   margin: 16px auto 24px;
   padding: 12px 16px 16px;
@@ -842,7 +894,22 @@ export default {
     background: #fff !important;
   }
 
+  .barcode-item-wrap {
+    display: block !important;
+    width: 60mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .barcode-item-wrap:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
   .barcode-page {
+    display: block !important;
     width: 60mm !important;
     height: 40mm !important;
     min-height: 40mm !important;

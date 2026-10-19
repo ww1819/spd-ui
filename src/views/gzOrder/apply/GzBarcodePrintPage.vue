@@ -162,6 +162,18 @@ export default {
     overflow: visible;
     background: #fff;
   }
+  /* 兜底：未走 $print iframe 时也保证每个条码一页 */
+  >>> .barcode-item-wrap {
+    display: block !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  >>> .barcode-item-wrap:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
   @page {
     size: 60mm 40mm;
     margin: 0;
