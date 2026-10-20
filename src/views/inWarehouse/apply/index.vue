@@ -2143,6 +2143,21 @@ export default {
                 this.form.id = resData.id;
                 this.form.billNo = resData.billNo;
               }
+              // 必须回填明细 id：否则再次保存时明细无 id，增量 sync 会软删旧行再插新行，易造成同单号明细翻倍
+              const newId = this.form.id;
+              if (newId != null) {
+                getInWarehouse(newId).then(detailRes => {
+                  const detail = (detailRes && detailRes.data) ? detailRes.data : detailRes;
+                  if (detail) {
+                    if (detail.billNo) this.form.billNo = detail.billNo;
+                    const entryList = (detail.stkIoBillEntryList || []).map((item, index) => {
+                      this.initRowLongTermFlag(item);
+                      return item;
+                    });
+                    this.$set(this, 'stkIoBillEntryList', entryList);
+                  }
+                }).catch(() => {});
+              }
               // 重置单据状态查询条件，确保新增的单据能显示出来
               this.queryParams.billStatus = null;
               this.getList();
