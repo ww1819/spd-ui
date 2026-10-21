@@ -411,14 +411,15 @@ import {
 function buildDefaultChargeDateRange() {
   const today = new Date()
   const endChargeDate = parseTime(today, '{y}-{m}-{d}')
-  const beginDate = new Date(today)
-  beginDate.setDate(beginDate.getDate() - 5)
+  // 默认本月1日～今天，避免无起日扫全历史导致 list+count 超 2s
+  const beginDate = new Date(today.getFullYear(), today.getMonth(), 1)
   const beginChargeDate = parseTime(beginDate, '{y}-{m}-{d}')
   return { beginChargeDate, endChargeDate }
 }
 
 export default {
-  name: 'GzHighChargeScan',
+  // 须与菜单 path「highChargeScan」→ 路由 name「HighChargeScan」一致，keep-alive 才能保留查询条件
+  name: 'HighChargeScan',
   data() {
     return {
       detailVisitType: 'ALL',
@@ -514,6 +515,10 @@ export default {
     this.loadDetailList()
   },
   mounted() {
+    this.$nextTick(() => this.layoutDetailTable())
+  },
+  activated() {
+    // keep-alive 切回：仅重算表格高度，不重新拉数，保留查询条件与列表
     this.$nextTick(() => this.layoutDetailTable())
   },
   methods: {
@@ -902,6 +907,14 @@ export default {
     },
     handleDetailQuery() {
       this.detailQuery.pageNum = 1
+      if (!this.detailQuery.beginChargeDate && this.detailQuery.endChargeDate) {
+        const end = new Date(String(this.detailQuery.endChargeDate).replace(/-/g, '/'))
+        if (!isNaN(end.getTime())) {
+          this.detailQuery.beginChargeDate = parseTime(new Date(end.getFullYear(), end.getMonth(), 1), '{y}-{m}-{d}')
+        } else {
+          Object.assign(this.detailQuery, buildDefaultChargeDateRange())
+        }
+      }
       this.loadDetailList()
     },
     onDetailVisitTypeChange() {
@@ -934,6 +947,14 @@ export default {
       this.loadDetailList()
     },
     loadDetailList() {
+      if (!this.detailQuery.beginChargeDate && this.detailQuery.endChargeDate) {
+        const end = new Date(String(this.detailQuery.endChargeDate).replace(/-/g, '/'))
+        if (!isNaN(end.getTime())) {
+          this.detailQuery.beginChargeDate = parseTime(new Date(end.getFullYear(), end.getMonth(), 1), '{y}-{m}-{d}')
+        } else {
+          Object.assign(this.detailQuery, buildDefaultChargeDateRange())
+        }
+      }
       this.detailLoading = true
       const q = { ...this.detailQuery }
       q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)

@@ -577,7 +577,8 @@ import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import { addTraceability, listTraceability, auditTraceability, getTraceability, updateTraceability, delTraceability, unauditTraceability } from "@/api/gz/traceability";
 
 export default {
-  name: "HospitalScan",
+  // 须与菜单 path「zyjf」→ 路由 name「Zyjf」一致，keep-alive 才能保留查询条件与表单
+  name: "Zyjf",
   components: {
     SelectDepartment,
     PrintDialog: () => import('@/components/PrintDialog')

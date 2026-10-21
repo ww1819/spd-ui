@@ -436,6 +436,7 @@
                   class="apply-detail-table"
                   show-summary :summary-method="getSummariesWithRefresh"
                   @selection-change="handleStkIoBillEntrySelectionChange"
+                  @row-dblclick="handleDetailRowDblclick"
                   ref="stkIoBillEntry"
                   border
                   :height="detailTableHeight"
@@ -513,9 +514,16 @@
           </el-table-column>
           <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
-              <div class="detail-cell-focus-wrap" :data-detail-row="scope.$index" data-detail-col="qty" v-detail-cell-nav>
+              <div
+                class="detail-cell-focus-wrap"
+                :class="{ 'detail-cell-locked': !action }"
+                :data-detail-row="scope.$index"
+                data-detail-col="qty"
+                v-detail-cell-nav
+              >
                 <el-input
-                  clearable
+                  :clearable="!!action"
+                  :readonly="!action"
                   v-model="scope.row.qty"
                   placeholder="数量"
                   onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
@@ -554,10 +562,18 @@
             sortable
           >
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap detail-batch-wrap detail-cell-focus-wrap" :data-detail-row="scope.$index" data-detail-col="batchNumber" v-detail-cell-nav>
+              <div
+                class="detail-cell-edit-wrap detail-batch-wrap detail-cell-focus-wrap"
+                :class="{ 'detail-cell-locked': !action }"
+                :data-detail-row="scope.$index"
+                data-detail-col="batchNumber"
+                v-detail-cell-nav
+              >
                 <el-input
                   v-model="scope.row.batchNumber"
                   :placeholder="scope.row.batchNumber ? '' : '批号'"
+                  :readonly="!action"
+                  :clearable="!!action"
                   size="small"
                   class="detail-batch-input"
                 />
@@ -566,9 +582,17 @@
           </el-table-column>
           <el-table-column label="生产日期" align="center" prop="beginTime" width="128" min-width="128" :show-overflow-tooltip="false" resizable sortable class-name="detail-col-begin-date">
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap detail-begin-date-wrap detail-cell-focus-wrap" :data-detail-row="scope.$index" data-detail-col="beginTime" v-detail-cell-nav>
+              <div
+                class="detail-cell-edit-wrap detail-begin-date-wrap detail-cell-focus-wrap"
+                :class="{ 'detail-cell-locked': !action }"
+                :data-detail-row="scope.$index"
+                data-detail-col="beginTime"
+                v-detail-cell-nav
+              >
                 <el-date-picker
-                  clearable
+                  :clearable="!!action"
+                  :readonly="!action"
+                  :editable="!!action"
                   v-model="scope.row.beginTime"
                   type="date"
                   value-format="yyyy-MM-dd"
@@ -594,10 +618,12 @@
             sortable
           >
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap detail-expiry-wrap">
+              <div class="detail-cell-edit-wrap detail-expiry-wrap" :class="{ 'detail-cell-locked': !action }">
                 <div class="detail-cell-focus-wrap detail-expiry-date-wrap" :data-detail-row="scope.$index" data-detail-col="endTime" v-detail-cell-nav>
                   <el-date-picker
-                    clearable
+                    :clearable="!!action"
+                    :readonly="!action"
+                    :editable="!!action"
                     v-model="scope.row.endTime"
                     type="date"
                     value-format="yyyy-MM-dd"
@@ -1170,6 +1196,7 @@ export default {
       return value != null && String(value).trim() !== '';
     },
     isDetailCellDisabled(row, colKey) {
+      if (!this.action) return true;
       return colKey === 'endTime' && row && row._longTerm;
     },
     onDetailCellKeydown(event, rowIndex, colKey) {
@@ -1282,7 +1309,7 @@ export default {
         );
         if (!wrap) return;
         const input = wrap.querySelector('input:not([type="checkbox"])');
-        if (!input || input.disabled) return;
+        if (!input || input.disabled || input.readOnly) return;
         input.focus();
         if (colKey === 'beginTime' || colKey === 'endTime') {
           this.$nextTick(() => this.closeDetailDatePicker(input, true));
@@ -1591,6 +1618,7 @@ export default {
     },
     //数量改变事件
     qtyChange(row){
+      if (!this.action) return;
       let totalAmt = 0;
       if(row.qty && row.unitPrice){
         totalAmt = Number(row.qty) * Number(row.unitPrice);
@@ -1644,7 +1672,7 @@ export default {
       return row[field];
     },
     onDetailDateBlur(row, field, e) {
-      if (!row || (row._longTerm && field === 'endTime')) return;
+      if (!this.action || !row || (row._longTerm && field === 'endTime')) return;
       const raw = readDatePickerInputValue(e, row[field]);
       const trimmed = String(raw == null ? '' : raw).trim();
       // 日历点选后 blur 时 DOM 可能尚未写入，勿用空值覆盖 v-model 已选日期
@@ -1665,7 +1693,7 @@ export default {
       }
     },
     onDetailEndTimeChange(row, value) {
-      if (!row || row._longTerm) return;
+      if (!this.action || !row || row._longTerm) return;
       if (value == null || value === '') {
         this.$set(row, 'endTime', '');
         this.onEndTimeManualChange(row);
@@ -1681,7 +1709,7 @@ export default {
       this.onEndTimeManualChange(row);
     },
     onDetailBeginTimeChange(row, value) {
-      if (!row) return;
+      if (!this.action || !row) return;
       if (value == null || value === '') {
         this.$set(row, 'beginTime', '');
         return;
@@ -1695,7 +1723,7 @@ export default {
     },
     /** 切换「长期」勾选：勾选→写入 2099-01-01；取消且当前是 2099-01-01→清空 */
     onLongTermChange(row) {
-      if (!row) return;
+      if (!this.action || !row) return;
       if (row._longTerm) {
         row.endTime = "2099-01-01";
       } else if (String(row.endTime || "").trim().startsWith("2099-01-01")) {
@@ -1885,6 +1913,18 @@ export default {
       if (!table) return;
       const key = this.getApplyMainRowKey(row);
       const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
+    /** 明细表双击切换勾选（勾选列除外） */
+    handleDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') {
+        return;
+      }
+      const table = this.$refs.stkIoBillEntry;
+      if (!table) return;
+      const idx = (this.stkIoBillEntryList || []).indexOf(row);
+      const selected = idx >= 0 && !!(this.detailSelectedRowMap && this.detailSelectedRowMap[idx]);
       table.toggleRowSelection(row, !selected);
     },
     /** 查看按钮操作 */
@@ -3021,6 +3061,18 @@ export default {
 .local-modal-content .modal-detail-section .el-table .detail-cell-edit-wrap {
   text-align: left;
   padding: 0;
+}
+/* 查看单据：明细数量/批号/日期保持输入框外观，但不可聚焦、修改、打开日期面板 */
+.local-modal-content .modal-detail-section .el-table .detail-cell-locked {
+  pointer-events: none;
+  user-select: none;
+}
+.local-modal-content .modal-detail-section .el-table .detail-cell-locked ::v-deep .el-input__inner,
+.local-modal-content .modal-detail-section .el-table .detail-cell-locked ::v-deep .el-range-input {
+  background-color: #fff !important;
+  color: #606266 !important;
+  cursor: default !important;
+  -webkit-text-fill-color: #606266;
 }
 /* 批号：单行输入 */
 .local-modal-content .modal-detail-section .el-table .detail-batch-wrap {
@@ -4199,6 +4251,36 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
   z-index: 5;
   background-color: #f1f5f9 !important;
   border-right: 1px solid #e2e8f0;
+}
+
+/* 明细表：悬停 / 勾选行高亮（覆盖勾选列白底，对齐主列表） */
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-select-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.el-table-column--selection {
+  background-color: #D6EBFF !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td .cell {
+  background-color: #A0CBFF !important;
 }
 
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.el-table-column--selection .cell,

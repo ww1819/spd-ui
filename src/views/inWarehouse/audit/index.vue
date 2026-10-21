@@ -416,6 +416,7 @@
                   class="apply-detail-table"
                   show-summary :summary-method="getSummariesWithRefresh"
                   @selection-change="handleStkIoBillEntrySelectionChange"
+                  @row-dblclick="handleDetailRowDblclick"
                   ref="stkIoBillEntry"
                   border
                   :height="detailTableHeight"
@@ -1774,6 +1775,18 @@ export default {
       if (!table) return;
       const key = this.getApplyMainRowKey(row);
       const selected = !!(key && this.selectedRowMap && this.selectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
+    /** 明细表双击切换勾选（勾选列除外） */
+    handleDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') {
+        return;
+      }
+      const table = this.$refs.stkIoBillEntry;
+      if (!table) return;
+      const idx = (this.stkIoBillEntryList || []).indexOf(row);
+      const selected = idx >= 0 && !!(this.detailSelectedRowMap && this.detailSelectedRowMap[idx]);
       table.toggleRowSelection(row, !selected);
     },
     /** 仅待审核的单据可勾选，已审核的不可勾选 */

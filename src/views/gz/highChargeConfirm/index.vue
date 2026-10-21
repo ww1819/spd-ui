@@ -517,9 +517,6 @@ export default {
         const raw = ti.totalAmt != null ? ti.totalAmt : 0
         const amt = Number(raw)
         this.totalInfo = { totalAmt: Number.isFinite(amt) ? amt : 0 }
-        if ((!Number.isFinite(amt) || amt === 0) && this.total > 0) {
-          this.fillListTotalAmtFallback(q)
-        }
       }).catch(() => {
         this.list = []
         this.total = 0
@@ -528,17 +525,6 @@ export default {
         this.loading = false
         this.$nextTick(() => this.updateMainTableHeight())
       })
-    },
-    fillListTotalAmtFallback(queryParams) {
-      const pageSize = Math.min(Number(this.total) || 0, 5000)
-      if (pageSize <= 0) return
-      listHighChargeConfirm({ ...queryParams, pageNum: 1, pageSize }).then(res => {
-        const rows = (res && res.rows) || []
-        const sum = rows.reduce((acc, row) => acc + Number(row && row.amt != null ? row.amt : 0), 0)
-        if (Number.isFinite(sum) && sum !== 0) {
-          this.totalInfo = { totalAmt: sum }
-        }
-      }).catch(() => {})
     },
     openConfirmDialog() {
       if (!this.canConfirm) {
