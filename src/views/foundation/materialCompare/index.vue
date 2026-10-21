@@ -269,7 +269,15 @@
       <!-- 明细表格：外层 flex 占满剩余高度，仅表体内部滚动，弹窗整体不上下滑动 -->
       <div class="his-table-container material-compare-dialog-table-wrap">
         <div class="material-compare-dialog-table-scroll">
-          <el-table v-loading="hisLoading" :data="hisList" border height="100%">
+          <el-table
+            v-loading="hisLoading"
+            :data="hisList"
+            class="his-detail-table"
+            border
+            height="100%"
+            :row-class-name="hisDetailRowClassName"
+            @row-dblclick="handleHisDetailRowDblclick"
+          >
           <el-table-column type="index" label="序号" align="center" width="80" />
           <el-table-column label="收费编码" align="center" prop="chargeCode" width="150" show-overflow-tooltip />
           <el-table-column label="收费名称" align="center" prop="chargeName" min-width="200" show-overflow-tooltip />
@@ -286,7 +294,7 @@
               <el-tag v-else size="mini">未绑定</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" align="center" width="100">
+          <el-table-column label="操作" align="center" width="100" class-name="his-detail-action-col">
             <template slot-scope="scope">
               <el-button v-if="isBoundHis(scope.row)" type="text" size="mini" @click="handleUnbindHis()">解绑</el-button>
               <el-button v-else type="text" size="mini" @click="handleBindHis(scope.row)">绑定</el-button>
@@ -441,6 +449,9 @@ export default {
         speci: null
       },
       currentHisChargeItem: null,
+      /** HIS 明细双击选中行 key（再双击取消） */
+      hisDetailSelectedKey: null,
+      hisDetailHighlightTick: 0,
       // HRP弹窗相关
       hrpDialogVisible: false,
       hrpLoading: false,
@@ -638,6 +649,8 @@ export default {
     handleHis(row) {
       this.currentMaterialRow = row;
       this.hisDialogVisible = true;
+      this.hisDetailSelectedKey = null;
+      this.hisDetailHighlightTick += 1;
       this.hisQueryParams.pageNum = 1;
       this.hisQueryParams.pageSize = 10;
       this.hisQueryParams.itemCode = null;
@@ -646,6 +659,33 @@ export default {
       this.hisQueryParams.speci = null;
       this.loadCurrentHisChargeItem();
       this.getHisList();
+    },
+    /** HIS 明细行唯一 key */
+    getHisDetailRowKey(row) {
+      if (!row) return '';
+      if (row.chargeItemId != null && row.chargeItemId !== '') {
+        return String(row.chargeItemId);
+      }
+      return [row.chargeCode, row.chargeName, row.chargeSpeci, row.chargePrice].join('|');
+    },
+    hisDetailRowClassName({ row }) {
+      void this.hisDetailHighlightTick;
+      const key = this.getHisDetailRowKey(row);
+      if (key && this.hisDetailSelectedKey === key) {
+        return 'his-detail-row-selected';
+      }
+      return '';
+    },
+    /** 双击选中/再双击取消（操作列除外） */
+    handleHisDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && (column.label === '操作' || (column.className && String(column.className).indexOf('his-detail-action-col') !== -1))) {
+        return;
+      }
+      const key = this.getHisDetailRowKey(row);
+      if (!key) return;
+      this.hisDetailSelectedKey = this.hisDetailSelectedKey === key ? null : key;
+      this.hisDetailHighlightTick += 1;
     },
     /** 加载当前耗材已对照收费项目 */
     loadCurrentHisChargeItem() {
@@ -672,6 +712,16 @@ export default {
       listHisChargeItem(this.hisQueryParams).then(response => {
         this.hisList = response.rows || [];
         this.hisTotal = response.total || 0;
+        // 翻页/搜索后若当前选中行不在本页则清除高亮
+        if (this.hisDetailSelectedKey) {
+          const stillVisible = (this.hisList || []).some(
+            (r) => this.getHisDetailRowKey(r) === this.hisDetailSelectedKey
+          );
+          if (!stillVisible) {
+            this.hisDetailSelectedKey = null;
+          }
+        }
+        this.hisDetailHighlightTick += 1;
         this.hisLoading = false;
       }).catch(() => {
         this.hisLoading = false;
@@ -1380,6 +1430,27 @@ export default {
 
 .his-table-container .el-table th {
   white-space: nowrap !important;
+}
+
+/* HIS 明细：悬停变色 + 双击选中更深色（与主列表一致） */
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr > td,
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr:hover > td,
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr:hover > td .cell {
+  background-color: #D6EBFF !important;
+}
+
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr.his-detail-row-selected > td,
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr.his-detail-row-selected > td .cell {
+  background-color: #B8DAFF !important;
+}
+
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr.his-detail-row-selected:hover > td,
+.material-compare-page .his-detail-table ::v-deep .el-table__body tr.his-detail-row-selected:hover > td .cell {
+  background-color: #A0CBFF !important;
 }
 
 /* HRP弹窗样式 */
