@@ -2766,114 +2766,222 @@ export default {
   font-size: 13px !important;
 }
 
-/* 明细表合计行 + 滚动条：与到货验收 apply-detail-table 完全一致 */
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
-  padding-bottom: 0 !important;
-  box-sizing: border-box;
-  overflow: auto !important;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: auto;
-  scrollbar-color: #a8a8a8 #f1f1f1;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
-  width: 8px !important;
-  height: 16px !important;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:vertical,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar:vertical,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar:vertical {
-  width: 8px !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
-  height: 16px !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-track,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 3px !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
-  background: #a8a8a8 !important;
-  border-radius: 3px !important;
-  border: none !important;
-  box-shadow: none !important;
-  background-image: none !important;
-  background-clip: border-box !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
-  background: #909090 !important;
-  border: none !important;
-  box-shadow: none !important;
-  background-image: none !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-scrollbar__bar.is-horizontal {
-  height: 16px !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
-  position: relative;
-  z-index: 30 !important;
-  background-color: #f1f5f9 !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper tr,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper tr {
-  height: 38px !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
-  height: 38px !important;
-  min-height: 38px !important;
-  padding: 6px 0 !important;
-  line-height: 24px !important;
-  box-sizing: border-box !important;
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  border-top: 1px solid #e2e8f0 !important;
-  border-bottom: none !important;
-}
-
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell .cell,
-::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell .cell {
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  line-height: 24px !important;
-  text-align: center !important;
+/* 明细表合计行 + 滚动条：与到货验收 apply-detail-table 完全一致 */
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+
+  padding-bottom: 0 !important;
+
+  box-sizing: border-box;
+
+  overflow: auto !important;
+
+  overscroll-behavior: contain;
+
+  -webkit-overflow-scrolling: touch;
+
+  scrollbar-width: auto;
+
+  scrollbar-color: #a8a8a8 #f1f1f1;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
+
+  width: 8px !important;
+
+  height: 16px !important;
+
+  -webkit-appearance: none;
+
+  appearance: none;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:vertical,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar:vertical {
+
+  width: 8px !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
+
+  height: 16px !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-track,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
+
+  background: #f1f1f1 !important;
+
+  border-radius: 3px !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
+
+  background: #a8a8a8 !important;
+
+  border-radius: 3px !important;
+
+  border: none !important;
+
+  box-shadow: none !important;
+
+  background-image: none !important;
+
+  background-clip: border-box !important;
+
+  min-width: 16px !important;
+
+  min-height: 16px !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+
+  background: #909090 !important;
+
+  border: none !important;
+
+  box-shadow: none !important;
+
+  background-image: none !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-scrollbar__bar.is-horizontal {
+
+  height: 16px !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed .el-table__fixed-footer-wrapper,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right .el-table__fixed-footer-wrapper {
+
+  position: relative;
+
+  z-index: 30 !important;
+
+  background-color: #f1f5f9 !important;
+
+  box-shadow: none !important;
+
+  overflow: visible !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper tr,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper tr {
+
+  height: 38px !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+
+  height: 38px !important;
+
+  min-height: 38px !important;
+
+  padding: 6px 0 !important;
+
+  line-height: 24px !important;
+
+  box-sizing: border-box !important;
+
+  background-color: #f1f5f9 !important;
+
+  color: #334155 !important;
+
+  font-size: 13px !important;
+
+  font-weight: 600 !important;
+
+  border-top: 1px solid #e2e8f0 !important;
+
+  border-bottom: none !important;
+
+}
+
+
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell .cell,
+
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell .cell {
+
+  color: #334155 !important;
+
+  font-size: 13px !important;
+
+  font-weight: 600 !important;
+
+  line-height: 24px !important;
+
+  text-align: center !important;
+
 }
 </style>
 
@@ -3035,112 +3143,218 @@ export default {
   background-color: #D6EBFF !important;
 }
 
-/* 合计行：与到货验收完全一致 */
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper {
-  background-color: #f1f5f9 !important;
-  border-bottom: none !important;
-  position: relative;
-  z-index: 30 !important;
-  box-shadow: none !important;
-}
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr {
-  height: 38px !important;
-}
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
-  height: 38px !important;
-  min-height: 38px !important;
-  padding: 6px 0 !important;
-  line-height: 24px !important;
-  box-sizing: border-box !important;
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  border-top: 1px solid #e2e8f0 !important;
-  border-bottom: none !important;
-}
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
-  color: #334155 !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  line-height: 24px !important;
-  text-align: center !important;
-}
-
-/* 弹窗明细表滚动条：横向 12px / 纵向 8px，与到货验收完全一致 */
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
-  z-index: 2;
-  overflow: auto !important;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
-  width: 8px !important;
-  height: 16px !important;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:vertical,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:vertical {
-  width: 8px !important;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
-  height: 16px !important;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
-  background: #f1f1f1 !important;
-  border-radius: 3px !important;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
-  background: #a8a8a8 !important;
-  border-radius: 3px !important;
-  border: none !important;
-  box-shadow: none !important;
-  background-image: none !important;
-  background-clip: border-box !important;
-  min-width: 16px !important;
-  min-height: 16px !important;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
-  background: #909090 !important;
-  border: none !important;
-  box-shadow: none !important;
-  background-image: none !important;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-vertical {
-  width: 6px !important;
-}
-
-.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-horizontal {
-  height: 16px !important;
+/* 合计行：与到货验收完全一致 */
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__footer-wrapper,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper {
+
+  background-color: #f1f5f9 !important;
+
+  border-bottom: none !important;
+
+  position: relative;
+
+  z-index: 30 !important;
+
+  box-shadow: none !important;
+
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr {
+
+  height: 38px !important;
+
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td.el-table__cell,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell {
+
+  height: 38px !important;
+
+  min-height: 38px !important;
+
+  padding: 6px 0 !important;
+
+  line-height: 24px !important;
+
+  box-sizing: border-box !important;
+
+  background-color: #f1f5f9 !important;
+
+  color: #334155 !important;
+
+  font-size: 13px !important;
+
+  font-weight: 600 !important;
+
+  border-top: 1px solid #e2e8f0 !important;
+
+  border-bottom: none !important;
+
+}
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
+
+  color: #334155 !important;
+
+  font-size: 13px !important;
+
+  font-weight: 600 !important;
+
+  line-height: 24px !important;
+
+  text-align: center !important;
+
+}
+
+
+
+/* 弹窗明细表滚动条：横向 12px / 纵向 8px，与到货验收完全一致 */
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
+
+  z-index: 2;
+
+  overflow: auto !important;
+
+  overscroll-behavior: contain;
+
+  -webkit-overflow-scrolling: touch;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar {
+
+  width: 8px !important;
+
+  height: 16px !important;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:vertical,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:vertical,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:vertical,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:vertical {
+
+  width: 8px !important;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar:horizontal {
+
+  height: 16px !important;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body-wrapper::-webkit-scrollbar-track,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right::-webkit-scrollbar-track,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed::-webkit-scrollbar-track {
+
+  background: #f1f1f1 !important;
+
+  border-radius: 3px !important;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb {
+
+  background: #a8a8a8 !important;
+
+  border-radius: 3px !important;
+
+  border: none !important;
+
+  box-shadow: none !important;
+
+  background-image: none !important;
+
+  background-clip: border-box !important;
+
+  min-width: 16px !important;
+
+  min-height: 16px !important;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+
+  background: #909090 !important;
+
+  border: none !important;
+
+  box-shadow: none !important;
+
+  background-image: none !important;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-vertical {
+
+  width: 6px !important;
+
+}
+
+
+
+.app-container.stocktaking-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-scrollbar__bar.is-horizontal {
+
+  height: 16px !important;
+
 }
 </style>
 

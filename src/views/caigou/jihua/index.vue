@@ -2812,17 +2812,22 @@ listPurchasePlan(queryParams).then(response => {
 }
 
 .list-query-panel .el-form .apply-query-field,
-.list-query-panel .el-form .query-row-first-inner .apply-query-input {
+.list-query-panel .el-form .query-row-first-inner .apply-query-input,
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select,
+.list-query-panel .el-form .query-row-second .apply-query-input {
   width: 170px;
+  min-width: 170px;
+  max-width: 170px;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .list-query-panel .el-form .query-row-first-inner .more-search-select-wrap.apply-query-field > * {
   width: 100%;
 }
 
-.list-query-panel .el-form .query-row-second .apply-query-field.el-select {
-  width: 170px;
+.list-query-panel .el-form .query-row-second .apply-query-field.el-select > .el-input {
+  width: 100%;
 }
 
 .list-query-panel .el-form .query-row-first-inner .query-actions {
@@ -2848,7 +2853,9 @@ listPurchasePlan(queryParams).then(response => {
 }
 
 .list-query-panel .el-form .apply-query-date.el-date-editor {
-  width: 200px;
+  width: 170px;
+  min-width: 170px;
+  max-width: 170px;
 }
 
 /* 第一行查询条件左对齐紧凑布局 */
@@ -2986,9 +2993,22 @@ listPurchasePlan(queryParams).then(response => {
   padding-bottom: 14px !important;
 }
 
-.app-container.caigou-jihua-page .local-modal-content.apply-modal-root-content {
+/* 侧栏收起后主区变宽：覆盖 global modal.css 的 width:90%/max-width:1200px，弹窗铺满遮罩无右侧灰缝 */
+.app-container.caigou-jihua-page.is-modal-open {
+  padding-bottom: 0 !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-mask > .local-modal-content,
+.app-container.caigou-jihua-page .local-modal-mask .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  box-sizing: border-box;
 }
 
 /* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
@@ -2997,6 +3017,9 @@ listPurchasePlan(queryParams).then(response => {
   right: -8px;
   width: auto;
   position: absolute;
+  overflow: hidden;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 /* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */
@@ -3201,6 +3224,33 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   font-size: 13px !important;
 }
 
+/* 搜索区控件统一为与「计划单号」相同宽度 170px */
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .apply-query-field,
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .apply-query-input,
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .el-select.apply-query-field,
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .more-search-select-wrap.apply-query-field {
+  width: 170px !important;
+  min-width: 170px !important;
+  max-width: 170px !important;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .more-search-select-wrap.apply-query-field > *,
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .more-search-select-wrap.apply-query-field .el-select,
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .el-select.apply-query-field,
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .el-select.apply-query-field > .el-input {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .apply-query-date.el-date-editor,
+.app-container.caigou-jihua-page > .form-fields-container.list-query-panel .query-date-picker.apply-query-date {
+  width: 170px !important;
+  min-width: 170px !important;
+  max-width: 170px !important;
+}
+
 .app-container.caigou-jihua-page .apply-table-panel {
   flex: 1 1 auto;
   min-height: 0;
@@ -3382,15 +3432,20 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   white-space: nowrap !important;
 }
 
-/* 弹窗明细表滚动条：与到货验收主列表一致（横向 12px，固定粗细） */
+/* 弹窗明细表滚动条：横向条叠在固定列之上（body z-index > fixed 默认 3） */
 .app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
-  z-index: 2;
+  z-index: 4 !important;
   overflow: auto !important;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 0 !important;
   scrollbar-width: auto;
   scrollbar-color: #a8a8a8 #f1f1f1;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed,
+.app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-right {
+  z-index: 3 !important;
 }
 
 .app-container.caigou-jihua-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper::-webkit-scrollbar,
@@ -3591,9 +3646,14 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
 }
 
 .app-container.caigou-jihua-page .local-modal-content .apply-detail-table th.el-table-column--selection .el-checkbox,
-.app-container.caigou-jihua-page .local-modal-content .apply-detail-table td.el-table-column--selection .el-checkbox {
-  display: inline-block !important;
+.app-container.caigou-jihua-page .local-modal-content .apply-detail-table td.el-table-column--selection .el-checkbox,
+.app-container.caigou-jihua-page .local-modal-content .apply-detail-table th.apply-select-col .el-checkbox,
+.app-container.caigou-jihua-page .local-modal-content .apply-detail-table td.apply-select-col .el-checkbox {
+  display: inline-flex !important;
   visibility: visible !important;
+  opacity: 1 !important;
+  width: auto !important;
+  height: auto !important;
 }
 
 /* 勾选列 / 操作列 sticky：横滑条可铺满并压在两侧列上方 */

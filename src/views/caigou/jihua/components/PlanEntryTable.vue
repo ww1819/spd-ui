@@ -12,8 +12,9 @@
       border
       :height="tableHeight"
     >
-      <el-table-column v-if="editable" type="selection" width="60" align="center" header-align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" fixed="left" />
-      <el-table-column label="序号" align="center" header-align="center" prop="index" width="80" min-width="80" show-overflow-tooltip fixed="left">
+      <!-- 勾选列勿用 fixed：本页用 sticky（apply-select-col），fixed 会叠一层空壳盖住复选框 -->
+      <el-table-column type="selection" width="55" align="center" header-align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" />
+      <el-table-column label="序号" align="center" header-align="center" prop="index" width="60" min-width="60" show-overflow-tooltip>
         <template slot-scope="scope">{{ scope.$index + 1 }}</template>
       </el-table-column>
       <el-table-column label="产品编码" align="center" header-align="center" width="120" show-overflow-tooltip>

@@ -6,7 +6,7 @@
 $apply-list-pages: config-page, receipt-confirm-page, d-purchase-agg-page, d-purchase-agg-audit-page,
   departmentTransfer-apply-page, d-audit-page, batch-consume-page, stocktaking-apply-page, stocktaking-audit-page,
   d-apply-page, d-apply-audit-page, d-purchase-page, d-purchase-audit-page,
-  gzOrder-goodsApply-page, gzOrder-refund-page, gzOrder-follow-page,
+  gz-order-apply-page, gz-order-audit-page, gzOrder-goodsApply-page, gzOrder-refund-page, gzOrder-follow-page,
   settlement-apply-page, settlement-audit-page,
   finance-invoice-page, finance-wh-settlement-page, finance-supp-settlement-page,
   inWarehouse-apply-page, inWarehouse-audit-page, inWarehouse-refundGoodsApply-page, inWarehouse-refundGoodsAudit-page,
@@ -16,7 +16,8 @@ $apply-list-pages: config-page, receipt-confirm-page, d-purchase-agg-page, d-pur
   initial-stock-import-page, stocktaking-in-page,
   new-product-apply-page, new-product-audit-page, wh-warehouse-apply-page,
   patient-charge-page, price-adjust-page, price-adjust-audit-page,
-  scrap-apply-page, scrap-audit-page;
+  scrap-apply-page, scrap-audit-page,
+  caigou-jihua-page;
   /* price-adjust-report-page：嵌套在 Tab 壳内，留白对齐库存明细查询，不走本 mixin */
 
 @mixin department-apply-list-page($page) {
@@ -51,6 +52,23 @@ $apply-list-pages: config-page, receipt-confirm-page, d-purchase-agg-page, d-pur
     width: auto;
     position: absolute;
     overflow: hidden;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  /*
+   * 全页 apply 弹窗：覆盖 global modal.css 的 width:90% / max-width:1200px。
+   * 侧栏收起后主区变宽时弹窗须同步铺满，否则右侧露出灰缝。
+   */
+  .app-container.#{$page} .local-modal-mask > .local-modal-content,
+  .app-container.#{$page} .local-modal-mask .local-modal-content.apply-modal-root-content {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    box-sizing: border-box;
   }
 
   .app-container.#{$page} .list-query-panel,

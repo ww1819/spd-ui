@@ -280,15 +280,9 @@
               />
             </el-form-item>
           </el-col>
-          <el-col class="apply-modal-field apply-modal-field--date">
+          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="发票时间" prop="invoiceTime">
-              <el-date-picker clearable
-                              v-model="form.invoiceTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              style="width: 100%"
-                              placeholder="发票时间">
-              </el-date-picker>
+              <el-input v-model="form.invoiceTime" clearable placeholder="发票时间" />
             </el-form-item>
           </el-col>
         </el-row>

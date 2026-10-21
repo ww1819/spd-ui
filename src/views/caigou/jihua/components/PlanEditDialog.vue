@@ -15,7 +15,7 @@
                     <el-input v-model="form.planNo" :disabled="true" :title="form.planNo || ''" />
                   </el-form-item>
                 </el-col>
-                <el-col class="apply-modal-field apply-modal-field--standard">
+                <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
                     <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备"/>
                   </el-form-item>
@@ -28,12 +28,12 @@
                     </el-select>
                   </el-form-item>
                 </el-col>
-                <el-col class="apply-modal-field apply-modal-field--date plan-field-plan-date">
+                <el-col class="apply-modal-field apply-modal-field--compact plan-field-plan-date">
                   <el-form-item label="制单时间" prop="planDate" class="apply-modal-label-required">
                     <el-input :value="planCreateTimeDisplay" :disabled="true" placeholder="制单时间" />
                   </el-form-item>
                 </el-col>
-                <el-col class="apply-modal-field apply-modal-field--standard">
+                <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="操作人" prop="createBy">
                     <el-input :value="operatorName" :disabled="true" />
                   </el-form-item>
@@ -45,23 +45,23 @@
                 </el-col>
               </el-row>
               <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
-                <el-col class="apply-modal-field apply-modal-field--standard">
+                <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="采购员" prop="proPerson">
                     <SelectUser v-model="form.proPerson" v-if="editable"/>
                     <el-input :value="purchaserName" :disabled="true" v-else/>
                   </el-form-item>
                 </el-col>
-                <el-col class="apply-modal-field apply-modal-field--standard">
+                <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="总金额" prop="totalAmount">
                     <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
                   </el-form-item>
                 </el-col>
-                <el-col class="apply-modal-field apply-modal-field--standard">
+                <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="计划来源" prop="planSource">
                     <el-input :value="planSourceDisplay" disabled placeholder="由明细聚合" />
                   </el-form-item>
                 </el-col>
-                <el-col class="apply-modal-field apply-modal-field--grow plan-entry-mode-item">
+                <el-col class="apply-modal-field plan-entry-mode-item">
                   <el-form-item label="明细生成" prop="planEntryMode">
                     <el-radio-group v-model="form.planEntryMode" :disabled="planEntryModeDisabled">
                       <el-radio label="1">按产品档案汇总</el-radio>
@@ -69,18 +69,16 @@
                     </el-radio-group>
                   </el-form-item>
                 </el-col>
+                <el-col class="apply-modal-field apply-modal-field--compact plan-field-remark">
+                  <el-form-item label="备注" prop="remark">
+                    <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!editable" />
+                  </el-form-item>
+                </el-col>
               </el-row>
               <el-row v-if="form.referenceBillNo && String(form.referenceBillNo).trim()" :gutter="0" class="apply-modal-form-row" type="flex">
                 <el-col class="apply-modal-field apply-modal-field--grow">
                   <el-form-item label="引用申购单号" prop="referenceBillNo">
                     <el-button type="primary" link @click="$emit('show-apply-bills')">查看引用申购单号</el-button>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-              <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-third" type="flex">
-                <el-col class="apply-modal-field apply-modal-field--grow">
-                  <el-form-item label="备注" prop="remark">
-                    <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!editable" />
                   </el-form-item>
                 </el-col>
               </el-row>
@@ -219,6 +217,20 @@ export default {
 
 .plan-edit-dialog ::v-deep .plan-entry-mode-item .el-form-item__content {
   line-height: 28px;
+  white-space: nowrap;
+}
+
+/* 表头输入/下拉统一为单号宽度 162px */
+.plan-edit-dialog ::v-deep .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input,
+.plan-edit-dialog ::v-deep .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-select,
+.plan-edit-dialog ::v-deep .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-select > .el-input,
+.plan-edit-dialog ::v-deep .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-form-item__content > * {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+
+.plan-edit-dialog ::v-deep .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
+  max-width: 162px;
 }
 
 .plan-edit-modal-root {

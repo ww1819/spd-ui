@@ -110,6 +110,8 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, op
     entriesToAdd.forEach(entry => {
       if (!entry.materialId && !(entry.material && entry.material.id)) return
       const mid = entry.materialId || (entry.material && entry.material.id)
+      const deptId = entry._departmentId != null && entry._departmentId !== '' ? entry._departmentId : undefined
+      const deptName = entry._departmentName ? String(entry._departmentName).trim() : ''
       const row = {
         materialId: mid,
         material: buildPlanEntryMaterialFromPurchase(entry),
@@ -123,7 +125,11 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, op
         planSource: PLAN_SOURCE_DEPARTMENT,
         depApplyEntryIds: entry.id != null ? [entry.id] : [],
         applyBillNos: entry._purchaseBillNo || '',
-        applyDepartmentId: entry._departmentId != null ? entry._departmentId : undefined
+        applyDepartmentId: deptId,
+        applyDepartmentName: deptName || undefined,
+        applyDepartment: deptId != null || deptName
+          ? { id: deptId, name: deptName || undefined }
+          : undefined
       }
       row.amt = (row.qty || 0) * (row.price || 0)
       newRows.push(row)
@@ -137,6 +143,7 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, op
     const mid = entry.materialId || (entry.material && entry.material.id)
     const supplierId = materialArchiveSupplierId(entry)
     const deptId = entry._departmentId != null && entry._departmentId !== '' ? entry._departmentId : ''
+    const deptName = entry._departmentName ? String(entry._departmentName).trim() : ''
     const aggKey = isGzHigh
       ? `${mid}|${deptId}`
       : `${mid}|${supplierId != null ? supplierId : ''}`
@@ -154,9 +161,11 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, op
         remark: entry.remark || '',
         supplierId,
         planSource: PLAN_SOURCE_DEPARTMENT,
-        applyDepartmentId: isGzHigh && deptId !== '' ? deptId : undefined,
+        applyDepartmentId: deptId !== '' ? deptId : undefined,
         depApplyEntryIds: [],
-        _billNoSet: new Set()
+        _billNoSet: new Set(),
+        _deptIdSet: new Set(),
+        _deptNameSet: new Set()
       }
     }
     byKey[aggKey].applyQty += q
@@ -164,13 +173,32 @@ export function buildPlanRowsFromPurchaseEntries(entriesToAdd, planEntryMode, op
     if (entry._purchaseBillNo) {
       byKey[aggKey]._billNoSet.add(entry._purchaseBillNo)
     }
+    if (deptId !== '') byKey[aggKey]._deptIdSet.add(String(deptId))
+    if (deptName) byKey[aggKey]._deptNameSet.add(deptName)
   })
   Object.keys(byKey).forEach((key) => {
     const row = byKey[key]
     row.qty = row.applyQty
     row.amt = (row.qty || 0) * (row.price || 0)
     row.applyBillNos = row._billNoSet && row._billNoSet.size ? [...row._billNoSet].join(',') : ''
+    const deptIds = row._deptIdSet ? [...row._deptIdSet] : []
+    const deptNames = row._deptNameSet ? [...row._deptNameSet] : []
+    // 低值按产品汇总可能跨科室：单科室写 ID，多科室只拼名称供展示
+    if (deptIds.length === 1) {
+      row.applyDepartmentId = deptIds[0]
+    } else if (!isGzHigh) {
+      row.applyDepartmentId = undefined
+    }
+    if (deptNames.length) {
+      row.applyDepartmentName = deptNames.join(',')
+      row.applyDepartment = {
+        id: deptIds.length === 1 ? deptIds[0] : undefined,
+        name: row.applyDepartmentName
+      }
+    }
     delete row._billNoSet
+    delete row._deptIdSet
+    delete row._deptNameSet
     newRows.push(row)
   })
   assignPlanEntryRowUid(newRows)
@@ -274,6 +302,7 @@ export function buildLeanPlanEntryPayload(rows) {
         model: row.model || (row.material && row.material.model) || undefined,
         remark: row.remark || undefined,
         applyDepartmentId: row.applyDepartmentId != null ? row.applyDepartmentId : undefined,
+        applyDepartmentName: row.applyDepartmentName || (row.applyDepartment && row.applyDepartment.name) || undefined,
         planSource: resolvePlanEntrySource(row),
         applyBillNos: row.applyBillNos || undefined
       }

@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page gz-order-audit-page">
+  <div class="app-container list-page gz-order-audit-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -13,6 +13,9 @@
             />
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectWarehouse v-model="queryParams.warehouseId" includeWarehouseType="高值"/>
+            </div>
+            <div class="query-select-wrapper more-search-select-wrap apply-query-field">
+              <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室"/>
             </div>
             <div class="query-actions">
               <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
@@ -716,6 +719,7 @@ export default {
         pageSize: 10,
         orderNo: null,
         warehouseId: null,
+        departmentId: null,
         orderStatus: null,
         orderType: null,
         timeField: "createTime",
@@ -1539,6 +1543,7 @@ export default {
       this.resetForm("queryForm");
       this.queryParams.orderNo = null;
       this.queryParams.warehouseId = null;
+      this.queryParams.departmentId = null;
       this.queryParams.beginDate = this.getStatDate();
       this.queryParams.endDate = this.getEndDate();
       this.queryParams.timeField = 'createTime';
@@ -2587,9 +2592,22 @@ export default {
   padding-bottom: 14px !important;
 }
 
-.app-container.gz-order-audit-page .local-modal-content.apply-modal-root-content {
+/* 侧栏收起后主区变宽：覆盖 global modal.css 的 width:90%/max-width:1200px，弹窗铺满遮罩无右侧灰缝 */
+.app-container.gz-order-audit-page.is-modal-open {
+  padding-bottom: 0 !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-mask > .local-modal-content,
+.app-container.gz-order-audit-page .local-modal-mask .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  box-sizing: border-box;
 }
 
 /* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
@@ -2598,6 +2616,9 @@ export default {
   right: -8px;
   width: auto;
   position: absolute;
+  overflow: hidden;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 /* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */

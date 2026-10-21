@@ -153,8 +153,7 @@
       </el-table-column>
       <el-table-column label="发票日期" align="center" prop="invoiceTime" width="180" show-overflow-tooltip resizable>
         <template slot-scope="scope">
-          <span v-if="scope.row.invoiceTime">{{ parseTime(scope.row.invoiceTime, '{y}-{m}-{d}') }}</span>
-          <span v-else>--</span>
+          <span>{{ scope.row.invoiceTime || '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
@@ -288,15 +287,9 @@
               />
             </el-form-item>
           </el-col>
-          <el-col class="apply-modal-field apply-modal-field--date">
+          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="发票时间" prop="invoiceTime">
-              <el-date-picker clearable
-                              v-model="form.invoiceTime"
-                              type="date"
-                              value-format="yyyy-MM-dd"
-                              style="width: 100%"
-                              placeholder="发票时间">
-              </el-date-picker>
+              <el-input v-model="form.invoiceTime" clearable placeholder="发票时间" />
             </el-form-item>
           </el-col>
         </el-row>
