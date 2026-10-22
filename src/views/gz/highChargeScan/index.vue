@@ -1,131 +1,161 @@
 <template>
-  <div class="app-container high-charge-scan-page">
-    <div class="hc-filter-panel">
-      <el-form :model="detailQuery" inline size="small" class="hc-query-form">
-        <el-form-item label="类型">
-          <el-radio-group v-model="detailVisitType" @change="onDetailVisitTypeChange">
-            <el-radio-button label="ALL">全部</el-radio-button>
-            <el-radio-button label="IN">住院</el-radio-button>
-            <el-radio-button label="OUT">门诊</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="患者姓名">
-          <el-input v-model="detailQuery.patientName" placeholder="姓名/首字母" clearable style="width:140px" @keyup.enter.native="handleDetailQuery" />
-        </el-form-item>
-        <el-form-item :label="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')">
-          <el-input
-            v-model="detailQuery.visitNo"
-            :placeholder="detailVisitType === 'IN' ? '住院号模糊' : (detailVisitType === 'OUT' ? '门诊号模糊' : '住院/门诊号模糊')"
-            clearable
-            style="width:160px"
-            @keyup.enter.native="handleDetailQuery"
-          />
-        </el-form-item>
-        <el-form-item label="收费编码">
-          <el-input v-model="detailQuery.chargeItemId" placeholder="编码/项目名称/首字母" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
-        </el-form-item>
-        <el-form-item label="收费明细主键">
-          <el-input v-model="detailQuery.hisChargeId" placeholder="HIS收费明细主键模糊" clearable style="width:180px" @keyup.enter.native="handleDetailQuery" />
-        </el-form-item>
-        <el-form-item label="执行科室">
-          <el-select
-            v-model="detailQuery.departmentId"
-            placeholder="执行科室名称/简拼"
-            clearable
-            filterable
-            :filter-method="filterDeptMethod"
-            style="width:200px"
-          >
-            <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
-          </el-select>
-        </el-form-item>
-        <div class="hc-query-form-second-row">
-          <el-form-item label="计费日期">
-            <el-date-picker v-model="detailQuery.beginChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="起" style="width:140px" clearable />
-            <span style="margin:0 6px">至</span>
-            <el-date-picker v-model="detailQuery.endChargeDate" type="date" value-format="yyyy-MM-dd" placeholder="止" style="width:140px" clearable />
-          </el-form-item>
-          <el-form-item label="是否处理">
-            <el-select v-model="detailQuery.processed" placeholder="全部" clearable style="width:110px">
+  <div class="app-container list-page high-charge-scan-page" ref="pageRoot">
+    <div class="hc-main">
+      <div class="form-fields-container list-query-panel" v-show="showSearch">
+        <el-form :model="detailQuery" ref="queryForm" size="small" :inline="true" class="query-form">
+          <div class="hc-query-row">
+            <el-radio-group
+              v-model="detailVisitType"
+              size="small"
+              class="hc-query-type-group"
+              @change="onDetailVisitTypeChange"
+            >
+              <el-radio-button label="ALL">全部</el-radio-button>
+              <el-radio-button label="IN">住院</el-radio-button>
+              <el-radio-button label="OUT">门诊</el-radio-button>
+            </el-radio-group>
+            <el-input
+              v-model="detailQuery.patientName"
+              placeholder="患者姓名"
+              clearable
+              class="hc-query-control"
+              @keyup.enter.native="handleDetailQuery"
+            />
+            <el-input
+              v-model="detailQuery.visitNo"
+              :placeholder="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')"
+              clearable
+              class="hc-query-control"
+              @keyup.enter.native="handleDetailQuery"
+            />
+            <el-input
+              v-model="detailQuery.chargeItemId"
+              placeholder="收费编码"
+              clearable
+              class="hc-query-control"
+              @keyup.enter.native="handleDetailQuery"
+            />
+            <el-input
+              v-model="detailQuery.hisChargeId"
+              placeholder="收费明细主键"
+              clearable
+              class="hc-query-control"
+              @keyup.enter.native="handleDetailQuery"
+            />
+            <el-select
+              v-model="detailQuery.departmentId"
+              placeholder="执行科室"
+              clearable
+              filterable
+              :filter-method="filterDeptMethod"
+              class="hc-query-control"
+            >
+              <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+            </el-select>
+            <div class="hc-query-actions">
+              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleDetailQuery">搜索</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetDetailQuery">重置</el-button>
+            </div>
+          </div>
+          <div class="hc-query-row hc-query-row--second">
+            <el-date-picker
+              v-model="detailQuery.beginChargeDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="计费日期起"
+              clearable
+              class="hc-query-control"
+            />
+            <el-date-picker
+              v-model="detailQuery.endChargeDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="计费日期止"
+              clearable
+              class="hc-query-control"
+            />
+            <el-select
+              v-model="detailQuery.processed"
+              placeholder="是否处理"
+              clearable
+              class="hc-query-control"
+            >
               <el-option label="已处理" value="Y" />
               <el-option label="未处理" value="N" />
             </el-select>
-          </el-form-item>
-          <el-form-item label="项目名称">
             <el-input
               v-model="detailQuery.itemName"
-              placeholder="项目名称模糊"
+              placeholder="项目名称"
               clearable
-              style="width:180px"
+              class="hc-query-control"
               @keyup.enter.native="handleDetailQuery"
             />
-          </el-form-item>
+          </div>
+        </el-form>
+      </div>
+
+      <el-row :gutter="0" class="list-toolbar hc-toolbar">
+        <div class="list-toolbar-left">
+          <el-button
+            type="primary"
+            size="small"
+            class="spd-btn spd-btn--primary"
+            v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
+            @click="openFetchDialog"
+          >收费记录提取</el-button>
         </div>
-      </el-form>
-    </div>
+        <div class="list-toolbar-right">
+          <right-toolbar :showSearch.sync="showSearch" @queryTable="loadDetailList" />
+        </div>
+      </el-row>
 
-    <div class="hc-action-bar">
-      <el-button
-        type="success"
-        plain
-        size="small"
-        class="spd-btn spd-btn--secondary"
-        v-hasPermi="['department:patientCharge:fetchInpatient', 'department:patientCharge:fetchOutpatient']"
-        @click="openFetchDialog"
-      >收费记录提取</el-button>
-      <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleDetailQuery">查询</el-button>
-      <el-button icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" @click="resetDetailQuery">重置</el-button>
-    </div>
-
-    <div class="hc-detail-box">
+      <div class="apply-table-panel" ref="tablePanel">
     <el-table
       ref="detailTable"
       v-loading="detailLoading"
       :data="detailList"
-      height="60vh"
+      :height="mainTableHeight"
       border
       stripe
-      class="hc-detail-table"
+      row-key="id"
+      class="apply-main-table"
+      @selection-change="handleSelectionChange"
       @sort-change="handleDetailSortChange"
     >
-      <el-table-column label="序号" type="index" width="60" align="center" :index="detailRowIndex" fixed="left" />
-      <el-table-column label="就诊类型" prop="visitType" width="80">
+      <el-table-column type="selection" width="55" align="center" fixed="left" class-name="apply-select-col" />
+      <el-table-column label="序号" type="index" width="60" align="center" fixed="left" :index="detailRowIndex" />
+      <el-table-column label="就诊类型" prop="visitType" width="90" align="center" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ scope.row.visitType === 'INPATIENT' ? '住院' : '门诊' }}</span>
         </template>
       </el-table-column>
       <template v-if="detailVisitType === 'IN'">
-        <el-table-column label="住院号" prop="inpatientNo" width="140" min-width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="开单科室" prop="deptName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="住院号" prop="inpatientNo" width="145" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="开单科室" prop="deptName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
       </template>
       <template v-else-if="detailVisitType === 'OUT'">
-        <el-table-column label="门诊号" prop="outpatientNo" width="140" min-width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="开单科室" prop="clinicName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="门诊号" prop="outpatientNo" width="145" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="开单科室" prop="clinicName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
       </template>
       <template v-else>
-        <el-table-column label="住院号/门诊号" prop="visitNo" width="150" min-width="140" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-        <el-table-column label="开单科室" prop="deptDisplayName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="执行科室" prop="execDeptName" min-width="120" show-overflow-tooltip />
+        <el-table-column label="住院/门诊号" prop="visitNo" width="145" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+        <el-table-column label="开单科室" prop="deptDisplayName" min-width="110" show-overflow-tooltip />
+        <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
       </template>
-      <el-table-column label="姓名" prop="patientName" width="110" min-width="100" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-      <el-table-column label="性别" prop="patientSex" width="60" align="center" show-overflow-tooltip>
-        <template slot-scope="scope">
-          <span>{{ formatPatientSex(scope.row.patientSex) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="收费编码" prop="chargeItemId" width="130" min-width="120" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-      <el-table-column label="收费明细主键" prop="hisChargeId" width="140" show-overflow-tooltip>
+      <el-table-column label="患者姓名" prop="patientName" width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="收费编码" prop="chargeItemId" width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ scope.row.hisChargeId || scope.row.hisInpatientChargeId || scope.row.hisOutpatientChargeId || '' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="项目名称" prop="itemName" min-width="180" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-      <el-table-column label="规格" prop="specModel" width="130" min-width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-      <el-table-column label="数量" prop="quantity" width="90" align="center" />
-      <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
-      <el-table-column label="下载时间" prop="createTime" width="160" show-overflow-tooltip />
+      <el-table-column label="规格" prop="specModel" width="120" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="数量" prop="quantity" width="90" align="center" show-overflow-tooltip />
+      <el-table-column label="计费时间" prop="chargeDate" width="165" show-overflow-tooltip />
+      <el-table-column label="下载时间" prop="createTime" width="165" show-overflow-tooltip />
       <el-table-column label="抓取记录" width="90" align="center">
         <template slot-scope="scope">
           <el-button
@@ -137,7 +167,7 @@
           >查看</el-button>
         </template>
       </el-table-column>
-      <el-table-column label="金额" prop="totalAmount" width="110" min-width="100" align="right" sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="金额" prop="totalAmount" width="110" align="right" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="核销状态" prop="processStatus" width="100" align="center" show-overflow-tooltip>
         <template slot-scope="scope">
           <span :class="writeOffStatusClass(scope.row.processStatus)">{{ writeOffStatusText(scope.row.processStatus) }}</span>
@@ -148,12 +178,7 @@
           <span>{{ formatProcessSituation(scope.row.processSituation) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="类型" prop="valueLevel" width="90" align="center">
-        <template slot-scope="scope">
-          <span>{{ valueLevelText(scope.row.valueLevel) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="180" fixed="right">
+      <el-table-column label="操作" align="center" width="160" fixed="right" class-name="apply-action-col">
         <template slot-scope="scope">
           <el-button
             v-if="canScanHigh(scope.row)"
@@ -173,16 +198,18 @@
         </template>
       </el-table-column>
     </el-table>
-    </div>
 
-    <div class="hc-pagination-wrap">
-      <pagination
-        v-show="detailTotal > 0"
-        :total="detailTotal"
-        :page.sync="detailQuery.pageNum"
-        :limit.sync="detailQuery.pageSize"
-        @pagination="loadDetailList"
-      />
+        <div class="apply-pagination-wrap apply-pager-bar">
+          <div class="pagination-summary" />
+          <pagination
+            v-show="detailTotal > 0"
+            :total="detailTotal"
+            :page.sync="detailQuery.pageNum"
+            :limit.sync="detailQuery.pageSize"
+            @pagination="loadDetailList"
+          />
+        </div>
+      </div>
     </div>
 
     <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body>
@@ -422,6 +449,9 @@ export default {
   name: 'HighChargeScan',
   data() {
     return {
+      showSearch: true,
+      mainTableHeight: 400,
+      selectedRows: [],
       detailVisitType: 'ALL',
       detailLoading: false,
       detailList: [],
@@ -510,16 +540,29 @@ export default {
       ]
     }
   },
+  watch: {
+    showSearch() {
+      this.$nextTick(() => this.updateMainTableHeight())
+    }
+  },
   created() {
     this.loadDeptOptions()
     this.loadDetailList()
   },
   mounted() {
-    this.$nextTick(() => this.layoutDetailTable())
+    this.$nextTick(() => {
+      this.updateMainTableHeight()
+      setTimeout(() => this.updateMainTableHeight(), 80)
+      setTimeout(() => this.updateMainTableHeight(), 200)
+    })
+    window.addEventListener('resize', this.updateMainTableHeight)
   },
   activated() {
     // keep-alive 切回：仅重算表格高度，不重新拉数，保留查询条件与列表
-    this.$nextTick(() => this.layoutDetailTable())
+    this.$nextTick(() => this.updateMainTableHeight())
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.updateMainTableHeight)
   },
   methods: {
     formatDateTime(v) {
@@ -536,16 +579,36 @@ export default {
       if (isNaN(n)) return String(v)
       return this.formatAmount(n)
     },
-    layoutDetailTable() {
-      const table = this.$refs.detailTable
-      if (table && table.doLayout) {
-        table.doLayout()
+    /** 明细框高度：底边对齐页面内容区底部（与高值核销确认一致） */
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel
+      const root = this.$refs.pageRoot || this.$el
+      if (!panel || !panel.getBoundingClientRect || !root || !root.getBoundingClientRect) return
+      const panelTop = panel.getBoundingClientRect().top
+      const targetBottom = root.getBoundingClientRect().bottom
+      const pagEl = panel.querySelector('.apply-pagination-wrap')
+      let pagH = pagEl ? pagEl.getBoundingClientRect().height : 52
+      if (pagH < 40) pagH = 52
+      const borderY =
+        (parseFloat(window.getComputedStyle(panel).borderTopWidth) || 0) +
+        (parseFloat(window.getComputedStyle(panel).borderBottomWidth) || 0)
+      const next = Math.max(240, Math.floor(targetBottom - panelTop - pagH - borderY))
+      if (Math.abs((this.mainTableHeight || 0) - next) >= 2) {
+        this.mainTableHeight = next
       }
+      this.$nextTick(() => {
+        if (this.$refs.detailTable && this.$refs.detailTable.doLayout) {
+          this.$refs.detailTable.doLayout()
+        }
+      })
     },
     detailRowIndex(index) {
       const page = Number(this.detailQuery.pageNum) || 1
       const size = Number(this.detailQuery.pageSize) || 10
       return (page - 1) * size + index + 1
+    },
+    handleSelectionChange(rows) {
+      this.selectedRows = rows || []
     },
     loadDeptOptions() {
       listDepartTenantOptionselect().then(res => {
@@ -961,7 +1024,7 @@ export default {
       q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
       const done = () => {
         this.detailLoading = false
-        this.$nextTick(() => this.layoutDetailTable())
+        this.$nextTick(() => this.updateMainTableHeight())
       }
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
@@ -1093,167 +1156,258 @@ export default {
   line-height: 1.45;
   text-align: left;
 }
-</style>
 
-<style>
-.high-charge-scan-page {
-  padding: 1vh 0.8vw 1.5vh !important;
-  box-sizing: border-box;
-}
-
-.high-charge-scan-page .hc-filter-panel,
-.high-charge-scan-page .hc-action-bar,
-.high-charge-scan-page .hc-detail-box {
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.high-charge-scan-page .hc-filter-panel {
-  padding: 10px 12px 4px;
-  margin-bottom: 0;
-}
-
-.high-charge-scan-page .hc-action-bar {
+.hc-main {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  gap: 4px;
+}
+
+.high-charge-scan-page .hc-main > .list-query-panel,
+.high-charge-scan-page .hc-main > .hc-toolbar,
+.high-charge-scan-page .hc-main > .apply-table-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.high-charge-scan-page .hc-toolbar.list-toolbar {
+  margin: 0 !important;
+  padding: 6px 12px !important;
+}
+
+.hc-query-row {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
+  width: 100%;
 }
 
-.high-charge-scan-page .hc-action-bar .el-button {
-  margin: 0;
+.hc-query-row--second {
+  margin-top: 8px;
 }
 
-.high-charge-scan-page .hc-filter-panel .hc-query-form .el-form-item {
-  margin-bottom: 8px;
+.hc-query-type-group {
+  flex-shrink: 0;
 }
 
-.high-charge-scan-page .hc-query-form-second-row {
-  display: flex;
-  flex-wrap: wrap;
+.hc-query-type-group ::v-deep .el-radio-button__inner {
+  padding: 8px 14px;
+}
+
+.hc-query-control {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+  flex-shrink: 0;
+}
+
+.hc-query-control.el-select,
+.hc-query-control.el-input,
+.hc-query-control.el-date-editor {
+  width: 160px !important;
+}
+
+.hc-query-actions {
+  display: inline-flex;
   align-items: center;
-  width: 100%;
-  clear: both;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
-.high-charge-scan-page .hc-query-form-second-row .el-form-item {
-  margin-bottom: 0;
-}
-
-/* 筛选区输入框聚焦：提高发光对比度，便于识别当前焦点 */
-.high-charge-scan-page .hc-filter-panel .el-input__inner:focus,
-.high-charge-scan-page .hc-filter-panel .el-textarea__inner:focus {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.55);
-}
-
-.high-charge-scan-page .hc-filter-panel .el-input.is-focus .el-input__inner {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.55);
-}
-
-.high-charge-scan-page .hc-filter-panel .el-date-editor.is-active .el-input__inner,
-.high-charge-scan-page .hc-filter-panel .el-select .el-input.is-focus .el-input__inner {
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.55);
-}
-
-.high-charge-scan-page .hc-detail-box {
+.apply-table-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 0;
+  margin: 0 !important;
+  background: #fff !important;
+  border: 1px solid #e8ecf1 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05) !important;
   overflow: hidden;
-}
-
-.high-charge-scan-page .hc-detail-table {
-  width: 100%;
-}
-
-/*
- * 固定列（左序号 / 右操作）默认会盖住底部横向滚动条。
- * 固定列底部抬高，给滚动条留出空间，悬停加粗时也能完整露出。
- */
-.high-charge-scan-page .hc-detail-table.el-table .el-table__fixed,
-.high-charge-scan-page .hc-detail-table.el-table .el-table__fixed-right {
   height: auto !important;
-  bottom: 16px !important;
+  width: 100%;
+  box-sizing: border-box;
 }
-.high-charge-scan-page .hc-detail-table.el-table .el-table__fixed-right-patch {
+
+.apply-table-panel > .apply-main-table {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-bottom: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.apply-pagination-wrap {
+  flex: 0 0 auto;
+  border-top: 1px solid #e2e8f0;
+  background: #fff;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  overflow: visible !important;
+}
+
+.apply-pagination-wrap ::v-deep .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
+.high-charge-scan-page .apply-main-table.el-table {
+  position: relative;
+}
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper {
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+/* 固定列抬高，横向滚动条露在固定列之上可拖拽 */
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__fixed,
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__fixed-right {
+  height: auto !important;
+  bottom: 12px !important;
+}
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__fixed-right-patch {
   background-color: transparent !important;
 }
 
-/* 横向滚动条：默认可见；鼠标移入表格数据区时加粗，便于拖拽（不用 padding 撑高页面） */
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar:horizontal {
-  height: 8px !important;
-  transition: height 0.2s ease;
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__header-wrapper th,
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__header-wrapper th.el-table__cell,
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th,
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
 }
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar:horizontal {
-  height: 16px !important;
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__header-wrapper th .cell,
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__fixed-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+  white-space: nowrap !important;
 }
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar:vertical {
+
+.high-charge-scan-page .apply-main-table ::v-deep td .cell {
+  white-space: nowrap !important;
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.high-charge-scan-page .apply-main-table ::v-deep td {
+  border-right-color: #f1f5f9 !important;
+  border-bottom-color: #f1f5f9 !important;
+  padding: 10px 0 !important;
+}
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell {
+  background-color: #D6EBFF !important;
+}
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
   width: 8px !important;
+  height: 12px !important;
 }
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar:vertical {
-  width: 12px !important;
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar:horizontal {
+  height: 12px !important;
 }
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-track {
-  background: #eef0f3 !important;
-  border-radius: 6px !important;
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
 }
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-thumb {
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  min-width: 24px !important;
+}
+
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
   background: #909399 !important;
-  border-radius: 6px !important;
-  border: 2px solid #eef0f3 !important;
-  background-clip: padding-box !important;
-  min-width: 40px !important;
-  min-height: 8px !important;
-}
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover::-webkit-scrollbar-thumb {
-  background: #606266 !important;
-  border-color: #e4e7ed !important;
-}
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #303133 !important;
-}
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper {
-  scrollbar-width: thin;
-  scrollbar-color: #909399 #eef0f3;
-}
-.high-charge-scan-page .hc-detail-table.el-table .el-table__body-wrapper:hover {
-  scrollbar-width: auto;
-  scrollbar-color: #606266 #e4e7ed;
 }
 
-.high-charge-scan-page .hc-pagination-wrap {
-  margin-top: 12px;
-  padding: 0 4px 8px;
-}
-.high-charge-scan-page .hc-pagination-wrap .pagination-container {
-  position: relative !important;
-  margin: 0 !important;
-  padding: 10px 16px !important;
-}
-
-.high-charge-scan-page .hc-writeoff-done {
+.hc-writeoff-done {
   color: #67c23a;
   font-weight: 500;
 }
-.high-charge-scan-page .hc-writeoff-partial {
+.hc-writeoff-partial {
   color: #e6a23c;
   font-weight: 500;
 }
-.high-charge-scan-page .hc-writeoff-pending {
+.hc-writeoff-pending {
   color: #f56c6c;
   font-weight: 500;
 }
-.high-charge-scan-page .hc-table-op-btn {
+.hc-table-op-btn {
   font-size: 14px;
   padding: 0 6px;
 }
-.high-charge-scan-page .hc-high-dept-text {
+.hc-high-dept-text {
   line-height: 32px;
   color: #606266;
+}
+</style>
+
+<style>
+.app-container.high-charge-scan-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 84px) !important;
+  max-height: calc(100vh - 84px) !important;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 8px !important;
+}
+
+.app-container.high-charge-scan-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app-container.high-charge-scan-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
 }
 </style>
