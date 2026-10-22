@@ -2,94 +2,113 @@
   <div class="app-container list-page high-charge-scan-page" ref="pageRoot">
     <div class="hc-main">
       <div class="form-fields-container list-query-panel" v-show="showSearch">
-        <el-form :model="detailQuery" ref="queryForm" size="small" :inline="true" class="query-form">
+        <el-form :model="detailQuery" ref="queryForm" size="small" :inline="true" class="query-form hc-query-form">
           <div class="hc-query-row">
-            <el-radio-group
-              v-model="detailVisitType"
-              size="small"
-              class="hc-query-type-group"
-              @change="onDetailVisitTypeChange"
-            >
-              <el-radio-button label="ALL">全部</el-radio-button>
-              <el-radio-button label="IN">住院</el-radio-button>
-              <el-radio-button label="OUT">门诊</el-radio-button>
-            </el-radio-group>
-            <el-input
-              v-model="detailQuery.patientName"
-              placeholder="患者姓名"
-              clearable
-              class="hc-query-control"
-              @keyup.enter.native="handleDetailQuery"
-            />
-            <el-input
-              v-model="detailQuery.visitNo"
-              :placeholder="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')"
-              clearable
-              class="hc-query-control"
-              @keyup.enter.native="handleDetailQuery"
-            />
-            <el-input
-              v-model="detailQuery.chargeItemId"
-              placeholder="收费编码"
-              clearable
-              class="hc-query-control"
-              @keyup.enter.native="handleDetailQuery"
-            />
-            <el-input
-              v-model="detailQuery.hisChargeId"
-              placeholder="收费明细主键"
-              clearable
-              class="hc-query-control"
-              @keyup.enter.native="handleDetailQuery"
-            />
-            <el-select
-              v-model="detailQuery.departmentId"
-              placeholder="执行科室"
-              clearable
-              filterable
-              :filter-method="filterDeptMethod"
-              class="hc-query-control"
-            >
-              <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
-            </el-select>
+            <el-form-item label="类型" class="hc-query-item">
+              <el-radio-group
+                v-model="detailVisitType"
+                size="small"
+                class="hc-query-type-group"
+                @change="onDetailVisitTypeChange"
+              >
+                <el-radio-button label="ALL">全部</el-radio-button>
+                <el-radio-button label="IN">住院</el-radio-button>
+                <el-radio-button label="OUT">门诊</el-radio-button>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="患者姓名" class="hc-query-item">
+              <el-input
+                v-model="detailQuery.patientName"
+                placeholder="姓名/首字母"
+                clearable
+                class="hc-query-control"
+                @keyup.enter.native="handleDetailQuery"
+              />
+            </el-form-item>
+            <el-form-item :label="detailVisitType === 'IN' ? '住院号' : (detailVisitType === 'OUT' ? '门诊号' : '住院/门诊号')" class="hc-query-item">
+              <el-input
+                v-model="detailQuery.visitNo"
+                :placeholder="detailVisitType === 'IN' ? '住院号模糊' : (detailVisitType === 'OUT' ? '门诊号模糊' : '住院/门诊号模糊')"
+                clearable
+                class="hc-query-control"
+                @keyup.enter.native="handleDetailQuery"
+              />
+            </el-form-item>
+            <el-form-item label="收费编码" class="hc-query-item">
+              <el-input
+                v-model="detailQuery.chargeItemId"
+                placeholder="编码/项目名称/首字母"
+                clearable
+                class="hc-query-control"
+                @keyup.enter.native="handleDetailQuery"
+              />
+            </el-form-item>
+            <el-form-item label="收费明细主键" class="hc-query-item">
+              <el-input
+                v-model="detailQuery.hisChargeId"
+                placeholder="HIS收费明细主键模糊"
+                clearable
+                class="hc-query-control"
+                @keyup.enter.native="handleDetailQuery"
+              />
+            </el-form-item>
+            <el-form-item label="执行科室" class="hc-query-item">
+              <el-select
+                v-model="detailQuery.departmentId"
+                placeholder="执行科室名称/简拼"
+                clearable
+                filterable
+                :filter-method="filterDeptMethod"
+                class="hc-query-control"
+              >
+                <el-option v-for="d in deptOptions" :key="d.id" :label="d.name" :value="d.id" />
+              </el-select>
+            </el-form-item>
             <div class="hc-query-actions">
               <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleDetailQuery">搜索</el-button>
               <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetDetailQuery">重置</el-button>
             </div>
           </div>
           <div class="hc-query-row hc-query-row--second">
-            <el-date-picker
-              v-model="detailQuery.beginChargeDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="计费日期起"
-              clearable
-              class="hc-query-control"
-            />
-            <el-date-picker
-              v-model="detailQuery.endChargeDate"
-              type="date"
-              value-format="yyyy-MM-dd"
-              placeholder="计费日期止"
-              clearable
-              class="hc-query-control"
-            />
-            <el-select
-              v-model="detailQuery.processed"
-              placeholder="是否处理"
-              clearable
-              class="hc-query-control"
-            >
-              <el-option label="已处理" value="Y" />
-              <el-option label="未处理" value="N" />
-            </el-select>
-            <el-input
-              v-model="detailQuery.itemName"
-              placeholder="项目名称"
-              clearable
-              class="hc-query-control"
-              @keyup.enter.native="handleDetailQuery"
-            />
+            <el-form-item label="计费日期" class="hc-query-item hc-query-item--date">
+              <el-date-picker
+                v-model="detailQuery.beginChargeDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="起"
+                clearable
+                class="hc-query-control"
+              />
+              <span class="hc-query-date-sep">至</span>
+              <el-date-picker
+                v-model="detailQuery.endChargeDate"
+                type="date"
+                value-format="yyyy-MM-dd"
+                placeholder="止"
+                clearable
+                class="hc-query-control"
+              />
+            </el-form-item>
+            <el-form-item label="是否处理" class="hc-query-item">
+              <el-select
+                v-model="detailQuery.processed"
+                placeholder="全部"
+                clearable
+                class="hc-query-control"
+              >
+                <el-option label="已处理" value="Y" />
+                <el-option label="未处理" value="N" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="项目名称" class="hc-query-item">
+              <el-input
+                v-model="detailQuery.itemName"
+                placeholder="项目名称模糊"
+                clearable
+                class="hc-query-control"
+                @keyup.enter.native="handleDetailQuery"
+              />
+            </el-form-item>
           </div>
         </el-form>
       </div>
@@ -119,12 +138,14 @@
       stripe
       row-key="id"
       class="apply-main-table"
+      :row-class-name="detailRowClassName"
       @selection-change="handleSelectionChange"
+      @row-dblclick="handleDetailRowDblclick"
       @sort-change="handleDetailSortChange"
     >
       <el-table-column type="selection" width="55" align="center" fixed="left" class-name="apply-select-col" />
-      <el-table-column label="序号" type="index" width="60" align="center" fixed="left" :index="detailRowIndex" />
-      <el-table-column label="就诊类型" prop="visitType" width="90" align="center" show-overflow-tooltip>
+      <el-table-column label="序号" type="index" width="60" align="center" :index="detailRowIndex" />
+      <el-table-column label="就诊类型" prop="visitType" width="90" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.visitType === 'INPATIENT' ? '住院' : '门诊' }}</span>
         </template>
@@ -145,7 +166,7 @@
         <el-table-column label="执行科室" prop="execDeptName" min-width="110" show-overflow-tooltip />
       </template>
       <el-table-column label="患者姓名" prop="patientName" width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-      <el-table-column label="收费编码" prop="chargeItemId" width="130" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="收费编码" prop="chargeItemId" width="130" sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ scope.row.hisChargeId || scope.row.hisInpatientChargeId || scope.row.hisOutpatientChargeId || '' }}</span>
@@ -153,9 +174,9 @@
       </el-table-column>
       <el-table-column label="项目名称" prop="itemName" min-width="180" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="规格" prop="specModel" width="120" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-      <el-table-column label="数量" prop="quantity" width="90" align="center" show-overflow-tooltip />
-      <el-table-column label="计费时间" prop="chargeDate" width="165" show-overflow-tooltip />
-      <el-table-column label="下载时间" prop="createTime" width="165" show-overflow-tooltip />
+      <el-table-column label="数量" prop="quantity" width="90" align="center" />
+      <el-table-column label="计费时间" prop="chargeDate" width="165" />
+      <el-table-column label="下载时间" prop="createTime" width="165" />
       <el-table-column label="抓取记录" width="90" align="center">
         <template slot-scope="scope">
           <el-button
@@ -167,8 +188,8 @@
           >查看</el-button>
         </template>
       </el-table-column>
-      <el-table-column label="金额" prop="totalAmount" width="110" align="right" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
-      <el-table-column label="核销状态" prop="processStatus" width="100" align="center" show-overflow-tooltip>
+      <el-table-column label="金额" prop="totalAmount" width="110" align="right" sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="核销状态" prop="processStatus" width="100" align="center">
         <template slot-scope="scope">
           <span :class="writeOffStatusClass(scope.row.processStatus)">{{ writeOffStatusText(scope.row.processStatus) }}</span>
         </template>
@@ -452,6 +473,7 @@ export default {
       showSearch: true,
       mainTableHeight: 400,
       selectedRows: [],
+      rowHighlightTick: 0,
       detailVisitType: 'ALL',
       detailLoading: false,
       detailList: [],
@@ -609,6 +631,27 @@ export default {
     },
     handleSelectionChange(rows) {
       this.selectedRows = rows || []
+      this.rowHighlightTick += 1
+    },
+    detailRowClassName({ row }) {
+      void this.rowHighlightTick
+      const rid = row && row.id != null ? String(row.id) : ''
+      if (rid && this.selectedRows.some(r => String(r.id) === rid)) {
+        return 'apply-row-selected'
+      }
+      return ''
+    },
+    /** 双击行切换勾选；再双击取消。勾选列/操作列除外 */
+    handleDetailRowDblclick(row, column) {
+      if (!row) return
+      if (column && (column.type === 'selection' || column.label === '操作' || column.className === 'apply-action-col')) {
+        return
+      }
+      const table = this.$refs.detailTable
+      if (!table) return
+      const rid = row.id != null ? String(row.id) : ''
+      const selected = !!(rid && this.selectedRows.some(r => String(r.id) === rid))
+      table.toggleRowSelection(row, !selected)
     },
     loadDeptOptions() {
       listDepartTenantOptionselect().then(res => {
@@ -1183,12 +1226,40 @@ export default {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
   width: 100%;
 }
 
 .hc-query-row--second {
-  margin-top: 8px;
+  margin-top: 4px;
+}
+
+.hc-query-form ::v-deep .hc-query-item {
+  margin-right: 8px;
+  margin-bottom: 0;
+}
+
+.hc-query-form ::v-deep .hc-query-item .el-form-item__label {
+  color: #606266;
+  padding-right: 8px;
+  line-height: 32px;
+  white-space: nowrap;
+}
+
+.hc-query-form ::v-deep .hc-query-item .el-form-item__content {
+  line-height: 32px;
+}
+
+.hc-query-item--date ::v-deep .el-form-item__content {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.hc-query-date-sep {
+  margin: 0 6px;
+  color: #606266;
+  flex-shrink: 0;
 }
 
 .hc-query-type-group {
@@ -1217,6 +1288,7 @@ export default {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  margin-left: 4px;
 }
 
 .apply-table-panel {
@@ -1335,9 +1407,10 @@ export default {
   padding: 10px 0 !important;
 }
 
-.high-charge-scan-page .apply-main-table ::v-deep .el-table__body tr:hover > td,
-.high-charge-scan-page .apply-main-table ::v-deep .el-table__body tr:hover > td .cell {
-  background-color: #D6EBFF !important;
+/* 关闭过渡，避免悬停时主表+固定列重绘卡顿 */
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body tr > td,
+.high-charge-scan-page .apply-main-table ::v-deep .el-table__body tr > td .cell {
+  transition: none !important;
 }
 
 .high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar {
@@ -1358,10 +1431,6 @@ export default {
   background: #a8a8a8 !important;
   border-radius: 3px !important;
   min-width: 24px !important;
-}
-
-.high-charge-scan-page .apply-main-table ::v-deep .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #909399 !important;
 }
 
 .hc-writeoff-done {
@@ -1409,5 +1478,24 @@ export default {
 .app-container.high-charge-scan-page .apply-pagination-wrap .pagination-container .el-pagination {
   position: static !important;
   right: auto !important;
+}
+
+/* 仅用 hover-row（Element 已同步固定列），避免 :hover 双重重绘；只改 td 不改 .cell */
+.app-container.high-charge-scan-page .apply-main-table .el-table__body tr > td,
+.app-container.high-charge-scan-page .apply-main-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
+
+.app-container.high-charge-scan-page .apply-main-table .el-table__body tr.hover-row > td {
+  background-color: #D6EBFF !important;
+}
+
+.app-container.high-charge-scan-page .apply-main-table .el-table__body tr.apply-row-selected > td,
+.app-container.high-charge-scan-page .apply-main-table .el-table__body tr.el-table__row--striped.apply-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+
+.app-container.high-charge-scan-page .apply-main-table .el-table__body tr.apply-row-selected.hover-row > td {
+  background-color: #A0CBFF !important;
 }
 </style>

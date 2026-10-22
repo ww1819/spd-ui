@@ -149,6 +149,7 @@
           class="table-compact apply-main-table"
           :row-class-name="applyDetailRowClassName"
           @selection-change="onDetailSelectionChange"
+          @row-dblclick="handleDetailRowDblclick"
         >
           <el-table-column type="selection" width="48" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="row => canProcessLow(row)" />
           <el-table-column label="类型" prop="visitType" width="72" align="center">
@@ -934,6 +935,19 @@ export default {
       }
       return ''
     },
+    /** 双击行切换勾选；再双击取消。仅可选低值待处理行；勾选列/操作列除外 */
+    handleDetailRowDblclick(row, column) {
+      if (!row || !this.canProcessLow(row)) return
+      if (column && (column.type === 'selection' || column.label === '操作' || column.className === 'apply-action-col' || column.className === 'apply-select-col')) {
+        return
+      }
+      const table = this.$refs.detailTable
+      if (!table || typeof table.toggleRowSelection !== 'function') return
+      const key = this.selectionCacheKey(row)
+      const selected = !!(key && this.detailSelectionCache && this.detailSelectionCache[key])
+        || !!(row.id != null && (this.detailSelection || []).some(r => r && String(r.id) === String(row.id)))
+      table.toggleRowSelection(row, !selected)
+    },
     orderDeptCode(row) {
       if (!row) return ''
       return row.deptCode || row.clinicCode || ''
@@ -995,18 +1009,16 @@ export default {
       return m[v] || v || ''
     },
     valueLevelText(v) {
+      // 业务仅两档：档案标高值=高值，其余（含历史未识别 0/空）=低值
       if (v === '1' || v === 1) return '高值'
-      if (v === '2' || v === 2) return '低值'
-      if (v === '0' || v === 0) return '未识别'
-      return v ? String(v) : '未识别'
+      return '低值'
     },
     isUnknownValueLevel(row) {
-      const v = row && row.valueLevel
-      return v === '0' || v === 0 || v == null || v === ''
+      return false
     },
     isLowValueLevel(row) {
       const v = row && row.valueLevel
-      return v === '2' || v === 2
+      return !(v === '1' || v === 1)
     },
     canProcessLow(row) {
       if (!row || row.processStatus !== 'PENDING_CONSUME') {
