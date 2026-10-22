@@ -199,7 +199,33 @@
           <span>{{ formatProcessSituation(scope.row.processSituation) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="160" fixed="right" class-name="apply-action-col">
+      <el-table-column label="确认状态" width="90" align="center">
+        <template slot-scope="scope">
+          <span v-if="hcStatus(scope.row).traceabilityId">{{ Number(hcStatus(scope.row).confirmStatus) === 1 ? '已确认' : '未确认' }}</span>
+          <span v-else>--</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="确认人" width="100" show-overflow-tooltip>
+        <template slot-scope="scope">{{ hcStatus(scope.row).confirmBy || '' }}</template>
+      </el-table-column>
+      <el-table-column label="确认时间" width="165">
+        <template slot-scope="scope">{{ formatDateTime(hcStatus(scope.row).confirmTime) }}</template>
+      </el-table-column>
+      <el-table-column label="冲销状态" width="90" align="center">
+        <template slot-scope="scope">
+          <span>{{ hcWriteOffText(scope.row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="冲销人" width="100" show-overflow-tooltip>
+        <template slot-scope="scope">{{ hcStatus(scope.row).writeOffBy || '' }}</template>
+      </el-table-column>
+      <el-table-column label="冲销时间" width="165">
+        <template slot-scope="scope">{{ formatDateTime(hcStatus(scope.row).writeOffTime) }}</template>
+      </el-table-column>
+      <el-table-column label="冲销单号" width="150" show-overflow-tooltip>
+        <template slot-scope="scope">{{ hcStatus(scope.row).writeOffBillNo || '' }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" width="200" fixed="right" class-name="apply-action-col">
         <template slot-scope="scope">
           <el-button
             v-if="canScanHigh(scope.row)"
@@ -209,6 +235,14 @@
             v-hasPermi="highScanPermi"
             @click="openHighDialog(scope.row)"
           >高值</el-button>
+          <el-button
+            v-if="hcStatus(scope.row).traceabilityId"
+            type="text"
+            size="small"
+            class="hc-table-op-btn"
+            v-hasPermi="['gz:highChargeScan:writeOff']"
+            @click="handleScanWriteOff(scope.row)"
+          >冲销</el-button>
           <el-button
             type="text"
             size="small"
@@ -235,7 +269,18 @@
 
     <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body>
       <el-table v-loading="consumeRecordDialog.loading" :data="consumeRecordDialog.rows" border size="small" max-height="420" empty-text="暂无消耗记录">
+        <el-table-column label="类型" width="88" align="center">
+          <template slot-scope="scope">
+            <el-tag v-if="scope.row.recordType === 'REVERSE' || scope.row.reverseFlag === 1" type="warning" size="mini">冲销</el-tag>
+            <el-tag v-else type="success" size="mini">消耗</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
+        <el-table-column label="冲销原单" prop="reverseOfBillNo" min-width="160" show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{ scope.row.reverseOfBillNo || '--' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="产品名称" prop="materialName" min-width="110" show-overflow-tooltip />
         <el-table-column label="规格" prop="materialSpeci" min-width="90" show-overflow-tooltip>
           <template slot-scope="scope">
@@ -456,7 +501,9 @@ import {
   listHighChargeConsumeRecords,
   listHighChargeFetchBatches,
   scanHighChargeBarcode,
-  applyHighChargeConsume
+  applyHighChargeConsume,
+  listHighChargeWriteOffStatus,
+  writeOffHighChargeScan
 } from '@/api/gz/highChargeScan'
 
 function buildDefaultChargeDateRange() {
@@ -481,6 +528,7 @@ export default {
       detailLoading: false,
       detailList: [],
       detailTotal: 0,
+      highStatusMap: {},
       deptOptions: [],
       allDeptOptions: [],
       detailQuery: {
@@ -1080,6 +1128,7 @@ export default {
       q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
       const done = () => {
         this.detailLoading = false
+        this.loadHighStatus()
         this.$nextTick(() => this.updateMainTableHeight())
       }
       if (this.detailVisitType === 'IN') {
@@ -1114,6 +1163,58 @@ export default {
           this.detailTotal = res.total || 0
         }).finally(done)
       }
+    },
+    hcStatusKey(row) {
+      if (!row || row.id == null) return ''
+      return (row.visitType === 'OUTPATIENT' ? 'OUTPATIENT' : 'INPATIENT') + '|' + row.id
+    },
+    hcStatus(row) {
+      return this.highStatusMap[this.hcStatusKey(row)] || {}
+    },
+    hcWriteOffText(row) {
+      const st = this.hcStatus(row)
+      const off = Number(st.writeOffStatus) === 1
+      if (st.traceabilityId) return off ? '曾冲销' : '未冲销'
+      return off ? '已冲销' : '--'
+    },
+    loadHighStatus() {
+      const inIds = []
+      const outIds = []
+      ;(this.detailList || []).forEach(r => {
+        if (r.id == null) return
+        if (r.visitType === 'OUTPATIENT') outIds.push(String(r.id))
+        else inIds.push(String(r.id))
+      })
+      if (!inIds.length && !outIds.length) {
+        this.highStatusMap = {}
+        return
+      }
+      listHighChargeWriteOffStatus({ inpatientRowIds: inIds, outpatientRowIds: outIds }).then(res => {
+        this.highStatusMap = res.data || {}
+      }).catch(() => {
+        this.highStatusMap = {}
+      })
+    },
+    handleScanWriteOff(row) {
+      const st = this.hcStatus(row)
+      if (!st.traceabilityId) return
+      if (!st.canWriteOff) {
+        this.$modal.msgWarning('此单存在已确认或已即入即出的明细，请联系库房人员在「高值即入即出」界面进行冲销操作')
+        return
+      }
+      this.$prompt('按核销单整单冲销：回补科室库存并生成负数反向计费单，计费行恢复待核销。请输入冲销原因（可选）', '冲销确认', {
+        confirmButtonText: '确定冲销',
+        cancelButtonText: '取消',
+        inputPlaceholder: '冲销原因'
+      }).then(({ value }) => {
+        return writeOffHighChargeScan({ traceabilityIds: [st.traceabilityId], remark: value || undefined })
+      }).then(res => {
+        if (!res) return
+        const vo = res.data || {}
+        const msgs = Array.isArray(vo.messages) && vo.messages.length ? '；' + vo.messages.join('；') : ''
+        this.$modal.msgSuccess('冲销完成' + msgs)
+        this.loadDetailList()
+      }).catch(() => {})
     },
     openFetchDialog() {
       const day = parseTime(new Date(), '{y}-{m}-{d}')

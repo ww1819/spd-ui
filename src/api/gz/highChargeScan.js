@@ -63,3 +63,22 @@ export function applyHighChargeConsume(data) {
     data
   })
 }
+
+/** 计费行的确认/冲销状态，key 为 INPATIENT|id、OUTPATIENT|id */
+export function listHighChargeWriteOffStatus(data) {
+  return request({
+    url: '/gz/highChargeMirror/mirror/writeOffStatus',
+    method: 'post',
+    data
+  })
+}
+
+/** 整单冲销：data = { traceabilityIds: [], remark } */
+export function writeOffHighChargeScan(data) {
+  return request({
+    url: '/gz/highChargeMirror/mirror/writeOff',
+    method: 'post',
+    timeout: 120000,
+    data
+  })
+}

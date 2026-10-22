@@ -93,6 +93,15 @@
               class="hc-query-control"
               @keyup.enter.native="handleQuery"
             />
+            <el-select
+              v-model="query.writeOffStatus"
+              placeholder="冲销状态"
+              class="hc-query-control"
+            >
+              <el-option label="未冲销" value="0" />
+              <el-option label="已冲销" value="1" />
+              <el-option label="全部" value="all" />
+            </el-select>
           </div>
         </el-form>
       </div>
@@ -108,11 +117,11 @@
             @click="openConfirmDialog"
           >消耗确认</el-button>
           <el-button
-            v-if="canWriteOff"
             type="danger"
             plain
             size="small"
             class="spd-btn spd-btn--danger"
+            :disabled="selectedRows.length === 0"
             v-hasPermi="['gz:highChargeConfirm:writeOff']"
             @click="submitWriteOff"
           >冲销</el-button>
@@ -143,9 +152,19 @@
               <span :class="confirmStatusClass(scope.row.confirmStatus)">{{ confirmStatusText(scope.row.confirmStatus) }}</span>
             </template>
           </el-table-column>
+          <el-table-column label="冲销状态" prop="writeOffStatus" width="90" align="center">
+            <template slot-scope="scope">
+              <span :class="Number(scope.row.writeOffStatus) === 1 ? 'hc-writeoff-pending' : ''">{{ Number(scope.row.writeOffStatus) === 1 ? '已冲销' : '未冲销' }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="即入即出" prop="instantIoAuditStatus" width="100" align="center" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ instantIoStatusText(scope.row.instantIoAuditStatus) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="即入即出时间" prop="instantIoAuditTime" width="165">
+            <template slot-scope="scope">
+              <span>{{ formatDateTimeCell(scope.row.instantIoAuditTime) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="核销时间" prop="consumeAuditTime" width="165" show-overflow-tooltip>
@@ -185,8 +204,23 @@
           <el-table-column label="供应商" prop="supplierName" min-width="120" show-overflow-tooltip />
           <el-table-column label="消耗单号" prop="consumeBillNo" width="130" show-overflow-tooltip />
           <el-table-column label="确认批次" prop="confirmNo" width="150" show-overflow-tooltip />
+          <el-table-column label="确认人" prop="confirmBy" width="100" show-overflow-tooltip />
+          <el-table-column label="确认时间" prop="confirmTime" width="165">
+            <template slot-scope="scope">
+              <span>{{ formatDateTimeCell(scope.row.confirmTime) }}</span>
+            </template>
+          </el-table-column>
           <el-table-column label="入库单号" prop="inboundBillNo" width="150" show-overflow-tooltip />
           <el-table-column label="出库单号" prop="outboundBillNo" width="150" show-overflow-tooltip />
+          <el-table-column label="退货单号" prop="returnGoodsBillNo" width="150" show-overflow-tooltip />
+          <el-table-column label="退库单号" prop="returnDepotBillNo" width="150" show-overflow-tooltip />
+          <el-table-column label="冲销人" prop="writeOffBy" width="100" show-overflow-tooltip />
+          <el-table-column label="冲销时间" prop="writeOffTime" width="165">
+            <template slot-scope="scope">
+              <span>{{ formatDateTimeCell(scope.row.writeOffTime) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="反向计费单号" prop="writeOffBillNo" width="150" show-overflow-tooltip />
           <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip />
         </el-table>
 
@@ -212,7 +246,7 @@
           <span class="hc-confirm-dept-text">{{ confirmDepartmentName || '--' }}</span>
         </el-form-item>
       </el-form>
-      <p class="hc-confirm-tip">确认后不生成入出库单，待库房在「高值即入即出」审核建单。</p>
+      <p class="hc-confirm-tip">按核销单整单确认：同一核销单的其他未确认明细将一并确认。确认后不生成入出库单，待库房在「高值即入即出」审核建单。</p>
       <div slot="footer">
         <el-button class="spd-btn spd-btn--secondary" @click="confirmDialogVisible = false">取消</el-button>
         <el-button type="primary" class="spd-btn spd-btn--primary" :loading="confirmSubmitting" @click="submitConfirm">确认</el-button>
@@ -283,6 +317,7 @@ export default {
         visitNo: undefined,
         hisChargeId: undefined,
         materialName: undefined,
+        writeOffStatus: '0',
         sortField: undefined,
         sortOrder: undefined
       },
@@ -317,13 +352,6 @@ export default {
     },
     canConfirm() {
       return this.selectedRows.length > 0 && this.selectedRows.every(r => Number(r.confirmStatus) !== 1)
-    },
-    canWriteOff() {
-      return this.selectedRows.length > 0 && this.selectedRows.every(r => {
-        const confirmed = Number(r.confirmStatus) === 1
-        const io = Number(r.instantIoAuditStatus)
-        return !confirmed && io !== 1 && io !== 2
-      })
     }
   },
   watch: {
@@ -455,10 +483,7 @@ export default {
       return t.length > 10 ? t : `${t} 23:59:59`
     },
     rowSelectable(row) {
-      if (!row) return false
-      if (Number(row.confirmStatus) === 1) return false
-      const io = Number(row.instantIoAuditStatus)
-      return io !== 1 && io !== 2
+      return !!row && Number(row.writeOffStatus) !== 1
     },
     handleSelectionChange(rows) {
       this.selectedRows = rows || []
@@ -469,6 +494,9 @@ export default {
       const rid = row && row.linkId != null ? String(row.linkId) : ''
       if (rid && this.selectedRows.some(r => String(r.linkId) === rid)) {
         return 'apply-row-selected'
+      }
+      if (row && Number(row.writeOffStatus) === 1) {
+        return 'hc-row-written-off'
       }
       return ''
     },
@@ -497,6 +525,7 @@ export default {
         visitNo: undefined,
         hisChargeId: undefined,
         materialName: undefined,
+        writeOffStatus: '0',
         sortField: undefined,
         sortOrder: undefined
       }
@@ -528,7 +557,7 @@ export default {
     },
     openConfirmDialog() {
       if (!this.canConfirm) {
-        this.$modal.msgWarning('请先选择未确认的明细（已确认请用冲销）')
+        this.$modal.msgWarning('请只选择未确认的明细')
         return
       }
       const deptIds = [...new Set(this.selectedRows.map(r => r.departmentId).filter(Boolean))]
@@ -582,11 +611,19 @@ export default {
       })
     },
     submitWriteOff() {
-      if (!this.canWriteOff) {
-        this.$modal.msgWarning('仅未确认明细可在本页冲销；已确认请到「高值即入即出」由库房处理')
+      if (!this.selectedRows.length) {
+        this.$modal.msgWarning('请选择要冲销的核销明细')
         return
       }
-      this.$modal.confirm('冲销将回补科室库存，并使计费行恢复待核销。是否继续？').then(() => {
+      const locked = this.selectedRows.some(r => {
+        const io = Number(r.instantIoAuditStatus)
+        return Number(r.confirmStatus) === 1 || io === 1 || io === 2
+      })
+      if (locked) {
+        this.$modal.msgWarning('此单存在已确认或已即入即出的明细，请联系库房人员在「高值即入即出」界面进行冲销操作')
+        return
+      }
+      this.$modal.confirm('按核销单整单冲销：同一核销单的全部明细一并冲销，回补科室库存并生成负数反向计费单，计费行恢复待核销。是否继续？').then(() => {
         this.confirmSubmitting = true
         return writeOffHighChargeConfirm({
           linkIds: this.selectedRows.map(r => r.linkId),
@@ -692,6 +729,10 @@ export default {
 .hc-writeoff-pending {
   color: #f56c6c;
   font-weight: 500;
+}
+
+.high-charge-confirm-page .apply-main-table ::v-deep .el-table__body tr.hc-row-written-off > td .cell {
+  color: #a8abb2;
 }
 
 .apply-table-panel {

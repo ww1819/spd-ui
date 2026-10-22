@@ -4,6 +4,7 @@
       <el-tabs v-model="activeQueue" type="card">
         <el-tab-pane label="待审核" name="pending" />
         <el-tab-pane label="已审核" name="audited" />
+        <el-tab-pane label="已冲销" name="writtenOff" />
         <el-tab-pane label="全部" name="all" />
       </el-tabs>
       <el-form :model="query" inline size="small">
@@ -137,6 +138,15 @@
       <el-table-column label="出库单" prop="outboundBillNo" width="150" show-overflow-tooltip />
       <el-table-column label="退货单" prop="returnGoodsBillNo" width="150" show-overflow-tooltip />
       <el-table-column label="退库单" prop="returnDepotBillNo" width="150" show-overflow-tooltip />
+      <el-table-column label="消耗单号" prop="consumeBillNo" width="150" show-overflow-tooltip />
+      <el-table-column label="冲销状态" width="90" align="center">
+        <template slot-scope="scope">{{ Number(scope.row.writeOffStatus) === 1 ? '已冲销' : '未冲销' }}</template>
+      </el-table-column>
+      <el-table-column label="冲销人" prop="writeOffBy" width="100" show-overflow-tooltip />
+      <el-table-column label="冲销时间" prop="writeOffTime" width="165">
+        <template slot-scope="scope">{{ formatDateTimeCell(scope.row.writeOffTime) }}</template>
+      </el-table-column>
+      <el-table-column label="反向计费单号" prop="writeOffBillNo" width="150" show-overflow-tooltip />
     </el-table>
 
     <pagination v-show="total > 0" :total="total" :page.sync="query.pageNum" :limit.sync="query.pageSize" @pagination="loadList" />
@@ -294,10 +304,15 @@ export default {
     },
     applyQueueToQuery() {
       this.query.instantIoAuditStatus = undefined
+      this.query.writeOffStatus = '0'
       if (this.activeQueue === 'pending') {
         this.query.instantIoAuditStatus = '0'
       } else if (this.activeQueue === 'audited') {
         this.query.instantIoAuditStatus = '1'
+      } else if (this.activeQueue === 'writtenOff') {
+        this.query.writeOffStatus = '1'
+      } else {
+        this.query.writeOffStatus = 'all'
       }
     },
     loadDeptOptions() {
@@ -350,7 +365,8 @@ export default {
       return t.length > 10 ? t : `${t} 23:59:59`
     },
     rowSelectable(row) {
-      const st = Number(row && row.instantIoAuditStatus)
+      if (!row || Number(row.writeOffStatus) === 1) return false
+      const st = Number(row.instantIoAuditStatus)
       if (this.activeQueue === 'pending') return st === 0
       if (this.activeQueue === 'audited') return st === 1
       return st === 0 || st === 1
@@ -523,9 +539,9 @@ export default {
           : '请选择待审核明细进行核销冲销')
         return
       }
-      const tip = this.activeQueue === 'audited'
-        ? '即入即出冲销将先生成退货/退库单（若尚未生成），再回补科室库存并使计费行恢复待核销。是否继续？'
-        : '核销冲销将撤销临床确认、回补科室库存，并使计费行恢复待核销（临床向库房申请后由仓库操作）。是否继续？'
+      const tip = '按核销单整单冲销：同一核销单的全部明细（含未确认、待审核的明细）一并冲销；'
+        + '其中已即入即出审核的明细仅为本单生成退货/退库单，同确认批次的其他核销单不受影响。'
+        + '冲销后回补科室库存、生成负数反向计费单，计费行恢复待核销。是否继续？'
       const remark = this.activeQueue === 'audited' ? '高值即入即出冲销' : '高值核销冲销（即入即出待审核）'
       this.$modal.confirm(tip).then(() => {
         this.submitting = true
