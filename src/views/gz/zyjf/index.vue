@@ -98,7 +98,7 @@
                   删除
                 </el-button>
                 <el-button
-                  v-if="scope.row.orderStatus === 2"
+                  v-if="scope.row.orderStatus === 2 && !isHisMirrorHighTrace(scope.row)"
                   type="text"
                   size="small"
                   style="color: #409eff;"
@@ -735,8 +735,16 @@ export default {
         }
       }).catch(() => {});
     },
+    /** HIS 高值扫码核销单：禁止反审核，须走冲销 */
+    isHisMirrorHighTrace(row) {
+      return row && String(row.traceSource || '').trim() === 'HIS_MIRROR_HIGH'
+    },
     /** 反审核订单 */
     handleUnauditOrder(row) {
+      if (this.isHisMirrorHighTrace(row)) {
+        this.$modal.msgWarning('HIS高值扫码核销单禁止反审核，请到「高值核销确认」或「高值即入即出」冲销')
+        return
+      }
       this.$modal.confirm('是否确认反审核追溯单号为"' + row.traceNo + '"的数据项？').then(() => {
         return unauditTraceability(row.id);
       }).then(() => {

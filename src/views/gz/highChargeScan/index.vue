@@ -329,7 +329,10 @@
 
     <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
       <div v-if="highMirrorRow" class="mb8">
-        <span>患者 {{ highMirrorRow.patientName }} · 计费数量 {{ highMirrorRow.quantity }}</span>
+        <span>患者 {{ highMirrorRow.patientName }}</span>
+        <span> · {{ highVisitKindLabel(highMirrorRow) }}</span>
+        <span> · 费用明细主键 {{ highHisChargeId(highMirrorRow) || '--' }}</span>
+        <span> · 计费数量 {{ highMirrorRow.quantity }}</span>
         <span v-if="highBillRemaining != null"> · 待核销数量 {{ highBillRemaining }}</span>
         <span v-else> · 待核销数量 {{ highMirrorRow.quantity }}</span>
       </div>
@@ -676,6 +679,16 @@ export default {
     },
     mirrorExecDeptName(row) {
       return (row && row.execDeptName) ? row.execDeptName : '--'
+    },
+    highVisitKindLabel(row) {
+      if (!row) return '--'
+      if (row.visitType === 'OUTPATIENT') return '门诊'
+      if (row.visitType === 'INPATIENT') return '住院'
+      return row.visitType || '--'
+    },
+    highHisChargeId(row) {
+      if (!row) return ''
+      return row.hisChargeId || row.hisInpatientChargeId || row.hisOutpatientChargeId || ''
     },
     resolveDefaultConsumeDepartmentId(row) {
       if (!row || !row.execDeptId) return undefined
