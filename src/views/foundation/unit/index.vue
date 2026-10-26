@@ -107,41 +107,7 @@
       </div>
     </div>
 
-    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
-      <div class="page-drawer-panel" @click.stop>
-        <div class="page-drawer-header">
-          <span class="page-drawer-title">{{ title }}</span>
-          <i class="el-icon-close page-drawer-close" @click="cancel" />
-        </div>
-        <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-            <el-form-item label="单位编码">
-              <el-input v-model="form.unitCode" placeholder="留空则自动生成D开头的编码" />
-            </el-form-item>
-            <el-form-item label="单位名称" prop="unitName">
-              <el-input v-model="form.unitName" placeholder="单位名称" />
-            </el-form-item>
-            <el-form-item label="启用">
-              <el-switch
-                v-model="form.delFlag"
-                :active-value="0"
-                :inactive-value="1"
-              />
-            </el-form-item>
-            <el-form-item label="组织机构ID">
-              <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
-            </el-form-item>
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
-            </el-form-item>
-          </el-form>
-        </div>
-        <div class="page-drawer-footer">
-          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-        </div>
-      </div>
-    </div>
+    <UnitEditDialog v-if="open" />
   </div>
 </template>
 
@@ -151,6 +117,9 @@ import { listUnit, getUnit, delUnit, addUnit, updateUnit } from "@/api/foundatio
 
 export default {
   name: "Unit",
+  components: {
+    UnitEditDialog: () => import('./components/UnitEditDialog')
+  },
   computed: {
     ...mapGetters(["customerId"])
   },
@@ -603,7 +572,7 @@ export default {
   background: #909399 !important;
 }
 
-.page-drawer-mask {
+::v-deep .page-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -615,7 +584,7 @@ export default {
   justify-content: flex-end;
 }
 
-.page-drawer-panel {
+::v-deep .page-drawer-panel{
   width: 520px;
   max-width: 100%;
   height: 100%;
@@ -625,7 +594,7 @@ export default {
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
 }
 
-.page-drawer-header {
+::v-deep .page-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -634,29 +603,29 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.page-drawer-title {
+::v-deep .page-drawer-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
-.page-drawer-close {
+::v-deep .page-drawer-close{
   font-size: 16px;
   color: #909399;
   cursor: pointer;
 }
 
-.page-drawer-close:hover {
+::v-deep .page-drawer-close:hover{
   color: #409EFF;
 }
 
-.page-drawer-body {
+::v-deep .page-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
 }
 
-.page-drawer-footer {
+::v-deep .page-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;
@@ -664,7 +633,7 @@ export default {
   background: #fff;
 }
 
-.page-drawer-footer .el-button {
+::v-deep .page-drawer-footer .el-button{
   margin: 0 8px;
 }
 </style>

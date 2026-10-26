@@ -37,13 +37,7 @@
       @confirm="submitInvoke"
     />
 
-    <el-dialog title="调用结果" :visible.sync="resultVisible" width="70%" append-to-body>
-      <pre class="result-pre">{{ resultText }}</pre>
-      <div slot="footer">
-        <el-button type="primary" @click="copyResult">复制 JSON</el-button>
-        <el-button @click="resultVisible = false">关闭</el-button>
-      </div>
-    </el-dialog>
+    <MsunProbeResultDialog v-if="resultVisible" />
   </div>
   <div v-else class="app-container">
     <el-empty description="当前租户未接入众阳 HIS" />
@@ -58,7 +52,10 @@ import MsunHisParamDialog from '@/components/MsunHisParamDialog'
 
 export default {
   name: 'MsunHisProbe',
-  components: { MsunHisParamDialog },
+  components: {
+    MsunHisParamDialog,
+    MsunProbeResultDialog: () => import('./components/MsunProbeResultDialog')
+  },
   data() {
     return {
       apiList: MSUN_PROBE_API_LIST,

@@ -150,75 +150,8 @@
       </div>
 
       <!-- 新增/修改弹窗 -->
-      <div v-if="open" class="local-modal-mask">
-        <div class="local-modal-content">
-          <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ title }}</div>
-          <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-            <el-row :gutter="20">
-              <el-col :span="6">
-                <el-form-item label="平台名称" prop="name">
-                  <el-input v-model="form.name" placeholder="平台名称" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="平台编码" prop="code">
-                  <el-input v-model="form.code" placeholder="平台编码" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="排序号" prop="rank">
-                  <el-input v-model="form.rank" placeholder="排序号" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="状态" prop="status">
-                  <el-select v-model="form.status" placeholder="状态" style="width: 100%">
-                    <el-option label="有效" value="有效"></el-option>
-                    <el-option label="无效" value="无效"></el-option>
-                  </el-select>
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-form>
-          <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-            <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-            <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 导入弹窗 -->
-      <div v-if="upload.open" class="local-modal-mask">
-        <div class="local-modal-content" style="width: 500px;">
-          <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-          <el-upload
-            ref="upload"
-            :limit="1"
-            accept=".xlsx, .xls"
-            :headers="upload.headers"
-            :action="upload.url + '?updateSupport=' + upload.updateSupport"
-            :disabled="upload.isUploading"
-            :on-progress="handleFileUploadProgress"
-            :on-success="handleFileSuccess"
-            :auto-upload="false"
-            drag
-          >
-            <i class="el-icon-upload"></i>
-            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-            <div class="el-upload__tip text-center" slot="tip">
-              <div class="el-upload__tip" slot="tip">
-                <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的数据
-              </div>
-              <span>仅允许导入xls、xlsx格式文件。</span>
-              <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="handleTemplateDownload">下载模板</el-link>
-            </div>
-          </el-upload>
-          <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-            <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitFileForm">确 定</el-button>
-            <el-button class="spd-btn spd-btn--secondary" @click="upload.open = false">取 消</el-button>
-          </div>
-        </div>
-      </div>
+      <TestplatEditDialog v-if="open" />
+      <TestplatUploadDialog v-if="upload.open" />
     </div>
   </template>
   
@@ -226,6 +159,10 @@
   import { getToken } from "@/utils/auth";
   
   export default {
+    components: {
+      TestplatEditDialog: () => import('./components/TestplatEditDialog'),
+      TestplatUploadDialog: () => import('./components/TestplatUploadDialog')
+    },
     data() {
       return {
         searchForm: {
@@ -473,7 +410,7 @@
     margin-left: 10px;
   }
   
-  .local-modal-mask {
+  ::v-deep .local-modal-mask{
     position: fixed;
     left: 0;
     top: 0;
@@ -486,7 +423,7 @@
     z-index: 1000;
   }
   
-  .local-modal-content {
+  ::v-deep .local-modal-content{
     background-color: #fff;
     padding: 24px;
     border-radius: 6px;

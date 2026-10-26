@@ -182,559 +182,12 @@
     </div>
     </div>
 
-    <!-- 添加或修改科室申领对话框（布局对齐到货验收 apply-modal） -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content apply-modal-root-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
-              <div class="form-fields-container list-query-panel apply-modal-query-panel">
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="单号" prop="applyBillNo" class="form-item-header-billno head-label-nowrap">
-                      <el-input v-model="form.applyBillNo" :disabled="true" :title="form.applyBillNo || ''" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="申领状态" prop="billStatus" class="head-label-nowrap">
-                      <el-select v-model="form.applyBillStatus" placeholder="请选择申领状态" :disabled="true" clearable>
-                        <el-option
-                          v-for="dict in dict.type.biz_status"
-                          :key="dict.value"
-                          :label="dict.label"
-                          :value="dict.value"
-                        />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="科室" prop="departmentId" class="apply-modal-label-required head-label-nowrap">
-                      <SelectDepartment v-model="form.departmentId" :disabled="isDeptLocked"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="金额" class="head-label-nowrap apply-modal-header-amount">
-                      <el-input :value="headerAmountText" disabled />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="制单人" class="head-label-nowrap">
-                      <el-input :value="creatorDisplayName" disabled placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="申请日期" prop="applyBillDate" class="head-label-nowrap">
-                      <el-date-picker
-                        clearable
-                        v-model="form.applyBillDate"
-                        type="date"
-                        value-format="yyyy-MM-dd"
-                        :disabled="true"
-                        placeholder="请选择申请日期"
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="审核人" class="head-label-nowrap">
-                      <el-input :value="auditorDisplayName" disabled placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="审核日期" class="head-label-nowrap">
-                      <el-input :value="auditorDateText" disabled placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--grow">
-                    <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" placeholder="备注" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
-                <div class="list-toolbar-left">
-                  <span class="apply-modal-detail-title">科室申领明细信息</span>
-                  <el-button
-                    v-if="!action"
-                    type="primary"
-                    size="small"
-                    class="spd-btn spd-btn--primary"
-                    @click="openOutboundRefDialog(null)"
-                  >关联出库单一览</el-button>
-                  <template v-if="action">
-                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="!form.departmentId" @click="nameBtn">添加</el-button>
-                    <el-button type="success" size="small" class="spd-btn spd-btn--secondary" @click="handleRefTemplate">引用模板</el-button>
-                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteBasApplyEntry">删除</el-button>
-                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
-                  </template>
-                </div>
-              </el-row>
-
-              <div class="modal-detail-section apply-modal-table-panel">
-              <div class="table-wrapper">
-              <el-table
-                :data="basApplyEntryList"
-                class="apply-detail-table"
-                :row-class-name="applyDetailRowClassName"
-                @selection-change="handleBasApplyEntrySelectionChange"
-                ref="basApplyEntry"
-                :height="detailTableHeight"
-                border
-                :summary-method="getSummaries"
-                show-summary
-              >
-                <el-table-column type="selection" width="60" align="center" resizable class-name="apply-select-col" header-cell-class-name="apply-select-col" />
-                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="产品名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
-                <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
-                <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
-                <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdUnit.unitName')" />
-                <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'unitPrice')">
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column :label="action ? '数量' : '申请数量'" prop="qty" width="96" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <el-input
-                      v-if="action"
-                      clearable
-                      v-model="scope.row.qty"
-                      placeholder="数量"
-                      onkeyup="value=value.replace(/\D/g,'')"
-                      onafterpaste="value=value.replace(/\D/g,'')"
-                      @blur="form.result=$event.target.value"
-                      @input="qtyChange(scope.row)"
-                    />
-                    <span v-else>{{ fmtQty(scope.row.qty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="仓库库存" prop="availableStockQty" width="100" align="right" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtQty(scope.row.availableStockQty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="最小包装数" align="center" width="100" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtMinPackageQty(scope.row) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="库存仓库" align="center" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) ? scope.row.stockWarehouse.name : '—' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="!action" label="待出库数量" prop="pendingOutboundQty" width="100" align="right" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtQty(scope.row.pendingOutboundQty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="!action" label="出库待审核数量" prop="ckPendingAuditQty" width="118" align="right" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtQty(scope.row.ckPendingAuditQty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="!action" label="已下推出库合计" prop="linkedCkQty" width="118" align="right" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtQty(scope.row.linkedCkQty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="!action" label="已审核出库数量" prop="ckAuditedQty" width="118" align="right" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtQty(scope.row.ckAuditedQty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="!action" label="已作废数量" prop="whLineVoidQty" width="100" align="right" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtQty(scope.row.whLineVoidQty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="!action" label="关联出库" width="88" align="center">
-                  <template slot-scope="scope">
-                    <el-button type="text"
-              icon="el-icon-view" size="small" @click="openOutboundRefDialog(scope.row.id)">查看</el-button>
-                  </template>
-                </el-table-column>
-                <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
-                <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="注册证号" align="center" prop="material.registerNo" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-                  </template>
-                </el-table-column>
-
-                <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <el-input v-model="scope.row.remark" placeholder="备注" />
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="action" label="操作" align="center" width="100">
-                  <template slot-scope="scope">
-                    <el-button
-                      size="small"
-                      type="text"
-                      icon="el-icon-delete"
-                      @click="handleDeleteDetailRow(scope.$index)"
-                      style="padding: 0 5px; margin: 0;"
-                    >删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-              </div>
-              </div>
-            </el-form>
-            <SelectDepartmentApplyAvailableStock
-              :nested="true"
-              v-show="DialogComponentShow && selectTarget === 'apply'"
-              :DialogComponentShow="DialogComponentShow && selectTarget === 'apply'"
-              :selectedDetails="basApplyEntryList"
-              @closeDialog="closeDialog"
-              @selectData="selectData"
-            />
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <!-- 引用模板弹窗：制单模板（非打印设置），上搜索+左模板名列表+右明细 -->
-    <transition name="modal-fade">
-      <div v-if="templateDialogVisible" class="local-modal-mask template-dialog-mask" @click.self="closeTemplateDialog">
-        <transition name="modal-zoom">
-          <div v-if="templateDialogVisible" class="local-modal-content template-dialog-content">
-            <div class="modal-header">
-              <div class="modal-title">引用模板</div>
-              <el-button size="small" @click="closeTemplateDialog" class="close-btn">关闭</el-button>
-            </div>
-            <div class="template-dialog-body">
-              <!-- 顶部搜索框：仅搜索条件输入 -->
-              <div class="template-search-box">
-                <div class="template-search-row">
-                  <el-input
-                    v-model="templateNameSearch"
-                    placeholder="按模板名称搜索"
-                    clearable
-                    class="template-search-input"
-                    @keyup.enter.native="loadTemplateList"
-                  />
-                </div>
-              </div>
-              <!-- 中部：新增、删除、搜索、取消、引用按钮（与申领单新增按钮大小一致 medium） -->
-              <div class="template-action-row">
-                <el-button type="primary" size="medium" icon="el-icon-plus" @click="openAddTemplateDialog">新增</el-button>
-                <el-button type="danger" size="medium" icon="el-icon-delete" :disabled="!selectedTemplate || !templateDetailSelection.length" @click="handleDeleteTemplateDetail">删除</el-button>
-                <el-button type="primary" size="medium" icon="el-icon-search" @click="loadTemplateList">搜索</el-button>
-                <el-button size="medium" icon="el-icon-refresh" @click="handleRefreshTemplate">刷 新</el-button>
-                <el-button type="primary" size="medium" :disabled="!selectedTemplate" @click="confirmRefTemplate">引 用</el-button>
-                <el-button type="primary" size="medium" :disabled="!selectedTemplate" @click="handleSaveTemplate">保 存</el-button>
-              </div>
-              <!-- 下部分：左模板名称列表 + 右侧明细框（仅保留列头） -->
-              <div class="template-split-layout">
-                <div class="template-list-box">
-                  <div class="template-list-title">模板名称</div>
-                  <div class="template-list-inner">
-                    <div
-                      v-for="item in printTemplateList"
-                      :key="item.id"
-                      :class="['template-list-item', { active: selectedTemplate && selectedTemplate.id === item.id }]"
-                      @click="onSelectTemplate(item)"
-                    >
-                      <span class="template-list-item-name" @dblclick.stop="openRenameTemplateDialog(item)">{{ item.templateName }}</span>
-                      <el-button type="text" size="mini" icon="el-icon-delete" class="template-list-item-delete" @click.stop="handleDeleteTemplateItem(item)">删除</el-button>
-                    </div>
-                    <div v-if="!printTemplateList || printTemplateList.length === 0" class="template-list-empty">暂无制单模板</div>
-                  </div>
-                </div>
-                <!-- 右侧：明细框（表格设 height 固定表头）+ 分页固定在外侧底部 -->
-                <div class="template-detail-table-wrap">
-                  <div ref="templateDetailTableInner" class="template-detail-table-inner">
-                    <el-table ref="templateDetailTable" :data="templateDetailPageList" :height="templateDetailTableHeight" border stripe size="small" show-header @selection-change="handleTemplateDetailSelectionChange">
-                    <el-table-column type="selection" width="50" align="center" />
-                    <el-table-column label="序号" width="50" align="center">
-                      <template slot-scope="scope">
-                        {{ (templateDetailPageNum - 1) * templateDetailPageSize + scope.$index + 1 }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="产品编码" min-width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="产品名称" min-width="120" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="规格" width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="型号" width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.model ? scope.row.material.model : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="单位" width="80" align="center">
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="单价" width="90" align="center" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.price != null ? scope.row.material.price : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="生产厂家" min-width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName ? scope.row.material.fdFactory.factoryName : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="供应商" min-width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name ? scope.row.material.supplier.name : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="注册证号" min-width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.registerNo ? scope.row.material.registerNo : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="注册证有效期" width="110" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.periodDate ? parseTime(scope.row.material.periodDate, '{y}-{m}-{d}') : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="库房分类" width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName ? scope.row.material.fdWarehouseCategory.warehouseCategoryName : '—' }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="财务分类" width="100" show-overflow-tooltip>
-                      <template slot-scope="scope">
-                        {{ scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName ? scope.row.material.fdFinanceCategory.financeCategoryName : '—' }}
-                      </template>
-                    </el-table-column>
-                  </el-table>
-                  </div>
-                  <div class="template-detail-pagination">
-                    <pagination
-                      v-show="templateDetailList.length > 0"
-                      :total="templateDetailList.length"
-                      :page.sync="templateDetailPageNum"
-                      :limit.sync="templateDetailPageSize"
-                      :page-sizes="[10, 20, 50]"
-                      @pagination="handleTemplateDetailPagination"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <!-- 双击模板：修改模板名称小窗（仅改内存，点主弹窗保存按钮才提交） -->
-    <el-dialog title="修改模板名称" :visible.sync="renameTemplateDialogVisible" width="400px" append-to-body :close-on-click-modal="false">
-      <el-form label-width="80px">
-        <el-form-item label="模板名称">
-          <el-input v-model="renameTemplateName" placeholder="请输入模板名称" clearable maxlength="100" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="renameTemplateDialogVisible = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmRenameTemplate">确 定</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 未选模板时点新增：维护模板名称小窗，确定后创建空模板并选中 -->
-    <el-dialog title="维护模板名称" :visible.sync="newTemplateNameDialogVisible" width="400px" append-to-body :close-on-click-modal="false">
-      <el-form label-width="80px">
-        <el-form-item label="模板名称">
-          <el-input v-model="newTemplateName" placeholder="请输入模板名称" clearable maxlength="100" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="closeNewTemplateNameDialog">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmNewTemplateName">确 定</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 新增制单模板弹窗：样式与添加科室申领一致 -->
-    <transition name="modal-fade">
-      <div v-if="addTemplateDialogVisible" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="addTemplateDialogVisible" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ addTemplateAppendMode ? '往当前模板插入明细' : '新增制单模板' }}</div>
-              <el-button size="small" @click="closeAddTemplateDialog" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="addTemplateFormRef" :model="addTemplateForm" :rules="addTemplateRules" label-width="70px" size="small" class="modal-form-compact modal-form-wrapper add-template-form">
-              <div class="form-fields-container add-template-search-row">
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="供应商名称" prop="supplierId">
-                      <SelectSupplier v-model="addTemplateForm.supplierId" :value2="false"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="产品名称" prop="materialKeyword">
-                      <el-input v-model="addTemplateForm.materialKeyword" placeholder="请输入产品名称或首字母" clearable />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="规格搜索" prop="speciSearch">
-                      <el-input v-model="addTemplateForm.speciSearch" placeholder="请输入规格或首字母" clearable />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </div>
-              <el-row :gutter="10" class="mb8">
-                <el-col :span="1.5">
-                  <span>模板明细信息</span>
-                </el-col>
-                <el-col :span="1.5" v-show="false">
-                  <el-button type="primary" icon="el-icon-plus" size="medium" @click="nameBtnForTemplate">添加</el-button>
-                </el-col>
-                <el-col :span="1.5" v-show="false">
-                  <el-button type="danger" icon="el-icon-delete" size="medium" @click="handleDeleteAddTemplateEntry">删除</el-button>
-                </el-col>
-                <el-col :span="1.5" v-show="false">
-                  <el-button size="medium" @click="closeAddTemplateDialog">取 消</el-button>
-                </el-col>
-                <el-col :span="1.5">
-                  <el-button type="primary" icon="el-icon-search" size="medium" @click="handleAddTemplateSearch">搜 索</el-button>
-                </el-col>
-                <el-col :span="1.5">
-                  <el-button type="primary" size="medium" @click="submitAddTemplate">确 认</el-button>
-                </el-col>
-              </el-row>
-              <div class="table-wrapper">
-                <el-table :data="addTemplateDetailPageList" row-key="id" :row-class-name="rowAddTemplateMaterialIndex" @selection-change="handleAddTemplateEntrySelectionChange" ref="addTemplateEntryTable" height="100%" border>
-                  <el-table-column type="selection" width="50" align="center" resizable />
-                  <el-table-column label="序号" align="center" width="60" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ (addTemplateDetailPageNum - 1) * addTemplateDetailPageSize + scope.$index + 1 }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="产品编码" align="center" prop="code" width="120" show-overflow-tooltip resizable/>
-                  <el-table-column label="产品名称" align="center" prop="name" width="140" show-overflow-tooltip resizable/>
-                  <el-table-column label="规格" align="center" prop="speci" width="120" show-overflow-tooltip resizable/>
-                  <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable/>
-                  <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.fdUnit && scope.row.fdUnit.unitName ? scope.row.fdUnit.unitName : '—' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="单价" align="center" width="90" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.price != null ? scope.row.price : '—' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="生产厂家" align="center" width="120" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '—' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="供应商" align="center" width="120" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '—' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="注册证号" align="center" prop="registerNo" width="120" show-overflow-tooltip resizable/>
-                  <el-table-column label="注册号有效期" align="center" width="110" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.periodDate ? parseTime(scope.row.periodDate, '{y}-{m}-{d}') : '—' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="库房分类" align="center" width="100" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.fdWarehouseCategory && scope.row.fdWarehouseCategory.warehouseCategoryName ? scope.row.fdWarehouseCategory.warehouseCategoryName : '—' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="财务分类" align="center" width="100" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName ? scope.row.fdFinanceCategory.financeCategoryName : '—' }}
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </div>
-              <div class="add-template-pagination-wrap">
-                <pagination
-                  v-show="addTemplateFilteredList.length > 0"
-                  :total="addTemplateFilteredList.length"
-                  :page.sync="addTemplateDetailPageNum"
-                  :limit.sync="addTemplateDetailPageSize"
-                  :page-sizes="[10, 20, 50, 100]"
-                  @pagination="handleAddTemplateDetailPagination"
-                />
-              </div>
-            </el-form>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <el-dialog
-      :title="outboundRefFilterEntryId != null ? '本行关联出库单据与明细' : '关联出库单据与明细'"
-      :visible.sync="outboundRefDialogVisible"
-      width="1120px"
-      append-to-body
-      @closed="outboundRefFilterEntryId = null"
-    >
-      <el-table :data="filteredOutboundRefList" border size="small" max-height="420" empty-text="暂无关联出库记录">
-        <el-table-column label="申领明细" align="center" width="100" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ outboundRefEntryLabel(scope.row.basApplyEntryId) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="产品名称" align="center" min-width="120" prop="materialName" show-overflow-tooltip />
-        <el-table-column label="库房申请单号" align="center" width="140" prop="whApplyBillNo" show-overflow-tooltip />
-        <el-table-column label="出库单号" align="center" width="140" prop="ckBillNo" show-overflow-tooltip />
-        <el-table-column label="出库状态" align="center" width="100">
-          <template slot-scope="scope">
-            <dict-tag :options="dict.type.biz_status" :value="scope.row.ckBillStatus" />
-          </template>
-        </el-table-column>
-        <el-table-column label="关联数量" align="right" width="100" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ fmtQty(scope.row.refQty) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="出库明细数量" align="right" width="110" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ fmtQty(scope.row.ckEntryQty) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="出库单ID" align="center" width="100" prop="ckBillId" show-overflow-tooltip />
-        <el-table-column label="出库明细ID" align="center" width="100" prop="ckEntryId" show-overflow-tooltip />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="outboundRefDialogVisible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
+    <DApplyEditDialog v-if="open" />
+    <DApplyTemplateDialog v-if="templateDialogVisible" />
+    <DApplyRenameTemplateDialog v-if="renameTemplateDialogVisible" />
+    <DApplyNewTemplateNameDialog v-if="newTemplateNameDialogVisible" />
+    <DApplyAddTemplateDialog v-if="addTemplateDialogVisible" />
+    <DApplyOutboundRefDialog v-if="outboundRefDialogVisible" />
 
     <SelectInventory
       v-if="DialogComponentShow && selectTarget === 'template'"
@@ -743,7 +196,6 @@
       @closeDialog="closeDialog"
       @selectData="selectData"
     />
-
   </div>
 </template>
 
@@ -753,10 +205,7 @@ import { listApplyTemplate, getApplyTemplate, addApplyTemplate, updateApplyTempl
 import { listMaterialDeptSafe } from "@/api/foundation/material";
 import { pinyin } from 'pinyin-pro';
 import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from '@/utils/materialSearch';
-import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
-import SelectDepartmentApplyAvailableStock from '@/components/SelectModel/SelectDepartmentApplyAvailableStock';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import { assertMinPackageQtyOnSave } from '@/utils/minPackageQty';
 import { parseTime } from '@/utils/ruoyi';
@@ -774,7 +223,16 @@ export default {
   // 须与菜单 path「dApply」生成的路由 name「DApply」一致，否则 keep-alive 不缓存，顶部切页后操作状态丢失
   name: "DApply",
   dicts: ['biz_status','way_status'],
-  components: { SelectWarehouse, SelectDepartment, SelectSupplier, SelectDepartmentApplyAvailableStock, SelectInventory },
+  components: {
+    SelectDepartment,
+    SelectInventory,
+    DApplyEditDialog: () => import('./components/DApplyEditDialog'),
+    DApplyTemplateDialog: () => import('./components/DApplyTemplateDialog'),
+    DApplyRenameTemplateDialog: () => import('./components/DApplyRenameTemplateDialog'),
+    DApplyNewTemplateNameDialog: () => import('./components/DApplyNewTemplateNameDialog'),
+    DApplyAddTemplateDialog: () => import('./components/DApplyAddTemplateDialog'),
+    DApplyOutboundRefDialog: () => import('./components/DApplyOutboundRefDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -2180,7 +1638,7 @@ export default {
 @import '../../caigou/jihua/styles/plan-modal-common.scss';
 
 /* 内部弹窗样式 - 与 outWarehouse/apply 出库申请添加弹窗一致 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -2195,7 +1653,7 @@ export default {
   overflow: hidden;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
@@ -2210,7 +1668,7 @@ export default {
   box-sizing: border-box;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2220,34 +1678,34 @@ export default {
   min-height: 40px;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
+::v-deep .modal-footer{
   padding: 16px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 12px;
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -2260,25 +1718,25 @@ export default {
 }
 
 /* 主弹窗 apply-modal：与到货验收一致，三块区域铺满标题栏宽度 */
-.local-modal-content.apply-modal-root-content .el-form {
+::v-deep .local-modal-content.apply-modal-root-content .el-form{
   padding: 8px 0 8px !important;
   overflow: visible;
   box-sizing: border-box;
 }
 
-.local-modal-content.apply-modal-root-content .modal-header {
+::v-deep .local-modal-content.apply-modal-root-content .modal-header{
   padding: 6px 8px;
 }
 
-.local-modal-content.apply-modal-root-content {
+::v-deep .local-modal-content.apply-modal-root-content{
   padding-bottom: 8px;
 }
 
-.local-modal-content .el-form.modal-form-wrapper {
+::v-deep .local-modal-content .el-form.modal-form-wrapper{
   padding: 6px 20px 12px;
 }
 
-.modal-form-wrapper {
+::v-deep .modal-form-wrapper{
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -2287,7 +1745,7 @@ export default {
 }
 
 /* 弹窗内顶部字段区：模板/制单模板等仍用旧卡片样式；apply-modal-query-panel 由 plan-modal-common 接管 */
-.local-modal-content .form-fields-container:not(.apply-modal-query-panel) {
+::v-deep .local-modal-content .form-fields-container:not(.apply-modal-query-panel){
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
@@ -2300,56 +1758,56 @@ export default {
   border: 1px solid #EBEEF5;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
+::v-deep .local-modal-content .form-fields-container .el-row:last-child{
   margin-bottom: 0;
 }
 
 /* 弹窗内表单紧凑布局（与出库申请一致） */
-.local-modal-content .modal-form-compact .el-row {
+::v-deep .local-modal-content .modal-form-compact .el-row{
   margin-bottom: 6px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
+::v-deep .local-modal-content .modal-form-compact .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-input,
-.local-modal-content .modal-form-compact .el-select,
-.local-modal-content .modal-form-compact .el-date-picker {
+::v-deep .local-modal-content .modal-form-compact .el-input,
+::v-deep .local-modal-content .modal-form-compact .el-select,
+::v-deep .local-modal-content .modal-form-compact .el-date-picker{
   width: 140px;
   max-width: 140px;
 }
 
-.local-modal-content .modal-form-compact .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
   font-size: 13px !important;
 }
 
-.local-modal-content .modal-form-compact .el-input__icon {
+::v-deep .local-modal-content .modal-form-compact .el-input__icon{
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-select .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-select .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor.el-input {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor.el-input{
   height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__content {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__content{
   margin-left: 0 !important;
   line-height: 28px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__label {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
   text-align: left;
   padding-right: 6px;
   line-height: 28px;
@@ -2358,7 +1816,7 @@ export default {
 }
 
 /* 弹窗内明细区：apply-modal-table-panel 由 plan-modal-common 接管边距 */
-.local-modal-content .modal-detail-section:not(.apply-modal-table-panel) {
+::v-deep .local-modal-content .modal-detail-section:not(.apply-modal-table-panel){
   margin-left: -20px;
   margin-right: -20px;
   width: calc(100% + 40px);
@@ -2370,7 +1828,7 @@ export default {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-row{
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 12px;
@@ -2394,7 +1852,7 @@ export default {
   padding: 0;
 }
 
-.local-modal-content.template-dialog-content {
+::v-deep .local-modal-content.template-dialog-content{
   min-height: 100vh !important;
   height: 100vh !important;
   max-width: none;
@@ -2581,7 +2039,7 @@ export default {
 }
 
 /* 弹窗内表格：高度由 el-table :height 控制（与出库申请一致） */
-.local-modal-content .table-wrapper {
+::v-deep .local-modal-content .table-wrapper{
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -2589,19 +2047,19 @@ export default {
   padding-bottom: 4px;
 }
 
-.local-modal-content .apply-modal-table-panel .table-wrapper {
+::v-deep .local-modal-content .apply-modal-table-panel .table-wrapper{
   margin-top: 0 !important;
   overflow: hidden;
   padding-bottom: 0;
 }
 
 /* 主弹窗明细区：不重复出外层滚动条，纵向滚动只在表格 body 内 */
-.local-modal-content .modal-detail-section .table-wrapper {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper{
   margin-top: 0;
   overflow: hidden;
 }
 
-.local-modal-content .modal-detail-section .el-table {
+::v-deep .local-modal-content .modal-detail-section .el-table{
   width: 100%;
 }
 
@@ -2745,21 +2203,21 @@ export default {
 }
 
 /* 明细表紧凑行高 */
-.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
   padding: 4px 0 !important;
 }
 
-.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
   padding-left: 6px !important;
   padding-right: 6px !important;
   line-height: 1.35;
 }
 
-.local-modal-content .modal-detail-section .apply-detail-table ::v-deep thead th.el-table__cell {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep thead th.el-table__cell {
   padding: 6px 0 !important;
 }
 
-.local-modal-content .modal-detail-section .apply-detail-table ::v-deep .el-input--small .el-input__inner {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep .el-input--small .el-input__inner {
   height: 28px !important;
   line-height: 28px !important;
   padding: 0 6px !important;
@@ -3026,7 +2484,7 @@ export default {
 }
 
 /* 按钮行样式（仅弹窗内，勿影响主列表 list-toolbar 与搜索区间的全局留白） */
-.local-modal-content .mb8 {
+::v-deep .local-modal-content .mb8{
   flex-shrink: 0;
   margin-top: 0 !important;
   margin-bottom: 10px !important;

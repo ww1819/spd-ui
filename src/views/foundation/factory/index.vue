@@ -176,140 +176,10 @@
     </el-row>
 
     <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
-    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
-      <div class="page-drawer-panel" @click.stop>
-        <div class="page-drawer-header">
-          <span class="page-drawer-title">{{ title }}</span>
-          <i class="el-icon-close page-drawer-close" @click="cancel" />
-        </div>
-        <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-            <el-form-item label="厂家编码" prop="factoryCode">
-              <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码（不填自动生成）" />
-            </el-form-item>
-            <el-form-item label="厂家名称" prop="factoryName">
-              <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="厂家名称" />
-            </el-form-item>
-            <el-form-item label="厂家简码" prop="factoryReferredCode">
-              <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="厂家名称" />
-            </el-form-item>
-            <el-form-item label="使用状态" prop="factoryStatus">
-              <el-select v-model="form.factoryStatus" placeholder="使用状态" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="厂家联系方式" prop="factoryContact">
-              <el-input v-model="form.factoryContact" placeholder="厂家联系方式" />
-            </el-form-item>
-            <el-form-item label="厂家地址" prop="factoryAddress">
-              <el-input v-model="form.factoryAddress" type="textarea" :rows="2" placeholder="厂家地址" />
-            </el-form-item>
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
-            </el-form-item>
-          </el-form>
-        </div>
-        <div class="page-drawer-footer">
-          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="upload.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-        <el-alert
-          v-if="factoryImportRequiresHisId"
-          type="warning"
-          :closable="false"
-          show-icon
-          style="margin-bottom:12px;"
-          title="衡水市第三人民医院：Excel 新增行须填「HIS生产厂家ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
-        />
-        <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>增量导入</strong>：按厂家编码匹配组织机构下数据；可勾选「更新已存在」后<strong>仅更新厂家名称与厂家简码</strong>。先整单校验并确认后写入。
-        </p>
-        <el-upload
-          ref="upload"
-          :limit="1"
-          accept=".xlsx, .xls"
-          :disabled="upload.isUploading"
-          :http-request="noopFactoryUpload"
-          :on-change="handleFactoryImportFileChange"
-          :on-remove="handleFactoryImportFileRemove"
-          :auto-upload="false"
-          drag
-        >
-          <i class="el-icon-upload"></i>
-          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-          <div class="el-upload__tip text-center" slot="tip">
-            <div class="el-upload__tip" slot="tip">
-              <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
-            </div>
-            <span>仅允许 xls、xlsx。</span>
-            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFactoryTemplate">下载模板</el-link>
-          </div>
-        </el-upload>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" :loading="upload.isUploading" @click="submitFactoryImportFlow">校验并导入</el-button>
-          <el-button @click="closeFactoryImport">取 消</el-button>
-        </div>
-      </div>
-    </div>
-
-    <el-dialog
-      :title="importPreview.title"
-      :visible.sync="importPreview.visible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      @close="importPreview.rows = []; importPreview.columns = []"
-    >
-      <div style="margin-bottom:10px;">
-        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportFactoryImportPreview">导出解析结果</el-button>
-      </div>
-      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
-        <el-table-column
-          v-for="col in importPreview.columns"
-          :key="col"
-          :prop="col"
-          :label="col"
-          min-width="120"
-          show-overflow-tooltip
-        />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="importPreview.visible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 变更记录：右侧抽屉 -->
-    <div v-if="changeLog.open" class="change-log-drawer-mask" @click.self="closeChangeLog">
-      <div class="change-log-drawer-panel" @click.stop>
-        <div class="change-log-drawer-header">
-          <span class="change-log-drawer-title">生产厂家变更记录 — {{ changeLog.factoryName }}</span>
-          <i class="el-icon-close change-log-drawer-close" @click="closeChangeLog" />
-        </div>
-        <div class="change-log-drawer-body">
-          <el-table v-loading="changeLog.loading" :data="changeLog.rows" height="100%" size="small" border stripe>
-            <el-table-column label="时间" prop="changeTime" width="160" show-overflow-tooltip />
-            <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
-            <el-table-column label="字段" prop="fieldLabel" width="100" show-overflow-tooltip />
-            <el-table-column label="原值" prop="oldValue" min-width="120" show-overflow-tooltip />
-            <el-table-column label="新值" prop="newValue" min-width="120" show-overflow-tooltip />
-          </el-table>
-        </div>
-        <div class="change-log-drawer-footer">
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="closeChangeLog">关 闭</el-button>
-        </div>
-      </div>
-    </div>
+    <FactoryEditDialog v-if="open" />
+    <FactoryUploadDialog v-if="upload.open" />
+    <FactoryPreviewDialog v-if="importPreview.visible" />
+    <FactoryChangeLogDialog v-if="changeLog.open" />
   </div>
 </template>
 
@@ -322,7 +192,13 @@ import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 
 export default {
   name: "Factory",
-  components: { MsunHisSyncButton },
+  components: {
+    MsunHisSyncButton,
+    FactoryEditDialog: () => import('./components/FactoryEditDialog'),
+    FactoryUploadDialog: () => import('./components/FactoryUploadDialog'),
+    FactoryPreviewDialog: () => import('./components/FactoryPreviewDialog'),
+    FactoryChangeLogDialog: () => import('./components/FactoryChangeLogDialog')
+  },
   dicts: ['is_use_status'],
   computed: {
     ...mapGetters(["factoryImportRequiresHisId", "isZqTcmTenant"]),
@@ -1043,7 +919,7 @@ export default {
   background: #909399 !important;
 }
 
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1060,7 +936,7 @@ export default {
   padding: 0;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   border-radius: 6px;
   padding: 24px;
@@ -1069,7 +945,7 @@ export default {
   max-height: 90%;
 }
 
-.page-drawer-mask {
+::v-deep .page-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1081,7 +957,7 @@ export default {
   justify-content: flex-end;
 }
 
-.page-drawer-panel {
+::v-deep .page-drawer-panel{
   width: 520px;
   max-width: 100%;
   height: 100%;
@@ -1091,7 +967,7 @@ export default {
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
 }
 
-.page-drawer-header {
+::v-deep .page-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1100,29 +976,29 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.page-drawer-title {
+::v-deep .page-drawer-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
-.page-drawer-close {
+::v-deep .page-drawer-close{
   font-size: 16px;
   color: #909399;
   cursor: pointer;
 }
 
-.page-drawer-close:hover {
+::v-deep .page-drawer-close:hover{
   color: #409EFF;
 }
 
-.page-drawer-body {
+::v-deep .page-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
 }
 
-.page-drawer-footer {
+::v-deep .page-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;
@@ -1130,11 +1006,11 @@ export default {
   background: #fff;
 }
 
-.page-drawer-footer .el-button {
+::v-deep .page-drawer-footer .el-button{
   margin: 0 8px;
 }
 
-.change-log-drawer-mask {
+::v-deep .change-log-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1146,7 +1022,7 @@ export default {
   justify-content: flex-end;
 }
 
-.change-log-drawer-panel {
+::v-deep .change-log-drawer-panel{
   width: 720px;
   max-width: 92%;
   height: 100%;
@@ -1156,7 +1032,7 @@ export default {
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
 }
 
-.change-log-drawer-header {
+::v-deep .change-log-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1165,7 +1041,7 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.change-log-drawer-title {
+::v-deep .change-log-drawer-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
@@ -1175,18 +1051,18 @@ export default {
   padding-right: 12px;
 }
 
-.change-log-drawer-close {
+::v-deep .change-log-drawer-close{
   font-size: 16px;
   color: #909399;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.change-log-drawer-close:hover {
+::v-deep .change-log-drawer-close:hover{
   color: #409EFF;
 }
 
-.change-log-drawer-body {
+::v-deep .change-log-drawer-body{
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -1194,7 +1070,7 @@ export default {
   box-sizing: border-box;
 }
 
-.change-log-drawer-footer {
+::v-deep .change-log-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;

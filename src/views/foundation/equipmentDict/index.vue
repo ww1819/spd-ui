@@ -180,195 +180,26 @@
     </el-row>
 
     <!-- 添加或修改设备字典局部弹窗 -->
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content equipmentDict-modal-content">
-        <div class="modal-header">
-          <div class="modal-title">{{ title }}</div>
-          <el-button @click="cancel" class="close-btn">关闭</el-button>
-          </div>
-        <el-tabs v-model="activeTab">
-          <!-- 基本信息 -->
-          <el-tab-pane label="基本信息" name="form">
-            <el-form ref="form" :model="form" :rules="rules" label-width="120px">
-              <!-- 第一行 -->
-              <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="档案编码：" prop="code">
-                    <el-input 
-                      v-model="form.code" 
-                      :disabled="true"
-                      placeholder="选择所属分类后自动显示" 
-                    />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="档案名称：" prop="name">
-                    <el-input v-model="form.name" @input="nameChange" placeholder="档案名称" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="所属分类：" prop="category68Id">
-                    <el-select 
-                      v-model="form.category68Id" 
-                      placeholder="所属分类" 
-                      style="width: 100%"
-                      filterable
-                      clearable
-                      @change="handleCategory68Change"
-                    >
-                      <el-option
-                        v-for="item in category68Options"
-                        :key="item.category68Id"
-                        :label="getCategory68DisplayLabel(item)"
-                        :value="item.category68Id"
-                      >
-                        <span>{{ item.category68Name }}</span>
-                      </el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-
-              <!-- 第二行 -->
-              <el-row :gutter="20">
-                <el-col :span="4">
-                  <el-form-item label="单位：" prop="unitId">
-                    <SelectUnit v-model="form.unitId" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="财务分类：" prop="isWay">
-                    <el-select v-model="form.isWay" placeholder="财务分类" style="width: 100%">
-                      <el-option
-                        v-for="dict in dict.type.way_status"
-                        :key="dict.value"
-                        :label="dict.label"
-                        :value="dict.value"
-                      ></el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="折旧年限：" prop="depreciationYears">
-                    <el-input-number v-model="form.depreciationYears" placeholder="折旧年限" :min="0" :precision="0" style="width: 100%" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                  <el-form-item label="使用年限：" prop="useYears">
-                    <el-input-number v-model="form.useYears" placeholder="使用年限" :min="0" :precision="0" style="width: 100%" />
-                  </el-form-item>
-                </el-col>
-              </el-row>
-            </el-form>
-          </el-tab-pane>
-        
-          <!-- 产品图片 -->
-          <el-tab-pane label="产品图片" name="image">
-            <div class="image-tab-content" style="text-align: center; padding: 40px 20px;">
-            <div class="equipmentDict-image-container" style="display: inline-block;">
-              <el-upload
-                ref="imageUpload"
-                :action="imageUploadUrl"
-                :headers="imageUploadHeaders"
-                :show-file-list="false"
-                :on-success="handleImageSuccess"
-                :before-upload="beforeImageUpload"
-                :auto-upload="true"
-                accept="image/*"
-              >
-                <div v-if="form.imageUrl" class="equipmentDict-image-preview-large" slot="trigger">
-                  <img :src="form.imageUrl" alt="设备图片" @click.stop="previewImage" />
-                  <div class="image-overlay">
-                    <i class="el-icon-zoom-in" @click.stop="previewImage" title="查看图片"></i>
-                    <i class="el-icon-delete" @click.stop="removeImage" title="删除图片"></i>
-                  </div>
-                </div>
-                <div v-else class="equipmentDict-image-placeholder-large" slot="trigger">
-                  <i class="el-icon-plus"></i>
-                  <div style="font-size: 14px; color: #999; margin-top: 10px;">点击上传图片</div>
-                  <div style="font-size: 12px; color: #ccc; margin-top: 5px;">支持 JPG、PNG 格式，大小不超过 2MB</div>
-                </div>
-              </el-upload>
-              <div v-if="form.imageUrl" style="margin-top: 20px;">
-                <el-button type="primary" @click="previewImage">查看图片</el-button>
-                <el-button type="primary" @click="saveImage">保存</el-button>
-                <el-button type="primary" @click="removeImage">删除图片</el-button>
-              </div>
-            </div>
-          </div>
-          </el-tab-pane>
-        </el-tabs>
-        
-        <div class="dialog-footer" style="text-align:center;margin-top:16px;">
-          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 图片预览对话框 -->
-    <el-dialog
-      title="图片预览"
-      :visible.sync="imagePreviewVisible"
-      width="800px"
-      append-to-body
-    >
-      <div style="text-align: center;">
-        <img :src="imagePreviewUrl" style="max-width: 100%; max-height: 600px;" alt="预览图片" />
-      </div>
-    </el-dialog>
-
-    <!-- 设备导入对话框 -->
-    <div v-if="upload.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 500px;">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-      <el-upload
-        ref="upload"
-        :limit="1"
-        accept=".xlsx, .xls"
-        :headers="upload.headers"
-        :action="upload.url + '?updateSupport=' + upload.updateSupport"
-        :disabled="upload.isUploading"
-        :on-progress="handleFileUploadProgress"
-        :on-success="handleFileSuccess"
-        :auto-upload="false"
-        drag
-      >
-        <i class="el-icon-upload"></i>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <div class="el-upload__tip text-center" slot="tip">
-          <div class="el-upload__tip" slot="tip">
-            <el-checkbox v-model="upload.updateSupport" /> 是否更新已经存在的资产数据
-          </div>
-          <span>仅允许导入xls、xlsx格式文件。</span>
-          <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
-        </div>
-      </el-upload>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-        <el-button type="primary" @click="submitFileForm">确 定</el-button>
-        <el-button @click="upload.open = false">取 消</el-button>
-        </div>
-      </div>
-    </div>
+    <EquipmentDictEditDialog v-if="open" />
+    <EquipmentDictImageDialog v-if="imagePreviewVisible" />
+    <EquipmentDictUploadDialog v-if="upload.open" />
   </div>
 </template>
 
 <script>
 import { listEquipmentDict, listEquipmentDictAll, getEquipmentDict, delEquipmentDict, addEquipmentDict, updateEquipmentDict } from "@/api/foundation/equipmentDict";
 import { treeselect } from "@/api/foundation/category68";
-import SelectSupplier from '@/components/SelectModel/SelectSupplier';
-import SelectFactory from '@/components/SelectModel/SelectFactory';
-import SelectFinanceCategory from "@/components/SelectModel/SelectFinanceCategory";
-import SelectWarehouseCategory from "@/components/SelectModel/SelectWarehouseCategory";
-import SelectUnit from "@/components/SelectModel/SelectUnit";
-import SelectLocation from "@/components/SelectModel/SelectLocation";
 import { pinyin } from 'pinyin-pro'
 import { getToken } from "@/utils/auth";
 
 export default {
   name: "EquipmentDict",
   dicts: ['is_use_status', 'is_yes_no','way_status','equipment_level_status', 'register_level_status','risk_level_status','firstaid_level_status','doctor_level_status'],
-  components: {SelectSupplier,SelectFactory,SelectFinanceCategory,SelectWarehouseCategory,SelectUnit,SelectLocation},
+  components: {
+    EquipmentDictEditDialog: () => import('./components/EquipmentDictEditDialog'),
+    EquipmentDictImageDialog: () => import('./components/EquipmentDictImageDialog'),
+    EquipmentDictUploadDialog: () => import('./components/EquipmentDictUploadDialog')
+  },
   computed: {
     moreSearchStorageKey() {
       return "spd.foundation.equipmentDict.moreSearchTypes";
@@ -1087,7 +918,7 @@ export default {
   background: transparent;
   padding: 10px;
 }
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0; top: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.3);
@@ -1096,7 +927,7 @@ export default {
   align-items: center;
   justify-content: center;
 }
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   border-radius: 6px;
   min-width: 600px;
@@ -1109,19 +940,19 @@ export default {
   flex-direction: column;
 }
 
-.local-modal-content.equipmentDict-modal-content {
+::v-deep .local-modal-content.equipmentDict-modal-content{
   width: 1700px !important;
   min-width: 1700px !important;
   min-height: 880px !important;
 }
 
-.local-modal-content.equipmentDict-modal-content > .el-tabs {
+::v-deep .local-modal-content.equipmentDict-modal-content > .el-tabs{
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1138,14 +969,14 @@ export default {
   box-sizing: border-box;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: 1px solid #dcdfe6;
   background: #fff;
   color: #606266;
@@ -1153,7 +984,7 @@ export default {
   border-radius: 4px;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: #f5f7fa;
   color: #409eff;
   border-color: #c6e2ff;

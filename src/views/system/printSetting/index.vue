@@ -176,32 +176,18 @@
     </div>
     </div>
 
-    <el-dialog
-      class="print-setting-dialog"
-      :title="title"
-      :visible.sync="open"
-      :append-to-body="false"
-      :modal="false"
-      :show-close="false"
-    >
-      <span slot="title" class="print-setting-dialog-title">
-        <span>{{ title }}</span>
-        <el-button type="text" size="mini" class="dialog-header-close" @click="cancel">关闭</el-button>
-      </span>
-      <print-setting-form ref="form" :form-data="form" @success="handleFormSuccess" @cancel="cancel" />
-    </el-dialog>
+    <PrintSettingEditDialog v-if="open" />
   </div>
 </template>
 
 <script>
 import { listPrintSetting, getPrintSetting, delPrintSetting, setDefaultTemplate } from "@/api/system/printSetting";
-import PrintSettingForm from "./form";
 
 export default {
   name: "PrintSetting",
   dicts: ['sys_normal_disable'],
   components: {
-    PrintSettingForm
+    PrintSettingEditDialog: () => import('./components/PrintSettingEditDialog')
   },
   data() {
     return {

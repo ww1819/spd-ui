@@ -31,37 +31,9 @@
       </el-table-column>
     </el-table>
     <div v-if="selectedCustomerId && !loading && menuList.length === 0" class="empty-tip">该客户暂未分配菜单，请先在客户管理中分配菜单权限</div>
-    <el-dialog :title="statusDialogTitle" :visible.sync="openStatus" width="480px" append-to-body>
-      <el-form ref="statusForm" :model="statusForm" :rules="statusRules" label-width="80px">
-        <el-form-item label="功能名称"><el-input v-model="statusForm.menuName" disabled /></el-form-item>
-        <el-form-item label="原因" prop="reason">
-          <el-input v-model="statusForm.reason" type="textarea" :placeholder="statusForm.status === '1' ? '请输入停用原因' : '请输入启用原因'" :rows="3" maxlength="200" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitStatusForm">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="openStatus = false">取 消</el-button>
-      </div>
-    </el-dialog>
-    <el-dialog title="启停用记录" :visible.sync="openLog" width="720px" append-to-body>
-      <div class="log-dialog-header">{{ logForm.menuName }}</div>
-      <el-table :data="statusLogList" border size="small" max-height="360">
-        <el-table-column label="操作时间" width="170"><template slot-scope="scope">{{ parseTime(scope.row.operateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</template></el-table-column>
-        <el-table-column label="状态" width="90"><template slot-scope="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'danger'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
-        <el-table-column label="操作人" prop="operateBy" width="120" />
-        <el-table-column label="原因" prop="reason" min-width="200" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer"><el-button class="spd-btn spd-btn--secondary" @click="openLog = false">关 闭</el-button></div>
-    </el-dialog>
-    <el-dialog title="启停用时间段" :visible.sync="openPeriod" width="720px" append-to-body>
-      <div class="log-dialog-header">{{ logForm.menuName }}</div>
-      <el-table :data="periodLogList" border size="small" max-height="360">
-        <el-table-column label="类型" width="90"><template slot-scope="scope"><el-tag :type="scope.row.periodType === 'usage' ? 'success' : 'info'" size="small">{{ scope.row.periodType === 'usage' ? '使用' : '停用' }}</el-tag></template></el-table-column>
-        <el-table-column label="开始时间" width="170"><template slot-scope="scope">{{ parseTime(scope.row.startTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</template></el-table-column>
-        <el-table-column label="结束时间" width="170"><template slot-scope="scope">{{ scope.row.endTime ? parseTime(scope.row.endTime, '{y}-{m}-{d} {h}:{i}:{s}') : '至今' }}</template></el-table-column>
-      </el-table>
-      <div slot="footer" class="dialog-footer"><el-button class="spd-btn spd-btn--secondary" @click="openPeriod = false">关 闭</el-button></div>
-    </el-dialog>
+    <HcCustomerMenuStatusDialog v-if="openStatus" />
+    <HcCustomerMenuLogDialog v-if="openLog" />
+    <HcCustomerMenuPeriodDialog v-if="openPeriod" />
   </div>
 </template>
 
@@ -70,6 +42,11 @@ import { listHcCustomers } from '@/api/material/customer'
 import { listMenusByCustomerId, changeMenuStatus, getMenuStatusLogs, getMenuPeriodLogs } from '@/api/material/customerMenuManage'
 
 export default {
+  components: {
+    HcCustomerMenuStatusDialog: () => import('./components/HcCustomerMenuStatusDialog'),
+    HcCustomerMenuLogDialog: () => import('./components/HcCustomerMenuLogDialog'),
+    HcCustomerMenuPeriodDialog: () => import('./components/HcCustomerMenuPeriodDialog')
+  },
   name: 'HcCustomerMenuManage',
   data() {
     return {

@@ -209,222 +209,9 @@
     />
 
     <!-- 添加或修改订单对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px" class="modal-form-compact">
-        <div class="form-fields-container">
-        <el-row>
-          <el-col :span="4">
-            <el-form-item label="订单状态" prop="orderStatus" label-width="100px">
-              <el-select v-model="form.orderStatus" placeholder="请选择订单状态"
-                         :disabled="true"
-                         clearable style="width: 150px">
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="仓库" prop="warehouseId" label-width="100px">
-              <SelectWarehouse v-model="form.warehouseId"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="高值/低值" label-width="100px">
-              <el-input :value="formatIsGzLabel(form.isGz)" disabled />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="4">
-            <el-form-item label="订单日期" prop="orderDate" label-width="100px">
-              <el-date-picker clearable
-                              v-model="form.orderDate"
-                              type="date"
-                              :disabled="true"
-                              value-format="yyyy-MM-dd"
-                              style="width: 150px"
-                              placeholder="请选择订单日期">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy" label-width="100px">
-             <!-- <SelectUser v-model="form.userId"/> -->
-              <el-input v-model="form.createBy" :disabled="true" />
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="4">
-            <el-form-item label="联系电话" prop="contactPhone" label-width="100px">
-              <el-input v-model="form.contactPhone" placeholder="联系电话" />
-            </el-form-item>
-          </el-col>
-
-        </el-row>
-
-        <el-row>
-
-          <el-col :span="4">
-            <el-form-item label="供应商" prop="supplierId" label-width="100px">
-              <SelectSupplier v-model="form.supplierId"/>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="4">
-            <el-form-item label="总金额" prop="totalAmount" label-width="100px">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        </div>
-
-<!--        <el-divider content-position="left">订单明细信息</el-divider>-->
-        <div class="modal-detail-section">
-        <el-row :gutter="10" class="mb8 detail-toolbar-row">
-          <el-col :span="1.5">
-            <span>订单明细信息</span>
-          </el-col>
-
-          <div v-show="action">
-            <el-col :span="1.5">
-  <!--            <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddStkIoBillEntry">添加</el-button>-->
-              <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn">添加</el-button>
-            </el-col>
-            <el-col :span="1.5">
-              <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeletePurchaseOrderEntry">删除</el-button>
-            </el-col>
-          </div>
-
-        </el-row>
-        <div class="table-wrapper">
-        <el-table :data="purchaseOrderEntryList" :row-class-name="rowPurchaseOrderEntryIndex"
-                  show-summary :summary-method="getSummaries"
-                  @selection-change="handlePurchaseOrderEntrySelectionChange"
-                  ref="purchaseOrderEntry"
-                  :height="detailTableHeight"
-                  border
-        >
-          <el-table-column type="selection" width="60" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="50"/>
-          <el-table-column label="耗材" prop="materialId" width="120">
-            <template slot-scope="scope">
-              <SelectMaterial v-model="scope.row.materialId" :value2="isShow"/>
-            </template>
-          </el-table-column>
-          <el-table-column label="规格" prop="materialSpec" width="120">
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.materialSpec" :disabled="true" placeholder="无" />
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" prop="materialName" width="120">
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.materialName" :disabled="true" placeholder="无" />
-            </template>
-          </el-table-column>
-          <el-table-column label="数量" prop="orderQty" width="120">
-            <template slot-scope="scope">
-              <el-input
-                v-model.number="scope.row.orderQty"
-                type="number"
-                :min="1"
-                placeholder="数量"
-                @input="qtyChange(scope.row)"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column label="价格" prop="unitPrice" width="120">
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number'
-                        :disabled="true"
-                        @input="priceChange(scope.row)" placeholder="价格" />
-            </template>
-          </el-table-column>
-          <el-table-column label="金额" prop="totalAmount" width="120">
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.totalAmount" :disabled="true" placeholder="金额" />
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200">
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" placeholder="备注" />
-            </template>
-          </el-table-column>
-          <el-table-column v-if="!action" label="操作" align="center" width="120" fixed="right">
-            <template slot-scope="scope">
-              <el-button
-                v-if="scope.row.planEntryId"
-                size="mini"
-                type="text"
-                icon="el-icon-tickets"
-                @click="handleViewApplyDetails(scope.row)"
-              >查看申购明细</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-        </div>
-        </div>
-      </el-form>
-            <div v-show="action" class="modal-footer">
-              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-              <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-            </div>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <!-- 计划单查看弹窗 -->
-    <el-dialog title="采购计划" :visible.sync="planViewDialogVisible" width="560px" append-to-body>
-      <el-descriptions v-if="planViewData" :column="2" border size="small">
-        <el-descriptions-item label="计划单号">{{ planViewData.planNo || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="计划状态">
-          <dict-tag v-if="planViewData.planStatus" :options="dict.type.plan_status" :value="planViewData.planStatus"/>
-          <span v-else>--</span>
-        </el-descriptions-item>
-        <el-descriptions-item label="计划日期">{{ planViewData.planDate | parseTime('{y}-{m}-{d}') || '--' }}</el-descriptions-item>
-        <el-descriptions-item label="总金额">{{ planViewData.totalAmount != null ? formatPrice4(planViewData.totalAmount) : '--' }}</el-descriptions-item>
-        <el-descriptions-item label="仓库" :span="2">{{ planViewData.warehouse && planViewData.warehouse.name ? planViewData.warehouse.name : '--' }}</el-descriptions-item>
-      </el-descriptions>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" size="small" @click="openJihuaPage">前往采购计划</el-button>
-        <el-button size="small" @click="planViewDialogVisible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 科室申购单明细弹窗 -->
-    <el-dialog title="科室申购单明细" :visible.sync="applyDetailsDialogVisible" width="800px" append-to-body>
-      <el-table :data="applyDetailsList" border size="small" max-height="360">
-        <el-table-column label="申购单单号" prop="applyBillNo" min-width="140" show-overflow-tooltip/>
-        <el-table-column label="申购科室" prop="departmentName" min-width="100" show-overflow-tooltip/>
-        <el-table-column label="申购数量" prop="qty" width="100" align="right"/>
-        <el-table-column label="制单人" prop="createByName" width="90" show-overflow-tooltip/>
-        <el-table-column label="制单时间" prop="createTime" width="160">
-          <template slot-scope="scope">{{ scope.row.createTime | parseTime('{y}-{m}-{d} {h}:{i}:{s}') || '--' }}</template>
-        </el-table-column>
-        <el-table-column label="审核人" prop="auditByName" width="90" show-overflow-tooltip/>
-        <el-table-column label="审核时间" prop="auditTime" width="160">
-          <template slot-scope="scope">{{ scope.row.auditTime | parseTime('{y}-{m}-{d} {h}:{i}:{s}') || '--' }}</template>
-        </el-table-column>
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button size="small" @click="applyDetailsDialogVisible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
+    <PurchaseOrderEditDialog v-if="open" />
+    <PurchaseOrderPlanViewDialog v-if="planViewDialogVisible" />
+    <PurchaseOrderApplyDetailsDialog v-if="applyDetailsDialogVisible" />
 
     <!-- 3、使用组件 -->
     <SelectMMaterialFilter
@@ -444,18 +231,21 @@ import { listDingdan, getDingdan, delDingdan, addDingdan, updateDingdan, publish
 import { getCaigoujihua, getJihuaApplyDetails } from "@/api/caigou/jihua";
 import { listUserAll } from "@/api/system/user";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
-import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectUser from '@/components/SelectModel/SelectUser';
-
 import SelectMMaterialFilter from '@/components/SelectModel/SelectMMaterialFilter';
 import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
 
 export default {
   name: "PurchaseOrder",
   dicts: ['biz_status','plan_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectUser,SelectMMaterialFilter},
+  components: {
+    SelectSupplier,
+    SelectWarehouse,
+    SelectMMaterialFilter,
+    PurchaseOrderEditDialog: () => import('./components/PurchaseOrderEditDialog'),
+    PurchaseOrderPlanViewDialog: () => import('./components/PurchaseOrderPlanViewDialog'),
+    PurchaseOrderApplyDetailsDialog: () => import('./components/PurchaseOrderApplyDetailsDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -1064,7 +854,7 @@ export default {
 
 <style scoped>
 /* 内部弹窗样式 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   top: 0;
   left: 0;
@@ -1077,7 +867,7 @@ export default {
   justify-content: stretch;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   width: 100%;
   height: 100%;
   background: white;
@@ -1086,7 +876,7 @@ export default {
   overflow: hidden;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1097,19 +887,19 @@ export default {
   flex-shrink: 0;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 500;
   color: #303133;
   margin: 0;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   overflow: visible;
   padding: 6px 20px 12px;
@@ -1120,7 +910,7 @@ export default {
   flex-direction: column;
 }
 
-.modal-footer {
+::v-deep .modal-footer{
   padding: 12px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
@@ -1134,7 +924,7 @@ export default {
   justify-content: flex-end;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 12px;
 }
 
@@ -1164,7 +954,7 @@ export default {
 }
 
 /* 弹窗顶部字段区 */
-.local-modal-content .form-fields-container {
+::v-deep .local-modal-content .form-fields-container{
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
@@ -1178,7 +968,7 @@ export default {
 }
 
 /* 弹窗明细区 */
-.local-modal-content .modal-detail-section {
+::v-deep .local-modal-content .modal-detail-section{
   margin-left: -20px;
   margin-right: -20px;
   width: calc(100% + 40px);
@@ -1190,7 +980,7 @@ export default {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-row{
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 12px;
@@ -1198,7 +988,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .table-wrapper {
+::v-deep .local-modal-content .table-wrapper{
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -1206,7 +996,7 @@ export default {
   padding-bottom: 4px;
 }
 
-.local-modal-content .modal-detail-section .el-table {
+::v-deep .local-modal-content .modal-detail-section .el-table{
   width: 100%;
 }
 

@@ -163,294 +163,10 @@
     />
 
     <!-- 查看订单对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <div>
-                <el-button v-if="form.planId" type="primary" size="small" @click="handleViewPlan">查看采购计划</el-button>
-                <el-button v-if="form.planId" type="primary" size="small" @click="handleShowApplyBillNoList">查看申购单</el-button>
-                <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
-              </div>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="单据状态" prop="orderStatus">
-              <el-select v-model="form.orderStatus" placeholder="请选择单据状态"
-                         :disabled="true"
-                         clearable>
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="仓库" prop="warehouseId">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="订单时间" prop="orderDate">
-              <el-input :value="parseTime(form.orderDate, '{y}-{m}-{d} {h}:{i}:{s}')" :disabled="true" placeholder="订单时间" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy">
-              <el-input v-model="form.createBy" :disabled="true" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="联系电话" prop="contactPhone">
-              <el-input v-model="form.contactPhone" :disabled="true" placeholder="联系电话" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="8">
-          <el-col :span="4">
-            <el-form-item label="采购员" prop="contactPerson">
-              <SelectUser v-model="form.contactPerson" :disabled="true"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="总金额" prop="totalAmount">
-              <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable disabled />
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="10" class="mb8">
-          <el-col :span="1.5">
-            <span>订单明细信息</span>
-          </el-col>
-        </el-row>
-        <el-table :data="purchaseOrderEntryList" :row-class-name="rowPurchaseOrderEntryIndex"
-                  show-summary :summary-method="getSummaries"
-                  @selection-change="handlePurchaseOrderEntrySelectionChange"
-                  ref="purchaseOrderEntry"
-                  height="48vh"
-                  border
-        >
-          <el-table-column label="序号" align="center" type="index" width="50" :index="index => index + 1"/>
-          <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.code) || scope.row.materialCode || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="产品名称" align="center" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.name) || scope.row.materialName || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="规格" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.materialSpec || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" align="center" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.model) || scope.row.materialUnit || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.fdUnit ? scope.row.material.fdUnit.unitName : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库存数量" align="center" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.stockQty != null ? scope.row.stockQty : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="订单数量" align="center" prop="orderQty" width="100" show-overflow-tooltip resizable/>
-          <el-table-column label="单价" align="right" prop="unitPrice" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.unitPrice != null ? formatPrice4(scope.row.unitPrice) : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="金额" align="right" prop="totalAmount" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.totalAmount != null ? formatPrice4(scope.row.totalAmount) : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生产厂家" align="center" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="包装规格" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="注册证号" align="center" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="库房分类" align="center" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="财务分类" align="center" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="操作" align="center" width="120" fixed="right">
-            <template slot-scope="scope">
-              <el-button v-if="scope.row.planEntryId" type="text" size="small" @click="handleViewApplyDetails(scope.row)">查看申购明细</el-button>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-form>
-            <div class="modal-footer">
-              <el-button class="spd-btn spd-btn--secondary" @click="cancel">关 闭</el-button>
-            </div>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <!-- 查看申购单弹窗：表头 科室申购单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间 -->
-    <el-dialog title="查看申购单" :visible.sync="applyBillNoDialogVisible" width="95%" append-to-body>
-      <el-table :data="applyBillHeaderList" border max-height="450">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column label="科室申购单号" prop="applyBillNo" min-width="140" show-overflow-tooltip />
-        <el-table-column label="仓库" prop="warehouseName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="制单人" prop="createByName" width="100" show-overflow-tooltip />
-        <el-table-column label="制单时间" prop="createTime" width="160" show-overflow-tooltip />
-        <el-table-column label="提交人" prop="submitByName" width="100" show-overflow-tooltip />
-        <el-table-column label="提交时间" prop="submitTime" width="160" show-overflow-tooltip />
-        <el-table-column label="审核人" prop="auditByName" width="100" show-overflow-tooltip />
-        <el-table-column label="审核时间" prop="auditTime" width="160" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="applyBillNoDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 查看申购明细弹窗 -->
-    <el-dialog title="申购明细" :visible.sync="applyDetailDialogVisible" width="900px" append-to-body>
-      <el-table :data="applyDetailList" border max-height="400">
-        <el-table-column label="科室申购单单号" prop="applyBillNo" width="140" show-overflow-tooltip />
-        <el-table-column label="申购科室" prop="departmentName" width="120" show-overflow-tooltip />
-        <el-table-column label="申购数量" prop="qty" width="100" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.qty != null ? Number(scope.row.qty) : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="制单人" prop="createByName" width="100" show-overflow-tooltip />
-        <el-table-column label="制单时间" prop="createTime" width="160" show-overflow-tooltip />
-        <el-table-column label="审核人" prop="auditByName" width="100" show-overflow-tooltip />
-        <el-table-column label="审核时间" prop="auditTime" width="160" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="applyDetailDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 查看采购计划弹窗：表头 计划单号、仓库、制单人、制单时间、提交人、提交时间、审核人、审核时间；明细 产品编码等 -->
-    <el-dialog title="查看采购计划" :visible.sync="planViewDialogVisible" width="95%" append-to-body>
-      <div v-if="planDetail" class="plan-view-header" style="display:flex;flex-wrap:wrap;gap:16px 24px;margin-bottom:12px;">
-        <span><strong>计划单号：</strong>{{ planDetail.planNo || '--' }}</span>
-        <span><strong>仓库：</strong>{{ planDetail.warehouse && planDetail.warehouse.name ? planDetail.warehouse.name : '--' }}</span>
-        <span><strong>制单人：</strong>{{ planDetail.createByName || '--' }}</span>
-        <span><strong>制单时间：</strong>{{ planDetail.createTime ? parseTime(planDetail.createTime, '{y}-{m}-{d} {h}:{i}:{s}') : '--' }}</span>
-        <span><strong>提交人：</strong>{{ planDetail.updateByName || '--' }}</span>
-        <span><strong>提交时间：</strong>{{ planDetail.updateTime ? parseTime(planDetail.updateTime, '{y}-{m}-{d} {h}:{i}:{s}') : '--' }}</span>
-        <span><strong>审核人：</strong>{{ planDetail.auditByName || '--' }}</span>
-        <span><strong>审核时间：</strong>{{ planDetail.auditDate ? parseTime(planDetail.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') : '--' }}</span>
-      </div>
-      <el-table v-if="planDetail && planDetail.purchasePlanEntryList" :data="planDetail.purchasePlanEntryList" border max-height="420">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column label="产品编码" width="120" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="产品名称" width="140" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.name) || scope.row.materialName || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="规格" width="120" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.speci) || scope.row.speci || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="型号" width="100" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.model) || scope.row.model || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="单位" width="80" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.material && scope.row.material.fdUnit ? scope.row.material.fdUnit.unitName : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="库存数量" width="100" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.stockQty != null ? scope.row.stockQty : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="订单数量" prop="qty" width="100" align="right" />
-        <el-table-column label="单价" width="100" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.price != null ? formatPrice4(scope.row.price) : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="金额" width="100" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.amt != null ? formatPrice4(scope.row.amt) : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="生产厂家" width="120" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="包装规格" width="100" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="注册证号" width="120" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="库房分类" width="100" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="财务分类" width="100" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="planViewDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
+    <PurchaseShenheEditDialog v-if="open" />
+    <PurchaseShenheApplyBillDialog v-if="applyBillNoDialogVisible" />
+    <PurchaseShenheApplyDetailDialog v-if="applyDetailDialogVisible" />
+    <PurchaseShenhePlanViewDialog v-if="planViewDialogVisible" />
 
   </div>
 </template>
@@ -459,14 +175,19 @@
 import { listDingdan, getDingdan, auditDingdan } from "@/api/caigou/dingdan";
 import { getApplyDetails, getApplyBillNoList, getApplyBillHeaderList, getPurchasePlan } from "@/api/caigou/purchasePlan";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
-import SelectUser from '@/components/SelectModel/SelectUser';
 
 export default {
   name: "PurchaseOrderAudit",
   dicts: ['biz_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectUser},
+  components: {
+    SelectSupplier,
+    SelectWarehouse,
+    PurchaseShenheEditDialog: () => import('./components/PurchaseShenheEditDialog'),
+    PurchaseShenheApplyBillDialog: () => import('./components/PurchaseShenheApplyBillDialog'),
+    PurchaseShenheApplyDetailDialog: () => import('./components/PurchaseShenheApplyDetailDialog'),
+    PurchaseShenhePlanViewDialog: () => import('./components/PurchaseShenhePlanViewDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -840,7 +561,7 @@ export default {
 
 <style scoped>
 /* 内部弹窗样式 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   top: 0;
   left: 0;
@@ -853,7 +574,7 @@ export default {
   justify-content: stretch;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   width: 100%;
   height: 100%;
   background: white;
@@ -862,7 +583,7 @@ export default {
   overflow: hidden;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -873,25 +594,25 @@ export default {
   flex-shrink: 0;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 500;
   color: #303133;
   margin: 0;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   overflow-y: auto;
   padding: 24px;
 }
 
-.modal-footer {
+::v-deep .modal-footer{
   padding: 12px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
@@ -905,7 +626,7 @@ export default {
   justify-content: flex-end;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 12px;
 }
 
@@ -937,50 +658,50 @@ export default {
 }
 
 /* 弹窗内表单紧凑布局 */
-.local-modal-content .modal-form-compact .el-row {
+::v-deep .local-modal-content .modal-form-compact .el-row{
   margin-bottom: 10px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
+::v-deep .local-modal-content .modal-form-compact .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-input,
-.local-modal-content .modal-form-compact .el-select,
-.local-modal-content .modal-form-compact .el-date-picker {
+::v-deep .local-modal-content .modal-form-compact .el-input,
+::v-deep .local-modal-content .modal-form-compact .el-select,
+::v-deep .local-modal-content .modal-form-compact .el-date-picker{
   width: 100%;
 }
 
-.local-modal-content .modal-form-compact .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
   font-size: 13px !important;
 }
 
-.local-modal-content .modal-form-compact .el-input__icon {
+::v-deep .local-modal-content .modal-form-compact .el-input__icon{
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-select .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-select .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor.el-input {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor.el-input{
   height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__content {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__content{
   margin-left: 0 !important;
   line-height: 28px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__label {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
   text-align: left;
   padding-right: 6px;
   line-height: 28px;

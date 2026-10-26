@@ -174,133 +174,9 @@
       </el-col>
     </el-row>
 
-    <div v-if="upload.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-        <el-alert
-          v-if="factoryImportRequiresHisId"
-          type="warning"
-          :closable="false"
-          show-icon
-          style="margin-bottom:12px;"
-          title="衡水市第三人民医院：Excel 新增行须填「HIS系统ID」且组织机构内唯一；已存在编码的「更新」仅改名称与简码，不改库中 HIS ID。"
-        />
-        <p v-if="upload.mode === 'add'" style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>新增导入</strong>：与库房分类一致，按<strong>财务分类编码</strong>匹配组织机构数据；仅允许新增（库中已存在相同编码则整单校验不通过）。先校验并确认后写入。
-        </p>
-        <p v-else style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>更新导入</strong>：与库房分类一致，Excel 须含<strong>财务分类ID、财务分类名称</strong>；仅更新名称与拼音简码，不改编码与 HIS ID。先校验并确认后写入。
-        </p>
-        <el-upload
-          ref="upload"
-          :limit="1"
-          accept=".xlsx, .xls"
-          :disabled="upload.isUploading"
-          :http-request="noopFinanceUpload"
-          :on-change="handleFinanceImportFileChange"
-          :on-remove="handleFinanceImportFileRemove"
-          :auto-upload="false"
-          drag
-        >
-          <i class="el-icon-upload"></i>
-          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-          <div class="el-upload__tip text-center" slot="tip">
-            <div v-if="upload.mode === 'update'" class="el-upload__tip">
-              <el-checkbox v-model="upload.updateSupport" disabled /> 当前为更新导入（按主键 ID）
-            </div>
-            <span>仅允许 xls、xlsx。</span>
-            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importFinanceTemplate">下载模板</el-link>
-          </div>
-        </el-upload>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" :loading="upload.isUploading" @click="submitFinanceImportFlow">校验并导入</el-button>
-          <el-button @click="closeFinanceImport">取 消</el-button>
-        </div>
-      </div>
-    </div>
-
-    <el-dialog
-      :title="importPreview.title"
-      :visible.sync="importPreview.visible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      @close="importPreview.rows = []; importPreview.columns = []"
-    >
-      <div style="margin-bottom:10px;">
-        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportFinanceImportPreview">导出解析结果</el-button>
-      </div>
-      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
-        <el-table-column
-          v-for="col in importPreview.columns"
-          :key="col"
-          :prop="col"
-          :label="col"
-          min-width="120"
-          show-overflow-tooltip
-        />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="importPreview.visible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
-    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
-      <div class="page-drawer-panel" @click.stop>
-        <div class="page-drawer-header">
-          <span class="page-drawer-title">{{ title }}</span>
-          <i class="el-icon-close page-drawer-close" @click="cancel" />
-        </div>
-        <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-            <el-form-item label="财务类别编码" prop="financeCategoryCode">
-              <el-input v-model="form.financeCategoryCode" :disabled="isDisabled" placeholder="请输入编码" />
-            </el-form-item>
-            <el-form-item label="财务类别名称" prop="financeCategoryName">
-              <el-input v-model="form.financeCategoryName" placeholder="请输入名称" />
-            </el-form-item>
-            <el-form-item label="名称简码" prop="referredName">
-              <el-input v-model="form.referredName" placeholder="可点「更新简码」生成" clearable />
-            </el-form-item>
-            <el-form-item label="使用状态" prop="isUse">
-              <el-select v-model="form.isUse" placeholder="使用状态" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="HIS系统ID" prop="hisId">
-              <el-input
-                v-model="form.hisId"
-                :disabled="!!form.financeCategoryId"
-                :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水新增必填' : '非衡水无需填写')"
-                clearable
-              />
-            </el-form-item>
-            <el-form-item label="地址" prop="financeCategoryAddress">
-              <el-input v-model="form.financeCategoryAddress" placeholder="地址" clearable />
-            </el-form-item>
-            <el-form-item label="联系方式" prop="financeCategoryContact">
-              <el-input v-model="form.financeCategoryContact" placeholder="联系方式" clearable />
-            </el-form-item>
-            <el-form-item label="组织机构ID" prop="tenantId">
-              <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前组织机构" />
-            </el-form-item>
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
-            </el-form-item>
-          </el-form>
-        </div>
-        <div class="page-drawer-footer">
-          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-        </div>
-      </div>
-    </div>
+    <FinanceCategoryUploadDialog v-if="upload.open" />
+    <FinanceCategoryPreviewDialog v-if="importPreview.visible" />
+    <FinanceCategoryEditDialog v-if="open" />
   </div>
 </template>
 
@@ -312,6 +188,11 @@ import { mapGetters } from "vuex";
 export default {
   name: "FinanceCategory",
   dicts: ['is_use_status'],
+  components: {
+    FinanceCategoryUploadDialog: () => import('./components/FinanceCategoryUploadDialog'),
+    FinanceCategoryPreviewDialog: () => import('./components/FinanceCategoryPreviewDialog'),
+    FinanceCategoryEditDialog: () => import('./components/FinanceCategoryEditDialog')
+  },
   computed: {
     ...mapGetters(['customerId', 'factoryImportRequiresHisId']),
     isDisabled() {
@@ -1007,7 +888,7 @@ export default {
   background: #909399 !important;
 }
 
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: fixed;
   left: 0;
   top: 0;
@@ -1020,7 +901,7 @@ export default {
   z-index: 1000;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background-color: #fff;
   padding: 24px;
   border-radius: 6px;
@@ -1036,7 +917,7 @@ export default {
   margin-top: 16px;
 }
 
-.page-drawer-mask {
+::v-deep .page-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1048,7 +929,7 @@ export default {
   justify-content: flex-end;
 }
 
-.page-drawer-panel {
+::v-deep .page-drawer-panel{
   width: 520px;
   max-width: 100%;
   height: 100%;
@@ -1058,7 +939,7 @@ export default {
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
 }
 
-.page-drawer-header {
+::v-deep .page-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1067,29 +948,29 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.page-drawer-title {
+::v-deep .page-drawer-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
-.page-drawer-close {
+::v-deep .page-drawer-close{
   font-size: 16px;
   color: #909399;
   cursor: pointer;
 }
 
-.page-drawer-close:hover {
+::v-deep .page-drawer-close:hover{
   color: #409EFF;
 }
 
-.page-drawer-body {
+::v-deep .page-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
 }
 
-.page-drawer-footer {
+::v-deep .page-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;
@@ -1097,7 +978,7 @@ export default {
   background: #fff;
 }
 
-.page-drawer-footer .el-button {
+::v-deep .page-drawer-footer .el-button{
   margin: 0 8px;
 }
 </style>

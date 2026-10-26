@@ -28,33 +28,7 @@
           <span class="tenant-remark-text">{{ tenantForm.remark != null && tenantForm.remark !== '' ? tenantForm.remark : '—' }}</span>
         </el-form-item>
       </el-form>
-      <el-dialog
-        title="修改平台医院编码"
-        :visible.sync="tenantEditVisible"
-        width="520px"
-        append-to-body
-        destroy-on-close
-        @close="resetTenantEditForm"
-      >
-        <el-form ref="tenantEditFormRef" :model="tenantEditForm" :rules="tenantEditRules" label-width="130px" size="small">
-          <el-form-item label="平台医院编码" prop="scmHospitalCode">
-            <el-input
-              v-model="tenantEditForm.scmHospitalCode"
-              clearable
-              placeholder="与云平台 hospital_code 一致"
-              maxlength="64"
-              show-word-limit
-            />
-          </el-form-item>
-          <el-form-item label="备注" prop="remark">
-            <el-input v-model="tenantEditForm.remark" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="选填" />
-          </el-form-item>
-        </el-form>
-        <div slot="footer" class="dialog-footer">
-          <el-button class="spd-btn spd-btn--secondary" @click="tenantEditVisible = false">取消</el-button>
-          <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitTenantEdit">保存</el-button>
-        </div>
-      </el-dialog>
+      <ScmBindTenantEditDialog v-if="tenantEditVisible" />
     </el-card>
 
     <el-card shadow="never">
@@ -156,34 +130,7 @@
         </el-table-column>
       </el-table>
 
-      <el-dialog
-        title="修改平台编码绑定"
-        :visible.sync="supplierEditVisible"
-        width="520px"
-        append-to-body
-        destroy-on-close
-        @close="resetSupplierEditForm"
-      >
-        <el-form ref="supplierEditFormRef" :model="supplierEditForm" :rules="supplierEditRules" label-width="130px" size="small">
-          <el-form-item label="SPD供应商">
-            <span>{{ supplierEditForm.supplierName || '—' }}</span>
-            <span style="color: #909399; margin-left: 8px">ID: {{ supplierEditForm.supplierId }}</span>
-          </el-form-item>
-          <el-form-item label="SPD供应商编码">
-            <span>{{ supplierEditForm.supplierCode || '—' }}</span>
-          </el-form-item>
-          <el-form-item label="平台供应商编码" prop="scmSupplierCode">
-            <el-input v-model="supplierEditForm.scmSupplierCode" clearable placeholder="与云平台 supplier_code 一致" maxlength="64" show-word-limit />
-          </el-form-item>
-          <el-form-item label="备注" prop="remark">
-            <el-input v-model="supplierEditForm.remark" type="textarea" :rows="3" maxlength="500" show-word-limit placeholder="选填" />
-          </el-form-item>
-        </el-form>
-        <div slot="footer" class="dialog-footer">
-          <el-button class="spd-btn spd-btn--secondary" @click="supplierEditVisible = false">取消</el-button>
-          <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitSupplierEdit">确定</el-button>
-        </div>
-      </el-dialog>
+      <ScmBindSupplierEditDialog v-if="supplierEditVisible" />
       <p class="text-muted" style="margin-top: 12px; color: #909399; font-size: 13px;">
         说明：列表为当前机构下已存在的有效绑定（逻辑删除 del_flag=1 的不展示）；同一 SPD 供应商在本机构下仅允许一条对照记录；多家供应商可维护相同的平台供应商编码。新增时请先选择本地供应商并填写平台编码。
       </p>
@@ -197,7 +144,11 @@ import SelectSupplier from '@/components/SelectModel/SelectSupplier'
 
 export default {
   name: 'CaigouScmBind',
-  components: { SelectSupplier },
+  components: {
+    SelectSupplier,
+    ScmBindTenantEditDialog: () => import('./components/ScmBindTenantEditDialog'),
+    ScmBindSupplierEditDialog: () => import('./components/ScmBindSupplierEditDialog')
+  },
   data() {
     return {
       tenantForm: {

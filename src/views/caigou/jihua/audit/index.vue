@@ -174,34 +174,7 @@
     </div>
     </div>
 
-<!-- 审核意见对话框 -->
-    <el-dialog
-      title="审核意见"
-      :visible.sync="auditDialogVisible"
-      width="500px"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-    >
-      <el-form :model="auditForm" label-width="100px">
-        <el-form-item label="计划单号">
-          <el-input v-model="auditForm.planNo" :disabled="true" />
-        </el-form-item>
-        <el-form-item label="审核意见">
-          <el-input
-            v-model="auditForm.auditOpinion"
-            type="textarea"
-            placeholder="审核意见"
-            :rows="4"
-            maxlength="500"
-            show-word-limit
-          />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="auditDialogVisible = false">取消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAudit">确定</el-button>
-      </div>
-    </el-dialog>
+    <PurchasePlanAuditOpinionDialog v-if="auditDialogVisible" />
 
     <PlanEditDialog
       v-if="open"
@@ -227,40 +200,8 @@
       @show-apply-bills="handleShowApplyBillNoList"
     />
 
-    <!-- 引用申购单号列表弹窗 -->
-    <el-dialog title="引用申购单号" :visible.sync="applyBillNoDialogVisible" width="500px" append-to-body>
-      <el-table :data="applyBillNoList" border max-height="400">
-        <el-table-column type="index" label="序号" width="60" align="center" />
-        <el-table-column label="申购单号" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="applyBillNoDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
-
-    <!-- 查看申购明细弹窗 -->
-    <el-dialog title="申购明细" :visible.sync="applyDetailDialogVisible" width="900px" append-to-body>
-      <el-table :data="applyDetailList" border max-height="400">
-        <el-table-column label="科室申购单单号" prop="applyBillNo" width="140" show-overflow-tooltip />
-        <el-table-column label="申购科室" prop="departmentName" width="120" show-overflow-tooltip />
-        <el-table-column label="申购数量" prop="qty" width="100" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.qty != null ? Number(scope.row.qty) : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="制单人" prop="createByName" width="100" show-overflow-tooltip />
-        <el-table-column label="制单时间" prop="createTime" width="160" show-overflow-tooltip />
-        <el-table-column label="审核人" prop="auditByName" width="100" show-overflow-tooltip />
-        <el-table-column label="审核时间" prop="auditTime" width="160" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="applyDetailDialogVisible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
+    <PurchasePlanAuditBillNoDialog v-if="applyBillNoDialogVisible" />
+    <ApplyDetailDialog v-if="applyDetailDialogVisible" :visible.sync="applyDetailDialogVisible" :list="applyDetailList" />
 
   </div>
 </template>
@@ -279,6 +220,9 @@ export default {
     SelectSupplier,
     SelectWarehouse,
     PlanEditDialog: () => import('../components/PlanEditDialog'),
+    ApplyDetailDialog: () => import('../components/ApplyDetailDialog'),
+    PurchasePlanAuditOpinionDialog: () => import('./components/PurchasePlanAuditOpinionDialog'),
+    PurchasePlanAuditBillNoDialog: () => import('./components/PurchasePlanAuditBillNoDialog')
   },
   data() {
     return {
@@ -977,7 +921,7 @@ handleQuery() {
 
 <style scoped>
 /* 内部弹窗样式 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -990,7 +934,7 @@ handleQuery() {
   justify-content: stretch;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
@@ -1003,7 +947,7 @@ handleQuery() {
   box-sizing: border-box;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1013,23 +957,23 @@ handleQuery() {
   min-height: 40px;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
+::v-deep .modal-footer{
   padding: 16px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
@@ -1037,11 +981,11 @@ handleQuery() {
   margin-top: 10px;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 12px;
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   overflow: visible;
   padding: 6px 20px 12px;
@@ -1053,7 +997,7 @@ handleQuery() {
 }
 
 /* 弹窗内顶部字段区：与到货验收查看入库一致 */
-.local-modal-content .form-fields-container {
+::v-deep .local-modal-content .form-fields-container{
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
@@ -1066,12 +1010,12 @@ handleQuery() {
   border: 1px solid #EBEEF5;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
+::v-deep .local-modal-content .form-fields-container .el-row:last-child{
   margin-bottom: 0;
 }
 
 /* 弹窗内明细区：与到货验收查看入库一致 */
-.local-modal-content .modal-detail-section {
+::v-deep .local-modal-content .modal-detail-section{
   margin-left: -20px;
   margin-right: -20px;
   width: calc(100% + 40px);
@@ -1083,7 +1027,7 @@ handleQuery() {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-row{
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 12px;
@@ -1092,23 +1036,23 @@ handleQuery() {
 }
 
 /* 弹窗内表单紧凑布局 */
-.local-modal-content .modal-form-compact .el-row {
+::v-deep .local-modal-content .modal-form-compact .el-row{
   margin-bottom: 6px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
+::v-deep .local-modal-content .modal-form-compact .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-input,
-.local-modal-content .modal-form-compact .el-select,
-.local-modal-content .modal-form-compact .el-date-picker {
+::v-deep .local-modal-content .modal-form-compact .el-input,
+::v-deep .local-modal-content .modal-form-compact .el-select,
+::v-deep .local-modal-content .modal-form-compact .el-date-picker{
   width: 140px;
   max-width: 140px;
 }
 
 /* 弹窗内表格样式 - 高度调到确定按钮上面一点 */
-.local-modal-content .table-wrapper {
+::v-deep .local-modal-content .table-wrapper{
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -1116,7 +1060,7 @@ handleQuery() {
   padding-bottom: 4px;
 }
 
-.local-modal-content .modal-detail-section .el-table {
+::v-deep .local-modal-content .modal-detail-section .el-table{
   width: 100%;
 }
 
@@ -1142,7 +1086,7 @@ handleQuery() {
   background-color: #fff !important;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 8px;
 }
 
@@ -1276,64 +1220,64 @@ handleQuery() {
   }
 
   /* 弹窗内表单紧凑布局 */
-  .local-modal-content .modal-form-compact .el-row {
+  ::v-deep .local-modal-content .modal-form-compact .el-row{
     margin-bottom: 10px;
     display: flex;
     flex-wrap: nowrap;
   }
 
-  .local-modal-content .modal-form-compact .el-row .el-col {
+  ::v-deep .local-modal-content .modal-form-compact .el-row .el-col{
     flex-shrink: 0;
   }
 
-  .local-modal-content .modal-form-compact .el-form-item {
+  ::v-deep .local-modal-content .modal-form-compact .el-form-item{
     margin-bottom: 0;
     white-space: nowrap;
   }
 
-  .local-modal-content .modal-form-compact .el-form-item__label {
+  ::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .local-modal-content .modal-form-compact .el-input,
-  .local-modal-content .modal-form-compact .el-select,
-  .local-modal-content .modal-form-compact .el-date-picker {
+  ::v-deep .local-modal-content .modal-form-compact .el-input,
+  ::v-deep .local-modal-content .modal-form-compact .el-select,
+  ::v-deep .local-modal-content .modal-form-compact .el-date-picker{
     width: 140px;
     max-width: 140px;
   }
 
-  .local-modal-content .modal-form-compact .el-input__inner {
+  ::v-deep .local-modal-content .modal-form-compact .el-input__inner{
     height: 28px !important;
     line-height: 28px !important;
     font-size: 13px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-input__icon {
+  ::v-deep .local-modal-content .modal-form-compact .el-input__icon{
     line-height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-select .el-input__inner {
+  ::v-deep .local-modal-content .modal-form-compact .el-select .el-input__inner{
     height: 28px !important;
     line-height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-date-editor.el-input {
+  ::v-deep .local-modal-content .modal-form-compact .el-date-editor.el-input{
     height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  ::v-deep .local-modal-content .modal-form-compact .el-date-editor .el-input__inner{
     height: 28px !important;
     line-height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-form-item__content {
+  ::v-deep .local-modal-content .modal-form-compact .el-form-item__content{
     margin-left: 0 !important;
     line-height: 28px;
   }
 
-  .local-modal-content .modal-form-compact .el-form-item__label {
+  ::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
     text-align: left;
     padding-right: 6px;
     line-height: 28px;
@@ -1347,36 +1291,36 @@ handleQuery() {
   }
 
   /* 缩小所有输入框高度 */
-  .local-modal-content .modal-form-compact .el-input__inner {
+  ::v-deep .local-modal-content .modal-form-compact .el-input__inner{
     height: 28px !important;
     line-height: 28px !important;
     font-size: 13px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-input__icon {
+  ::v-deep .local-modal-content .modal-form-compact .el-input__icon{
     line-height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-select .el-input__inner {
+  ::v-deep .local-modal-content .modal-form-compact .el-select .el-input__inner{
     height: 28px !important;
     line-height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-date-editor.el-input {
+  ::v-deep .local-modal-content .modal-form-compact .el-date-editor.el-input{
     height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+  ::v-deep .local-modal-content .modal-form-compact .el-date-editor .el-input__inner{
     height: 28px !important;
     line-height: 28px !important;
   }
 
-  .local-modal-content .modal-form-compact .el-form-item__content {
+  ::v-deep .local-modal-content .modal-form-compact .el-form-item__content{
     margin-left: 0 !important;
     line-height: 28px;
   }
 
-  .local-modal-content .modal-form-compact .el-form-item__label {
+  ::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
     text-align: left;
     padding-right: 6px;
     line-height: 28px;
@@ -1385,40 +1329,40 @@ handleQuery() {
   }
 
   /* 加粗滚动条 - 覆盖所有表格滚动条 */
-  .local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
-  .local-modal-content .el-table::-webkit-scrollbar,
-  .local-modal-content .table-wrapper::-webkit-scrollbar {
+  ::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar,
+  ::v-deep .local-modal-content .el-table::-webkit-scrollbar,
+  ::v-deep .local-modal-content .table-wrapper::-webkit-scrollbar{
     width: 10px !important;
   }
 
-  .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track,
-  .local-modal-content .el-table::-webkit-scrollbar-track,
-  .local-modal-content .table-wrapper::-webkit-scrollbar-track {
+  ::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track,
+  ::v-deep .local-modal-content .el-table::-webkit-scrollbar-track,
+  ::v-deep .local-modal-content .table-wrapper::-webkit-scrollbar-track{
     background: #f1f1f1 !important;
     border-radius: 5px !important;
   }
 
-  .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb,
-  .local-modal-content .el-table::-webkit-scrollbar-thumb,
-  .local-modal-content .table-wrapper::-webkit-scrollbar-thumb {
+  ::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb,
+  ::v-deep .local-modal-content .el-table::-webkit-scrollbar-thumb,
+  ::v-deep .local-modal-content .table-wrapper::-webkit-scrollbar-thumb{
     background: #c1c1c1 !important;
     border-radius: 5px !important;
   }
 
-  .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
-  .local-modal-content .el-table::-webkit-scrollbar-thumb:hover,
-  .local-modal-content .table-wrapper::-webkit-scrollbar-thumb:hover {
+  ::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+  ::v-deep .local-modal-content .el-table::-webkit-scrollbar-thumb:hover,
+  ::v-deep .local-modal-content .table-wrapper::-webkit-scrollbar-thumb:hover{
     background: #a8a8a8 !important;
   }
 
 /* 表格样式优化（弹窗内表格，勿影响主列表 apply-main-table） */
-.local-modal-content .el-table:not(.apply-main-table):not(.apply-detail-table) {
+::v-deep .local-modal-content .el-table:not(.apply-main-table):not(.apply-detail-table){
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 10px;
 }
 
-.local-modal-content .el-table:not(.apply-main-table):not(.apply-detail-table) td {
+::v-deep .local-modal-content .el-table:not(.apply-main-table):not(.apply-detail-table) td{
   padding: 12px 0;
   color: #606266;
   border-bottom: 1px solid #EBEEF5;

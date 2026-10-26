@@ -1,0 +1,26 @@
+---
+description: spd-ui 业务页结构与性能红线。改 Vue 页面、弹窗、打印、列表时必须遵守。
+globs: src/views/**/*.vue,src/components/**/*.vue,src/store/modules/tagsView.js
+alwaysApply: false
+---
+
+# 前端页面结构与性能
+
+完整条文：`docs/frontend-page-standard.md`。改 `src/views` 业务页时先读再改。
+
+## 底线
+
+业务操作、权限码、打印、审核流程与改前一致。只改结构与挂载时机。禁止升级 Vue 3、改接口字段、去掉 `v-hasPermi`。
+
+## 必须
+
+- 列表 `index.vue` 只留查询、工具栏、主表、分页；超过约 800 行或超过 1 个非平凡弹窗必须拆
+- 每个非平凡弹窗 / `local-modal` / 打印区：独立 SFC + `() => import(...)` + 根节点 `v-if`（打开才创建，关闭销毁）
+- 禁止只靠 `:visible.sync` 让弹窗常驻；禁止同步 import 重弹窗
+- 新列表 `page-sizes` 仅为 `[10, 20, 30, 50]`，禁止新增 100+ 档
+- `$modal.*` 和模板不足 40 行、无表格无打印的轻量窗可暂不拆文件，但仍须 `v-if`
+
+## 对照
+
+正确方向：`src/views/caigou/jihua/components/*Dialog.vue` 的拆文件 + 异步 import。  
+缺口：同页 `ApplyDetailDialog` 等没有 `v-if`，新改页必须补上。

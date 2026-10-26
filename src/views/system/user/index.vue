@@ -239,345 +239,12 @@
       </el-col>
     </el-row>
 
-    <!-- 新增/修改：内容区内右侧抽屉 -->
-    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
-      <div class="page-drawer-panel" @click.stop>
-        <div class="page-drawer-header">
-          <span class="page-drawer-title">{{ title }}</span>
-          <i class="el-icon-close page-drawer-close" @click="cancel" />
-        </div>
-        <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="formRules" label-width="90px" size="small" class="user-drawer-form">
-            <el-form-item label="机构单位">
-              <el-input :value="organizationUnitDisplay" placeholder="机构单位" disabled />
-            </el-form-item>
-            <el-form-item label="角色">
-              <el-select
-                v-model="form.roleIds"
-                multiple
-                placeholder="请选择角色"
-                style="width: 100%;"
-                :disabled="form.userId == undefined"
-                :allow-create="false"
-                @change="handleRoleChange"
-              >
-                <el-option
-                  v-for="item in roleOptions"
-                  :key="item.roleId"
-                  :label="item.roleName"
-                  :value="item.roleId"
-                  :disabled="item.status == 1"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="用户性别">
-              <el-select v-model="form.sex" placeholder="请选择性别" style="width: 100%;" clearable>
-                <el-option
-                  v-for="dict in dict.type.sys_user_sex"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="用户账户" prop="userName">
-              <el-input v-model="form.userName" placeholder="用户账户" maxlength="30" :disabled="form.userId != undefined" />
-            </el-form-item>
-            <el-form-item label="工作组">
-              <el-select v-model="form.deptId" placeholder="请选择工作组" clearable style="width: 100%;">
-                <el-option
-                  v-for="item in postOptions"
-                  :key="item.postId"
-                  :label="item.postName"
-                  :value="item.postId"
-                  :disabled="item.status == 1"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item :label="form.userId != undefined ? '登录密码' : '用户密码'" prop="password">
-              <el-input
-                v-model="form.password"
-                :placeholder="form.userId != undefined ? '留空不修改登录密码' : '用户密码'"
-                type="password"
-                maxlength="20"
-                show-password
-                autocomplete="new-password"
-              />
-            </el-form-item>
-            <el-form-item label="邮箱" prop="email">
-              <el-input v-model="form.email" placeholder="邮箱" maxlength="50" />
-            </el-form-item>
-            <el-form-item label="用户姓名" prop="nickName">
-              <el-input v-model="form.nickName" placeholder="用户姓名" maxlength="30" />
-            </el-form-item>
-            <el-form-item label="手机号码" prop="phonenumber">
-              <el-input v-model="form.phonenumber" placeholder="手机号码" maxlength="11" />
-            </el-form-item>
-            <el-form-item label="状态">
-              <el-radio-group v-model="form.status">
-                <el-radio
-                  v-for="dict in dict.type.sys_normal_disable"
-                  :key="dict.value"
-                  :label="dict.value"
-                >{{dict.label}}</el-radio>
-              </el-radio-group>
-            </el-form-item>
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="内容" />
-            </el-form-item>
-          </el-form>
-        </div>
-        <div class="page-drawer-footer">
-          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" v-if="canSubmitUserForm" @click="submitForm">确 定</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 用户导入对话框 -->
-    <el-dialog :title="upload.title" :visible.sync="upload.open" width="400px" append-to-body>
-      <el-upload
-        ref="upload"
-        :limit="1"
-        accept=".xlsx, .xls"
-        :headers="upload.headers"
-        :action="upload.url + '?updateSupport=' + upload.updateSupport"
-        :disabled="upload.isUploading"
-        :on-progress="handleFileUploadProgress"
-        :on-success="handleFileSuccess"
-        :auto-upload="false"
-        drag
-      >
-        <i class="el-icon-upload"></i>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-        <div class="el-upload__tip text-center" slot="tip">
-          <div class="el-upload__tip" slot="tip">
-            <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
-          </div>
-          <span>仅允许导入xls、xlsx格式文件。</span>
-          <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
-        </div>
-      </el-upload>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitFileForm" v-hasPermi="['system:user:import']">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="upload.open = false">取 消</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog
-      title="用户更新导入 — 解析结果"
-      :visible.sync="importPreview.visible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      @close="importPreview.rows = []; importPreview.columns = []"
-    >
-      <div style="margin-bottom:10px;">
-        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportUserImportPreview" v-hasPermi="['system:user:import']">导出解析结果</el-button>
-      </div>
-      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
-        <el-table-column
-          v-for="col in importPreview.columns"
-          :key="col"
-          :prop="col"
-          :label="col"
-          min-width="120"
-          show-overflow-tooltip
-        />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="importPreview.visible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 授权弹窗：固定尺寸、可拖动、无灰色遮罩；各 Tab 内容区高度一致 -->
-    <el-dialog
-      v-dialogDrag
-      :title="authTitle || '授权'"
-      :visible.sync="authOpen"
-      width="900px"
-      top="8vh"
-      custom-class="user-auth-dialog"
-      append-to-body
-      :modal="false"
-      :close-on-click-modal="false"
-    >
-    <el-tabs type="card" class="user-auth-tabs">
-      <el-tab-pane label="菜单权限">
-        <div class="user-auth-pane">
-          <div class="user-auth-pane-toolbar">
-            <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
-            <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
-            <el-checkbox v-model="authMenuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
-          </div>
-          <div class="user-auth-pane-body">
-            <menu-auth-dual-tree
-              ref="menuAuthDualTree"
-              v-model="authForm.menuIds"
-              :data="menuOptions"
-              node-key="id"
-              :tree-props="defaultProps"
-              :existing-menu-ids="authExistingMenuIds"
-              :parent-child-linked="authMenuParentChildLinked"
-              max-height="360px"
-            />
-          </div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="科室权限">
-        <div class="user-auth-pane">
-          <div class="user-auth-pane-toolbar">
-            <el-button size="mini" @click="handleAuthDepartmentAll(true)">全选</el-button>
-            <el-button size="mini" @click="handleAuthDepartmentAll(false)">取消</el-button>
-            <el-input
-              v-model="departmentKeyword"
-              size="mini"
-              clearable
-              placeholder="搜索科室"
-              style="width: 180px; margin-left: 10px;"
-            />
-          </div>
-          <div class="user-auth-pane-body auth-checkbox-container">
-            <el-checkbox-group v-model="authForm.departmentIds" class="auth-checkbox-group">
-              <el-checkbox v-for="item in filteredDepartmentOptions"
-                           :key="item.id"
-                           :label="item.id"
-                           class="auth-checkbox-item">{{item.name}}
-              </el-checkbox>
-            </el-checkbox-group>
-          </div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="仓库权限">
-        <div class="user-auth-pane">
-          <div class="user-auth-pane-toolbar">
-            <el-button size="mini" @click="handleAuthWarehouseAll(true)">全选</el-button>
-            <el-button size="mini" @click="handleAuthWarehouseAll(false)">取消</el-button>
-          </div>
-          <div class="user-auth-pane-body auth-scroll-pane">
-            <el-checkbox-group v-model="authForm.warehouseIds">
-              <el-checkbox v-for="item in userWarehouseOptions"
-                           :key="item.id"
-                           :label="item.id">{{item.name}}
-              </el-checkbox>
-            </el-checkbox-group>
-          </div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="单位权限">
-        <div class="user-auth-pane">
-          <div class="user-auth-pane-body auth-scroll-pane user-auth-pane-empty">
-            <div class="user-auth-empty-text">暂无数据</div>
-          </div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="待办事项">
-        <div class="user-auth-pane">
-          <div class="user-auth-pane-body auth-scroll-pane user-auth-pane-empty">
-            <div class="user-auth-empty-text">暂无数据</div>
-          </div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="消息提醒">
-        <div class="user-auth-pane">
-          <div class="user-auth-pane-toolbar">
-            <el-button size="mini" @click="handleAuthMessageReminderAll(true)">全选</el-button>
-            <el-button size="mini" @click="handleAuthMessageReminderAll(false)">取消</el-button>
-          </div>
-          <div class="user-auth-pane-body auth-message-reminder-list">
-            <div class="auth-message-reminder-grid">
-              <el-checkbox-group v-model="authForm.messageReminderKeys" class="auth-message-reminder-col">
-                <el-checkbox
-                  v-for="item in messageReminderOptions"
-                  :key="item.value"
-                  :label="item.value"
-                  class="auth-message-reminder-cell"
-                >{{ item.label }}</el-checkbox>
-              </el-checkbox-group>
-              <el-checkbox-group v-model="authForm.messageReminderPopupKeys" class="auth-message-reminder-col">
-                <el-checkbox
-                  v-for="item in messageReminderOptions"
-                  :key="'popup-' + item.value"
-                  :label="item.value"
-                  class="auth-message-reminder-cell auth-message-reminder-popup"
-                  :disabled="!(authForm.messageReminderKeys || []).includes(item.value)"
-                >登录弹窗</el-checkbox>
-              </el-checkbox-group>
-            </div>
-          </div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="首页设置">
-        <div class="user-auth-pane">
-          <p class="auth-home-page-tip">勾选用户可切换的首页；均未勾选时默认显示「默认」首页。</p>
-          <div class="user-auth-pane-toolbar">
-            <el-button size="mini" @click="handleAuthHomePageAll(true)">全选</el-button>
-            <el-button size="mini" @click="handleAuthHomePageAll(false)">取消</el-button>
-          </div>
-          <div class="user-auth-pane-body auth-checkbox-container">
-            <el-checkbox-group v-model="authForm.homePageKeys" class="auth-checkbox-group">
-              <el-checkbox
-                v-for="item in homePageOptions"
-                :key="item.value"
-                :label="item.value"
-                class="auth-checkbox-item"
-              >{{ item.label }}</el-checkbox>
-            </el-checkbox-group>
-          </div>
-        </div>
-      </el-tab-pane>
-    </el-tabs>
-    <span slot="footer" class="dialog-footer">
-      <el-button type="primary" icon="el-icon-check" class="spd-btn spd-btn--primary" @click="submitAuth" v-hasPermi="['system:user:edit']">保 存</el-button>
-      <el-button icon="el-icon-close" class="spd-btn spd-btn--secondary" @click="authOpen = false">取 消</el-button>
-    </span>
-    </el-dialog>
-
-    <!-- 批量修改密码 -->
-    <el-dialog title="批量修改密码" :visible.sync="batchPasswordOpen" width="440px" append-to-body @close="resetBatchPasswordForm">
-      <p style="color:#909399; margin: 0 0 12px; line-height: 1.5;">
-        将为本租户下<b>所有普通用户</b>统一设置新密码，<b>不包含</b>平台 admin 账号及机构 super 账号（含 super_01、super 工作组用户）。
-      </p>
-      <el-form ref="batchPasswordForm" :model="batchPasswordForm" :rules="batchPasswordRules" label-width="88px" size="small">
-        <el-form-item label="新密码" prop="password">
-          <el-input
-            v-model="batchPasswordForm.password"
-            type="password"
-            placeholder="请输入新密码"
-            show-password
-            autocomplete="new-password"
-            maxlength="20"
-          />
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="batchPasswordOpen = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitBatchPassword">确 定</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- 批量设置耗材工作组 -->
-    <el-dialog title="批量设置工作组" :visible.sync="batchWorkgroupOpen" width="440px" append-to-body @close="batchPostId = undefined">
-      <p style="color:#909399; margin: 0 0 12px; line-height: 1.5;">
-        当前查询共 <b>{{ total }}</b> 人；已跨页选中 <b>{{ crossPageSelectedCount }}</b> 人。提交时可选择仅更新选中或更新全部查询结果，将统一设置为所选耗材工作组（覆盖每人原有 sys_user_post 关联）。
-      </p>
-      <el-form label-width="88px" size="small">
-        <el-form-item label="工作组" required>
-          <el-select v-model="batchPostId" placeholder="请选择工作组" clearable filterable style="width: 100%;">
-            <el-option
-              v-for="p in workgroupList"
-              :key="p.postId"
-              :label="p.postName"
-              :value="p.postId"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="batchWorkgroupOpen = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="batchWorkgroupLoading" @click="submitBatchWorkgroup">确 定</el-button>
-      </span>
-    </el-dialog>
+    <UserEditDrawer v-if="open" />
+    <UserImportDialog v-if="upload.open" />
+    <UserImportPreviewDialog v-if="importPreview.visible" />
+    <UserAuthDialog v-if="authOpen" />
+    <UserBatchPasswordDialog v-if="batchPasswordOpen" />
+    <UserBatchWorkgroupDialog v-if="batchWorkgroupOpen" />
   </div>
 </template>
 
@@ -592,7 +259,6 @@ import { checkPermi } from "@/utils/permission";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import Treeselect from "@riophae/vue-treeselect";
 import "@riophae/vue-treeselect/dist/vue-treeselect.css";
-import MenuAuthDualTree from "@/components/MenuAuthDualTree";
 import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -601,7 +267,17 @@ import { mapGetters } from 'vuex';
 export default {
   name: "User",
   dicts: ['sys_normal_disable', 'sys_user_sex','warehouse_role'],
-  components: { Treeselect, MenuAuthDualTree, MsunHisSyncButton, SelectDepartment },
+  components: {
+    Treeselect,
+    MsunHisSyncButton,
+    SelectDepartment,
+    UserEditDrawer: () => import('./components/UserEditDrawer'),
+    UserImportDialog: () => import('./components/UserImportDialog'),
+    UserImportPreviewDialog: () => import('./components/UserImportPreviewDialog'),
+    UserAuthDialog: () => import('./components/UserAuthDialog'),
+    UserBatchPasswordDialog: () => import('./components/UserBatchPasswordDialog'),
+    UserBatchWorkgroupDialog: () => import('./components/UserBatchWorkgroupDialog')
+  },
   computed: {
     ...mapGetters(['isZqTcmTenant', 'tenant']),
     /** 抽屉机构单位：优先当前登录租户名称（衡水/枣强等均适用） */
@@ -2024,7 +1700,7 @@ export default {
 }
 
 /* 新增/修改右侧抽屉（内容区内，不盖住顶栏侧栏） */
-.page-drawer-mask {
+::v-deep .page-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -2036,7 +1712,7 @@ export default {
   justify-content: flex-end;
 }
 
-.page-drawer-panel {
+::v-deep .page-drawer-panel{
   width: 480px;
   max-width: 100%;
   height: 100%;
@@ -2056,7 +1732,7 @@ export default {
   }
 }
 
-.page-drawer-header {
+::v-deep .page-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -2066,33 +1742,33 @@ export default {
   background: #F5F7FA;
 }
 
-.page-drawer-title {
+::v-deep .page-drawer-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
-.page-drawer-close {
+::v-deep .page-drawer-close{
   font-size: 16px;
   color: #909399;
   cursor: pointer;
 }
 
-.page-drawer-close:hover {
+::v-deep .page-drawer-close:hover{
   color: #409EFF;
 }
 
-.page-drawer-body {
+::v-deep .page-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 16px 16px 8px;
 }
 
-.user-drawer-form .el-form-item {
+::v-deep .user-drawer-form .el-form-item{
   margin-bottom: 14px;
 }
 
-.page-drawer-footer {
+::v-deep .page-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;
@@ -2100,7 +1776,7 @@ export default {
   background: #fff;
 }
 
-.page-drawer-footer .el-button {
+::v-deep .page-drawer-footer .el-button{
   margin: 0 8px;
 }
 

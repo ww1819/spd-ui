@@ -167,284 +167,7 @@
     </div>
     </div>
 
-    <!-- 添加或修改盘点对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button icon="el-icon-close" size="small" circle @click="cancel" class="close-btn"></el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="80px" size="small" class="stocktaking-modal-form">
-        <div class="form-fields-container stocktaking-modal-head-form">
-        <el-row :gutter="8" class="stocktaking-head-row">
-          <el-col :span="4">
-            <el-form-item label="单据状态" prop="stockStatus" label-width="88px">
-              <el-select v-model="form.stockStatus" placeholder="请选择单据状态"
-                         :disabled="true"
-                         clearable style="width: 100%">
-                <el-option v-for="dict in dict.type.biz_status"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="供应商" prop="supplerId" label-width="72px">
-              <SelectSupplier v-model="form.supplerId" :disabled="true" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="制单日期" prop="stockDate" label-width="88px">
-              <el-date-picker clearable
-                              v-model="form.stockDate"
-                              type="date"
-                              :disabled="true"
-                              value-format="yyyy-MM-dd"
-                              style="width: 100%"
-                              placeholder="请选择制单日期">
-              </el-date-picker>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="仓库" prop="warehouseId" label-width="72px">
-              <SelectWarehouse v-model="form.warehouseId" :disabled="!action || warehouseLockedByAction"/>
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="操作人" prop="createBy" label-width="72px">
-              <el-input v-model="form.createBy" :disabled="true" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="4">
-            <el-form-item label="盘点类型" prop="stockType" label-width="88px">
-              <el-select v-model="form.stockType" placeholder="请选择盘点类型"
-                         :disabled="true"
-                         clearable style="width: 100%">
-                <el-option v-for="dict in dict.type.bill_type"
-                           :key="dict.value"
-                           :label="dict.label"
-                           :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="8" class="stocktaking-head-row">
-          <el-col :span="4">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        </div>
-
-        <el-row :gutter="10" class="mb8 wh-stocktaking-detail-toolbar">
-          <el-col :span="24">
-            <div class="wh-stocktaking-detail-toolbar-inner">
-              <span>盘点明细信息</span>
-              <div v-show="detailEditable" class="wh-stocktaking-detail-toolbar-actions">
-                <el-button type="primary" icon="el-icon-minus" size="small" @click="openAddLossEntry">新增盘亏明细</el-button>
-                <el-button type="warning" icon="el-icon-plus" size="small" @click="openAddProfitEntry">新增盘盈明细</el-button>
-                <el-button
-                  type="primary"
-                  icon="el-icon-refresh"
-                  size="small"
-                  :loading="whInventoryInitLoading"
-                  :disabled="(stkIoStocktakingEntryList || []).length > 0"
-                  @click="handleStocktakingInitFromWarehouseInventory"
-                >盘点初始化</el-button>
-                <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteStkIoStocktakingEntry">删除</el-button>
-              </div>
-              <div class="wh-stocktaking-detail-toolbar-filters">
-                <el-select
-                  v-model="detailFilterCounted"
-                  size="small"
-                  clearable
-                  placeholder="是否已盘"
-                  class="wh-detail-filter-counted"
-                >
-                  <el-option label="已盘" :value="1" />
-                  <el-option label="未盘" :value="0" />
-                </el-select>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-
-        <el-table :data="filteredWhStocktakingEntryList" v-loading="detailLoading" :row-class-name="rowStkIoStocktakingEntryIndex" @selection-change="handleStkIoStocktakingEntrySelectionChange" ref="stkIoStocktakingEntry" height="calc(42vh)" border>
-          <el-table-column v-if="detailEditable" type="selection" width="50" align="center" resizable />
-          <el-table-column label="序号" align="center" prop="index" width="50" show-overflow-tooltip resizable/>
-          <el-table-column label="产品编码" align="center" prop="material.code" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="产品名称" prop="materialId" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <SelectMaterial v-if="!scope.row.kcNo && action" v-model="scope.row.materialId" :value2="isShow"/>
-              <span v-else>{{ scope.row.material ? (scope.row.material.name || '--') : '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="规格" prop="material.speci" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.material">{{ scope.row.material.speci || '--' }}</span>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span v-if="scope.row.material && scope.row.material.fdUnit">{{ scope.row.material.fdUnit.unitName || '--' }}</span>
-              <span v-else>--</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="明细账面数量" prop="qty" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ formatEntryQtyDisplay(scope.row, 'qty') }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="实盘数量" prop="stockQty" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input
-                v-if="detailEditable"
-                v-model="scope.row.stockQty"
-                type="number"
-                :disabled="isEntryStockQtyLocked(scope.row)"
-                @input="stockQtyChangeWh(scope.row)"
-                @blur="handleStockQtyBlur(scope.row)"
-                placeholder="实盘数量"
-              />
-              <span v-else>{{ formatEntryQtyDisplay(scope.row, 'stockQty') }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column v-if="!action" label="当前库存数量" width="120" align="center" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ formatEntryCurrentInventoryQty(scope.row) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="盈亏数量" align="center" width="110" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ getProfitQty(scope.row) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="盈亏标志" align="center" width="90" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ formatProfitLossFlag(scope.row) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="已盘" width="72" align="center" resizable>
-            <template slot-scope="scope">
-              <el-checkbox
-                :true-label="1"
-                :false-label="0"
-                v-model="scope.row.countedFlag"
-                :disabled="!action || stocktakingHeadAudited || whEntryCountedCheckboxDisabled(scope.row)"
-                @change="(v) => onWhEntryCountedChange(scope.row, v)"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column v-if="detailEditable" label="盘盈复制" width="96" align="center" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-button type="text" size="small" @click="copyDetailToProfitDialog(scope.row)">盘盈复制</el-button>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-if="!scope.row.kcNo && detailEditable" v-model="scope.row.price" type="number" @input="priceChange(scope.row)" placeholder="单价" />
-              <span v-else>{{ scope.row.unitPrice != null ? this.formatPrice(scope.row.unitPrice) : (scope.row.price != null ? this.formatAmount(scope.row.price) : '--') }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.amt | formatAmount }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="批次号" prop="batchNo" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-model="scope.row.batchNo" :disabled="true" label-width="200px" placeholder="批次号" />
-            </template>
-          </el-table-column>
-          <el-table-column label="第三方库存明细ID" prop="hisId" width="160" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.hisId || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="第三方批次号" prop="thirdPartyBatchNo" width="140" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.thirdPartyBatchNo || '--' }}</span>
-            </template>
-          </el-table-column>
-
-          <el-table-column label="供应商" width="180" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <SelectSupplier
-                v-if="!scope.row.kcNo && detailEditable"
-                :value="scope.row.supplierId"
-                finance-pick-mode
-                placeholder="请选择供应商"
-                style="width: 100%"
-                @input="(v) => $set(scope.row, 'supplierId', v)"
-              />
-              <span v-else>{{ formatEntrySupplierName(scope.row) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="批号" prop="batchNumber" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-if="detailEditable" v-model="scope.row.batchNumber" label-width="200px" placeholder="批号" />
-              <span v-else>{{ scope.row.batchNumber || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生产日期" prop="beginTime" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker
-                v-if="detailEditable"
-                clearable
-                v-model="scope.row.beginTime"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="请选择出库日期"
-              />
-              <span v-else>{{ scope.row.beginTime || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="有效期" prop="endTime" width="240" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-date-picker
-                v-if="detailEditable"
-                clearable
-                v-model="scope.row.endTime"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="请选择出库日期"
-              />
-              <span v-else>{{ scope.row.endTime || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="备注" prop="remark" width="200" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <el-input v-if="detailEditable" v-model="scope.row.remark" placeholder="备注" />
-              <span v-else>{{ scope.row.remark || '--' }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
-            </el-form>
-            <div class="modal-footer" v-show="detailEditable">
-              <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-              <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm" :loading="submitLoading">确 定</el-button>
-            </div>
-          </div>
-        </transition>
-      </div>
-    </transition>
+    <StocktakingInEditDialog v-if="open" />
 
     <SelectInventory
       v-if="dialogInvShow"
@@ -463,291 +186,10 @@
       @closeDialog="closeDepDialog"
       @selectData="selectProfitMaterialData"
     />
-    <el-dialog
-      custom-class="profit-pending-dialog"
-      title="新增盘盈明细信息"
-      :visible.sync="newEntryDialogVisible"
-      width="1080px"
-      append-to-body
-      :close-on-click-modal="false"
-    >
-      <el-table :data="pendingNewEntries" border size="small" v-loading="profitNameSpecStockLoading">
-        <el-table-column label="产品编码" width="120" align="center" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="产品名称" min-width="150" show-overflow-tooltip>
-          <template slot-scope="scope">{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '--' }}</template>
-        </el-table-column>
-        <el-table-column label="规格" min-width="120" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="单位" width="80" align="center" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="单价" min-width="120">
-          <template slot-scope="scope">
-            <el-input v-model="scope.row.unitPrice" type="number" placeholder="请输入单价" @input="priceChangePending(scope.row)" />
-          </template>
-        </el-table-column>
-        <el-table-column label="盘点数量" min-width="120">
-          <template slot-scope="scope">
-            <el-input v-model="scope.row.stockQty" type="number" placeholder="请输入盘点数量" @input="stockQtyChangePending(scope.row)" />
-          </template>
-        </el-table-column>
-        <el-table-column label="当前库存" width="110" align="center" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ formatProfitNameSpecStockQty(scope.row) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="批号" min-width="340" width="360">
-          <template slot-scope="scope">
-            <div class="profit-batch-cell">
-              <el-input
-                v-model="scope.row.batchNumber"
-                type="textarea"
-                :autosize="{ minRows: 2, maxRows: 14 }"
-                :disabled="scope.row._batchLocked"
-                placeholder="请输入批号"
-                class="profit-batch-textarea"
-                @input="onProfitBatchNumberInput(scope.row)"
-              />
-              <div class="profit-batch-checks">
-                <el-checkbox v-model="scope.row._cbBatchNone" @change="() => profitBatchNoneChange(scope.row)">无</el-checkbox>
-                <el-checkbox v-model="scope.row._cbBatchUnknown" @change="() => profitBatchUnknownChange(scope.row)">未知</el-checkbox>
-              </div>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="生产日期" min-width="140">
-          <template slot-scope="scope">
-            <el-date-picker v-model="scope.row.beginTime" type="date" value-format="yyyy-MM-dd" placeholder="可不填" />
-          </template>
-        </el-table-column>
-        <el-table-column label="有效期" min-width="240">
-          <template slot-scope="scope">
-            <div class="profit-expiry-cell">
-              <el-date-picker
-                v-model="scope.row.endTime"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="请选择"
-                :disabled="scope.row._longTerm"
-                style="width: 150px"
-                @change="onProfitExpiryManualChange(scope.row)"
-              />
-              <el-checkbox v-model="scope.row._longTerm" @change="profitLongTermChange(scope.row)">长期</el-checkbox>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="供应商" min-width="220">
-          <template slot-scope="scope">
-            <SelectSupplier
-              :value="scope.row.supplierId"
-              finance-pick-mode
-              placeholder="请选择供应商"
-              style="width: 100%"
-              @input="(v) => $set(scope.row, 'supplierId', v)"
-            />
-            <div v-if="scope.row.material && scope.row.material.supplierId" style="margin-top: 4px; color: #909399; font-size: 12px;">
-              默认：{{ (scope.row.material.supplier && scope.row.material.supplier.name) || ('档案ID ' + scope.row.material.supplierId) }}
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="cancelPendingNewEntries">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmPendingNewEntries">确 定</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog
-      title="保存前确认（明细库存与仓库实物不一致）"
-      :visible.sync="saveQtyConfirmVisible"
-      width="1020px"
-      append-to-body
-      :close-on-click-modal="false"
-      v-loading="saveQtyConfirmLoading"
-    >
-      <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细「账面数量(qty)」与当前仓库库存不一致，请逐条点击「确定」确认；确认后将把明细账面更新为当前仓库数量，并重新计算金额。「盈亏数量」= 盘点数量 − 明细账面（第一列）。普通盘盈/盘亏（仅盘点与账面不同、但与仓库实时库存一致）不会进入本表。
-      </div>
-      <el-table :data="saveQtyConfirmList" border size="small">
-        <el-table-column label="产品编码" width="120" align="center" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span v-if="scope.row.material && scope.row.material.code">{{ scope.row.material.code }}</span>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="产品名称" min-width="150" show-overflow-tooltip>
-          <template slot-scope="scope">{{ (scope.row.material && scope.row.material.name) || '--' }}</template>
-        </el-table-column>
-        <el-table-column label="规格" min-width="100" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="单位" width="72" align="center" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="批次号" prop="batchNo" min-width="140" />
-        <el-table-column label="明细账面数量" prop="detailQty" width="120" align="center" />
-        <el-table-column label="当前仓库库存" prop="currentQty" width="120" align="center" />
-        <el-table-column label="盘点数量" min-width="100" align="center">
-          <template slot-scope="scope">
-            <span>{{ scope.row.adjustedStockQty != null && scope.row.adjustedStockQty !== '' ? scope.row.adjustedStockQty : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="盈亏数量" width="120">
-          <template slot-scope="scope">
-            <span>{{ formatWhSaveConfirmProfitQty(scope.row) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template slot-scope="scope">
-            <el-button type="text" @click="confirmWhSaveQtyRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="saveQtyConfirmVisible = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmWhSaveQtyAndSubmit">确 定</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog
-      title="导入盘盈明细"
-      :visible.sync="profitImport.visible"
-      width="1080px"
-      append-to-body
-      :close-on-click-modal="false"
-      @close="resetProfitImportDialog"
-    >
-      <div style="margin-bottom: 10px; color: #606266; line-height: 1.6;">
-        按模板填写 SPD 仓库/产品/供应商 ID 及盘盈数量等信息，系统将按<strong> SPD仓库ID </strong>自动拆分为多张未审核盘点单。
-        <strong>SPD仓库ID、SPD产品档案ID、SPD供应商ID</strong> 均不能为空，且必须在系统中能匹配到对应档案，任一行校验失败则整单导入失败。
-        批号、第三方批次号若以单引号开头，系统会自动去除（避免 Excel 数字格式问题）。有效期为空时默认设为 2099-01-01。
-      </div>
-      <el-form size="small" :inline="true">
-        <el-form-item>
-          <el-upload
-            ref="profitImportUploadRef"
-            :auto-upload="false"
-            :limit="1"
-            :on-change="handleProfitImportFileChange"
-            :on-exceed="handleProfitImportExceed"
-            accept=".xlsx,.xls"
-            drag
-          >
-            <i class="el-icon-upload"></i>
-            <div class="el-upload__text">将 Excel 拖到此处，或<em>点击上传</em></div>
-          </el-upload>
-        </el-form-item>
-        <el-form-item>
-          <el-link type="primary" :underline="false" @click="downloadProfitImportTemplate">下载模板</el-link>
-        </el-form-item>
-      </el-form>
-      <div v-if="profitImport.warehouseSummary && profitImport.warehouseSummary.length" style="margin-bottom: 10px;">
-        <span style="font-weight: 600;">将生成盘点单：</span>
-        <el-tag
-          v-for="(w, idx) in profitImport.warehouseSummary"
-          :key="w.warehouseId || idx"
-          size="small"
-          style="margin-right: 8px; margin-top: 4px;"
-        >{{ w.warehouseName || w.warehouseId }}（{{ w.rowCount }} 条）</el-tag>
-      </div>
-      <div v-if="profitImport.previewList && profitImport.previewList.length">
-        <div style="margin-bottom: 8px;">
-          预览共 {{ profitImport.previewList.length }} 行，有效 {{ profitImport.validRows }} 行
-        </div>
-        <el-table :data="profitImport.previewList" border size="small" max-height="320" v-loading="profitImport.previewLoading">
-          <el-table-column label="行号" prop="rowIndex" width="60" align="center" />
-          <el-table-column label="仓库" prop="warehouseName" width="100" show-overflow-tooltip />
-          <el-table-column label="产品编码" prop="materialCode" width="110" show-overflow-tooltip />
-          <el-table-column label="产品名称" prop="materialName" min-width="120" show-overflow-tooltip />
-          <el-table-column label="供应商" prop="supplierName" width="100" show-overflow-tooltip />
-          <el-table-column label="单价" width="80" align="right">
-            <template slot-scope="scope">{{ scope.row.data && scope.row.data.unitPrice }}</template>
-          </el-table-column>
-          <el-table-column label="数量" width="70" align="right">
-            <template slot-scope="scope">{{ scope.row.data && scope.row.data.qty }}</template>
-          </el-table-column>
-          <el-table-column label="批号" width="110" show-overflow-tooltip>
-            <template slot-scope="scope">{{ scope.row.data && scope.row.data.batchNumber }}</template>
-          </el-table-column>
-          <el-table-column label="第三方批次号" width="140" show-overflow-tooltip>
-            <template slot-scope="scope">{{ scope.row.data && scope.row.data.thirdPartyBatchNo }}</template>
-          </el-table-column>
-          <el-table-column label="有效期" width="100">
-            <template slot-scope="scope">{{ scope.row.data && scope.row.data.endDateRaw }}</template>
-          </el-table-column>
-          <el-table-column label="第三方库存明细ID" width="140" show-overflow-tooltip>
-            <template slot-scope="scope">{{ scope.row.data && scope.row.data.hisId }}</template>
-          </el-table-column>
-          <el-table-column label="校验" width="160" fixed="right">
-            <template slot-scope="scope">
-              <span v-if="scope.row.error" style="color: #f56c6c;">{{ scope.row.error }}</span>
-              <span v-else style="color: #67c23a;">通过</span>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-      <div slot="footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="profitImport.visible = false">取 消</el-button>
-        <el-button
-          type="primary"
-          class="spd-btn spd-btn--primary"
-          @click="confirmProfitImport"
-          :loading="profitImport.confirmLoading"
-          :disabled="!canConfirmProfitImport"
-        >确认导入</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog
-      title="审核前确认（明细库存与仓库实物不一致）"
-      :visible.sync="whAuditQtyMismatchVisible"
-      width="980px"
-      append-to-body
-      :close-on-click-modal="false"
-    >
-      <div style="margin-bottom: 8px; color: #e6a23c;">
-        以下明细账面库存与当前仓库库存不一致，请逐条确认盘点数量后再审核。来源于仓库库存的明细仅允许盘亏，盘点数量不得大于当前库存。
-      </div>
-      <el-table :data="qtyMismatchAuditList" border size="small">
-        <el-table-column label="耗材" prop="materialName" min-width="150" />
-        <el-table-column label="批次号" prop="batchNo" min-width="150" />
-        <el-table-column label="明细账面数量" prop="detailQty" width="140" />
-        <el-table-column label="当前仓库库存" prop="currentQty" width="140" />
-        <el-table-column label="盘点数量" min-width="140">
-          <template slot-scope="scope">
-            <el-input
-              v-model="scope.row.adjustedStockQty"
-              type="number"
-              :disabled="scope.row.confirmed"
-              placeholder="盘点数量"
-            />
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100">
-          <template slot-scope="scope">
-            <el-button type="text" @click="confirmWhAuditMismatchRow(scope.row)">{{ scope.row.confirmed ? '已确定' : '确定' }}</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="whAuditQtyMismatchVisible = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmWhAuditQtyMismatchAndAudit">确 定</el-button>
-      </div>
-    </el-dialog>
+    <StocktakingInNewEntryDialog v-if="newEntryDialogVisible" />
+    <StocktakingInSaveConfirmDialog v-if="saveQtyConfirmVisible" />
+    <StocktakingInImportDialog v-if="profitImport.visible" />
+    <StocktakingInAuditConfirmDialog v-if="whAuditQtyMismatchVisible" />
 
   </div>
 </template>
@@ -756,10 +198,7 @@
 import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, patchSaveStocktaking, auditStocktaking, checkStocktakingQty, updateStocktakingEntryCounted, appendStocktakingEntries, initWarehouseStocktakingFromInventory, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate } from "@/api/warehouse/stocktaking";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listInventoryPick, listInventoryQtyByIds, listInventoryStocktakingProfitQtySummary } from "@/api/warehouse/inventory";
-import SelectSupplier from "@/components/SelectModel/SelectSupplier";
-import SelectMaterial from "@/components/SelectModel/SelectMaterial";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
-import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import SelectInventory from "@/components/SelectModel/SelectInventory";
 import SelectDepInventory from "@/components/SelectModel/SelectDepInventory";
 import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
@@ -767,7 +206,16 @@ import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingIn
 export default {
   name: "InStocktaking",
   dicts: ['biz_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectDepartment,SelectInventory,SelectDepInventory},
+  components: {
+    SelectWarehouse,
+    SelectInventory,
+    SelectDepInventory,
+    StocktakingInEditDialog: () => import('./components/StocktakingInEditDialog'),
+    StocktakingInNewEntryDialog: () => import('./components/StocktakingInNewEntryDialog'),
+    StocktakingInSaveConfirmDialog: () => import('./components/StocktakingInSaveConfirmDialog'),
+    StocktakingInImportDialog: () => import('./components/StocktakingInImportDialog'),
+    StocktakingInAuditConfirmDialog: () => import('./components/StocktakingInAuditConfirmDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -2595,7 +2043,7 @@ export default {
 
 <style scoped>
 /* 内部弹窗样式 - 占满整个遮罩层 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -2608,7 +2056,7 @@ export default {
   justify-content: stretch;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
@@ -2617,7 +2065,7 @@ export default {
   flex-direction: column;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2628,23 +2076,23 @@ export default {
   min-height: 48px;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
+::v-deep .modal-footer{
   padding: 15px 20px;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
@@ -2652,17 +2100,17 @@ export default {
   flex-shrink: 0;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 10px;
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   overflow-y: auto;
   padding: 10px 16px 8px;
 }
 
-.local-modal-content .form-fields-container.stocktaking-modal-head-form {
+::v-deep .local-modal-content .form-fields-container.stocktaking-modal-head-form{
   background: #fff;
   padding: 6px 12px;
   border-radius: 6px;
@@ -2671,24 +2119,24 @@ export default {
   border: 1px solid #EBEEF5;
 }
 
-.local-modal-content .stocktaking-modal-head-form .stocktaking-head-row {
+::v-deep .local-modal-content .stocktaking-modal-head-form .stocktaking-head-row{
   margin-bottom: 0 !important;
 }
 
-.local-modal-content .stocktaking-modal-head-form .el-form-item {
+::v-deep .local-modal-content .stocktaking-modal-head-form .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .stocktaking-modal-head-form .el-form-item__label {
+::v-deep .local-modal-content .stocktaking-modal-head-form .el-form-item__label{
   line-height: 32px;
   padding-right: 6px;
 }
 
-.local-modal-content .stocktaking-modal-head-form .el-form-item__content {
+::v-deep .local-modal-content .stocktaking-modal-head-form .el-form-item__content{
   line-height: 32px;
 }
 
-.local-modal-content .stocktaking-modal-form .wh-stocktaking-detail-toolbar {
+::v-deep .local-modal-content .stocktaking-modal-form .wh-stocktaking-detail-toolbar{
   margin-bottom: 8px !important;
 }
 
@@ -2717,13 +2165,13 @@ export default {
 }
 
 /* 表格样式优化（弹窗内明细表，主列表由 apply-main-table 非 scoped 样式控制） */
-.local-modal-content .el-table,
+::v-deep .local-modal-content .el-table,
 .profit-pending-dialog .el-table {
   border-radius: 4px;
   overflow: hidden;
 }
 
-.local-modal-content .el-table th,
+::v-deep .local-modal-content .el-table th,
 .profit-pending-dialog .el-table th {
   background-color: #F5F7FA !important;
   color: #606266 !important;
@@ -2732,13 +2180,13 @@ export default {
   border-bottom: 1px solid #EBEEF5 !important;
 }
 
-.local-modal-content .el-table td,
+::v-deep .local-modal-content .el-table td,
 .profit-pending-dialog .el-table td {
   border-right: 1px solid #EBEEF5 !important;
   border-bottom: 1px solid #EBEEF5 !important;
 }
 
-.local-modal-content .el-table .cell,
+::v-deep .local-modal-content .el-table .cell,
 .profit-pending-dialog .el-table .cell {
   padding: 0 8px;
   line-height: 1.5;

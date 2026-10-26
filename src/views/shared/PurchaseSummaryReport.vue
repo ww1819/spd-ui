@@ -90,110 +90,7 @@
         </div>
       </div>
     </div>
-    <el-dialog
-      v-else
-      :visible.sync="visibleInner"
-      width="780px"
-      title="采购汇总报表"
-      custom-class="purchase-summary-report-dialog"
-      append-to-body
-      @open="loadReport"
-      @close="handleClose"
-    >
-      <div class="report-wrap" v-loading="loading">
-        <div class="query-container no-print">
-          <el-form :model="searchForm" :inline="true" size="small" class="query-form">
-            <el-form-item label="开始时间">
-              <el-date-picker
-                v-model="searchForm.beginDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="开始时间"
-                style="width: 200px"
-              />
-            </el-form-item>
-            <el-form-item label="结束时间">
-              <el-date-picker
-                v-model="searchForm.endDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="结束时间"
-                style="width: 200px"
-              />
-            </el-form-item>
-            <el-form-item label="仓库">
-              <SelectWarehouse v-model="searchForm.warehouseIds" :multiple="true" clearable style="width: 240px" />
-            </el-form-item>
-            <el-form-item label="供应商">
-              <el-input
-                v-model="searchForm.supplierKeyword"
-                clearable
-                placeholder="名称/编码/简码"
-                style="width: 220px"
-              />
-            </el-form-item>
-            <el-form-item>
-              <el-checkbox v-model="searchForm.excludeZeroNoBiz">过滤上期=0且无入出库</el-checkbox>
-            </el-form-item>
-          </el-form>
-          <div class="query-actions">
-            <el-button size="small" type="primary" icon="el-icon-search" @click="handleQuery">查询</el-button>
-            <el-button size="small" icon="el-icon-refresh" @click="resetQuery">重置</el-button>
-            <el-button size="small" type="warning" icon="el-icon-download" @click="handleExport">导出</el-button>
-          </div>
-        </div>
-        <div class="purchase-summary-print-surface">
-          <div class="report-print-title">{{ reportTitle }}</div>
-          <div class="report-print-meta">
-            <div class="report-print-meta-line report-print-meta-time">统计时间：{{ statTimeRangeDisplay }}</div>
-          </div>
-          <div class="report-print-gap" aria-hidden="true" />
-          <div class="table-scroll">
-            <el-table :data="rows" border size="small" class="report-table" :height="tableHeight">
-              <el-table-column label="序号" width="7%" align="center">
-                <template slot-scope="scope">
-                  <span v-if="scope.row.supplierName === '合计'">合计</span>
-                  <span v-else>{{ scope.$index + 1 }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column
-                label="配送单位名称"
-                prop="supplierName"
-                width="31%"
-                align="left"
-                header-align="center"
-                class-name="purchase-summary-supplier-col"
-              />
-              <el-table-column label="上月结存" prop="lastMonthBalance" width="10%" align="right">
-                <template slot-scope="scope">{{ formatAmount(scope.row.lastMonthBalance) }}</template>
-              </el-table-column>
-              <el-table-column label="本月入库" prop="monthInAmount" width="10%" align="right">
-                <template slot-scope="scope">{{ formatAmount(scope.row.monthInAmount) }}</template>
-              </el-table-column>
-              <el-table-column label="总计" prop="totalAmount" width="10%" align="right">
-                <template slot-scope="scope">{{ formatAmount(scope.row.totalAmount) }}</template>
-              </el-table-column>
-              <el-table-column label="SPD库存" prop="spdStockAmount" width="10%" align="right">
-                <template slot-scope="scope">{{ formatAmount(scope.row.spdStockAmount) }}</template>
-              </el-table-column>
-              <el-table-column label="本月出库" prop="monthOutAmount" width="10%" align="right">
-                <template slot-scope="scope">{{ formatAmount(scope.row.monthOutAmount) }}</template>
-              </el-table-column>
-              <el-table-column label="备注" prop="remark" width="12%" align="left" header-align="center" class-name="purchase-summary-remark-col" />
-            </el-table>
-          </div>
-          <div class="report-footer report-print-footer">
-            <span>SPD：</span>
-            <span>器械科室：</span>
-            <span>财务签字：</span>
-          </div>
-        </div>
-      </div>
-      <span slot="footer" class="no-print">
-        <el-button type="warning" @click="handleExport">导出</el-button>
-        <el-button type="primary" @click="visibleInner = false">关闭</el-button>
-      </span>
-    </el-dialog>
+    <PurchaseSummaryReportDialog v-if="!inline && visibleInner" />
   </div>
 </template>
 
@@ -206,7 +103,10 @@ import { formatAmount as formatAmountByTenant, getAmountExcelNumFmt } from "@/ut
 
 export default {
   name: "PurchaseSummaryReport",
-  components: { SelectWarehouse },
+  components: {
+    SelectWarehouse,
+    PurchaseSummaryReportDialog: () => import('./components/PurchaseSummaryReportDialog')
+  },
   props: {
     visible: { type: Boolean, default: false },
     queryParams: { type: Object, default: () => ({}) },

@@ -117,166 +117,29 @@
       </el-table-column>
     </el-table>
     <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
-    <el-dialog :title="title" :visible.sync="open" width="560px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="120px">
-        <el-form-item v-if="!form.customerId" label="租户类型" prop="tenantKey">
-          <el-select v-model="form.tenantKey" placeholder="请选择代码内租户类型" filterable style="width: 100%" @change="onTenantKeyChange">
-            <el-option v-for="item in tenantEnumList" :key="item.name" :label="item.displayName + ' (' + item.name + ')'" :value="item.name" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="form.customerId && form.tenantKey" label="租户类型"><el-input :value="form.tenantKey" disabled /></el-form-item>
-        <el-form-item v-if="!form.customerId && form.tenantKey" label="客户编号(自动)"><el-input :value="selectedTenantEnum ? selectedTenantEnum.customerId : ''" disabled /></el-form-item>
-        <el-form-item label="客户名称" prop="customerName"><el-input v-model="form.customerName" placeholder="请输入客户名称" maxlength="100" show-word-limit /></el-form-item>
-        <el-form-item label="客户编码" prop="customerCode"><el-input v-model="form.customerCode" placeholder="请输入" maxlength="64" show-word-limit :disabled="!!selectedTenantEnum" /></el-form-item>
-        <el-form-item label="耗材系统计划停用时间" prop="hcPlannedDisableTime">
-          <el-date-picker v-model="form.hcPlannedDisableTime" type="datetime" value-format="yyyy-MM-dd HH:mm:ss" placeholder="到达后租户无法使用耗材系统（可选）" style="width: 100%" :picker-options="pickerOptions" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark"><el-input v-model="form.remark" type="textarea" placeholder="请输入备注" /></el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
-    <el-dialog :title="statusDialogTitle" :visible.sync="openStatus" width="480px" append-to-body>
-      <el-form ref="statusForm" :model="statusForm" :rules="statusRules" label-width="80px">
-        <el-form-item label="客户名称"><el-input v-model="statusForm.customerName" disabled /></el-form-item>
-        <el-form-item label="原因" prop="statusChangeReason">
-          <el-input v-model="statusForm.statusChangeReason" type="textarea" :placeholder="statusForm.status === '1' ? '请输入停用原因' : '请输入启用原因'" :rows="3" maxlength="200" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitStatusForm">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="openStatus = false">取 消</el-button>
-      </div>
-    </el-dialog>
-    <el-dialog title="启停用记录与时间段" :visible.sync="openLog" width="800px" append-to-body>
-      <div class="log-dialog-header">{{ logForm.customerName }}</div>
-      <el-tabs v-model="activeLogTab">
-        <el-tab-pane label="启停用记录" name="statusLog">
-          <el-table :data="statusLogList" border size="small" max-height="360">
-            <el-table-column label="操作时间" prop="operateTime" width="170"><template slot-scope="scope">{{ parseTime(scope.row.operateTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</template></el-table-column>
-            <el-table-column label="状态" width="90"><template slot-scope="scope"><el-tag :type="scope.row.status === '0' ? 'success' : 'danger'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag></template></el-table-column>
-            <el-table-column label="操作人" prop="operateBy" width="120" />
-            <el-table-column label="原因" prop="reason" min-width="200" show-overflow-tooltip />
-          </el-table>
-        </el-tab-pane>
-        <el-tab-pane label="启停用时间段" name="periodLog">
-          <el-table :data="periodLogList" border size="small" max-height="360">
-            <el-table-column label="类型" width="100"><template slot-scope="scope"><el-tag :type="scope.row.periodType === 'usage' ? 'success' : 'info'" size="small">{{ scope.row.periodType === 'usage' ? '使用' : '停用' }}</el-tag></template></el-table-column>
-            <el-table-column label="开始时间" prop="startTime" width="170"><template slot-scope="scope">{{ parseTime(scope.row.startTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</template></el-table-column>
-            <el-table-column label="结束时间" prop="endTime" width="170"><template slot-scope="scope">{{ scope.row.endTime ? parseTime(scope.row.endTime, '{y}-{m}-{d} {h}:{i}:{s}') : '至今' }}</template></el-table-column>
-          </el-table>
-        </el-tab-pane>
-      </el-tabs>
-      <div slot="footer" class="dialog-footer"><el-button class="spd-btn spd-btn--secondary" @click="openLog = false">关 闭</el-button></div>
-    </el-dialog>
-    <el-dialog title="全库初始化（高危）" :visible.sync="openFullInit" width="520px" append-to-body @close="fullInitTokenInput = ''">
-      <el-alert type="error" :closable="false" show-icon title="将清空所有租户与业务数据，仅保留 admin 与平台菜单/字典等。执行前请务必备份数据库。" style="margin-bottom: 12px" />
-      <p style="color:#606266;font-size:13px;margin-bottom:8px">请在下方输入确认口令（区分大小写）：</p>
-      <el-input v-model="fullInitTokenInput" placeholder="CONFIRM_PURGE_ALL_TENANT_DATA" clearable />
-      <div slot="footer" class="dialog-footer">
-        <el-button type="danger" class="spd-btn spd-btn--danger" :disabled="fullInitTokenInput !== FULL_INIT_TOKEN" @click="submitFullInit">确认执行</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="openFullInit = false">取 消</el-button>
-      </div>
-    </el-dialog>
-    <el-dialog title="耗材客户权限" :visible.sync="openMenu" width="560px" append-to-body>
-      <el-form label-width="80px">
-        <el-form-item label="客户名称"><el-input v-model="menuForm.customerName" disabled /></el-form-item>
-        <el-form-item>
-          <el-checkbox v-model="menuExpand" @change="handleMenuTreeExpand">展开/折叠</el-checkbox>
-          <el-button size="mini" style="margin-left: 8px;" @click="handleMenuSelectAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleMenuSelectAll(false)">全不选</el-button>
-          <el-checkbox v-model="menuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
-        </el-form-item>
-        <el-form-item label-width="0">
-          <menu-auth-dual-tree
-            ref="menuAuthDualTree"
-            v-model="menuSelectedIds"
-            :data="menuOptions"
-            node-key="menuId"
-            :tree-props="{ label: 'menuName', children: 'children' }"
-            :existing-menu-ids="menuExistingIds"
-            :parent-child-linked="menuParentChildLinked"
-            :default-expand-all="menuExpand"
-            max-height="360px"
-          />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitMenuForm">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="openMenu = false">取 消</el-button>
-      </div>
-    </el-dialog>
-    <el-dialog title="金额小数位设置" :visible.sync="openMoneyScale" width="720px" append-to-body @open="loadMoneyScaleAudits">
-      <el-alert type="info" :closable="false" show-icon style="margin-bottom: 12px"
-        title="仅影响显示/打印/导出；审核通过后租户重新登录生效。允许自审。入库精度不变。" />
-      <el-form ref="moneyScaleForm" :model="moneyScaleForm" label-width="120px" size="small">
-        <el-form-item label="客户">{{ moneyScaleForm.customerName }}</el-form-item>
-        <el-form-item label="当前生效">
-          单价 {{ moneyScaleForm.currentPrice }} 位 / 金额 {{ moneyScaleForm.currentAmount }} 位 /
-          {{ moneyScaleForm.currentRoundMode || 'HALF_UP' }}
-        </el-form-item>
-        <el-form-item label="单价小数位" required>
-          <el-input-number v-model="moneyScaleForm.priceDecimalPlaces" :min="0" :max="6" />
-        </el-form-item>
-        <el-form-item label="金额小数位" required>
-          <el-input-number v-model="moneyScaleForm.amountDecimalPlaces" :min="0" :max="6" />
-        </el-form-item>
-        <el-form-item label="舍入规则">
-          <el-select v-model="moneyScaleForm.moneyRoundMode" style="width: 220px">
-            <el-option label="四舍五入 (HALF_UP)" value="HALF_UP" />
-            <el-option label="银行家舍入 (HALF_EVEN)" value="HALF_EVEN" />
-            <el-option label="截断 (DOWN)" value="DOWN" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="申请说明">
-          <el-input v-model="moneyScaleForm.applyRemark" type="textarea" :rows="2" maxlength="200" show-word-limit />
-        </el-form-item>
-      </el-form>
-      <div style="margin-bottom: 8px">
-        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitMoneyScaleForm">提交审核</el-button>
-      </div>
-      <el-table :data="moneyScaleAuditList" size="mini" border max-height="280">
-        <el-table-column label="申请时间" width="150" align="center">
-          <template slot-scope="scope">{{ parseTime(scope.row.applyTime) }}</template>
-        </el-table-column>
-        <el-table-column label="单价位" prop="priceDecimalPlaces" width="70" align="center" />
-        <el-table-column label="金额位" prop="amountDecimalPlaces" width="70" align="center" />
-        <el-table-column label="舍入" prop="moneyRoundMode" width="100" align="center" />
-        <el-table-column label="状态" width="80" align="center">
-          <template slot-scope="scope">
-            <el-tag v-if="scope.row.auditStatus === '0'" type="warning">待审</el-tag>
-            <el-tag v-else-if="scope.row.auditStatus === '1'" type="success">通过</el-tag>
-            <el-tag v-else type="info">驳回</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="申请人" prop="applyBy" width="90" show-overflow-tooltip />
-        <el-table-column label="操作" width="140" align="center">
-          <template slot-scope="scope">
-            <template v-if="scope.row.auditStatus === '0'">
-              <el-button type="text" size="mini" @click="approveMoneyScaleRow(scope.row)">通过</el-button>
-              <el-button type="text" size="mini" @click="rejectMoneyScaleRow(scope.row)">驳回</el-button>
-            </template>
-            <span v-else>{{ scope.row.auditBy || '-' }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="openMoneyScale = false">关 闭</el-button>
-      </div>
-    </el-dialog>
+    <HcCustomerEditDialog v-if="open" />
+    <HcCustomerStatusDialog v-if="openStatus" />
+    <HcCustomerLogDialog v-if="openLog" />
+    <HcCustomerFullInitDialog v-if="openFullInit" />
+    <HcCustomerMenuDialog v-if="openMenu" />
+    <HcCustomerMoneyScaleDialog v-if="openMoneyScale" />
   </div>
 </template>
 
 <script>
 import { addCustomer, delCustomer, getTenantEnumList, listHcCustomers, getHcCustomer, updateHcCustomer, changeHcStatus, getCustomerStatusLogs, getCustomerPeriodLogs, treeselectHcMenu, getHcCustomerMenuIds, saveHcCustomerMenus, resetMaterialFunctions, initFullDatabase, purgeConsumablesData, submitMoneyScale, approveMoneyScale, rejectMoneyScale, listMoneyScaleAudits } from '@/api/material/customer'
 import { toMenuIdNumbers } from '@/utils/menuAuthUtils'
-import MenuAuthDualTree from '@/components/MenuAuthDualTree'
 
 export default {
   name: 'HcCustomer',
-  components: { MenuAuthDualTree },
+  components: {
+    HcCustomerEditDialog: () => import('./components/HcCustomerEditDialog'),
+    HcCustomerStatusDialog: () => import('./components/HcCustomerStatusDialog'),
+    HcCustomerLogDialog: () => import('./components/HcCustomerLogDialog'),
+    HcCustomerFullInitDialog: () => import('./components/HcCustomerFullInitDialog'),
+    HcCustomerMenuDialog: () => import('./components/HcCustomerMenuDialog'),
+    HcCustomerMoneyScaleDialog: () => import('./components/HcCustomerMoneyScaleDialog')
+  },
   dicts: ['sys_normal_disable'],
   data() {
     return {

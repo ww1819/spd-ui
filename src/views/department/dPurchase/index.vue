@@ -229,241 +229,7 @@
     </div>
 
     <!-- 添加或修改科室申购对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact">
-              <div class="form-fields-container">
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="科室" prop="departmentId">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action || isDeptWhLocked" filterable/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="申购状态" prop="purchaseBillStatus">
-                      <el-select
-                        v-model="form.purchaseBillStatus"
-                        placeholder="请选择申购状态"
-                        :disabled="true"
-                        clearable
-                      >
-                        <el-option
-                          v-for="dict in dict.type.purchase_status"
-                          :key="dict.value"
-                          :label="dict.value == '1' || dict.value == 1 ? '未审核' : dict.label"
-                          :value="dict.value"
-                        />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="制单日期" prop="purchaseBillDate">
-                      <el-date-picker clearable
-                                      v-model="form.purchaseBillDate"
-                                      type="date"
-                                      style="width: 100%"
-                                      value-format="yyyy-MM-dd"
-                                      :disabled="true"
-                                      placeholder="请选择制单日期">
-                      </el-date-picker>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="制单人" prop="userId">
-                      <el-input :value="creatorDisplayName" :disabled="true" placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="8" v-if="isAuditedPurchase(form)">
-                  <el-col :span="4">
-                    <el-form-item label="审核人">
-                      <el-input :value="formatAuditPersonName(form)" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="审核时间">
-                      <el-input :value="form.auditDate ? parseTime(form.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') : '--'" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="8">
-                  <el-col :span="4">
-                    <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || isDeptWhLocked" exclude-warehouse-type="设备"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="高值/低值" prop="isGz">
-                      <el-select v-model="form.isGz" placeholder="请选择" clearable :disabled="!action || isDeptWhLocked" style="width: 100%;">
-                        <el-option label="高值" value="1" />
-                        <el-option label="低值" value="2" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="紧急程度" prop="urgencyLevel" class="form-item-urgency">
-                      <el-select
-                        v-if="action"
-                        v-model="form.urgencyLevel"
-                        placeholder="请选择紧急程度"
-                        clearable
-                      >
-                        <el-option
-                          v-for="dict in dict.type.urgency_level"
-                          :key="dict.value"
-                          :label="dict.label"
-                          :value="String(dict.value)"
-                        />
-                      </el-select>
-                      <el-input v-else v-model="urgencyLevelText" disabled />
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="期望到货" prop="expectedDeliveryDate">
-                      <el-date-picker clearable
-                                      v-model="form.expectedDeliveryDate"
-                                      type="date"
-                                      style="width: 100%"
-                                      value-format="yyyy-MM-dd"
-                                      :disabled="!action"
-                                      placeholder="请选择期望到货日期">
-                      </el-date-picker>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="4">
-                    <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <div class="modal-detail-section">
-              <el-row :gutter="10" class="detail-toolbar-row">
-                <el-col :span="1.5">
-                  <span>科室申购明细信息</span>
-                </el-col>
-                <div v-show="action">
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-plus" size="small" @click="addMaterialRow" :disabled="!form.warehouseId || !form.departmentId || !form.isGz">添加耗材</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteDepPurchaseApplyEntry">删除</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button size="small" @click="cancel">取消</el-button>
-                  </el-col>
-                  <el-col :span="1.5">
-                    <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm">保 存</el-button>
-                  </el-col>
-                </div>
-              </el-row>
-
-              <div class="table-wrapper">
-              <el-table :data="depPurchaseApplyEntryList" :row-class-name="rowDepPurchaseApplyEntryIndex" @selection-change="handleDepPurchaseApplyEntrySelectionChange" ref="depPurchaseApplyEntry" :height="detailTableHeight" border :summary-method="getPurchaseSummaries" show-summary>
-                <el-table-column type="selection" width="60" align="center" fixed="left" resizable />
-                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="申购单号" align="center" prop="purchaseBillNo" width="160" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.purchaseBillNo || (form && form.purchaseBillNo) || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || scope.row.code || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="耗材" align="center" prop="materialName" width="200" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.materialName || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="规格" align="center" prop="materialSpec" width="150" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.materialSpec || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="型号" align="center" prop="model" width="150" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.model || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.unit || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="数量" align="center" prop="qty" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <el-input
-                      v-if="action"
-                      v-model="scope.row.qty"
-                      placeholder="数量"
-                      onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                      onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                      @input="qtyChange(scope.row)"
-                    />
-                    <span v-else>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '—' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="单价" align="center" prop="unitPrice" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span v-if="scope.row.unitPrice">¥{{ scope.row.unitPrice | formatPrice }}</span>
-                    <span v-else>--</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="金额" align="center" prop="amt" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span v-if="scope.row.amt">¥{{ scope.row.amt | formatCurrency }}</span>
-                    <span v-else>--</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="品牌" align="center" prop="brand" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.brand }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="供应商" align="center" prop="supplierName" width="150" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.supplierName }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="生产厂家" align="center" width="200" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || scope.row.producer || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <el-input v-if="action" v-model="scope.row.remark" placeholder="备注" />
-                    <span v-else>{{ scope.row.remark || '—' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column v-if="action" label="操作" align="center" width="100" fixed="right">
-                  <template slot-scope="scope">
-                    <el-button
-                      size="small"
-                      type="text"
-                      icon="el-icon-delete"
-                      @click="handleDeleteDetailRow(scope.$index)"
-                      style="padding: 0 5px; margin: 0;"
-                    >删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-              </div>
-              </div>
-            </el-form>
-          </div>
-        </transition>
-      </div>
-    </transition>
+    <DPurchaseEditDialog v-if="open" />
 
     <!-- 耗材选择组件 -->
     <SelectMaterialForPurchase
@@ -484,7 +250,6 @@ import { assertBillHasMaterialEntries, normalizeBillMaterialLineQtyDefaultOne } 
 import { assertMinPackageQtyOnSave } from '@/utils/minPackageQty';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectMaterialForPurchase from '@/components/SelectModel/SelectMaterialForPurchase';
 import { runConfiguredTableExport } from '@/utils/tableExportRunner'
 import { formatIsGzLabel } from '@/utils/purchaseAggEntry';
@@ -494,7 +259,12 @@ export default {
   // 须与菜单 path「dPurchase」→ 路由 name「DPurchase」一致
   name: "DPurchase",
   dicts: ['purchase_status', 'urgency_level'],
-  components: {SelectWarehouse, SelectDepartment, SelectUser, SelectMaterialForPurchase},
+  components: {
+    SelectWarehouse,
+    SelectDepartment,
+    SelectMaterialForPurchase,
+    DPurchaseEditDialog: () => import('./components/DPurchaseEditDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -1352,7 +1122,7 @@ export default {
 <style scoped>
 /* 内部弹窗样式 - 与科室申领 dApply 弹窗一致 */
 /* 与科室申领 dApply：遮罩相对 .app-container 铺满主内容区，不盖住侧栏 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1366,7 +1136,7 @@ export default {
   overflow: hidden;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
@@ -1380,7 +1150,7 @@ export default {
   box-sizing: border-box;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1390,34 +1160,34 @@ export default {
   min-height: 40px;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
+::v-deep .modal-footer{
   padding: 16px 24px;
   text-align: right;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 12px;
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -1430,7 +1200,7 @@ export default {
 }
 
 /* 弹窗内顶部字段区 */
-.local-modal-content .form-fields-container {
+::v-deep .local-modal-content .form-fields-container{
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
@@ -1443,55 +1213,55 @@ export default {
   border: 1px solid #EBEEF5;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
+::v-deep .local-modal-content .form-fields-container .el-row:last-child{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-row {
+::v-deep .local-modal-content .modal-form-compact .el-row{
   margin-bottom: 6px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
+::v-deep .local-modal-content .modal-form-compact .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-input,
-.local-modal-content .modal-form-compact .el-select,
-.local-modal-content .modal-form-compact .el-date-picker {
+::v-deep .local-modal-content .modal-form-compact .el-input,
+::v-deep .local-modal-content .modal-form-compact .el-select,
+::v-deep .local-modal-content .modal-form-compact .el-date-picker{
   width: 140px;
   max-width: 140px;
 }
 
-.local-modal-content .modal-form-compact .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
   font-size: 13px !important;
 }
 
-.local-modal-content .modal-form-compact .el-input__icon {
+::v-deep .local-modal-content .modal-form-compact .el-input__icon{
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-select .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-select .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor.el-input {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor.el-input{
   height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__content {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__content{
   margin-left: 0 !important;
   line-height: 28px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__label {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
   text-align: left;
   padding-right: 6px;
   line-height: 28px;
@@ -1517,7 +1287,7 @@ export default {
   white-space: nowrap;
 }
 
-.local-modal-content .modal-detail-section {
+::v-deep .local-modal-content .modal-detail-section{
   margin-left: -20px;
   margin-right: -20px;
   width: calc(100% + 40px);
@@ -1529,7 +1299,7 @@ export default {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-row{
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 12px;
@@ -1537,7 +1307,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .table-wrapper {
+::v-deep .local-modal-content .table-wrapper{
   flex: 1;
   min-height: 0;
   overflow: auto;
@@ -1545,12 +1315,12 @@ export default {
   padding-bottom: 4px;
 }
 
-.local-modal-content .modal-detail-section .table-wrapper {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper{
   margin-top: 0;
   overflow: hidden;
 }
 
-.local-modal-content .modal-detail-section .el-table {
+::v-deep .local-modal-content .modal-detail-section .el-table{
   width: 100%;
 }
 

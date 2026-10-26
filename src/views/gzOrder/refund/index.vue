@@ -202,264 +202,8 @@
     </div>
     </div>
 
-    <!-- 添加或修改备货退库对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content apply-modal-root-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
-              <div class="form-fields-container list-query-panel apply-modal-query-panel">
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="退库单号" prop="goodsNo" class="form-item-header-billno">
-                      <el-input v-model="form.goodsNo" :disabled="true" :title="form.goodsNo || ''" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="!action || warehouseDeptLocked" includeWarehouseType="高值" placeholder="仓库"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="科室" prop="departmentId" class="apply-modal-label-required">
-                      <SelectDepartment v-model="form.departmentId" :disabled="!action || warehouseDeptLocked" field-placeholder="科室"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="总金额">
-                      <el-input :value="getTotalAmount()" :disabled="true" placeholder="总金额" class="input-total-amount-inline" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="单据状态" prop="goodsStatus">
-                      <el-select v-model="form.goodsStatus" placeholder="单据状态" :disabled="true" clearable>
-                        <el-option v-for="dict in dict.type.biz_status" :key="dict.value" :label="dict.label" :value="dict.value" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="制单时间" prop="goodsDate" class="apply-modal-label-required">
-                      <el-date-picker clearable v-model="form.goodsDate" type="date" :disabled="true" value-format="yyyy-MM-dd" placeholder="制单时间" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="制单人" prop="createBy">
-                      <el-input v-model="form.creatorName" :disabled="true" placeholder="制单人" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col v-if="action" class="apply-modal-field apply-modal-field--udi-scan in-hospital-scan-field">
-                    <el-form-item label="扫院内码" class="detail-scan-form-item">
-                      <el-input
-                        v-model="scanCodeInput"
-                        placeholder="请先选择仓库与科室，扫码后回车"
-                        clearable
-                        size="small"
-                        class="scan-barcode-input"
-                        :disabled="scanCodeDisabled"
-                        @keyup.enter.native="onScanInHospitalCode"
-                      >
-                        <template slot="prepend">
-                          <i class="el-icon-s-operation"></i>
-                        </template>
-                      </el-input>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
-                    <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" :placeholder="(action && !isAuditedForm) ? '备注' : ''" clearable :disabled="!action || isAuditedForm" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
-                <div class="list-toolbar-left">
-                  <span class="apply-modal-detail-title">备货退库明细信息</span>
-                  <template v-if="action">
-                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm" @click="checkMaterialBtn">添加</el-button>
-                    <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="isAuditedForm" v-hasPermi="['gz:refDoc:query']" @click="openRefShipment">引用出库单</el-button>
-                    <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzRefundGoodsEntry">删除</el-button>
-                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
-                    <el-button type="primary" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
-                    <el-button type="primary" icon="el-icon-printer" size="small" class="spd-btn spd-btn--secondary" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
-                  </template>
-                </div>
-              </el-row>
-
-              <div class="modal-detail-section apply-modal-table-panel">
-                <div class="table-wrapper">
-                  <el-table
-                    :data="gzRefundGoodsEntryList"
-                    :row-class-name="applyRefundDetailRowClassName"
-                    class="apply-detail-table"
-                    @selection-change="handleGzRefundGoodsEntrySelectionChange"
-                    ref="gzRefundGoodsEntry"
-                    border
-                    show-summary
-                    :summary-method="getSummariesWithRefresh"
-                    :height="detailTableHeight"
-                  >
-                    <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
-                    <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
-                    <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable sortable>
-                      <template slot-scope="scope">
-                        <span>{{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="产品名称" align="left" header-align="center" prop="materialName" width="150" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
-                      <template slot-scope="scope">
-                        <span class="detail-text-cell-2line" :title="scope.row.materialName || (scope.row.material && scope.row.material.name) || '--'">
-                          {{ scope.row.materialName || (scope.row.material && scope.row.material.name) || '--' }}
-                        </span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="规格" align="left" header-align="center" prop="speci" width="130" min-width="110" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable sortable>
-                      <template slot-scope="scope">
-                        <span class="detail-text-cell-2line" :title="scope.row.speci || (scope.row.material && scope.row.material.speci) || '--'">
-                          {{ scope.row.speci || (scope.row.material && scope.row.material.speci) || '--' }}
-                        </span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="单位" align="center" prop="unit" width="80" min-width="80" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <span v-if="scope.row.unit">{{ typeof scope.row.unit === 'string' ? scope.row.unit : (scope.row.unit.unitName || scope.row.unit.name || '--') }}</span>
-                        <span v-else-if="scope.row.material">{{ (scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
-                        <span v-else>--</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <span>{{ scope.row.model || (scope.row.material && scope.row.material.model) || '--' }}</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable>
-                      <template slot-scope="scope">
-                        <div class="detail-cell-focus-wrap">
-                          <el-input
-                            v-if="action && !isAuditedForm"
-                            clearable
-                            v-model="scope.row.qty"
-                            placeholder="数量"
-                            size="small"
-                            class="detail-input-compact"
-                            onkeyup="value=value.replace(/\D/g,'')"
-                            onafterpaste="value=value.replace(/\D/g,'')"
-                            @input="qtyChange(scope.row)"
-                          />
-                          <span v-else>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--' }}</span>
-                        </div>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="价格" align="center" prop="price" width="100" min-width="90" show-overflow-tooltip resizable sortable>
-                      <template slot-scope="scope">
-                        <div style="text-align: center;">
-                          <span>{{ scope.row.price != null && scope.row.price !== '' ? formatPrice(scope.row.price) : '--' }}</span>
-                        </div>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="金额" align="center" prop="amt" width="100" min-width="90" show-overflow-tooltip resizable sortable>
-                      <template slot-scope="scope">
-                        <div style="text-align: center;">
-                          <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
-                        </div>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="批次号" align="center" prop="batchNo" width="180" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <span>{{ scope.row.batchNo || '--' }}</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="批号" align="center" prop="batchNumber" width="140" min-width="120" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <span>{{ scope.row.batchNumber || '--' }}</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="生产日期" align="center" prop="beginTime" width="128" min-width="128" show-overflow-tooltip resizable sortable>
-                      <template slot-scope="scope">
-                        <span v-if="scope.row.beginTime">{{ parseTime(scope.row.beginTime, '{y}-{m}-{d}') }}</span>
-                        <span v-else>--</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="有效期" align="center" prop="endTime" width="128" min-width="128" show-overflow-tooltip resizable sortable>
-                      <template slot-scope="scope">
-                        <span v-if="scope.row.endTime">{{ parseTime(scope.row.endTime, '{y}-{m}-{d}') }}</span>
-                        <span v-else>--</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="生产厂家" align="left" header-align="center" prop="factoryName" width="160" min-width="140" :show-overflow-tooltip="false" class-name="detail-col-text-wrap" resizable>
-                      <template slot-scope="scope">
-                        <span class="detail-text-cell-2line" :title="scope.row.factoryName || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--'">
-                          {{ scope.row.factoryName || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}
-                        </span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="院内码" align="center" prop="inHospitalCode" width="200" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <span>{{ scope.row.inHospitalCode || '--' }}</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="UDI码" align="center" prop="udiNo" width="180" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <span>{{ scope.row.udiNo || scope.row.masterBarcode || '--' }}</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="180" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <span>{{ scope.row.secondaryBarcode || '--' }}</span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="备注" align="center" prop="remark" width="150" show-overflow-tooltip resizable>
-                      <template slot-scope="scope">
-                        <el-input v-model="scope.row.remark" :disabled="isAuditedForm || !action" placeholder="备注" size="small" class="detail-input-compact" />
-                      </template>
-                    </el-table-column>
-                  </el-table>
-                </div>
-              </div>
-            </el-form>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <el-dialog :visible.sync=" modalObj.show " :title=" modalObj.title " :width=" modalObj.width " @close="handlePrintDialogClose">
-      <!-- 打印方式选择（包含布局选择） -->
-      <template v-if=" modalObj.component === 'print-type' ">
-        <el-radio-group v-model=" modalObj.form.value ">
-          <el-radio :label=" 2 ">浏览器打印</el-radio>
-        </el-radio-group>
-        <div style="margin-top: 20px;">
-          <el-form-item label="页面方向：">
-            <el-radio-group v-model=" modalObj.form.orientation ">
-              <el-radio label="portrait">纵向</el-radio>
-              <el-radio label="landscape">横向</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </div>
-      </template>
-      <!-- 打印预览 -->
-      <template v-else-if=" modalObj.component === 'window-print-preview' ">
-        <gz-order-print v-if=" modalObj.form.row && modalObj.form.row.detailList && modalObj.form.row.detailList.length > 0 " :key="`print-${modalObj.form.row.goodsNo || Date.now()}-${modalObj.form.orientation || 'landscape'}-${modalObj.form.row.detailList.length}`" :row=" modalObj.form.row " :orientation=" modalObj.form.orientation || 'landscape' " :printType="'refundStock'" ref="receiptOrderPrintRef"></gz-order-print>
-        <div v-else-if=" modalObj.form.row " style="padding: 20px; text-align: center; color: #999;">
-          <p>正在加载打印数据...</p>
-        </div>
-      </template>
-      <template slot="footer" class="dialog-footer">
-        <el-button @click=" modalObj.cancel ">取消</el-button>
-        <el-button @click=" modalObj.ok " type="primary">确认</el-button>
-      </template>
-    </el-dialog>
-    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
-    <div v-show="false">
-      <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" :printType="'refundStock'" ref="receiptOrderPrintRefAuto"></gz-order-print>
-    </div>
+    <GzOrderRefundEditDialog v-if="open" />
+    <GzOrderRefundPrintDialog v-if="modalObj.show || printRowData" />
 
     <!-- 3、使用组件 -->
     <SelectMaterialFilter
@@ -473,24 +217,7 @@
       @selectData="selectData"
     ></SelectMaterialFilter>
 
-    <el-dialog title="引用备货出库单（仅带科室仍有库存的明细）" :visible.sync="refShipOpen" width="800px" append-to-body>
-      <el-table :data="refShipList" v-loading="refShipLoading" highlight-current-row
-                @row-click="row => { refPickShipmentId = row.id; refPickShipmentNo = row.shipmentNo }" max-height="360" border size="small">
-        <el-table-column type="index" width="50" label="#" align="center"/>
-        <el-table-column label="出库单号" prop="shipmentNo" min-width="140" show-overflow-tooltip/>
-        <el-table-column label="仓库" min-width="100" show-overflow-tooltip>
-          <template slot-scope="scope">{{ (scope.row.warehouse && scope.row.warehouse.name) || '--' }}</template>
-        </el-table-column>
-        <el-table-column label="科室" min-width="100" show-overflow-tooltip>
-          <template slot-scope="scope">{{ (scope.row.department && scope.row.department.name) || '--' }}</template>
-        </el-table-column>
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="refShipOpen = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmRefShipment">确 定</el-button>
-      </span>
-    </el-dialog>
-
+    <GzOrderRefundRefShipDialog v-if="refShipOpen" />
   </div>
 </template>
 
@@ -499,20 +226,23 @@ import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
 import { listAuditedShipment, listShipmentLinesForTk } from "@/api/gz/refDoc";
 import { listGzDepInventoryPick } from "@/api/gzDepartment/gzDepInventory";
-import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
-import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
 import {STOCK_IN_TEMPLATE} from "@/utils/printData";
 import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
 import { listUserAll } from "@/api/system/user";
-import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 
 export default {
   name: "RefundGoods",
   dicts: ['biz_status','bill_type'],
-  components: {SelectMaterial,SelectWarehouse,SelectDepartment,SelectMaterialFilter,gzOrderPrint},
+  components: {
+    SelectWarehouse,
+    SelectMaterialFilter,
+    GzOrderRefundEditDialog: () => import('./components/GzOrderRefundEditDialog'),
+    GzOrderRefundPrintDialog: () => import('./components/GzOrderRefundPrintDialog'),
+    GzOrderRefundRefShipDialog: () => import('./components/GzOrderRefundRefShipDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -1930,7 +1660,7 @@ export default {
 
 <style scoped>
 /* 内部弹窗：与到货验收 inWarehouse/audit 弹窗一致 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1943,7 +1673,7 @@ export default {
   justify-content: stretch;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
@@ -1956,7 +1686,7 @@ export default {
   box-sizing: border-box;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1967,23 +1697,23 @@ export default {
   min-height: 40px;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: rgba(0, 0, 0, 0.1);
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   overflow: visible;
   padding: 8px 0 8px;
@@ -1996,7 +1726,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .form-fields-container:not(.apply-modal-query-panel) {
+::v-deep .local-modal-content .form-fields-container:not(.apply-modal-query-panel){
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
@@ -2007,9 +1737,9 @@ export default {
 }
 
 /* 弹窗内三块区域：与到货验收一致 */
-.local-modal-content .apply-modal-query-panel,
-.local-modal-content .apply-modal-toolbar.list-toolbar,
-.local-modal-content .apply-modal-table-panel {
+::v-deep .local-modal-content .apply-modal-query-panel,
+::v-deep .local-modal-content .apply-modal-toolbar.list-toolbar,
+::v-deep .local-modal-content .apply-modal-table-panel{
   margin-left: 0;
   margin-right: 0;
   width: 100%;
@@ -2017,7 +1747,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .apply-modal-query-panel {
+::v-deep .local-modal-content .apply-modal-query-panel{
   margin-top: 0;
   margin-bottom: 0;
   flex-shrink: 0;
@@ -2027,15 +1757,15 @@ export default {
   border-right: none;
 }
 
-.local-modal-content .apply-modal-query-panel .el-row {
+::v-deep .local-modal-content .apply-modal-query-panel .el-row{
   margin-bottom: 8px;
 }
 
-.local-modal-content .apply-modal-query-panel .el-row:last-child {
+::v-deep .local-modal-content .apply-modal-query-panel .el-row:last-child{
   margin-bottom: 0;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row{
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -2046,7 +1776,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col{
   width: auto !important;
   flex: 0 0 auto;
   max-width: none;
@@ -2054,8 +1784,8 @@ export default {
   padding-right: 0 !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item{
   margin-bottom: 0;
   white-space: nowrap;
   display: inline-flex;
@@ -2063,8 +1793,8 @@ export default {
   vertical-align: top;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label{
   float: none;
   width: auto !important;
   flex: 0 0 auto;
@@ -2075,57 +1805,57 @@ export default {
   font-size: 13px;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content{
   flex: 0 0 auto;
   margin-left: 0 !important;
   line-height: 32px;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label{
   white-space: nowrap;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor{
   width: 100% !important;
   max-width: 100% !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
-.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
+::v-deep .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label{
   color: #f56c6c !important;
 }
 
-.local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+::v-deep .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before{
   content: none !important;
   display: none !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > *{
   width: 140px !important;
   max-width: 140px !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor{
   width: 150px !important;
   max-width: 150px !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content{
   max-width: 162px;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input{
   width: 162px !important;
   max-width: 162px !important;
 }
 
-.local-modal-content .apply-modal-table-panel {
+::v-deep .local-modal-content .apply-modal-table-panel{
   margin-top: 0;
   flex: 1;
   min-height: 0;
@@ -2138,7 +1868,7 @@ export default {
   overflow: hidden;
 }
 
-.local-modal-content .apply-modal-toolbar {
+::v-deep .local-modal-content .apply-modal-toolbar{
   flex-shrink: 0;
   margin-top: 4px !important;
   margin-bottom: 4px !important;
@@ -2152,7 +1882,7 @@ export default {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
 }
 
-.local-modal-content .apply-modal-detail-title {
+::v-deep .local-modal-content .apply-modal-detail-title{
   font-size: 14px;
   font-weight: 600;
   color: #334155;
@@ -2160,7 +1890,7 @@ export default {
   line-height: 32px;
 }
 
-.local-modal-content .apply-modal-table-panel .table-wrapper {
+::v-deep .local-modal-content .apply-modal-table-panel .table-wrapper{
   margin-top: 0;
   overflow: hidden;
   flex: 1;
@@ -2171,16 +1901,16 @@ export default {
   padding-bottom: 0;
 }
 
-.local-modal-content .apply-modal-table-panel .apply-detail-table {
+::v-deep .local-modal-content .apply-modal-table-panel .apply-detail-table{
   margin-bottom: 0 !important;
   box-shadow: none;
 }
 
-.local-modal-content .apply-modal-row-third .scan-barcode-input .el-input-group__prepend {
+::v-deep .local-modal-content .apply-modal-row-third .scan-barcode-input .el-input-group__prepend{
   padding: 0 8px;
 }
 
-.local-modal-content .modal-detail-section .el-table .detail-text-cell-2line {
+::v-deep .local-modal-content .modal-detail-section .el-table .detail-text-cell-2line{
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -2189,17 +1919,17 @@ export default {
   word-break: break-all;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
+::v-deep .local-modal-content .modal-form-compact .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-input__inner{
   height: 32px !important;
   line-height: 32px !important;
   font-size: 13px !important;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__label {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
   text-align: left;
   padding-right: 6px;
   line-height: 32px;
@@ -2207,17 +1937,17 @@ export default {
   font-size: 13px;
 }
 
-.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
+::v-deep .local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
   padding: 4px 0 !important;
 }
 
-.local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell > .cell {
+::v-deep .local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell > .cell {
   line-height: 28px !important;
   min-height: 28px !important;
   box-sizing: border-box;
 }
 
-.local-modal-content .modal-detail-section .el-table ::v-deep .el-input--small .el-input__inner {
+::v-deep .local-modal-content .modal-detail-section .el-table ::v-deep .el-input--small .el-input__inner {
   height: 28px !important;
   line-height: 28px !important;
   min-height: 28px !important;

@@ -166,143 +166,8 @@
     </el-row>
 
     <!-- 添加耗材对话框 -->
-    <div v-if="open" class="local-modal-mask">
-      <div class="local-modal-content">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
-          <span>添加耗材</span>
-          <el-button type="text" @click="cancel" style="font-size:14px;padding:0;color:#909399;">关闭</el-button>
-        </div>
-        
-        <!-- 查询条件容器 -->
-        <div class="dialog-query-container">
-          <el-form :model="dialogQueryParams" ref="dialogQueryForm" size="small" :inline="true" label-width="80px">
-            <el-row>
-              <el-col :span="6">
-                <el-form-item label="科室" prop="departmentId">
-                  <el-input
-                    :value="getSelectedDepartmentName()"
-                    disabled
-                    style="width: 180px"
-                  />
-                </el-form-item>
-              </el-col>
-              <el-col :span="6">
-                <el-form-item label="产品名称" prop="materialName">
-                  <el-input
-                    v-model="dialogQueryParams.materialName"
-                    placeholder="产品名称"
-                    clearable
-                    style="width: 180px"
-                    @keyup.enter.native="handleDialogQuery"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-row>
-              <el-col :span="6">
-                <el-form-item label="供应商" prop="supplierId">
-                  <SelectSupplier v-model="dialogQueryParams.supplierId" />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-form>
-        </div>
-
-        <!-- 查询按钮 -->
-        <div style="text-align:left;margin:5px 0;">
-          <el-button class="spd-btn spd-btn--secondary" size="small" style="margin-right:10px;" @click="cancel">取消</el-button>
-          <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" style="margin-right:10px;" @click="submitForm">保存</el-button>
-          <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleDialogQuery">搜索</el-button>
-        </div>
-
-        <!-- 明细表格 -->
-        <el-table 
-          ref="dialogTable" 
-          v-loading="dialogLoading" 
-          :data="dialogInventoryList" 
-          :row-class-name="dialogInventoryIndex"
-          @selection-change="handleDialogSelectionChange"
-          height="calc(100vh - 600px)" 
-          border>
-          <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="序号" align="center" prop="index" width="90" show-overflow-tooltip />
-          <el-table-column label="编码" align="center" width="130" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.code ? scope.row.material.code : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="产品名称" align="center" min-width="220" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.name ? scope.row.material.name : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="规格" align="center" width="130" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.speci ? scope.row.material.speci : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="型号" align="center" width="130" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.model ? scope.row.material.model : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单位" align="center" width="90" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="单价" align="center" width="110" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.unitPrice ? formatPrice(scope.row.unitPrice) : '0.00' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="数量" align="center" prop="qty" width="110" show-overflow-tooltip />
-          <el-table-column label="金额" align="center" prop="amt" width="110" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.amt ? formatAmount(scope.row.amt) : '0.00' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="生产厂家" align="center" width="150" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName ? scope.row.material.fdFactory.factoryName : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name ? scope.row.material.supplier.name : '' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="注册证号" align="center" width="150" show-overflow-tooltip>
-            <template slot-scope="scope">
-              <span>{{ scope.row.material && scope.row.material.registerNo ? scope.row.material.registerNo : '' }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
-
-      </div>
-    </div>
-
-    <!-- 预警设置对话框 -->
-    <el-dialog title="预警设置" :visible.sync="warningDialogVisible" width="500px" :close-on-click-modal="false">
-      <el-form :model="warningForm" :rules="warningRules" ref="warningForm" label-width="120px">
-        <el-form-item label="产品编码">
-          <el-input v-model="warningForm.materialCode" disabled />
-        </el-form-item>
-        <el-form-item label="产品名称">
-          <el-input v-model="warningForm.materialName" disabled />
-        </el-form-item>
-        <el-form-item label="数量少于预警" prop="minQtyWarning">
-          <el-input-number v-model="warningForm.minQtyWarning" :min="0" :step="0.001" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="数量多余预警" prop="maxQtyWarning">
-          <el-input-number v-model="warningForm.maxQtyWarning" :min="0" :step="0.001" style="width: 100%" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="warningDialogVisible = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitWarningForm">确 定</el-button>
-      </div>
-    </el-dialog>
+    <InventoryWarningAddDialog v-if="open" />
+    <InventoryWarningSettingDialog v-if="warningDialogVisible" />
   </div>
 </template>
 
@@ -311,7 +176,6 @@ import { listInventoryWarning, getInventoryWarning, delInventoryWarning, addInve
 import { listInventory } from "@/api/department/depInventory";
 import SelectSupplier from '@/components/SelectModel/SelectSupplierDept';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
-import SelectMaterial from '@/components/SelectModel/SelectMaterialDept';
 import { listdepartAll } from "@/api/foundation/depart";
 
 export default {
@@ -319,7 +183,8 @@ export default {
   components: {
     SelectSupplier,
     SelectDepartment,
-    SelectMaterial
+    InventoryWarningAddDialog: () => import('./components/InventoryWarningAddDialog'),
+    InventoryWarningSettingDialog: () => import('./components/InventoryWarningSettingDialog')
   },
   data() {
     return {
@@ -691,7 +556,7 @@ export default {
 </script>
 
 <style scoped>
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -708,7 +573,7 @@ export default {
   padding: 0;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   border-radius: 6px;
   width: 100% !important;
@@ -866,8 +731,8 @@ export default {
 }
 
 /* 对话框表格列间距优化 */
-.local-modal-content .el-table td,
-.local-modal-content .el-table th {
+::v-deep .local-modal-content .el-table td,
+::v-deep .local-modal-content .el-table th{
   padding: 12px 10px !important;
 }
 
@@ -896,21 +761,21 @@ export default {
 }
 
 /* 对话框表格滚动条也增粗 */
-.local-modal-content .el-table__body-wrapper::-webkit-scrollbar {
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar{
   height: 14px;
 }
 
-.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track {
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-track{
   background: #f1f1f1;
   border-radius: 6px;
 }
 
-.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb {
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb{
   background: #c1c1c1;
   border-radius: 6px;
 }
 
-.local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+::v-deep .local-modal-content .el-table__body-wrapper::-webkit-scrollbar-thumb:hover{
   background: #a8a8a8;
 }
 
@@ -923,7 +788,7 @@ export default {
 }
 
 /* 固定底部按钮样式 */
-.modal-footer-fixed {
+::v-deep .modal-footer-fixed{
   position: sticky;
   bottom: 0;
   left: 0;
@@ -937,7 +802,7 @@ export default {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.modal-footer-fixed .el-button {
+::v-deep .modal-footer-fixed .el-button{
   margin: 0 8px;
 }
 </style>

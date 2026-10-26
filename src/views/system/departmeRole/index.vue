@@ -134,98 +134,10 @@
     />
 
     <!-- 添加或修改角色配置对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="角色名称" prop="roleName">
-          <el-input v-model="form.roleName" placeholder="角色名称" />
-        </el-form-item>
-        <el-form-item prop="roleKey">
-          <span slot="label">
-            <el-tooltip content="控制器中定义的权限字符，如：@PreAuthorize(`@ss.hasRole('admin')`)" placement="top">
-              <i class="el-icon-question"></i>
-            </el-tooltip>
-            权限字符
-          </span>
-          <el-input v-model="form.roleKey" placeholder="权限字符" />
-        </el-form-item>
-        <el-form-item label="角色顺序" prop="roleSort">
-          <el-input-number v-model="form.roleSort" controls-position="right" :min="0" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-radio-group v-model="form.status">
-            <el-radio
-              v-for="dict in dict.type.sys_normal_disable"
-              :key="dict.value"
-              :label="dict.value"
-            >{{dict.label}}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="菜单权限">
-          <el-checkbox v-model="menuExpand" @change="handleCheckedTreeExpand($event, 'menu')">展开/折叠</el-checkbox>
-          <el-checkbox v-model="menuNodeAll" @change="handleCheckedTreeNodeAll($event, 'menu')">全选/全不选</el-checkbox>
-          <el-checkbox v-model="form.menuCheckStrictly" @change="handleCheckedTreeConnect($event, 'menu')">父子联动</el-checkbox>
-          <el-tree
-            class="tree-border"
-            :data="menuOptions"
-            show-checkbox
-            ref="menu"
-            node-key="id"
-            :check-strictly="!form.menuCheckStrictly"
-            empty-text="加载中，请稍候"
-            :props="defaultProps"
-          ></el-tree>
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" type="textarea" placeholder="内容"></el-input>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
+    <DepartmeRoleEditDialog v-if="open" />
 
     <!-- 分配角色数据权限对话框 -->
-    <el-dialog :title="title" :visible.sync="openDataScope" width="500px" append-to-body>
-      <el-form :model="form" label-width="80px">
-        <el-form-item label="角色名称">
-          <el-input v-model="form.roleName" :disabled="true" />
-        </el-form-item>
-        <el-form-item label="权限字符">
-          <el-input v-model="form.roleKey" :disabled="true" />
-        </el-form-item>
-        <el-form-item label="权限范围">
-          <el-select v-model="form.dataScope" @change="dataScopeSelectChange">
-            <el-option
-              v-for="item in dataScopeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            ></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="数据权限" v-show="form.dataScope == 2">
-          <el-checkbox v-model="deptExpand" @change="handleCheckedTreeExpand($event, 'dept')">展开/折叠</el-checkbox>
-          <el-checkbox v-model="deptNodeAll" @change="handleCheckedTreeNodeAll($event, 'dept')">全选/全不选</el-checkbox>
-          <el-checkbox v-model="form.deptCheckStrictly" @change="handleCheckedTreeConnect($event, 'dept')">父子联动</el-checkbox>
-          <el-tree
-            class="tree-border"
-            :data="deptOptions"
-            show-checkbox
-            default-expand-all
-            ref="dept"
-            node-key="id"
-            :check-strictly="!form.deptCheckStrictly"
-            empty-text="加载中，请稍候"
-            :props="defaultProps"
-          ></el-tree>
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitDataScope">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="cancelDataScope">取 消</el-button>
-      </div>
-    </el-dialog>
+    <DepartmeRoleDataScopeDialog v-if="openDataScope" />
   </div>
 </template>
 
@@ -234,6 +146,10 @@ import { listRole, getRole, delRole, addRole, updateRole, dataScope, changeRoleS
 import { treeselect as menuTreeselect, roleMenuTreeselect } from "@/api/system/menu";
 
 export default {
+  components: {
+    DepartmeRoleEditDialog: () => import('./components/DepartmeRoleEditDialog'),
+    DepartmeRoleDataScopeDialog: () => import('./components/DepartmeRoleDataScopeDialog')
+  },
   name: "Role",
   dicts: ['sys_normal_disable'],
   data() {

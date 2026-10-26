@@ -267,218 +267,10 @@
       </div>
     </div>
 
-    <el-dialog :title="consumeRecordDialog.title" :visible.sync="consumeRecordDialog.visible" width="92%" append-to-body>
-      <el-table v-loading="consumeRecordDialog.loading" :data="consumeRecordDialog.rows" border size="small" max-height="420" empty-text="暂无消耗记录">
-        <el-table-column label="类型" width="88" align="center">
-          <template slot-scope="scope">
-            <el-tag v-if="scope.row.recordType === 'REVERSE' || scope.row.reverseFlag === 1" type="warning" size="mini">冲销</el-tag>
-            <el-tag v-else type="success" size="mini">消耗</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="消耗单号" prop="consumeBillNo" min-width="178" show-overflow-tooltip />
-        <el-table-column label="冲销原单" prop="reverseOfBillNo" min-width="160" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.reverseOfBillNo || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="产品名称" prop="materialName" min-width="110" show-overflow-tooltip />
-        <el-table-column label="规格" prop="materialSpeci" min-width="90" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.materialSpeci || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="型号" prop="materialModel" min-width="90" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.materialModel || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="单位" prop="unit" width="64" align="center" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.unit || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="单价" prop="unitPrice" width="88" align="right" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ formatMoney(scope.row.unitPrice) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="数量" prop="entryQty" width="80" align="right" />
-        <el-table-column label="生产日期" prop="beginTime" width="108" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ formatDateOnly(scope.row.beginTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="有效期" prop="endTime" width="108" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ formatDateOnly(scope.row.endTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="批号" prop="batchNumber" min-width="120" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ scope.row.batchNumber || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="院内码/条码" prop="inHospitalCode" min-width="120" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="consumeRecordDialog.visible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog :title="fetchTraceDialog.title" :visible.sync="fetchTraceDialog.visible" width="920px" append-to-body>
-      <el-alert
-        type="info"
-        :closable="false"
-        show-icon
-        class="mb8"
-        :title="fetchTraceDialog.hint"
-      />
-      <el-table v-loading="fetchTraceDialog.loading" :data="fetchTraceDialog.rows" border size="small" max-height="420" empty-text="暂无相关抓取记录">
-        <el-table-column label="抓取时间" prop="createTime" width="160" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span>{{ formatDateTime(scope.row.createTime) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="类型" prop="chargeKind" width="72" align="center">
-          <template slot-scope="scope">
-            <span>{{ scope.row.chargeKind === 'OUTPATIENT' ? '门诊' : '住院' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="查询条件" prop="queryCondition" min-width="280" show-overflow-tooltip />
-        <el-table-column label="新增" prop="insertedCount" width="70" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.insertedCount != null ? scope.row.insertedCount : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="跳过" prop="skippedCount" width="70" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.skippedCount != null ? scope.row.skippedCount : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="需核对" prop="driftCount" width="80" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.driftCount != null ? scope.row.driftCount : '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="本条结果" width="110" align="center">
-          <template slot-scope="scope">
-            <el-tag v-if="scope.row.downloadSuccess" type="success" size="mini">本条下载成功</el-tag>
-            <span v-else>--</span>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="fetchTraceDialog.visible = false">关 闭</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog title="高值计费扫码消耗" :visible.sync="highDialogVisible" width="960px" append-to-body @closed="resetHighDialog">
-      <div v-if="highMirrorRow" class="mb8">
-        <span>患者 {{ highMirrorRow.patientName }}</span>
-        <span> · {{ highVisitKindLabel(highMirrorRow) }}</span>
-        <span> · 费用明细主键 {{ highHisChargeId(highMirrorRow) || '--' }}</span>
-        <span> · 计费数量 {{ highMirrorRow.quantity }}</span>
-        <span v-if="highBillRemaining != null"> · 待核销数量 {{ highBillRemaining }}</span>
-        <span v-else> · 待核销数量 {{ highMirrorRow.quantity }}</span>
-      </div>
-      <el-form v-if="highMirrorRow" :model="highConsumeForm" label-width="88px" size="small" class="hc-high-dept-form mb8">
-        <el-row :gutter="12">
-          <el-col :span="8">
-            <el-form-item label="开单科室">
-              <span class="hc-high-dept-text">{{ mirrorOrderingDeptName(highMirrorRow) }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="执行科室">
-              <span class="hc-high-dept-text">{{ mirrorExecDeptName(highMirrorRow) }}</span>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="核销科室" required>
-              <el-select
-                v-model="highConsumeForm.consumeDepartmentId"
-                placeholder="名称/编码/简拼"
-                filterable
-                :filter-method="filterConsumeDeptMethod"
-                style="width:100%"
-                @change="onHighConsumeDepartmentChange"
-              >
-                <el-option v-for="d in consumeDeptOptions" :key="d.id" :label="d.name" :value="d.id" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <el-alert type="warning" :closable="false" show-icon class="mb8" title="须一次性核销全部待核销数量（可扫多条院内码，保存时合计须与待核销数量一致）；不支持部分核销；冲销后可再次核销。" />
-      <el-input
-        ref="highScanInput"
-        v-model="highScanCode"
-        class="high-scan-input-ime-off"
-        placeholder="扫描院内码（扫码枪自动识别）；手工输入后按回车"
-        autocomplete="off"
-        spellcheck="false"
-        clearable
-        :disabled="!highConsumeForm.consumeDepartmentId"
-        @compositionstart="highScanComposing = true"
-        @compositionend="onHighScanCompositionEnd"
-        @input="onHighScanInput"
-        @keydown.native="onHighScanKeydown"
-      />
-      <el-table :data="highLines" border size="small" class="mt8 high-consume-dialog-table" empty-text="请先扫码添加行">
-        <el-table-column label="院内码" prop="inHospitalCode" min-width="220" align="left" class-name="high-col-code-wrap" />
-        <el-table-column label="耗材" prop="materialName" min-width="120" show-overflow-tooltip />
-        <el-table-column label="批次号" prop="batchNo" min-width="200" align="left" class-name="high-col-code-wrap" />
-        <el-table-column label="虚拟库存" prop="gzAvailableQty" width="90" align="right" />
-        <el-table-column label="本次消耗" width="100" align="right">
-          <template slot-scope="scope">
-            <span>{{ scope.row.applyQty }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="80" align="center">
-          <template slot-scope="scope">
-            <el-button type="text" size="mini" @click="removeHighLine(scope.$index)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="highDialogVisible = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="highSubmitting" :disabled="highLines.length === 0" @click="submitHighConsume">保存并审核</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog :title="fetchDialogTitle" :visible.sync="fetchDialogVisible" width="520px" append-to-body @close="resetFetchForm">
-      <el-form :model="fetchForm" label-width="100px" size="small">
-        <el-form-item label="开始时间" required>
-          <el-date-picker
-            v-model="fetchForm.beginDate"
-            type="datetime"
-            value-format="yyyy-MM-dd HH:mm:ss"
-            placeholder="yyyy-MM-dd HH:mm:ss"
-            style="width:100%"
-            default-time="00:00:00"
-          />
-        </el-form-item>
-        <el-form-item label="结束时间" required>
-          <el-date-picker
-            v-model="fetchForm.endDate"
-            type="datetime"
-            value-format="yyyy-MM-dd HH:mm:ss"
-            placeholder="yyyy-MM-dd HH:mm:ss"
-            style="width:100%"
-            default-time="23:59:59"
-          />
-        </el-form-item>
-        <el-form-item label="抓取范围">
-          <el-checkbox v-model="fetchForm.fetchInpatient" :disabled="!canFetchInpatient">住院</el-checkbox>
-          <el-checkbox v-model="fetchForm.fetchOutpatient" :disabled="!canFetchOutpatient" style="margin-left:16px">门诊</el-checkbox>
-        </el-form-item>
-        <el-alert type="info" :closable="false" show-icon title="按计费时间（含时分秒）从 HIS 视图增量拉取；勾选住院/门诊后确定抓取；多选时先住院后门诊；默认当天 00:00:00～23:59:59；已存在且一致则跳过；跨度受服务端 max-range-days 限制。" />
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="fetchDialogVisible = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="fetchSubmitting" @click="submitFetch">确 定</el-button>
-      </div>
-    </el-dialog>
+    <HighChargeScanRecordDialog v-if="consumeRecordDialog.visible" />
+    <HighChargeScanTraceDialog v-if="fetchTraceDialog.visible" />
+    <HighChargeScanConsumeDialog v-if="highDialogVisible" />
+    <HighChargeScanFetchDialog v-if="fetchDialogVisible" />
   </div>
 </template>
 
@@ -518,6 +310,12 @@ function buildDefaultChargeDateRange() {
 export default {
   // 须与菜单 path「highChargeScan」→ 路由 name「HighChargeScan」一致，keep-alive 才能保留查询条件
   name: 'HighChargeScan',
+  components: {
+    HighChargeScanRecordDialog: () => import('./components/HighChargeScanRecordDialog'),
+    HighChargeScanTraceDialog: () => import('./components/HighChargeScanTraceDialog'),
+    HighChargeScanConsumeDialog: () => import('./components/HighChargeScanConsumeDialog'),
+    HighChargeScanFetchDialog: () => import('./components/HighChargeScanFetchDialog')
+  },
   data() {
     return {
       showSearch: true,

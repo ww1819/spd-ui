@@ -189,157 +189,15 @@
     </el-row>
 
     <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
-    <div v-if="open" class="page-drawer-mask" @click.self="cancel">
-      <div class="page-drawer-panel" @click.stop>
-        <div class="page-drawer-header">
-          <span class="page-drawer-title">{{ title }}</span>
-          <i class="el-icon-close page-drawer-close" @click="cancel" />
-        </div>
-        <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-            <el-form-item label="科室编码" prop="code">
-              <el-input v-model="form.code" placeholder="科室编码" />
-            </el-form-item>
-            <el-form-item label="科室名称" prop="name">
-              <el-input v-model="form.name" placeholder="科室名称" />
-            </el-form-item>
-            <el-form-item label="简码" prop="referredName">
-              <el-input v-model="form.referredName" placeholder="可留空，保存后可用「更新简码」生成" />
-            </el-form-item>
-            <el-form-item label="HIS科室编码" prop="hisId">
-              <el-input
-                v-model="form.hisId"
-                :disabled="!!form.id || !departImportRequiresHisDeptId"
-                :placeholder="hisThirdPartyPlaceholder"
-              />
-            </el-form-item>
-            <el-form-item label="院区" prop="campus">
-              <el-input v-model="form.campus" placeholder="可手工维护，非必填" clearable maxlength="128" />
-            </el-form-item>
-            <el-form-item label="备注" prop="deptRemark">
-              <el-input v-model="form.deptRemark" type="textarea" :rows="2" placeholder="备注" />
-            </el-form-item>
-            <el-form-item label="上级科室" prop="parentId">
-              <treeselect
-                v-model="form.parentId"
-                :options="parentTreeselectOptions"
-                :normalizer="normalizerDept"
-                placeholder="不选表示客户下顶级科室"
-                clearable
-                no-options-text="暂无科室"
-                style="width:100%"
-              />
-            </el-form-item>
-            <el-form-item label="启用" prop="status">
-              <el-select v-model="form.status" placeholder="请选择" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-          </el-form>
-        </div>
-        <div class="page-drawer-footer">
-          <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 科室导入：先全量校验，通过后再确认写入 -->
-    <div v-if="upload.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 520px; min-width: 400px; min-height: auto;">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">{{ upload.title }}</div>
-        <el-alert
-          v-if="departImportRequiresHisDeptId"
-          type="warning"
-          :closable="false"
-          show-icon
-          style="margin-bottom:12px;"
-          title="衡水市第三人民医院：手工新增与 Excel 新增科室时「HIS科室编码」（第三方系统科室编码）必填；已存在科室的修改/导入更新不会改库中该编码。"
-        />
-        <p style="color:#909399;font-size:13px;margin:0 0 12px;line-height:1.5;">
-          <strong>增量导入</strong>：只新增不存在的科室编码，或勾选「更新已存在」后<strong>仅更新科室名称</strong>（简码随名称自动生成，不更新备注与 HIS 科室编码）。不会删除未出现在文件中的科室。先整单校验并确认后写入。
-        </p>
-        <el-upload
-          ref="upload"
-          :limit="1"
-          accept=".xlsx, .xls"
-          :disabled="upload.isUploading"
-          :http-request="noopDepartUpload"
-          :on-change="handleDepartImportFileChange"
-          :on-remove="handleDepartImportFileRemove"
-          :auto-upload="false"
-          drag
-        >
-          <i class="el-icon-upload"></i>
-          <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-          <div class="el-upload__tip text-center" slot="tip">
-            <div class="el-upload__tip" slot="tip">
-              <el-checkbox v-model="upload.updateSupport" disabled /> 更新模式（按系统主键）
-            </div>
-            <span>仅允许 xls、xlsx。</span>
-            <el-link type="primary" :underline="false" style="font-size:12px;vertical-align: baseline;" @click="importTemplate">下载模板</el-link>
-          </div>
-        </el-upload>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button type="primary" :loading="upload.isUploading" @click="submitDepartImportFlow">校验并导入</el-button>
-          <el-button @click="closeDepartImport">取 消</el-button>
-        </div>
-      </div>
-    </div>
-
-    <el-dialog
-      :title="importPreview.title"
-      :visible.sync="importPreview.visible"
-      width="90%"
-      top="5vh"
-      append-to-body
-      @close="importPreview.rows = []; importPreview.columns = []"
-    >
-      <div style="margin-bottom:10px;">
-        <el-button type="primary" size="small" icon="el-icon-download" :disabled="!importPreview.rows.length" @click="exportDepartImportPreview">导出解析结果</el-button>
-      </div>
-      <el-table :data="importPreview.rows" border max-height="520" size="small" style="width:100%">
-        <el-table-column
-          v-for="col in importPreview.columns"
-          :key="col"
-          :prop="col"
-          :label="col"
-          min-width="120"
-          show-overflow-tooltip
-        />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="importPreview.visible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
-
-    <div v-if="changeLog.open" class="local-modal-mask">
-      <div class="local-modal-content" style="width: 720px; min-width: 400px; min-height: auto; max-width: 92vw;">
-        <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">科室变更记录 — {{ changeLog.deptName }}</div>
-        <el-table v-loading="changeLog.loading" :data="changeLog.rows" max-height="420" size="small">
-          <el-table-column label="时间" prop="changeTime" width="160" />
-          <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
-          <el-table-column label="字段" prop="fieldLabel" width="100" show-overflow-tooltip />
-          <el-table-column label="原值" prop="oldValue" min-width="120" show-overflow-tooltip />
-          <el-table-column label="新值" prop="newValue" min-width="120" show-overflow-tooltip />
-        </el-table>
-        <div class="dialog-footer" style="text-align:right;margin-top:16px;">
-          <el-button @click="changeLog.open = false">关 闭</el-button>
-        </div>
-      </div>
-    </div>
+    <DepartEditDialog v-if="open" />
+    <DepartUploadDialog v-if="upload.open" />
+    <DepartPreviewDialog v-if="importPreview.visible" />
+    <DepartChangeLogDialog v-if="changeLog.open" />
   </div>
 </template>
 
 <script>
 import { mapGetters } from "vuex";
-import Treeselect from "@riophae/vue-treeselect";
-import "@riophae/vue-treeselect/dist/vue-treeselect.css";
 import { listdepart, departTree, getdepart, deldepart, adddepart, updatedepart, updateDepartReferred, validateDepartImportAdd, validateDepartImportUpdate, importDepartAddData, importDepartUpdateData, listDepartmentChangeLog } from "@/api/foundation/depart";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
@@ -348,7 +206,13 @@ import { isMsunIntegratedTenant } from '@/utils/msunHis';
 export default {
   name: "depart",
   dicts: ['is_use_status'],
-  components: { Treeselect, MsunHisSyncButton },
+  components: {
+    MsunHisSyncButton,
+    DepartEditDialog: () => import('./components/DepartEditDialog'),
+    DepartUploadDialog: () => import('./components/DepartUploadDialog'),
+    DepartPreviewDialog: () => import('./components/DepartPreviewDialog'),
+    DepartChangeLogDialog: () => import('./components/DepartChangeLogDialog')
+  },
   computed: {
     ...mapGetters(["departImportRequiresHisDeptId", "isZqTcmTenant"]),
     showMsunProbe() {
@@ -1161,7 +1025,7 @@ export default {
   background: #909399 !important;
 }
 
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1178,7 +1042,7 @@ export default {
   padding: 0;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   border-radius: 6px;
   padding: 24px;
@@ -1187,7 +1051,7 @@ export default {
   max-height: 90%;
 }
 
-.page-drawer-mask {
+::v-deep .page-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1199,7 +1063,7 @@ export default {
   justify-content: flex-end;
 }
 
-.page-drawer-panel {
+::v-deep .page-drawer-panel{
   width: 520px;
   max-width: 100%;
   height: 100%;
@@ -1209,7 +1073,7 @@ export default {
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
 }
 
-.page-drawer-header {
+::v-deep .page-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -1218,29 +1082,29 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.page-drawer-title {
+::v-deep .page-drawer-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
-.page-drawer-close {
+::v-deep .page-drawer-close{
   font-size: 16px;
   color: #909399;
   cursor: pointer;
 }
 
-.page-drawer-close:hover {
+::v-deep .page-drawer-close:hover{
   color: #409EFF;
 }
 
-.page-drawer-body {
+::v-deep .page-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
 }
 
-.page-drawer-footer {
+::v-deep .page-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;
@@ -1248,7 +1112,7 @@ export default {
   background: #fff;
 }
 
-.page-drawer-footer .el-button {
+::v-deep .page-drawer-footer .el-button{
   margin: 0 8px;
 }
 </style>

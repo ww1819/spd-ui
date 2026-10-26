@@ -1,0 +1,167 @@
+/**
+ * 拆弹窗后父页 scoped 无法作用到子组件内部。
+ * 这里提供抽屉 / 变更记录 / 底部操作栏的全局兜底，避免遮罩在、面板散架。
+ */
+
+/* ---------- 右侧抽屉（科室 / 厂家 / 单位 / 库房分类 / 用户等） ---------- */
+.page-drawer-mask,
+.warehouse-drawer-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.page-drawer-panel,
+.warehouse-drawer-panel {
+  width: 520px;
+  max-width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.page-drawer-header,
+.warehouse-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.page-drawer-title,
+.warehouse-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.page-drawer-close,
+.warehouse-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+
+.page-drawer-close:hover,
+.warehouse-drawer-close:hover {
+  color: #409EFF;
+}
+
+.page-drawer-body,
+.warehouse-drawer-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px 8px;
+}
+
+.page-drawer-footer,
+.warehouse-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.page-drawer-footer .el-button,
+.warehouse-drawer-footer .el-button {
+  margin: 0 8px;
+}
+
+/* ---------- 变更记录抽屉 ---------- */
+.change-log-drawer-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.change-log-drawer-panel {
+  width: 720px;
+  max-width: 92%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+.change-log-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.change-log-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 12px;
+}
+
+.change-log-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.change-log-drawer-close:hover {
+  color: #409EFF;
+}
+
+.change-log-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 16px;
+  box-sizing: border-box;
+}
+
+.change-log-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+/* ---------- 居中弹窗底部固定操作栏 ---------- */
+.modal-footer-fixed {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 16px 24px;
+  text-align: center;
+  border-top: 1px solid #EBEEF5;
+  margin-top: 20px;
+  z-index: 10;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.modal-footer-fixed .el-button {
+  margin: 0 8px;
+}

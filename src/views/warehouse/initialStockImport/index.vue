@@ -121,108 +121,8 @@
     </div>
 
     <!-- 上传/预览 弹窗 -->
-    <el-dialog title="期初库存导入" :visible.sync="upload.visible" width="900px" append-to-body :close-on-click-modal="false">
-      <el-form size="small" :inline="true">
-        <el-form-item label="所属仓库">
-          <SelectWarehouse v-model="upload.warehouseId" placeholder="请选择仓库（可与Excel中一致）" style="width: 260px" />
-        </el-form-item>
-        <el-form-item>
-          <el-upload
-            ref="uploadRef"
-            :auto-upload="false"
-            :limit="1"
-            :on-change="handleFileChange"
-            :on-exceed="handleExceed"
-            accept=".xlsx,.xls"
-            drag
-          >
-            <i class="el-icon-upload"></i>
-            <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
-          </el-upload>
-        </el-form-item>
-        <el-form-item>
-          <el-link type="primary" :underline="false" @click="downloadTemplate">下载模板</el-link>
-        </el-form-item>
-      </el-form>
-      <div v-if="upload.previewList && upload.previewList.length" style="margin-top: 12px;">
-        <div style="margin-bottom: 8px;">预览（共 {{ upload.previewList.length }} 条），确认无误后点击「确认导入」生成期初单</div>
-        <el-table :data="upload.previewList" border size="small" max-height="280">
-          <el-table-column type="index" label="行号" width="55" align="center" />
-          <el-table-column label="产品编码" prop="data.materialCode" min-width="90" show-overflow-tooltip />
-          <el-table-column label="产品名称" prop="data.materialName" min-width="90" show-overflow-tooltip />
-          <el-table-column label="HIS产品档案id" prop="data.thirdPartyMaterialId" width="120" show-overflow-tooltip />
-          <el-table-column label="规格" prop="data.speci" width="90" show-overflow-tooltip />
-          <el-table-column label="型号" prop="data.model" width="90" show-overflow-tooltip />
-          <el-table-column label="注册证号" prop="data.registerNo" width="100" show-overflow-tooltip />
-          <el-table-column label="医保编码" prop="data.medicalNo" width="90" show-overflow-tooltip />
-          <el-table-column label="医保名称" prop="data.medicalName" width="90" show-overflow-tooltip />
-          <el-table-column label="主条码" prop="data.mainBarcode" width="100" show-overflow-tooltip />
-          <el-table-column label="库房分类" prop="data.warehouseCategory" width="90" show-overflow-tooltip />
-          <el-table-column label="财务分类" prop="data.financeCategory" width="90" show-overflow-tooltip />
-          <el-table-column label="单价" prop="data.unitPrice" width="80" align="right" />
-          <el-table-column label="数量" prop="data.qty" width="70" align="right" />
-          <el-table-column label="批号" prop="data.batchNumber" width="90" show-overflow-tooltip />
-          <el-table-column label="生产日期" prop="data.beginDateRaw" width="100" show-overflow-tooltip />
-          <el-table-column label="效期" prop="data.endDateRaw" width="100" show-overflow-tooltip />
-          <el-table-column label="生产厂家" prop="data.factoryName" width="90" show-overflow-tooltip />
-          <el-table-column label="HIS生产厂家id" prop="data.hisFactoryId" width="110" show-overflow-tooltip />
-          <el-table-column label="供应商" prop="data.supplierName" width="90" show-overflow-tooltip />
-          <el-table-column label="HIS供应商id" prop="data.hisSupplierId" width="110" show-overflow-tooltip />
-          <el-table-column label="第三方库存明细ID(his_id)" prop="data.hisId" width="140" show-overflow-tooltip />
-          <el-table-column label="校验" width="120">
-            <template slot-scope="scope">
-              <span v-if="scope.row.error" style="color: #f56c6c;">{{ scope.row.error }}</span>
-              <span v-else style="color: #67c23a;">通过</span>
-            </template>
-          </el-table-column>
-        </el-table>
-        <div slot="footer" style="margin-top: 12px; text-align: right;">
-          <el-button class="spd-btn spd-btn--secondary" @click="upload.visible = false">取 消</el-button>
-          <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmImport" :loading="upload.confirmLoading" :disabled="!canConfirmImport">确认导入</el-button>
-        </div>
-      </div>
-    </el-dialog>
-
-    <!-- 详情 弹窗 -->
-    <el-dialog title="期初单详情" :visible.sync="detail.visible" width="920px" append-to-body>
-      <el-descriptions :column="2" border size="small">
-        <el-descriptions-item label="期初单号">{{ detail.form.billNo }}</el-descriptions-item>
-        <el-descriptions-item label="所属仓库">{{ detail.form.warehouse && detail.form.warehouse.name ? detail.form.warehouse.name : '--' }}</el-descriptions-item>
-        <el-descriptions-item label="导入操作人">{{ detail.form.importOperator }}</el-descriptions-item>
-        <el-descriptions-item label="导入时间">{{ parseTime(detail.form.importTime, '{y}-{m}-{d} {h}:{i}') }}</el-descriptions-item>
-        <el-descriptions-item label="库存生成时间">{{ detail.form.stockGenTime ? parseTime(detail.form.stockGenTime, '{y}-{m}-{d} {h}:{i}') : '--' }}</el-descriptions-item>
-        <el-descriptions-item label="单据状态">
-          <el-tag v-if="detail.form.billStatus === 0" type="warning">待审核</el-tag>
-          <el-tag v-else-if="detail.form.billStatus === 1" type="success">已审核</el-tag>
-        </el-descriptions-item>
-      </el-descriptions>
-      <div style="margin-top: 12px; font-weight: 600;">明细</div>
-      <el-table :data="detail.form.entryList || []" border size="small" max-height="320" style="margin-top: 6px;">
-        <el-table-column type="index" label="序号" width="55" align="center" />
-        <el-table-column label="产品编码" align="center" prop="material.code" min-width="100" show-overflow-tooltip />
-        <el-table-column label="产品名称" align="center" prop="material.name" min-width="120" show-overflow-tooltip />
-        <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip />
-        <el-table-column label="型号" align="center" prop="model" width="90" show-overflow-tooltip />
-        <el-table-column label="批次号" align="center" prop="batchNo" width="140" show-overflow-tooltip />
-        <el-table-column label="批号" align="center" prop="batchNumber" width="100" show-overflow-tooltip />
-        <el-table-column label="单价" align="right" prop="unitPrice" width="90">
-          <template slot-scope="scope">{{ formatNum(scope.row.unitPrice) }}</template>
-        </el-table-column>
-        <el-table-column label="数量" align="right" prop="qty" width="80">
-          <template slot-scope="scope">{{ formatNum(scope.row.qty) }}</template>
-        </el-table-column>
-        <el-table-column label="金额" align="right" prop="amt" width="90">
-          <template slot-scope="scope">{{ formatNum(scope.row.amt) }}</template>
-        </el-table-column>
-        <el-table-column label="生产日期" align="center" prop="beginTime" width="100" />
-        <el-table-column label="效期" align="center" prop="endTime" width="100" />
-        <el-table-column label="库存明细his_id" align="center" prop="hisId" min-width="120" show-overflow-tooltip />
-      </el-table>
-      <div slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="detail.visible = false">关 闭</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="handleAudit(detail.form)" v-hasPermi="['warehouse:initialStockImport:audit']" v-if="detail.form.billStatus === 0">审 核</el-button>
-      </div>
-    </el-dialog>
+    <InitialStockImportUploadDialog v-if="upload.visible" />
+    <InitialStockImportDetailDialog v-if="detail.visible" />
   </div>
 </template>
 
@@ -232,7 +132,11 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 
 export default {
   name: 'InitialStockImport',
-  components: { SelectWarehouse },
+  components: {
+    SelectWarehouse,
+    InitialStockImportUploadDialog: () => import('./components/InitialStockImportUploadDialog'),
+    InitialStockImportDetailDialog: () => import('./components/InitialStockImportDetailDialog')
+  },
   data() {
     return {
       loading: true,

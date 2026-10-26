@@ -101,161 +101,10 @@
     />
 
     <!-- 添加或修改工作组对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="工作组名称" prop="postName">
-          <el-input v-model="form.postName" placeholder="工作组名称" />
-        </el-form-item>
-        <el-form-item label="工作组编码" prop="postCode">
-          <el-input v-model="form.postCode" placeholder="编码名称" />
-        </el-form-item>
-        <el-form-item label="工作组排序" prop="postSort">
-          <el-input-number v-model="form.postSort" controls-position="right" :min="0" />
-        </el-form-item>
-        <el-form-item label="工作组状态" prop="status">
-          <el-radio-group v-model="form.status">
-            <el-radio
-              v-for="dict in dict.type.sys_normal_disable"
-              :key="dict.value"
-              :label="dict.value"
-            >{{dict.label}}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="form.remark" type="textarea" placeholder="内容" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-        <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
+    <PostEditDialog v-if="open" />
 
     <!-- 授权弹窗 -->
-    <el-dialog :title="authTitle || '授权'" :visible.sync="authOpen" width="700px" append-to-body>
-    <el-alert
-      type="info"
-      :closable="false"
-      show-icon
-      style="margin-bottom: 12px;"
-      title="此处保存的是工作组（岗位）权限。左列已有权限（锁定），右列本次选择；可勾选「父子联动」控制是否级联勾选。用户实际权限以「用户管理」为准。"
-    />
-    <el-tabs type="card">
-      <el-tab-pane label="菜单权限">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthMenuAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthMenuAll(false)">取消</el-button>
-          <el-checkbox v-model="authMenuParentChildLinked" style="margin-left: 12px;">父子联动</el-checkbox>
-        </div>
-        <menu-auth-dual-tree
-          ref="menuAuthDualTree"
-          v-model="authForm.menuIds"
-          :data="menuOptions"
-          node-key="id"
-          :tree-props="defaultProps"
-          :existing-menu-ids="authExistingMenuIds"
-          :parent-child-linked="authMenuParentChildLinked"
-          max-height="300px"
-        />
-      </el-tab-pane>
-      <el-tab-pane label="科室权限">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthDepartmentAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthDepartmentAll(false)">取消</el-button>
-          <el-input
-            v-model="departmentKeyword"
-            size="mini"
-            clearable
-            placeholder="搜索科室"
-            style="width: 180px; margin-left: 10px;"
-          />
-        </div>
-        <div class="auth-checkbox-container">
-          <el-checkbox-group v-model="authForm.departmentIds" class="auth-checkbox-group">
-            <el-checkbox v-for="item in filteredDepartmentOptions"
-                         :key="item.id"
-                         :label="item.id"
-                         class="auth-checkbox-item">{{item.name}}
-            </el-checkbox>
-          </el-checkbox-group>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="仓库权限">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthWarehouseAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthWarehouseAll(false)">取消</el-button>
-        </div>
-        <div style="max-height: 300px; overflow-y: auto;">
-          <el-checkbox-group v-model="authForm.warehouseIds">
-            <el-checkbox v-for="item in userWarehouseOptions"
-                         :key="item.id"
-                         :label="item.id">{{item.name}}
-            </el-checkbox>
-          </el-checkbox-group>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="单位权限">
-        <div style="max-height: 300px; overflow-y: auto;">
-          <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="待办事项">
-        <div style="max-height: 300px; overflow-y: auto;">
-          <div style="color:#909399; padding: 20px; text-align: center;">暂无数据</div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="消息提醒">
-        <div style="margin-bottom: 8px;">
-          <el-button size="mini" @click="handleAuthMessageReminderAll(true)">全选</el-button>
-          <el-button size="mini" @click="handleAuthMessageReminderAll(false)">取消</el-button>
-        </div>
-        <div class="auth-message-reminder-list">
-          <div class="auth-message-reminder-grid">
-            <el-checkbox-group v-model="authForm.messageReminderKeys" class="auth-message-reminder-col">
-              <el-checkbox
-                v-for="item in messageReminderOptions"
-                :key="item.value"
-                :label="item.value"
-                class="auth-message-reminder-cell"
-              >{{ item.label }}</el-checkbox>
-            </el-checkbox-group>
-            <el-checkbox-group v-model="authForm.messageReminderPopupKeys" class="auth-message-reminder-col">
-              <el-checkbox
-                v-for="item in messageReminderOptions"
-                :key="'popup-' + item.value"
-                :label="item.value"
-                class="auth-message-reminder-cell auth-message-reminder-popup"
-                :disabled="!(authForm.messageReminderKeys || []).includes(item.value)"
-              >登录弹窗</el-checkbox>
-            </el-checkbox-group>
-          </div>
-        </div>
-      </el-tab-pane>
-      <el-tab-pane label="首页设置">
-        <div class="user-auth-pane">
-          <p class="auth-home-page-tip">勾选工作组可切换的首页；均未勾选时默认显示「默认」首页。保存后可通过「同步首页设置」下发到组内账号。</p>
-          <div style="margin-bottom: 8px;">
-            <el-button size="mini" @click="handleAuthHomePageAll(true)">全选</el-button>
-            <el-button size="mini" @click="handleAuthHomePageAll(false)">取消</el-button>
-          </div>
-          <div class="auth-checkbox-container">
-            <el-checkbox-group v-model="authForm.homePageKeys" class="auth-checkbox-group">
-              <el-checkbox
-                v-for="item in homePageOptions"
-                :key="item.value"
-                :label="item.value"
-                class="auth-checkbox-item"
-              >{{ item.label }}</el-checkbox>
-            </el-checkbox-group>
-          </div>
-        </div>
-      </el-tab-pane>
-    </el-tabs>
-    <span slot="footer" class="dialog-footer">
-      <el-button type="primary" class="spd-btn spd-btn--primary" @click="submitAuth">保 存</el-button>
-      <el-button class="spd-btn spd-btn--secondary" @click="authOpen = false">取 消</el-button>
-    </span>
-    </el-dialog>
+    <PostAuthDialog v-if="authOpen" />
   </div>
 </template>
 
@@ -265,12 +114,14 @@ import { deptTreeSelect } from "@/api/system/user";
 import { getOptionselect as getWarehouseOptionselect } from "@/api/foundation/warehouse";
 import { listdepartAll } from "@/api/foundation/depart";
 import { getToken } from "@/utils/auth";
-import MenuAuthDualTree from "@/components/MenuAuthDualTree";
 import { mergeMenuAuthIds, filterMenuIdsByAllowed, toMenuIdNumbers } from "@/utils/menuAuthUtils";
 
 export default {
   name: "Post",
-  components: { MenuAuthDualTree },
+  components: {
+    PostEditDialog: () => import('./components/PostEditDialog'),
+    PostAuthDialog: () => import('./components/PostAuthDialog')
+  },
   dicts: ['sys_normal_disable'],
   data() {
     return {

@@ -140,19 +140,7 @@
       @pagination="getList"
     />
     <!-- 预览界面 -->
-    <el-dialog :title="preview.title" :visible.sync="preview.open" width="80%" top="5vh" append-to-body class="scrollbar">
-      <el-tabs v-model="preview.activeName">
-        <el-tab-pane
-          v-for="(value, key) in preview.data"
-          :label="key.substring(key.lastIndexOf('/')+1,key.indexOf('.vm'))"
-          :name="key.substring(key.lastIndexOf('/')+1,key.indexOf('.vm'))"
-          :key="key"
-        >
-          <el-link :underline="false" v-clipboard:copy="value" v-clipboard:success="clipboardSuccess" style="float:right">复制</el-link>
-          <pre><code class="hljs" v-html="highlightedCode(value, key)"></code></pre>
-        </el-tab-pane>
-      </el-tabs>
-    </el-dialog>
+    <GenPreviewDialog v-if="preview.open" />
     <import-table ref="import" @ok="handleQuery" />
   </div>
 </template>
@@ -171,7 +159,10 @@ hljs.registerLanguage("sql", require("highlight.js/lib/languages/sql"));
 
 export default {
   name: "Gen",
-  components: { importTable },
+  components: {
+    importTable,
+    GenPreviewDialog: () => import('./components/GenPreviewDialog')
+  },
   data() {
     return {
       // 遮罩层

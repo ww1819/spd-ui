@@ -170,80 +170,7 @@
     </el-row>
 
     <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
-    <div v-if="open" class="warehouse-drawer-mask" @click.self="cancel">
-      <div class="warehouse-drawer-panel" @click.stop>
-        <div class="warehouse-drawer-header">
-          <span class="warehouse-drawer-title">{{ title }}</span>
-          <i class="el-icon-close warehouse-drawer-close" @click="cancel" />
-        </div>
-        <div class="warehouse-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="110px" :disabled="dialogMode === 'view'">
-            <el-form-item label="仓库编码" prop="code">
-              <el-input v-model="form.code" :disabled="isDisabled || dialogMode === 'view'" placeholder="仓库编码" />
-            </el-form-item>
-            <el-form-item label="仓库名称" prop="name">
-              <el-input v-model="form.name" placeholder="仓库名称" />
-            </el-form-item>
-            <el-form-item label="负责人" prop="warehousePerson">
-              <el-input v-model="form.warehousePerson" placeholder="负责人" />
-            </el-form-item>
-            <el-form-item label="电话" prop="warehousePhone">
-              <el-input v-model="form.warehousePhone" placeholder="电话" />
-            </el-form-item>
-            <el-form-item label="状态" prop="warehouseStatus">
-              <el-select v-model="form.warehouseStatus" placeholder="状态" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="仓库类型" prop="warehouseType">
-              <el-select v-model="form.warehouseType" placeholder="仓库类型" style="width: 100%">
-                <el-option label="高值" value="高值" />
-                <el-option label="低值" value="低值" />
-                <el-option label="试剂" value="试剂" />
-                <el-option label="设备" value="设备" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="结算类型" prop="settlementType">
-              <el-select v-model="form.settlementType" placeholder="结算类型" style="width: 100%">
-                <el-option label="入库结算" value="1" />
-                <el-option label="出库结算" value="2" />
-                <el-option label="消耗结算" value="3" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="结算仓库" prop="isSettlementWarehouse">
-              <el-switch
-                v-model="form.isSettlementWarehouse"
-                :active-value="1"
-                :inactive-value="0"
-                active-text="是"
-                inactive-text="否"
-              />
-            </el-form-item>
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
-            </el-form-item>
-            <el-form-item v-if="isZaoqiangTenant" label="HIS药库科室ID" prop="hisId">
-              <el-input v-model="form.hisId" placeholder="众阳 storageDeptId" />
-            </el-form-item>
-          </el-form>
-        </div>
-        <div class="warehouse-drawer-footer">
-          <el-button
-            v-if="dialogMode !== 'view'"
-            type="primary"
-            size="small"
-            class="spd-btn spd-btn--primary"
-            @click="submitForm"
-          >保 存</el-button>
-          <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">{{ dialogMode === 'view' ? '关 闭' : '取 消' }}</el-button>
-        </div>
-      </div>
-    </div>
+    <WarehouseEditDialog v-if="open" />
   </div>
 </template>
 
@@ -253,6 +180,9 @@ import { listWarehouse, getWarehouse, delWarehouse, addWarehouse, updateWarehous
 export default {
   name: "Warehouse",
   dicts: ['is_use_status'],
+  components: {
+    WarehouseEditDialog: () => import('./components/WarehouseEditDialog')
+  },
   data() {
     return {
       loading: true,
@@ -888,7 +818,7 @@ export default {
 }
 
 /* 抽屉 */
-.warehouse-drawer-mask {
+::v-deep .warehouse-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -900,7 +830,7 @@ export default {
   justify-content: flex-end;
 }
 
-.warehouse-drawer-panel {
+::v-deep .warehouse-drawer-panel{
   width: 520px;
   max-width: 100%;
   height: 100%;
@@ -910,7 +840,7 @@ export default {
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
 }
 
-.warehouse-drawer-header {
+::v-deep .warehouse-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -919,29 +849,29 @@ export default {
   border-bottom: 1px solid #ebeef5;
 }
 
-.warehouse-drawer-title {
+::v-deep .warehouse-drawer-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
-.warehouse-drawer-close {
+::v-deep .warehouse-drawer-close{
   font-size: 16px;
   color: #909399;
   cursor: pointer;
 }
 
-.warehouse-drawer-close:hover {
+::v-deep .warehouse-drawer-close:hover{
   color: #409EFF;
 }
 
-.warehouse-drawer-body {
+::v-deep .warehouse-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
 }
 
-.warehouse-drawer-footer {
+::v-deep .warehouse-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;
@@ -949,7 +879,7 @@ export default {
   background: #fff;
 }
 
-.warehouse-drawer-footer .el-button {
+::v-deep .warehouse-drawer-footer .el-button{
   margin: 0 8px;
 }
 </style>

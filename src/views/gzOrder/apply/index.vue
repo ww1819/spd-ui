@@ -202,382 +202,9 @@
     </div>
     </div>
 
-    <!-- 添加或修改高值入库对话框 -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content apply-modal-root-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
-              <div class="form-fields-container list-query-panel apply-modal-query-panel">
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="验收单号" prop="orderNo" class="form-item-header-billno">
-                      <el-input v-model="form.orderNo" :disabled="true" :title="form.orderNo || ''" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
-                      <SelectWarehouse ref="formWarehouseSelect" v-model="form.warehouseId" :value2="gzOrderEntryList.length > 0" :disabled="warehouseAutoFilled || isAudited" includeWarehouseType="高值" blockDisabledForInbound disabledWarehouseMessage="该仓库已经停用，不能进行备货入库"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="供应商" prop="supplerId" class="apply-modal-label-required">
-                      <SelectSupplier v-model="form.supplerId" :value2="gzOrderEntryList.length > 0" :disabled="isAudited"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="制单人" prop="createBy">
-                      <el-input v-model="form.creatorName" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="制单日期" prop="orderDate" class="apply-modal-label-required">
-                      <el-date-picker
-                        clearable
-                        v-model="form.orderDate"
-                        type="date"
-                        :disabled="true"
-                        value-format="yyyy-MM-dd"
-                        placeholder="请选择制单日期"
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="审核人" prop="auditBy">
-                      <el-input v-model="form.auditorName" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
+    <GzOrderApplyEditDialog v-if="open" />
+    <GzOrderApplyPrintDialog v-if="modalObj.show || printRowData" />
 
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second apply-modal-row-third" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--udi-scan udi-scan-field">
-                    <el-form-item label="UDI码" prop="ztm" class="detail-scan-form-item">
-                      <div class="udi-scan-inline">
-                        <el-input
-                          v-model="form.ztm"
-                          class="udi-scan-inline-input"
-                          :placeholder="form.warehouseId ? '请扫描UDI码' : '请先选择仓库'"
-                          clearable
-                          :disabled="!form.warehouseId || isAudited"
-                          @input="onZtmInput"
-                          @paste.native="onZtmPaste"
-                          @keyup.enter.native="openUdiScanDialog"
-                        />
-                        <el-button
-                          type="primary"
-                          icon="el-icon-full-screen"
-                          size="small"
-                          :disabled="!form.warehouseId || isAudited"
-                          @click="openUdiScanDialog"
-                        >扫描</el-button>
-                      </div>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="辅条码" prop="ftm">
-                      <el-input
-                        v-model="form.ftm"
-                        placeholder="请扫描辅条码"
-                        clearable
-                        :disabled="isAudited"
-                        @keydown.enter.native.prevent="sm2"
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="总金额" prop="totalAmount">
-                      <el-input :value="getTotalAmount()" :disabled="true" class="input-total-amount-inline" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="审核日期" prop="auditDate">
-                      <el-date-picker
-                        clearable
-                        v-model="form.auditDate"
-                        type="datetime"
-                        :disabled="true"
-                        value-format="yyyy-MM-dd HH:mm:ss"
-                        placeholder="请选择审核日期"
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
-                    <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" placeholder="备注" clearable :disabled="isAudited" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
-                <div class="list-toolbar-left">
-                  <span class="apply-modal-detail-title">高值备货明细</span>
-                    <template v-if="action">
-                      <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
-                      <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
-                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
-                      <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
-                      <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
-                      <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
-                      <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>
-                    </template>
-                    <el-button
-                      v-if="!action"
-                      type="primary"
-                      icon="el-icon-printer"
-                      size="small"
-                      class="detail-print-barcode-btn"
-                      @click="handlePrintBarcodeFromDetail"
-                    >打印条码</el-button>
-                </div>
-              </el-row>
-
-              <div class="modal-detail-section apply-modal-table-panel">
-                <div class="table-wrapper">
-                <el-table :data="gzOrderEntryList" :row-class-name="applyGzOrderDetailRowClassName"
-                          class="apply-detail-table"
-                          @selection-change="handleGzOrderEntrySelectionChange"
-                          ref="gzOrderEntry"
-                          border
-                          show-summary
-                          :summary-method="getSummariesWithRefresh"
-                          :height="detailTableHeight">
-                  <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
-                  <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                  <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="耗材名称" align="center" prop="materialName" width="150" resizable sortable :sort-method="sortByDetailMaterialName">
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="(scope.row.materialName || '') || '—'">
-                        <span class="gz-detail-line-clip">{{ scope.row.materialName }}</span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable sortable :sort-method="sortByDetailSpeci">
-                    <template slot-scope="scope">
-                      {{ scope.row.speci || (scope.row.material && scope.row.material.speci) || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.model || (scope.row.material && scope.row.material.model) || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="单位" align="center" prop="unit" width="80" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      <span v-if="scope.row.unit">
-                        {{ typeof scope.row.unit === 'string' ? scope.row.unit : (scope.row.unit.unitName || scope.row.unit.name || '--') }}
-                      </span>
-                      <span v-else-if="scope.row.material">
-                        {{ (scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || (scope.row.material.unit && (typeof scope.row.material.unit === 'string' ? scope.row.material.unit : scope.row.material.unit.name)) || '--' }}
-                      </span>
-                      <span v-else>--</span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="数量" align="center" prop="qty" width="80" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.qty != null ? scope.row.qty : '') || '—'">
-                        <span class="gz-detail-tooltip-anchor">
-                          <el-input
-                            v-model="scope.row.qty"
-                            class="gz-qty-cell-input"
-                            :disabled="isAudited"
-                            placeholder=""
-                            @input="onQtyCellInput(scope.row, $event)"
-                          />
-                        </span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="价格" align="center" prop="price" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'price')">
-                    <template slot-scope="scope">
-                      {{ scope.row.price ? formatPrice(scope.row.price) : '0.00' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="金额" align="center" prop="amt" width="100" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByDetailNumber(a,b,'amt')">
-                    <template slot-scope="scope">
-                      {{ scope.row.amt || '0.00' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="总金额" align="center" prop="totalAmount" width="120" show-overflow-tooltip resizable sortable :sort-method="sortByDetailTotalAmount">
-                    <template slot-scope="scope">
-                      {{ getTotalAmount() }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="批号" align="center" prop="batchNumber" width="220" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.batchNumber || '') || '—'">
-                        <span class="gz-detail-tooltip-anchor">
-                          <el-input
-                            v-model="scope.row.batchNumber"
-                            :disabled="isAudited"
-                            placeholder="批号"
-                            class="gz-detail-cell-input"
-                          />
-                        </span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="生产日期" align="center" prop="beginTime" width="140" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.beginTime || '') || '—'">
-                        <span class="gz-detail-tooltip-anchor">
-                          <el-date-picker clearable
-                                          v-model="scope.row.beginTime"
-                                          class="gz-detail-cell-date"
-                                          :disabled="isAudited"
-                                          type="date"
-                                          value-format="yyyy-MM-dd"
-                                          :picker-options="pickerBeginTimeOptions"
-                                          placeholder="请选择生产日期"
-                                          size="small">
-                          </el-date-picker>
-                        </span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="有效期" align="center" prop="endTime" width="140" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.endTime || '') || '—'">
-                        <span class="gz-detail-tooltip-anchor">
-                          <el-date-picker clearable
-                                          v-model="scope.row.endTime"
-                                          class="gz-detail-cell-date"
-                                          :disabled="isAudited"
-                                          type="date"
-                                          value-format="yyyy-MM-dd"
-                                          :picker-options="pickerEndTimeOptions"
-                                          placeholder="请选择有效期"
-                                          size="small">
-                          </el-date-picker>
-                        </span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="主条码" align="center" prop="masterBarcode" width="240" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.masterBarcode || '') || '—'">
-                        <span class="gz-detail-tooltip-anchor">
-                          <el-input
-                            v-model="scope.row.masterBarcode"
-                            :disabled="isAudited"
-                            placeholder="主条码"
-                            class="gz-detail-cell-input"
-                          />
-                        </span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="辅条码" align="center" prop="secondaryBarcode" width="220" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.secondaryBarcode || '') || '—'">
-                        <span class="gz-detail-tooltip-anchor">
-                          <el-input
-                            v-model="scope.row.secondaryBarcode"
-                            :disabled="isAudited"
-                            placeholder="辅条码"
-                            class="gz-detail-cell-input"
-                          />
-                        </span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="序列号" align="center" prop="serialNo" width="180" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.serialNo || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="批次号" align="center" prop="batchNo" width="260" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.batchNo || scope.row.batchNumber || '') || '—'">
-                        <span class="gz-detail-line-clip">{{ scope.row.batchNo || scope.row.batchNumber || '--' }}</span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="生产厂家" align="center" prop="factoryName" width="150" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.factoryName || (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="注册证号" align="center" prop="certificateNo" width="150" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.certificateNo || (scope.row.material && scope.row.material.certificateNo) || (scope.row.material && scope.row.material.fdCertificate && scope.row.material.fdCertificate.certificateNo) || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="库房分类" align="center" prop="warehouseCategoryName" width="120" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.warehouseCategoryName || (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="财务分类" align="center" prop="financeCategoryName" width="120" show-overflow-tooltip resizable>
-                    <template slot-scope="scope">
-                      {{ scope.row.financeCategoryName || (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="备注" align="center" prop="remark" width="150" resizable>
-                    <template slot-scope="scope">
-                      <el-tooltip effect="dark" placement="top" :enterable="false" :content="String(scope.row.remark || '') || '—'">
-                        <span class="gz-detail-tooltip-anchor">
-                          <el-input
-                            v-model="scope.row.remark"
-                            class="gz-detail-cell-input"
-                            :disabled="isAudited"
-                            placeholder="备注"
-                          />
-                        </span>
-                      </el-tooltip>
-                    </template>
-                  </el-table-column>
-                </el-table>
-                </div>
-              </div>
-            </el-form>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <!-- 打印对话框 -->
-    <el-dialog :visible.sync="modalObj.show" :title="modalObj.title" :width="modalObj.width" @close="handlePrintDialogClose">
-      <!-- 打印方式选择（包含布局选择） -->
-      <template v-if="modalObj.component === 'print-type'">
-        <el-radio-group v-model="modalObj.form.value">
-          <el-radio :label="2">浏览器打印</el-radio>
-        </el-radio-group>
-        <div style="margin-top: 20px;">
-          <el-form-item label="页面方向：">
-            <el-radio-group v-model="modalObj.form.orientation">
-              <el-radio label="portrait">纵向</el-radio>
-              <el-radio label="landscape">横向</el-radio>
-            </el-radio-group>
-          </el-form-item>
-        </div>
-      </template>
-      <!-- 打印预览 -->
-      <template v-else-if="modalObj.component === 'window-print-preview'">
-        <gz-order-print v-if="modalObj.form.row && modalObj.form.row.detailList && modalObj.form.row.detailList.length > 0" :key="`print-${modalObj.form.row.orderNo || Date.now()}-${modalObj.form.orientation || 'landscape'}-${modalObj.form.row.detailList.length}`" :row="modalObj.form.row" :orientation="modalObj.form.orientation || 'landscape'" ref="receiptOrderPrintRef"></gz-order-print>
-        <div v-else-if="modalObj.form.row" style="padding: 20px; text-align: center; color: #999;">
-          <p>正在加载打印数据...</p>
-        </div>
-      </template>
-      <template slot="footer" class="dialog-footer">
-        <el-button @click="handlePrintDialogClose">取消</el-button>
-        <el-button @click="modalObj.ok" type="primary">确认</el-button>
-      </template>
-    </el-dialog>
-    <!-- 隐藏的打印组件（用于直接打印，不显示对话框） -->
-    <div v-show="false">
-      <gz-order-print v-if="printRowData" :row="printRowData" :orientation="printOrientation || 'landscape'" ref="receiptOrderPrintRefAuto"></gz-order-print>
-    </div>
-
-    <!-- 3、使用组件 -->
     <SelectGZMaterialFilter
       v-if="DialogComponentShow"
       :DialogComponentShow="DialogComponentShow"
@@ -587,194 +214,9 @@
       @selectData="selectData"
     ></SelectGZMaterialFilter>
 
-    <!-- 仓库选择弹窗 -->
-    <el-dialog
-      title="请选择仓库"
-      :visible.sync="warehouseSelectDialogVisible"
-      width="500px"
-      :close-on-click-modal="false"
-    >
-      <el-select v-model="selectedWarehouseId" placeholder="请选择仓库" style="width: 100%">
-        <el-option
-          v-for="warehouse in availableWarehouses"
-          :key="warehouse.id"
-          :label="warehouse.name"
-          :value="warehouse.id"
-        />
-      </el-select>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="cancelWarehouseSelect">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="handleWarehouseSelect(selectedWarehouseId)">确 定</el-button>
-      </span>
-    </el-dialog>
-
-    <!-- UDI 扫描核对 -->
-    <el-dialog
-      title="UDI 扫描核对"
-      :visible.sync="udiScanDialog.visible"
-      width="96%"
-      top="4vh"
-      append-to-body
-      :close-on-click-modal="false"
-      custom-class="udi-scan-verify-dialog"
-      @closed="onUdiScanDialogClosed"
-    >
-      <el-form label-width="88px" size="small" v-loading="udiScanDialog.loading">
-        <el-form-item label="扫描结果">
-          <el-input
-            v-model="udiScanDialog.scanResult"
-            type="textarea"
-            :autosize="{ minRows: 2, maxRows: 6 }"
-            placeholder="请扫描或粘贴完整条码"
-            class="udi-scan-mono"
-            @input="onUdiScanResultInput"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button size="mini" type="primary" :loading="udiScanDialog.loading" @click="parseUdiScanDialog">解析</el-button>
-        </el-form-item>
-        <el-form-item label="主条码">
-          <el-input
-            v-model="udiScanDialog.masterBarcode"
-            type="textarea"
-            :autosize="{ minRows: 1, maxRows: 4 }"
-            placeholder="GTIN / 主条码，可手工修正"
-            class="udi-scan-mono"
-          />
-        </el-form-item>
-        <el-form-item label="辅条码">
-          <el-input
-            v-model="udiScanDialog.secondaryBarcode"
-            type="textarea"
-            :autosize="{ minRows: 1, maxRows: 4 }"
-            placeholder="生产日期、批号、序列号等段，可手工修正"
-            class="udi-scan-mono"
-          />
-        </el-form-item>
-        <el-form-item label="耗材信息" class="udi-scan-preview-form-item">
-          <el-table
-            :data="udiScanPreviewTableData"
-            border
-            size="small"
-            empty-text="请点击「解析」自动检索产品；列与单据明细一致，批号/生产日期/有效期可编辑"
-            class="udi-scan-preview-table"
-          >
-            <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
-              <template slot-scope="scope">
-                {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="耗材名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
-              <template slot-scope="scope">{{ scope.row.materialName || '--' }}</template>
-            </el-table-column>
-            <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip>
-              <template slot-scope="scope">
-                {{ scope.row.speci || (scope.row.material && scope.row.material.speci) || '--' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="型号" align="center" prop="model" width="90" show-overflow-tooltip>
-              <template slot-scope="scope">
-                {{ scope.row.model || (scope.row.material && scope.row.material.model) || '--' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="单位" align="center" prop="unit" width="70" show-overflow-tooltip>
-              <template slot-scope="scope">
-                <span v-if="scope.row.unit">
-                  {{ typeof scope.row.unit === 'string' ? scope.row.unit : (scope.row.unit.unitName || scope.row.unit.name || '--') }}
-                </span>
-                <span v-else-if="scope.row.material">
-                  {{ (scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}
-                </span>
-                <span v-else>--</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="数量" align="center" prop="qty" width="70">
-              <template slot-scope="scope">{{ scope.row.qty != null ? scope.row.qty : '1' }}</template>
-            </el-table-column>
-            <el-table-column label="价格" align="center" prop="price" width="88">
-              <template slot-scope="scope">
-                {{ scope.row.price ? formatPrice(scope.row.price) : '0.00' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="金额" align="center" prop="amt" width="88">
-              <template slot-scope="scope">{{ scope.row.amt || '0.00' }}</template>
-            </el-table-column>
-            <el-table-column label="总金额" align="center" width="88">
-              <template slot-scope="scope">{{ scope.row.amt || '0.00' }}</template>
-            </el-table-column>
-            <el-table-column label="批号" align="center" prop="batchNumber" min-width="140">
-              <template slot-scope="scope">
-                <el-input v-model="scope.row.batchNumber" placeholder="批号" size="small" class="gz-detail-cell-input" />
-              </template>
-            </el-table-column>
-            <el-table-column label="生产日期" align="center" prop="beginTime" width="150">
-              <template slot-scope="scope">
-                <el-date-picker
-                  v-model="scope.row.beginTime"
-                  class="gz-detail-cell-date"
-                  type="date"
-                  value-format="yyyy-MM-dd"
-                  :picker-options="pickerBeginTimeOptions"
-                  placeholder="生产日期"
-                  size="small"
-                  clearable
-                />
-              </template>
-            </el-table-column>
-            <el-table-column label="有效期" align="center" prop="endTime" width="150">
-              <template slot-scope="scope">
-                <el-date-picker
-                  v-model="scope.row.endTime"
-                  class="gz-detail-cell-date"
-                  type="date"
-                  value-format="yyyy-MM-dd"
-                  :picker-options="pickerEndTimeOptions"
-                  placeholder="有效期"
-                  size="small"
-                  clearable
-                />
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-form-item>
-        <div v-if="udiScanDialog.lookupHint" class="udi-scan-hint udi-scan-hint-block">{{ udiScanDialog.lookupHint }}</div>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="udiScanDialog.visible = false">取 消</el-button>
-        <el-button type="primary" :loading="udiScanDialog.loading" @click="confirmUdiScanAddToEntry">添加到明细</el-button>
-      </span>
-    </el-dialog>
-
-    <el-dialog
-      title="明细变更记录"
-      :visible.sync="entryChangeLogDialog.visible"
-      width="1000px"
-    >
-      <el-table v-loading="entryChangeLogDialog.loading" :data="entryChangeLogDialog.rows" border size="small" max-height="460">
-        <el-table-column label="变更时间" min-width="160" align="center">
-          <template slot-scope="scope">
-            {{ parseTime(scope.row.changeTime, '{y}-{m}-{d} {h}:{i}:{s}') || '--' }}
-          </template>
-        </el-table-column>
-        <el-table-column prop="actionType" label="动作" width="90" align="center" />
-        <el-table-column prop="entryId" label="明细ID" width="90" align="center" />
-        <el-table-column prop="operator" label="操作人" width="120" align="center" show-overflow-tooltip />
-        <el-table-column prop="beforeJson" label="变更前" min-width="260" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span class="json-cell">{{ scope.row.beforeJson || '--' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="afterJson" label="变更后" min-width="260" show-overflow-tooltip>
-          <template slot-scope="scope">
-            <span class="json-cell">{{ scope.row.afterJson || '--' }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="entryChangeLogDialog.visible = false">关 闭</el-button>
-      </span>
-    </el-dialog>
-
+    <GzOrderApplyWarehouseSelectDialog v-if="warehouseSelectDialogVisible" />
+    <GzOrderApplyUdiScanDialog v-if="udiScanDialog.visible" />
+    <GzOrderApplyChangeLogDialog v-if="entryChangeLogDialog.visible" />
   </div>
 </template>
 
@@ -789,7 +231,6 @@ import SelectMaterial from '@/components/SelectModel/SelectMaterial';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
-import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
 import { assertBillHasEntries } from '@/utils/billEntryValidate'
 import { assertWarehouseStockInboundEnabled } from '@/utils/warehouseInboundGuard'
@@ -803,7 +244,17 @@ export default {
   // 须与后端菜单 path「apply」生成的路由 name「Apply」一致，否则 keep-alive 不缓存，切页后弹窗/表单状态丢失
   name: "Apply",
   dicts: ['biz_status','bill_type'],
-  components: {SelectSupplier,SelectMaterial,SelectWarehouse,SelectGZMaterialFilter,gzOrderPrint},
+  components: {
+    SelectSupplier,
+    SelectMaterial,
+    SelectWarehouse,
+    SelectGZMaterialFilter,
+    GzOrderApplyEditDialog: () => import('./components/GzOrderApplyEditDialog'),
+    GzOrderApplyPrintDialog: () => import('./components/GzOrderApplyPrintDialog'),
+    GzOrderApplyWarehouseSelectDialog: () => import('./components/GzOrderApplyWarehouseSelectDialog'),
+    GzOrderApplyUdiScanDialog: () => import('./components/GzOrderApplyUdiScanDialog'),
+    GzOrderApplyChangeLogDialog: () => import('./components/GzOrderApplyChangeLogDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -3080,7 +2531,7 @@ export default {
 @import '../../caigou/jihua/styles/plan-modal-common.scss';
 
 /* 内部弹窗样式 - 占满整个遮罩层 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -3093,7 +2544,7 @@ export default {
   justify-content: stretch;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
@@ -3106,7 +2557,7 @@ export default {
   box-sizing: border-box;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3117,23 +2568,23 @@ export default {
   min-height: 40px;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: rgba(0, 0, 0, 0.1);
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   min-height: 0;
   overflow: visible;
@@ -3147,7 +2598,7 @@ export default {
 }
 
 /* 弹窗内顶部字段区：与到货验收 inWarehouse/audit 一致（apply-modal-query-panel 由 plan-modal 白卡片样式接管） */
-.local-modal-content .form-fields-container:not(.apply-modal-query-panel) {
+::v-deep .local-modal-content .form-fields-container:not(.apply-modal-query-panel){
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
@@ -3161,12 +2612,12 @@ export default {
   flex-shrink: 0;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
+::v-deep .local-modal-content .form-fields-container .el-row:last-child{
   margin-bottom: 0;
 }
 
 /* 弹窗内明细区 */
-.local-modal-content .modal-detail-section {
+::v-deep .local-modal-content .modal-detail-section{
   margin-left: 0;
   margin-right: 0;
   width: 100%;
@@ -3178,7 +2629,7 @@ export default {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-row{
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 12px;
@@ -3187,7 +2638,7 @@ export default {
   flex-shrink: 0;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-head {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-head{
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -3195,7 +2646,7 @@ export default {
   gap: 8px 12px;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-left {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-left{
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -3204,17 +2655,17 @@ export default {
   min-width: 0;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-title {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-title{
   font-weight: 600;
   color: #303133;
   flex-shrink: 0;
 }
 
-.local-modal-content .modal-detail-section .detail-print-barcode-btn {
+::v-deep .local-modal-content .modal-detail-section .detail-print-barcode-btn{
   flex-shrink: 0;
 }
 
-.local-modal-content .modal-detail-section .table-wrapper {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper{
   margin-top: 0;
   overflow: hidden;
   flex: 1;
@@ -3225,7 +2676,7 @@ export default {
   padding-bottom: 4px;
 }
 
-.local-modal-content .modal-detail-section .el-table {
+::v-deep .local-modal-content .modal-detail-section .el-table{
   width: 100%;
   overflow-x: hidden;
 }
@@ -3342,52 +2793,52 @@ export default {
 
 
 /* 弹窗内表单紧凑布局 */
-.local-modal-content .modal-form-compact .el-row {
+::v-deep .local-modal-content .modal-form-compact .el-row{
   margin-bottom: 6px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
+::v-deep .local-modal-content .modal-form-compact .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-input,
-.local-modal-content .modal-form-compact .el-select,
-.local-modal-content .modal-form-compact .el-date-picker {
+::v-deep .local-modal-content .modal-form-compact .el-input,
+::v-deep .local-modal-content .modal-form-compact .el-select,
+::v-deep .local-modal-content .modal-form-compact .el-date-picker{
   width: 140px;
   max-width: 140px;
 }
 
 /* 表头输入框高度：与到货验收一致，跟随 list-page 全局 32px（勿用 ::v-deep 强压 28，否则会比到货验收更矮） */
-.local-modal-content .modal-form-compact .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-input__inner{
   height: 32px !important;
   line-height: 32px !important;
   font-size: 13px !important;
 }
 
-.local-modal-content .modal-form-compact .el-input__icon {
+::v-deep .local-modal-content .modal-form-compact .el-input__icon{
   line-height: 32px !important;
 }
 
-.local-modal-content .modal-form-compact .el-select .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-select .el-input__inner{
   height: 32px !important;
   line-height: 32px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor.el-input {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor.el-input{
   height: 32px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor .el-input__inner{
   height: 32px !important;
   line-height: 32px !important;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__content {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__content{
   margin-left: 0 !important;
   line-height: 32px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__label {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
   text-align: left;
   padding-right: 6px;
   line-height: 32px;
@@ -3676,7 +3127,7 @@ export default {
 }
 
 /* 表格样式优化（弹窗内表格，勿影响主列表 apply-main-table） */
-.local-modal-content .el-table:not(.apply-main-table):not(.apply-detail-table) {
+::v-deep .local-modal-content .el-table:not(.apply-main-table):not(.apply-detail-table){
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   margin-bottom: 10px;

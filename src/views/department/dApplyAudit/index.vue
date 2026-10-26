@@ -198,201 +198,8 @@
     </div>
 
     <!-- 查看/审核科室申领对话框（布局对齐到货验收 apply-modal） -->
-    <transition name="modal-fade">
-      <div v-if="open" class="local-modal-mask">
-        <transition name="modal-zoom">
-          <div v-if="open" class="local-modal-content apply-modal-root-content">
-            <div class="modal-header">
-              <div class="modal-title">{{ title }}</div>
-              <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
-            </div>
-            <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
-              <div class="form-fields-container list-query-panel apply-modal-query-panel">
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="单号" prop="applyBillNo" class="form-item-header-billno head-label-nowrap">
-                      <el-input v-model="form.applyBillNo" :disabled="true" :title="form.applyBillNo || ''" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="申领状态" prop="billStatus" class="head-label-nowrap">
-                      <el-select :value="detailApplyStatusSelectValue" placeholder="请选择申领状态" :disabled="true">
-                        <el-option label="未审核" value="1" />
-                        <el-option label="已审核" value="2" />
-                        <el-option label="已驳回" value="3" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="科室" prop="departmentId" class="head-label-nowrap apply-modal-header-dept">
-                      <SelectDepartment v-model="form.departmentId" :disabled="true"/>
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="金额" class="head-label-nowrap apply-modal-header-amount">
-                      <el-input :value="headerAmountText" disabled />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="制单日期" prop="applyBillDate" class="head-label-nowrap">
-                      <el-date-picker
-                        clearable
-                        v-model="form.applyBillDate"
-                        type="date"
-                        value-format="yyyy-MM-dd"
-                        :disabled="true"
-                        placeholder="—"
-                      />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="制单人" class="head-label-nowrap">
-                      <el-input :value="creatorDisplayName" disabled placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="备注" prop="remark">
-                      <el-input v-model="form.remark" placeholder="备注" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="审核人" class="head-label-nowrap">
-                      <el-input :value="auditorDisplayName" disabled placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="审核日期" class="head-label-nowrap">
-                      <el-input :value="auditorDateText" disabled placeholder="—" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row v-if="isDetailRejected" :gutter="8" class="apply-modal-form-row apply-modal-row-third apply-modal-row-reject" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--grow">
-                    <el-form-item label="驳回原因" prop="rejectReason" class="form-item-reject-reason">
-                      <el-input
-                        v-model="form.rejectReason"
-                        type="textarea"
-                        :rows="2"
-                        :disabled="true"
-                        placeholder="—"
-                      />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-              </div>
-
-              <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
-                <div class="list-toolbar-left">
-                  <span class="apply-modal-detail-title">科室申领明细信息</span>
-                  <el-button
-                    v-if="isDetailUnAuditAndNotRejected"
-                    type="primary"
-                    icon="el-icon-check"
-                    size="small"
-                    class="spd-btn spd-btn--primary"
-                    @click="handleAuditSubmit"
-                  >审 核</el-button>
-                </div>
-              </el-row>
-
-              <div class="modal-detail-section apply-modal-table-panel">
-              <div class="table-wrapper">
-              <el-table
-                :data="basApplyEntryList"
-                class="apply-detail-table"
-                :row-class-name="applyDetailRowClassName"
-                ref="basApplyEntry"
-                :height="detailTableHeight"
-                border
-                :summary-method="getSummaries"
-                show-summary
-                @selection-change="handleBasApplyEntrySelectionChange"
-              >
-                <el-table-column type="selection" width="60" align="center" resizable class-name="apply-select-col" header-cell-class-name="apply-select-col" />
-                <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                <el-table-column label="仓库" align="center" width="120" min-width="100" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) || '—' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="产品名称" align="center" prop="material.name" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.name')" />
-                <el-table-column label="规格" align="center" prop="material.speci" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.speci')" />
-                <el-table-column label="型号" align="center" prop="material.model" width="140" show-overflow-tooltip resizable/>
-                <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="80" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'material.fdUnit.unitName')" />
-                <el-table-column label="单价" prop="unitPrice" width="90" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNestedNumber(a,b,'unitPrice')">
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="数量" prop="qty" width="90" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.qty || '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="金额" prop="amt" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.amt != null && scope.row.amt !== '' ? formatAmount(scope.row.amt) : '--' }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="剩余可用库存" prop="availableStockQty" width="118" align="right" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ fmtQty(scope.row.availableStockQty) }}</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="140" show-overflow-tooltip resizable/>
-                <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="注册证号" align="center" prop="material.registerNo" width="120" show-overflow-tooltip resizable/>
-                <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-                  </template>
-                </el-table-column>
-                <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable>
-                  <template slot-scope="scope">
-                    <span>{{ scope.row.remark || '--' }}</span>
-                  </template>
-                </el-table-column>
-              </el-table>
-              </div>
-              </div>
-              <!-- 审核操作按钮（底部仅在审核模式下显示取消、驳回；审核按钮已移动到“科室申领明细信息”标题后面） -->
-              <div class="modal-footer apply-modal-audit-footer" v-if="dialogMode === 'audit' && isDetailUnAuditAndNotRejected">
-                <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-                <el-button type="danger" class="spd-btn spd-btn--danger" @click="handleRejectSubmit">驳 回</el-button>
-              </div>
-            </el-form>
-          </div>
-        </transition>
-      </div>
-    </transition>
-
-    <!-- 驳回原因小窗（列表页点击“驳回”时弹出） -->
-    <el-dialog
-      title="驳回原因"
-      :visible.sync="rejectDialogVisible"
-      width="480px"
-      append-to-body
-      :close-on-click-modal="false"
-    >
-      <el-form label-width="80px">
-        <el-form-item label="驳回原因">
-          <el-input
-            v-model="rejectDialogReason"
-            type="textarea"
-            :rows="4"
-            placeholder="请输入驳回原因"
-          />
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="rejectDialogVisible = false">取 消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="confirmRejectDialog">确 定</el-button>
-      </span>
-    </el-dialog>
+    <DApplyAuditEditDialog v-if="open" />
+    <DApplyAuditRejectDialog v-if="rejectDialogVisible" />
 
 
   </div>
@@ -417,7 +224,12 @@ export default {
   // 须与菜单 path「dApplyAudit」→ 路由 name「DApplyAudit」一致，keep-alive 才能保留筛选/弹窗状态
   name: "DApplyAudit",
   dicts: ['biz_status','way_status'],
-  components: {SelectWarehouse,SelectDepartment},
+  components: {
+    SelectWarehouse,
+    SelectDepartment,
+    DApplyAuditEditDialog: () => import('./components/DApplyAuditEditDialog'),
+    DApplyAuditRejectDialog: () => import('./components/DApplyAuditRejectDialog')
+  },
   data() {
     return {
       // 遮罩层
@@ -1180,7 +992,7 @@ export default {
 @import '../../caigou/jihua/styles/plan-modal-common.scss';
 
 /* 内部弹窗样式保留 */
-.local-modal-mask {
+::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -1195,7 +1007,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content {
+::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
@@ -1208,7 +1020,7 @@ export default {
   box-sizing: border-box;
 }
 
-.modal-header {
+::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1219,23 +1031,23 @@ export default {
   min-height: 40px;
 }
 
-.modal-title {
+::v-deep .modal-title{
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   line-height: 1.4;
 }
 
-.close-btn {
+::v-deep .close-btn{
   border: none;
   background: transparent;
 }
 
-.close-btn:hover {
+::v-deep .close-btn:hover{
   background: rgba(0, 0, 0, 0.1);
 }
 
-.modal-footer {
+::v-deep .modal-footer{
   padding: 15px 20px;
   border-top: 1px solid #EBEEF5;
   background: #F5F7FA;
@@ -1243,11 +1055,11 @@ export default {
   flex-shrink: 0;
 }
 
-.modal-footer .el-button {
+::v-deep .modal-footer .el-button{
   margin-left: 10px;
 }
 
-.local-modal-content .el-form {
+::v-deep .local-modal-content .el-form{
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1258,7 +1070,7 @@ export default {
   margin-bottom: 0;
 }
 
-.local-modal-content.apply-modal-root-content .el-form {
+::v-deep .local-modal-content.apply-modal-root-content .el-form{
   padding: 8px 0 8px !important;
   overflow: visible;
   box-sizing: border-box;
@@ -1266,18 +1078,18 @@ export default {
   align-content: flex-start;
 }
 
-.local-modal-content.apply-modal-root-content .modal-header {
+::v-deep .local-modal-content.apply-modal-root-content .modal-header{
   padding: 6px 8px;
 }
 
-.local-modal-content.apply-modal-root-content {
+::v-deep .local-modal-content.apply-modal-root-content{
   padding-bottom: 8px;
 }
 
 /* 弹窗内三块区域：与到货验收 apply-modal 一致 */
-.local-modal-content .apply-modal-query-panel,
-.local-modal-content .apply-modal-toolbar.list-toolbar,
-.local-modal-content .apply-modal-table-panel {
+::v-deep .local-modal-content .apply-modal-query-panel,
+::v-deep .local-modal-content .apply-modal-toolbar.list-toolbar,
+::v-deep .local-modal-content .apply-modal-table-panel{
   margin-left: 0;
   margin-right: 0;
   width: 100%;
@@ -1285,7 +1097,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .apply-modal-query-panel {
+::v-deep .local-modal-content .apply-modal-query-panel{
   margin-top: 0;
   margin-bottom: 0;
   flex-shrink: 0;
@@ -1295,30 +1107,30 @@ export default {
   border-right: none;
 }
 
-.local-modal-content .apply-modal-query-panel .el-row {
+::v-deep .local-modal-content .apply-modal-query-panel .el-row{
   margin-bottom: 8px;
 }
 
-.local-modal-content .apply-modal-query-panel .el-row:last-child {
+::v-deep .local-modal-content .apply-modal-query-panel .el-row:last-child{
   margin-bottom: 0;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
-.local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor{
   width: 100% !important;
   max-width: 100% !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row{
   flex-wrap: nowrap;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row{
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -1329,7 +1141,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col{
   width: auto !important;
   flex: 0 0 auto;
   max-width: none;
@@ -1337,53 +1149,53 @@ export default {
   padding-right: 0 !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item{
   margin-bottom: 0;
   white-space: nowrap;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-date-editor,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > *{
   width: 140px !important;
   max-width: 140px !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--date .el-date-editor{
   width: 150px !important;
   max-width: 150px !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow{
   flex: 1 1 auto !important;
   min-width: 200px;
   max-width: none !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-textarea,
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content > * {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-textarea,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content > *{
   width: 100% !important;
   max-width: none !important;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content{
   max-width: 162px;
 }
 
-.local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input {
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--compact .el-input{
   width: 162px !important;
   max-width: 162px !important;
 }
 
-.local-modal-content .apply-modal-query-panel .form-item-header-billno ::v-deep .el-input__inner {
+::v-deep .local-modal-content .apply-modal-query-panel .form-item-header-billno ::v-deep .el-input__inner {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.local-modal-content .apply-modal-table-panel {
+::v-deep .local-modal-content .apply-modal-table-panel{
   margin-top: 0;
   flex: 1;
   min-height: 0;
@@ -1396,7 +1208,7 @@ export default {
   overflow: hidden;
 }
 
-.local-modal-content .apply-modal-toolbar {
+::v-deep .local-modal-content .apply-modal-toolbar{
   flex-shrink: 0;
   margin-top: 4px !important;
   margin-bottom: 4px !important;
@@ -1405,7 +1217,7 @@ export default {
   border-right: none;
 }
 
-.local-modal-content .apply-modal-detail-title {
+::v-deep .local-modal-content .apply-modal-detail-title{
   font-size: 14px;
   font-weight: 600;
   color: #334155;
@@ -1413,21 +1225,21 @@ export default {
   line-height: 32px;
 }
 
-.local-modal-content .apply-modal-table-panel .table-wrapper {
+::v-deep .local-modal-content .apply-modal-table-panel .table-wrapper{
   margin-top: 0 !important;
   overflow: hidden;
   padding-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row {
+::v-deep .local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row{
   margin-bottom: 8px !important;
 }
 
-.local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row:last-child {
+::v-deep .local-modal-content .modal-form-compact .apply-modal-query-panel > .el-row:last-child{
   margin-bottom: 0 !important;
 }
 
-.modal-form-wrapper {
+::v-deep .modal-form-wrapper{
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1436,7 +1248,7 @@ export default {
 }
 
 /* 弹窗内顶部字段区：非 apply-modal 的旧模板仍用下方卡片；apply-modal-query-panel 走 list-page 白卡片 */
-.local-modal-content .form-fields-container:not(.apply-modal-query-panel) {
+::v-deep .local-modal-content .form-fields-container:not(.apply-modal-query-panel){
   background: #fff;
   padding: 8px 16px 8px;
   border-radius: 8px;
@@ -1450,56 +1262,56 @@ export default {
   flex-shrink: 0;
 }
 
-.local-modal-content .form-fields-container .el-row:last-child {
+::v-deep .local-modal-content .form-fields-container .el-row:last-child{
   margin-bottom: 0;
 }
 
 /* 弹窗内表单紧凑布局（与 inWarehouse/audit 到货验收弹窗一致） */
-.local-modal-content .modal-form-compact .el-row {
+::v-deep .local-modal-content .modal-form-compact .el-row{
   margin-bottom: 6px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item {
+::v-deep .local-modal-content .modal-form-compact .el-form-item{
   margin-bottom: 0;
 }
 
-.local-modal-content .modal-form-compact .el-input,
-.local-modal-content .modal-form-compact .el-select,
-.local-modal-content .modal-form-compact .el-date-picker {
+::v-deep .local-modal-content .modal-form-compact .el-input,
+::v-deep .local-modal-content .modal-form-compact .el-select,
+::v-deep .local-modal-content .modal-form-compact .el-date-picker{
   width: 140px;
   max-width: 140px;
 }
 
-.local-modal-content .modal-form-compact .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
   font-size: 13px !important;
 }
 
-.local-modal-content .modal-form-compact .el-input__icon {
+::v-deep .local-modal-content .modal-form-compact .el-input__icon{
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-select .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-select .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor.el-input {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor.el-input{
   height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-date-editor .el-input__inner {
+::v-deep .local-modal-content .modal-form-compact .el-date-editor .el-input__inner{
   height: 28px !important;
   line-height: 28px !important;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__content {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__content{
   margin-left: 0 !important;
   line-height: 28px;
 }
 
-.local-modal-content .modal-form-compact .el-form-item__label {
+::v-deep .local-modal-content .modal-form-compact .el-form-item__label{
   text-align: left;
   padding-right: 6px;
   line-height: 28px;
@@ -1508,13 +1320,13 @@ export default {
 }
 
 /* 驳回原因：全宽 textarea，与 apply-modal-row-reject 布局一致 */
-.local-modal-content .modal-form-compact .form-item-reject-reason .el-textarea {
+::v-deep .local-modal-content .modal-form-compact .form-item-reject-reason .el-textarea{
   width: 100%;
   max-width: none;
 }
 
 /* 弹窗内明细区：apply-modal-table-panel 由 plan-modal-common 接管边距 */
-.local-modal-content .modal-detail-section:not(.apply-modal-table-panel) {
+::v-deep .local-modal-content .modal-detail-section:not(.apply-modal-table-panel){
   margin-left: -20px;
   margin-right: -20px;
   width: calc(100% + 40px);
@@ -1526,7 +1338,7 @@ export default {
   flex-direction: column;
 }
 
-.local-modal-content .modal-detail-section .detail-toolbar-row {
+::v-deep .local-modal-content .modal-detail-section .detail-toolbar-row{
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 12px;
@@ -1536,13 +1348,13 @@ export default {
 }
 
 /* 明细区：外层不出纵向滚动条，仅表体滚动，表头与合计行固定、左右滚动与表体同步 */
-.local-modal-content .apply-modal-table-panel .table-wrapper {
+::v-deep .local-modal-content .apply-modal-table-panel .table-wrapper{
   margin-top: 0 !important;
   overflow: hidden;
   padding-bottom: 0;
 }
 
-.local-modal-content .modal-detail-section .table-wrapper {
+::v-deep .local-modal-content .modal-detail-section .table-wrapper{
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -1553,11 +1365,11 @@ export default {
   padding-bottom: 4px;
 }
 
-.local-modal-content .modal-detail-section .el-table {
+::v-deep .local-modal-content .modal-detail-section .el-table{
   width: 100%;
 }
 
-.local-modal-content .modal-detail-section .modal-footer {
+::v-deep .local-modal-content .modal-detail-section .modal-footer{
   flex-shrink: 0;
   margin-top: 0;
 }
@@ -1729,11 +1541,11 @@ export default {
 }
 
 /* 明细表行高：与到货验收一致（到货验收由 28px 输入框撑高，只读页用等高校内容） */
-.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
   padding: 4px 0 !important;
 }
 
-.local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
   padding-left: 6px !important;
   padding-right: 6px !important;
   line-height: 28px;
@@ -1741,7 +1553,7 @@ export default {
   box-sizing: border-box;
 }
 
-.local-modal-content .modal-detail-section .apply-detail-table ::v-deep thead th.el-table__cell {
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep thead th.el-table__cell {
   padding: 6px 0 !important;
 }
 

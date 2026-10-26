@@ -151,34 +151,8 @@
 
     <pagination v-show="total > 0" :total="total" :page.sync="query.pageNum" :limit.sync="query.pageSize" @pagination="loadList" />
 
-    <el-dialog title="即入即出审核" :visible.sync="auditDialogVisible" width="520px" append-to-body @close="resetAuditDialog">
-      <p>已选 <strong>{{ selectedCount }}</strong> 条，将按供应商生成入库单(G-RK)与出库单(G-CK)。</p>
-      <el-form label-width="100px" size="small">
-        <el-form-item label="结算仓库" required>
-          <el-select v-model="auditWarehouseId" placeholder="请选择结算仓库" filterable style="width:100%">
-            <el-option v-for="w in warehouseOptions" :key="w.id" :label="w.name" :value="w.id" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <div slot="footer">
-        <el-button class="spd-btn spd-btn--secondary" @click="auditDialogVisible = false">取消</el-button>
-        <el-button type="primary" class="spd-btn spd-btn--primary" :loading="submitting" @click="submitAudit">审核</el-button>
-      </div>
-    </el-dialog>
-
-    <el-dialog title="单据结果" :visible.sync="resultDialogVisible" width="720px" append-to-body>
-      <p>共处理 {{ result.lineCount }} 条明细</p>
-      <el-table :data="result.bills || []" border size="small">
-        <el-table-column label="供应商" prop="supplierName" min-width="120" />
-        <el-table-column label="入库 G-RK" prop="inboundBillNo" min-width="140" />
-        <el-table-column label="出库 G-CK" prop="outboundBillNo" min-width="140" />
-        <el-table-column label="退货 G-TH" prop="returnGoodsBillNo" min-width="140" />
-        <el-table-column label="退库 G-TK" prop="returnDepotBillNo" min-width="140" />
-      </el-table>
-      <div slot="footer">
-        <el-button type="primary" class="spd-btn spd-btn--primary" @click="resultDialogVisible = false">知道了</el-button>
-      </div>
-    </el-dialog>
+    <GzInstantIoAuditDialog v-if="auditDialogVisible" />
+    <GzInstantIoResultDialog v-if="resultDialogVisible" />
   </div>
 </template>
 
@@ -204,6 +178,10 @@ function defaultMonthRange() {
 
 export default {
   name: 'GzInstantIo',
+  components: {
+    GzInstantIoAuditDialog: () => import('./components/GzInstantIoAuditDialog'),
+    GzInstantIoResultDialog: () => import('./components/GzInstantIoResultDialog')
+  },
   data() {
     const month = defaultMonthRange()
     return {
