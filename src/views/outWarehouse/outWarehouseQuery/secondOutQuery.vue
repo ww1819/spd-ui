@@ -84,6 +84,18 @@
                 <el-option label="否" value="2" />
               </el-select>
             </el-form-item>
+            <el-form-item prop="materialIsProcure" class="query-item-inline">
+              <el-select v-model="queryParams.materialIsProcure" placeholder="是否集采" clearable class="more-search-short-select">
+                <el-option label="是" value="1" />
+                <el-option label="否" value="2" />
+              </el-select>
+            </el-form-item>
+            <el-form-item prop="isBilling" class="query-item-inline">
+              <el-select v-model="queryParams.isBilling" placeholder="是否计费" clearable class="more-search-short-select">
+                <el-option label="是" value="1" />
+                <el-option label="否" value="0" />
+              </el-select>
+            </el-form-item>
             <el-form-item prop="billType" class="query-item-inline">
               <el-select v-model="queryParams.billType" placeholder="单据类型" clearable class="more-search-short-select">
                 <el-option
@@ -122,7 +134,7 @@
           class="spd-btn"
           @click="handleExport"
         >导出</el-button>
-        <el-tooltip content="按供应商分段：七列简表；段内按产品名称+规格+单位+价格聚合数量与金额，段末合计" placement="top">
+        <el-tooltip content="按库房分类分耗材(高值/低值)/试剂，再按是否集采、供应商分段；段内按名称+规格+单位+价格聚合；文末输出分类×集采合计与总计" placement="top">
           <el-button
             type="primary"
             size="small"
@@ -468,6 +480,26 @@
             >{{ formatBillingYesNo(scope.row) }}</span>
           </template>
         </el-table-column>
+        <el-table-column
+          v-else-if="Number(item.col.key) === 17"
+          :key="'tc-' + tableColumnEpoch + '-17'"
+          label="集采"
+          class-name="col-yn-center"
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span v-if="formatProcureYesNo(scope.row) === '--'">--</span>
+            <span
+              v-else
+              class="material-yn-btn"
+              :class="isProcureYes(scope.row) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ formatProcureYesNo(scope.row) }}</span>
+          </template>
+        </el-table-column>
       </template>
     </el-table>
     </div>
@@ -526,7 +558,8 @@ function createDefaultSecondOutQueryColumns() {
     { key: 13, label: "库房分类", visible: true, width: 180, align: "center", sortable: false },
     { key: 14, label: "财务分类", visible: true, width: 180, align: "center", sortable: false },
     { key: 15, label: "储存方式", visible: true, width: 180, align: "center", sortable: false },
-    { key: 16, label: "计费", visible: true, width: 80, align: "center", sortable: false }
+    { key: 16, label: "计费", visible: true, width: 80, align: "center", sortable: false },
+    { key: 17, label: "集采", visible: true, width: 80, align: "center", sortable: false }
   ];
 }
 
@@ -610,6 +643,8 @@ export default {
         financeCategoryKeyword: null,
         warehouseCategoryKeyword: null,
         isGz: null,
+        materialIsProcure: null,
+        isBilling: null,
         financeCategoryIds: [],
         warehouseCategoryIds: [],
         beginDate: this.getStatDate(),
@@ -726,6 +761,17 @@ export default {
     },
     isBillingYes(row) {
       const v = row && row.material ? row.material.isBilling : null;
+      return v === '1' || v === 1;
+    },
+    /** 集采：取耗材档案 isProcure，1=是，2=否 */
+    formatProcureYesNo(row) {
+      const v = row && row.material ? row.material.isProcure : null;
+      if (v === '1' || v === 1) return '是';
+      if (v === '2' || v === 2) return '否';
+      return '--';
+    },
+    isProcureYes(row) {
+      const v = row && row.material ? row.material.isProcure : null;
       return v === '1' || v === 1;
     },
     /** 同仓库 + 同耗材编码 + 同单价合并；单价不同则分行 */
@@ -894,6 +940,8 @@ export default {
       this.queryParams.financeCategoryIds = [];
       this.queryParams.warehouseCategoryIds = [];
       this.queryParams.billType = null;
+      this.queryParams.materialIsProcure = null;
+      this.queryParams.isBilling = null;
       this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.moreSearchKeywords = {};
       this.onMoreSearchTypesChange(this.moreSearchTypes);
@@ -1153,7 +1201,7 @@ export default {
         this.loading = false;
       }
     },
-    /** 汇总简表(供应商)：版式同明细简表；段内按名称+规格+单位+价格聚合 */
+    /** 汇总简表(供应商)：耗材/试剂 → 是否集采 → 供应商；段内按名称+规格+单位+价格聚合 */
     async handleExportSupplierSimple() {
       const requestParams = { ...this.buildListQueryParams(), pageNum: 1, pageSize: 10000 };
       this.loading = true;

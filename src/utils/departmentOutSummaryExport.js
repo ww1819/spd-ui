@@ -719,9 +719,66 @@ export async function exportCTKWarehouseDetailStyledXlsx(options) {
   saveAs(blob, fileName || `出退库明细表${Date.now()}.xlsx`);
 }
 
+/** 汇总简表：是否集采分段键（1集采 / 2非集采 / other未维护） */
+function resolveCtkProcureSegmentKey(row) {
+  const m = mat(row);
+  const v = m.isProcure != null ? m.isProcure : row.materialIsProcure;
+  if (v === '1' || v === 1) return '1';
+  if (v === '2' || v === 2) return '2';
+  return 'other';
+}
+
+const CTK_PROCURE_BLOCKS = [
+  { key: '1', title: '集采' },
+  { key: '2', title: '非集采' },
+  { key: 'other', title: '未维护集采' },
+];
+
 /**
- * 出/退库汇总简表聚合：按 产品名称 + 规格 + 单位 + 价格 合并，数量/金额求和；净数量为 0 的行丢弃。
- * （供应商分段在导出函数内再分组）
+ * 汇总简表分类：按库房分类拆分。
+ * 高值耗材(GZHC)、低值耗材(DZHC) → 耗材；检验试剂(JYSJ) → 试剂。
+ */
+function resolveCtkSummarySimpleKind(row) {
+  if (!row) return '未识别分类';
+  const m = mat(row);
+  const wc = m.fdWarehouseCategory || {};
+  const code = String(
+    wc.warehouseCategoryCode || row.materialWarehouseCategoryCode || ''
+  )
+    .trim()
+    .toUpperCase();
+  const name = String(
+    wc.warehouseCategoryName || row.materialWarehouseCategoryName || ''
+  ).trim();
+
+  if (code === 'JYSJ' || name.includes('检验试剂') || name === '试剂') {
+    return '试剂';
+  }
+  if (
+    code === 'GZHC' ||
+    code === 'DZHC' ||
+    name.includes('高值耗材') ||
+    name.includes('低值耗材')
+  ) {
+    return '耗材';
+  }
+  // 兜底：名称含「耗材」且不含「试剂」
+  if (name.includes('耗材') && !name.includes('试剂')) {
+    return '耗材';
+  }
+  return '未识别分类';
+}
+
+/** 汇总简表大块：耗材 / 试剂 / 未识别（按库房分类） */
+const CTK_KIND_BLOCKS_SIMPLE = [
+  { kind: '耗材', title: '耗材数据' },
+  { kind: '试剂', title: '试剂数据' },
+  { kind: '未识别分类', title: '未识别分类数据' },
+];
+
+/**
+ * 出/退库汇总简表聚合：按 耗材/试剂 + 是否集采 + 供应商 + 产品名称 + 规格 + 单位 + 价格 合并；
+ * 数量/金额求和；净数量为 0 的行丢弃。
  */
 export function aggregateCtkRowsByNameSpeciUnitPrice(rows) {
   if (!rows || !rows.length) return [];
@@ -733,11 +790,14 @@ export function aggregateCtkRowsByNameSpeciUnitPrice(rows) {
     const priceNum = row.unitPrice == null || row.unitPrice === '' ? NaN : Number(row.unitPrice);
     const priceKey = Number.isFinite(priceNum) ? priceNum.toFixed(6) : 'null';
     const supplier = detailSupplierGroupKey(row);
-    const key = `${supplier}||${name}||${speci}||${unit}||${priceKey}`;
+    const kind = resolveCtkSummarySimpleKind(row);
+    const procure = resolveCtkProcureSegmentKey(row);
+    const key = `${kind}||${procure}||${supplier}||${name}||${speci}||${unit}||${priceKey}`;
     const exist = map.get(key);
     if (!exist) {
       map.set(key, {
         ...row,
+        materialKind: kind,
         materialName: name,
         materialSpeci: speci,
         unitName: unit,
@@ -934,19 +994,265 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
 }
 
 /**
- * 出/退库汇总表 — 供应商分段简表：版式同明细简表(供应商)；
- * 段内按 产品名称+规格+单位+价格 聚合数量/金额。
+ * 出/退库汇总表 — 供应商分段简表：
+ * 先按耗材/试剂分大块，再按是否集采分段，段内按供应商；
+ * 供应商段内按 产品名称+规格+单位+价格 聚合数量/金额，各级段末合计。
  */
 export async function exportCTKWarehouseSummarySupplierSimpleXlsx(options) {
-  const aggregated = aggregateCtkRowsByNameSpeciUnitPrice(options.rows || []);
+  const {
+    rows = [],
+    beginDate = '',
+    endDate = '',
+    fileName,
+    sectionTitleSuffix = '出/退库汇总',
+    sheetName = '出退库汇总简表',
+  } = options;
+  const aggregated = aggregateCtkRowsByNameSpeciUnitPrice(rows);
   if (!aggregated.length) return;
-  return exportCTKWarehouseDetailSupplierSimpleXlsx({
-    ...options,
-    rows: aggregated,
-    sectionTitleSuffix: '出/退库汇总',
-    sheetName: '出退库汇总简表',
-    fileName: options.fileName || `出退库汇总_供方名称规格单价_${Date.now()}.xlsx`,
+
+  const headers = ['序号', '产品名称', '规格', '单位', '价格', '数量', '金额'];
+  const colCount = 7;
+  const priceCol = 5;
+  const qtyCol = 6;
+  const amtCol = 7;
+
+  const byKind = new Map();
+  aggregated.forEach((row) => {
+    const k = resolveCtkSummarySimpleKind(row);
+    if (!byKind.has(k)) byKind.set(k, []);
+    byKind.get(k).push(row);
   });
+  const kindBlocks = CTK_KIND_BLOCKS_SIMPLE.filter((b) => {
+    const grp = byKind.get(b.kind);
+    return grp && grp.length > 0;
+  });
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
+
+  const d1 = formatCnDate(beginDate);
+  const d2 = formatCnDate(endDate || beginDate);
+  const datePart = d1 && d2 ? `（${d1}至${d2}）` : '';
+
+  let r = 1;
+
+  const writeMergedTitle = (richTextParts, height = 26) => {
+    ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
+    const cell = ws.getCell(r, 1);
+    cell.value = { richText: richTextParts };
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cell.border = {
+      top: BORDER_THIN,
+      left: BORDER_THIN,
+      bottom: BORDER_THIN,
+      right: BORDER_THIN,
+    };
+    ws.getRow(r).height = height;
+    r += 1;
+  };
+
+  const writeHeaderRow = () => {
+    headers.forEach((text, c) => {
+      const cell = ws.getCell(r, c + 1);
+      cell.value = text;
+      cell.font = { ...FONT_BODY, bold: true };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      setCellBorder(cell);
+    });
+    r += 1;
+  };
+
+  const writeDetailBodyRow = (row, lineNo) => {
+    const price =
+      row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null;
+    const cells = [
+      lineNo,
+      row.materialName || '',
+      row.materialSpeci || '',
+      row.unitName || '',
+      price,
+      Number(row.materialQty || 0),
+      Number(row.materialAmt || 0),
+    ];
+    cells.forEach((v, ci) => {
+      const cell = ws.getCell(r, ci + 1);
+      const col = ci + 1;
+      if (col === priceCol || col === qtyCol || col === amtCol) {
+        if (v == null || v === '' || (typeof v === 'number' && Number.isNaN(v))) {
+          if (col === priceCol) {
+            cell.value = '';
+          } else {
+            cell.value = 0;
+            cell.numFmt = (col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
+          }
+        } else {
+          cell.value = Number(v);
+          cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
+        }
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else {
+        cell.value = v === null || v === undefined ? '' : v;
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+      setCellBorder(cell);
+    });
+    r += 1;
+  };
+
+  const writeBlankRow = () => {
+    for (let c = 1; c <= colCount; c++) {
+      const cell = ws.getCell(r, c);
+      cell.value = '';
+      cell.font = FONT_BODY;
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      setCellBorder(cell);
+    }
+    r += 1;
+  };
+
+  const writeTotalRow = (label, totalQty, totalAmt) => {
+    for (let c = 1; c <= colCount; c++) {
+      const cell = ws.getCell(r, c);
+      setCellBorder(cell);
+      if (c === 1) {
+        cell.value = label || '合计';
+        cell.font = { ...FONT_BODY, bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (c === qtyCol) {
+        cell.value = Number(totalQty || 0);
+        cell.numFmt = getQtyExcelNumFmt();
+        cell.font = RED_NUM;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else if (c === amtCol) {
+        cell.value = Number(totalAmt || 0);
+        cell.numFmt = getAmountExcelNumFmt();
+        cell.font = RED_NUM;
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      } else {
+        cell.value = '';
+        cell.font = FONT_BODY;
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      }
+    }
+    r += 1;
+  };
+
+  let grandTotalQty = 0;
+  let grandTotalAmt = 0;
+  let wroteAnyBlock = false;
+  /** 文末「分类×集采」合计：key = kind||procureKey */
+  const kindProcureTotals = new Map();
+
+  kindBlocks.forEach((kb) => {
+    const kindRows = byKind.get(kb.kind) || [];
+    if (!kindRows.length) return;
+    if (wroteAnyBlock) r += 1;
+    wroteAnyBlock = true;
+
+    writeMergedTitle([
+      { font: { ...FONT_TITLE, bold: true }, text: kb.title },
+      { font: { ...FONT_TITLE, bold: false }, text: `${datePart || ''}` },
+    ]);
+
+    const byProcure = new Map();
+    kindRows.forEach((row) => {
+      const pk = resolveCtkProcureSegmentKey(row);
+      if (!byProcure.has(pk)) byProcure.set(pk, []);
+      byProcure.get(pk).push(row);
+    });
+    const procureBlocks = CTK_PROCURE_BLOCKS.filter((b) => {
+      const grp = byProcure.get(b.key);
+      return grp && grp.length > 0;
+    });
+
+    let kindTotalQty = 0;
+    let kindTotalAmt = 0;
+
+    procureBlocks.forEach((pb, pIdx) => {
+      const procureRows = byProcure.get(pb.key) || [];
+      if (!procureRows.length) return;
+      if (pIdx > 0) r += 1;
+
+      writeMergedTitle([
+        { font: { ...FONT_TITLE, bold: true }, text: pb.title },
+        { font: { ...FONT_TITLE, bold: false }, text: `${datePart || ''}` },
+      ]);
+
+      const bySupplier = new Map();
+      procureRows.forEach((row) => {
+        const sk = detailSupplierGroupKey(row);
+        if (!bySupplier.has(sk)) bySupplier.set(sk, []);
+        bySupplier.get(sk).push(row);
+      });
+      const supplierNames = Array.from(bySupplier.keys()).sort((a, b) =>
+        a.localeCompare(b, 'zh-Hans-CN')
+      );
+
+      let procureTotalQty = 0;
+      let procureTotalAmt = 0;
+
+      supplierNames.forEach((supplierName, sIdx) => {
+        const grp = bySupplier.get(supplierName) || [];
+        if (!grp.length) return;
+        if (sIdx > 0) r += 1;
+
+        writeMergedTitle([
+          { font: { ...FONT_TITLE, bold: true }, text: supplierName },
+          { font: { ...FONT_TITLE, bold: false }, text: `${sectionTitleSuffix}${datePart || ''}` },
+        ]);
+        writeHeaderRow();
+        grp.forEach((row, ri) => writeDetailBodyRow(row, ri + 1));
+        writeBlankRow();
+
+        const totalQty = grp.reduce((s, row) => s + Number(row.materialQty || 0), 0);
+        const totalAmt = grp.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
+        procureTotalQty += totalQty;
+        procureTotalAmt += totalAmt;
+        writeTotalRow('合计', totalQty, totalAmt);
+      });
+
+      writeTotalRow(`${pb.title}合计`, procureTotalQty, procureTotalAmt);
+      kindProcureTotals.set(`${kb.kind}||${pb.key}`, {
+        kindTitle: kb.kind,
+        procureTitle: pb.title,
+        qty: procureTotalQty,
+        amt: procureTotalAmt,
+      });
+      kindTotalQty += procureTotalQty;
+      kindTotalAmt += procureTotalAmt;
+    });
+
+    writeTotalRow(`${kb.title}合计`, kindTotalQty, kindTotalAmt);
+    grandTotalQty += kindTotalQty;
+    grandTotalAmt += kindTotalAmt;
+  });
+
+  // 文末：分类×集采合计，再总计
+  if (wroteAnyBlock) r += 1;
+  CTK_KIND_BLOCKS_SIMPLE.forEach((kb) => {
+    CTK_PROCURE_BLOCKS.forEach((pb) => {
+      const t = kindProcureTotals.get(`${kb.kind}||${pb.key}`);
+      if (!t) return;
+      writeTotalRow(`${kb.kind}${pb.title}合计`, t.qty, t.amt);
+    });
+  });
+  writeTotalRow('总计', grandTotalQty, grandTotalAmt);
+
+  ws.getColumn(1).width = 8;
+  ws.getColumn(2).width = 28;
+  ws.getColumn(3).width = 14;
+  ws.getColumn(4).width = 8;
+  ws.getColumn(5).width = 12;
+  ws.getColumn(6).width = 12;
+  ws.getColumn(7).width = 14;
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  saveAs(blob, fileName || `出退库汇总_供方名称规格单价_${Date.now()}.xlsx`);
 }
 
 /**
@@ -975,6 +1281,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
     '财务分类',
     '储存方式',
     '计费',
+    '集采',
   ];
   const colCount = headers.length;
   const priceCol = 10;
@@ -1037,6 +1344,7 @@ export async function exportCTKWarehouseSummaryListStyledXlsx(options) {
       fc || '',
       resolveWay ? resolveWay(m.isWay) : m.isWay != null && m.isWay !== '' ? String(m.isWay) : '',
       rthBillingLabel(row),
+      rthProcureLabel(row),
     ];
 
     cells.forEach((v, ci) => {
@@ -1121,6 +1429,15 @@ function rthBillingLabel(row) {
   const v = m.isBilling;
   if (v === '1' || v === 1) return '是';
   if (v === '0' || v === 0 || v === '2') return '否';
+  return '';
+}
+
+function rthProcureLabel(row) {
+  const m = row.material;
+  if (!m) return '';
+  const v = m.isProcure;
+  if (v === '1' || v === 1) return '是';
+  if (v === '2' || v === 2) return '否';
   return '';
 }
 
