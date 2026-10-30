@@ -998,37 +998,38 @@ export default {
 </script>
 
 <style>
+/* 相对本页容器定位，不盖侧栏/顶栏；无四周灰边（padding=0） */
 .material-page-container .local-modal-mask.material-modal-mask,
 .local-modal-mask.material-modal-mask {
-  position: fixed !important;
+  position: absolute !important;
   left: 0 !important;
   top: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  padding: 32px 40px !important;
+  padding: 0 !important;
   width: auto !important;
   max-width: none !important;
   box-sizing: border-box;
   display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: rgba(0, 0, 0, 0.45) !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  background: transparent !important;
   z-index: 2000;
 }
 
 .material-page-container .local-modal-mask.material-modal-mask > .local-modal-content.material-modal-content,
 .local-modal-mask.material-modal-mask > .local-modal-content.material-modal-content,
 .local-modal-content.material-modal-content {
-  width: min(1440px, calc(100vw - 80px)) !important;
-  height: calc(100vh - 64px) !important;
-  min-width: 720px !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
   min-height: 0 !important;
-  max-width: 1440px !important;
-  max-height: calc(100vh - 64px) !important;
+  max-width: none !important;
+  max-height: none !important;
   margin: 0;
   padding: 0 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   overflow: hidden !important;
   background: #fff !important;
   display: flex !important;
@@ -1048,7 +1049,7 @@ export default {
   background: #fff;
   border: none;
   border-bottom: 1px solid #E5E6EB;
-  border-radius: 8px 8px 0 0 !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 
@@ -1102,16 +1103,43 @@ export default {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 10px;
   padding: 10px 16px;
   background: #fff;
   border-top: 1px solid #E5E6EB;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0;
 }
 
 .material-modal-footer .el-button {
   min-width: 72px;
   margin: 0;
+}
+
+/* 注册证有效期 + 长期：同一行 */
+.material-modal-content .period-date-longterm-wrap {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  position: relative;
+}
+.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
+}
+.material-modal-content .period-date-longterm-wrap .period-longterm-btn.el-button {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  margin: 0 !important;
 }
 </style>

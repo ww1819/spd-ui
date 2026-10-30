@@ -3519,11 +3519,11 @@ export default {
 }
 
 ::v-deep .material-page-container .local-modal-mask.material-modal-mask{
-  position: fixed;
-  padding: 32px 40px;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.45);
+  position: absolute;
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+  background: transparent;
 }
 
 ::v-deep .local-modal-content{
@@ -4499,50 +4499,52 @@ export default {
 }
 
 .period-date-longterm-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   position: relative;
   width: 100%;
 }
 
 .period-date-longterm-wrap .period-date-picker.el-date-editor {
-  width: 100% !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto !important;
 }
 
 .period-date-longterm-wrap .period-longterm-btn {
-  position: absolute;
-  left: calc(100% + 4px);
-  top: 50%;
-  transform: translateY(-50%);
+  position: static;
   flex-shrink: 0;
-  z-index: 2;
+  margin: 0;
 }
 </style>
 
 <style>
 /* 非scoped样式，确保弹窗宽度生效 */
 
-/* 耗材编辑弹窗：居中白底面板，底部固定操作栏（压过 assets/styles/modal.css） */
+/* 耗材编辑弹窗：限制在本页内容框架内（不盖侧栏/顶栏），压过 assets/styles/modal.css */
 .material-page-container .local-modal-mask.material-modal-mask {
-  position: fixed !important;
+  position: absolute !important;
   left: 0 !important;
   top: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  padding: 32px 40px !important;
+  padding: 0 !important;
   width: auto !important;
   max-width: none !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: rgba(0, 0, 0, 0.45) !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  background: transparent !important;
 }
 .material-page-container .local-modal-mask.material-modal-mask > .local-modal-content.material-modal-content {
-  width: min(1440px, calc(100vw - 80px)) !important;
-  min-width: 720px !important;
-  max-width: 1440px !important;
-  height: calc(100vh - 64px) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 100% !important;
   min-height: 0 !important;
-  max-height: calc(100vh - 64px) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28) !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   padding: 0 !important;
   overflow: hidden !important;
   background: #fff !important;
@@ -4552,7 +4554,7 @@ export default {
 .material-page-container .material-modal-content .modal-header.material-modal-header {
   margin: 0 !important;
   width: 100% !important;
-  border-radius: 8px 8px 0 0 !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
   border-top: none !important;
 }
@@ -4576,14 +4578,34 @@ export default {
   width: 100%;
 }
 
-/* 注册证有效期旁「长期」：保持原布局（在日期框外侧），仅限制按钮宽度避免盖住注册证级别 */
+/* 注册证有效期 + 长期：同一行（flex，不再绝对定位到格外） */
+.material-modal-content .period-date-longterm-wrap {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+}
 .material-modal-content .period-date-longterm-wrap .period-longterm-btn.el-button {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  flex: 0 0 auto !important;
   width: auto !important;
   min-width: auto !important;
-  max-width: 44px !important;
+  max-width: none !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
+  margin: 0 !important;
   box-sizing: border-box !important;
+}
+.material-modal-content .material-modal-footer {
+  justify-content: center !important;
 }
 
 .material-cell-top-left {
@@ -5472,6 +5494,7 @@ export default {
 <style>
 /* 本页质感：浅底 + 工具栏分组 + 主表卡片化（仅 material-page-container） */
 .app-container.material-page-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: linear-gradient(180deg, #f4f6f9 0%, #eef1f6 100%);

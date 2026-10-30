@@ -368,7 +368,8 @@ function buildDefaultChargeDateRange() {
 }
 
 export default {
-  name: 'PatientChargeHis',
+  // 须与菜单 path「patientCharge」→ 路由 name「PatientCharge」一致，keep-alive 才能保留查询条件
+  name: 'PatientCharge',
   components: {
     PatientChargeRecordDialog: () => import('./components/PatientChargeRecordDialog'),
     PatientChargeTraceDialog: () => import('./components/PatientChargeTraceDialog'),
@@ -523,6 +524,10 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize)
+    this.scheduleApplyLayoutRefresh()
+  },
+  activated() {
+    // keep-alive 切回：仅重算表格高度，不重新拉数，保留查询条件与列表
     this.scheduleApplyLayoutRefresh()
   },
   beforeDestroy() {

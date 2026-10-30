@@ -134,7 +134,7 @@ import { createHostProxyMixin } from '@/mixins/hostProxyMixin'
 
 export default {
   name: 'PatientChargeRecordDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'PatientChargeHis')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'PatientCharge')],
   inheritAttrs: false
 }
 </script>

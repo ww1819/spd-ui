@@ -34,7 +34,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 
 export default {
   name: 'PatientChargeSelfDeptDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'PatientChargeHis')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'PatientCharge')],
   components: { SelectDepartment },
   inheritAttrs: false
 }
