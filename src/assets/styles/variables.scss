@@ -18,6 +18,24 @@ $base-menu-light-color:#334155;
 $base-menu-light-background:#ffffff;
 $base-logo-light-title-color: #0f172a;
 
+/* 医疗蓝侧栏 */
+$base-menu-medical-background:#0c4a6e;
+$base-menu-medical-hover:#075985;
+$base-menu-medical-active:#082f49;
+
+/* 青绿侧栏 */
+$base-menu-teal-background:#0f766e;
+$base-menu-teal-hover:#0d9488;
+$base-menu-teal-active:#115e59;
+
+/* 柔蓝侧栏（用户指定浅蓝 #D6E4FF + 渐变） */
+$base-menu-sky-background:#D6E4FF;
+$base-menu-sky-gradient-start:#EAF1FF;
+$base-menu-sky-gradient-mid:#D6E4FF;
+$base-menu-sky-gradient-end:#B8CCF5;
+$base-menu-sky-hover:#c5d6f8;
+$base-menu-sky-active:#aebfea;
+
 $base-sub-menu-background:#020617;
 $base-sub-menu-hover:#1e293b;
 
@@ -46,6 +64,12 @@ $base-sidebar-width: 200px;
   menuColorActive: $base-menu-color-active;
   menuBackground: $base-menu-background;
   menuLightBackground: $base-menu-light-background;
+  menuMedicalBackground: $base-menu-medical-background;
+  menuTealBackground: $base-menu-teal-background;
+  menuSkyBackground: $base-menu-sky-background;
+  menuSkyGradientStart: $base-menu-sky-gradient-start;
+  menuSkyGradientMid: $base-menu-sky-gradient-mid;
+  menuSkyGradientEnd: $base-menu-sky-gradient-end;
   subMenuBackground: $base-sub-menu-background;
   subMenuHover: $base-sub-menu-hover;
   sideBarWidth: $base-sidebar-width;

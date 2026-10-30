@@ -87,7 +87,7 @@
           />
           <div class="material-fixed-query-row material-query-bottom-row">
             <div class="more-search-dynamic-field more-search-field--short">
-              <el-select v-model="queryParams.isUse" placeholder="启用" class="more-search-short-select" clearable>
+              <el-select v-model="queryParams.isUse" placeholder="启用状态" class="more-search-short-select" clearable>
                 <el-option
                   v-for="dict in dict.type.is_use_status"
                   :key="dict.value"
@@ -1055,7 +1055,7 @@ export default {
         isFollow: '', // 默认全部
         isProcure: '', // 默认全部
         isBilling: '', // 默认全部
-        isUse: '', // 固定顶部检索，始终参与筛选
+        isUse: '1', // 默认只查已启用；清空可选全部
         udiNo: undefined,
         registerNo: undefined,
         sunshineCode: undefined,
@@ -1064,7 +1064,8 @@ export default {
         nameSearch: undefined, // 用于名称/编码/首字母综合搜索
         beginDate: undefined,
         endDate: undefined,
-        orderByColumn: 'm.updateTime',
+        // 新增排最前：按创建时间倒序（同秒再按 id）
+        orderByColumn: 'm.createTime',
         isAsc: 'desc',
       },
       /** 更多检索：已选检索维度（多选）；默认从本地缓存/内置默认加载 */
@@ -1531,7 +1532,7 @@ export default {
         'supplier.name': 's.name',
       };
       if (!order) {
-        this.queryParams.orderByColumn = 'm.updateTime';
+        this.queryParams.orderByColumn = 'm.createTime';
         this.queryParams.isAsc = 'desc';
       } else {
         this.queryParams.orderByColumn = columnMap[prop] || prop;
@@ -2160,7 +2161,7 @@ export default {
       this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.queryParams.beginDate = null;
       this.queryParams.endDate = null;
-      this.queryParams.isUse = '';
+      this.queryParams.isUse = '1';
       this.queryParams.isGz = '';
       this.queryParams.isFollow = '';
       this.queryParams.isProcure = '';
@@ -2181,7 +2182,7 @@ export default {
       this.queryParams.code = undefined;
       this.queryParams.name = undefined;
       this.queryParams.nameSearch = undefined;
-      this.queryParams.orderByColumn = 'm.updateTime';
+      this.queryParams.orderByColumn = 'm.createTime';
       this.queryParams.isAsc = 'desc';
       this.onMoreSearchTypesChange(this.moreSearchTypes);
       const table = this.$refs.materialTable;

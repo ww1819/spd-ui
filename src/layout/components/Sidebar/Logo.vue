@@ -1,8 +1,14 @@
 <template>
   <div
     class="sidebar-logo-container"
-    :class="{'collapse': collapse, 'is-dark': isDark}"
-    :style="{ backgroundColor: isDark ? variables.menuBackground : variables.menuLightBackground }"
+    :class="{
+      collapse: collapse,
+      'is-dark': sideTheme === 'theme-dark',
+      'is-medical': sideTheme === 'theme-medical',
+      'is-teal': sideTheme === 'theme-teal',
+      'is-sky': sideTheme === 'theme-sky'
+    }"
+    :style="logoStyle"
   >
     <transition name="sidebarLogoFade">
       <router-link :key="collapse ? 'collapse' : 'expand'" class="sidebar-logo-link" to="/">
@@ -43,8 +49,15 @@ export default {
     variables() {
       return variables
     },
-    isDark() {
-      return this.$store.state.settings.sideTheme === 'theme-dark'
+    sideTheme() {
+      return this.$store.state.settings.sideTheme || 'theme-dark'
+    },
+    logoStyle() {
+      // 与侧栏渐变衔接：Logo 区透明，露出父级渐变；浅色主题单独铺白底
+      if (this.sideTheme === 'theme-light') {
+        return { backgroundColor: this.variables.menuLightBackground, backgroundImage: 'none' }
+      }
+      return { backgroundColor: 'transparent', backgroundImage: 'none' }
     },
     markLogo() {
       return `${process.env.BASE_URL || '/'}favicon.png`
@@ -97,8 +110,14 @@ export default {
   border: none;
   border-bottom: 1px solid #d8dce5;
 
-  &.is-dark {
+  &.is-dark,
+  &.is-medical,
+  &.is-teal {
     border-bottom-color: rgba(255, 255, 255, 0.06);
+  }
+
+  &.is-sky {
+    border-bottom-color: rgba(59, 110, 165, 0.18);
   }
 
   & .sidebar-logo-link {

@@ -1,8 +1,16 @@
 <template>
   <div
     class="sidebar-hover-root"
-    :class="{ 'has-logo': showLogo, 'is-collapse': isCollapse, 'is-dark': isDark, 'is-light': !isDark }"
-    :style="{ backgroundColor: isDark ? variables.menuBackground : variables.menuLightBackground }"
+    :class="{
+      'has-logo': showLogo,
+      'is-collapse': isCollapse,
+      'is-dark': sideTheme === 'theme-dark',
+      'is-light': sideTheme === 'theme-light' || sideTheme === 'theme-sky',
+      'is-medical': sideTheme === 'theme-medical',
+      'is-teal': sideTheme === 'theme-teal',
+      'is-sky': sideTheme === 'theme-sky'
+    }"
+    :style="sidebarStyle"
   >
     <logo v-if="showLogo" :collapse="isCollapse" />
     <el-scrollbar wrap-class="scrollbar-wrapper" class="sidebar-hover-scroll">
@@ -66,8 +74,41 @@ export default {
     isCollapse() {
       return !this.sidebar.opened
     },
-    isDark() {
-      return this.settings.sideTheme === 'theme-dark'
+    sideTheme() {
+      return this.settings.sideTheme || 'theme-dark'
+    },
+    sidebarStyle() {
+      if (this.sideTheme === 'theme-sky') {
+        const start = this.variables.menuSkyGradientStart || '#EAF1FF'
+        const mid = this.variables.menuSkyGradientMid || '#D6E4FF'
+        const end = this.variables.menuSkyGradientEnd || '#B8CCF5'
+        return {
+          backgroundColor: mid,
+          backgroundImage: `linear-gradient(180deg, ${start} 0%, ${mid} 48%, ${end} 100%)`
+        }
+      }
+      if (this.sideTheme === 'theme-medical') {
+        return {
+          backgroundColor: this.variables.menuMedicalBackground,
+          backgroundImage: 'linear-gradient(180deg, #0e5a86 0%, #0c4a6e 50%, #083552 100%)'
+        }
+      }
+      if (this.sideTheme === 'theme-teal') {
+        return {
+          backgroundColor: this.variables.menuTealBackground,
+          backgroundImage: 'linear-gradient(180deg, #148f85 0%, #0f766e 50%, #0b5c56 100%)'
+        }
+      }
+      if (this.sideTheme === 'theme-dark') {
+        return {
+          backgroundColor: this.variables.menuBackground,
+          backgroundImage: 'linear-gradient(180deg, #243044 0%, #1c2430 55%, #151b24 100%)'
+        }
+      }
+      return {
+        backgroundColor: this.variables.menuLightBackground,
+        backgroundImage: 'none'
+      }
     }
   },
   methods: {
@@ -195,6 +236,93 @@ export default {
 }
 
 .is-light .hover-nav-item.is-active .hover-nav-icon {
+  color: var(--current-color, #2563eb);
+}
+
+.is-medical .hover-nav-item {
+  color: #bae6fd;
+}
+
+.is-medical .hover-nav-icon,
+.is-medical .hover-nav-arrow {
+  color: #7dd3fc;
+}
+
+.is-medical .hover-nav-item:hover,
+.is-medical .hover-nav-item.is-open {
+  background: #075985;
+  color: #fff;
+}
+
+.is-medical .hover-nav-item:hover .hover-nav-icon,
+.is-medical .hover-nav-item.is-open .hover-nav-icon {
+  color: #fff;
+}
+
+.is-medical .hover-nav-item.is-active {
+  background: #082f49;
+  color: #fff;
+}
+
+.is-medical .hover-nav-item.is-active .hover-nav-icon {
+  color: #7dd3fc;
+}
+
+.is-teal .hover-nav-item {
+  color: #ccfbf1;
+}
+
+.is-teal .hover-nav-icon,
+.is-teal .hover-nav-arrow {
+  color: #5eead4;
+}
+
+.is-teal .hover-nav-item:hover,
+.is-teal .hover-nav-item.is-open {
+  background: #0d9488;
+  color: #fff;
+}
+
+.is-teal .hover-nav-item:hover .hover-nav-icon,
+.is-teal .hover-nav-item.is-open .hover-nav-icon {
+  color: #fff;
+}
+
+.is-teal .hover-nav-item.is-active {
+  background: #115e59;
+  color: #fff;
+}
+
+.is-teal .hover-nav-item.is-active .hover-nav-icon {
+  color: #5eead4;
+}
+
+.is-sky .hover-nav-item {
+  color: #1e3a5f;
+}
+
+.is-sky .hover-nav-icon,
+.is-sky .hover-nav-arrow {
+  color: #3b6ea5;
+}
+
+.is-sky .hover-nav-item:hover,
+.is-sky .hover-nav-item.is-open {
+  background: rgba(255, 255, 255, 0.55);
+  color: #0f2744;
+}
+
+.is-sky .hover-nav-item:hover .hover-nav-icon,
+.is-sky .hover-nav-item.is-open .hover-nav-icon {
+  color: var(--current-color, #2563eb);
+}
+
+.is-sky .hover-nav-item.is-active {
+  background: rgba(255, 255, 255, 0.72);
+  color: #0f2744;
+}
+
+.is-sky .hover-nav-item.is-active .hover-nav-icon {
   color: var(--current-color, #2563eb);
 }
 

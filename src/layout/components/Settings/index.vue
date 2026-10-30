@@ -7,19 +7,15 @@
             <h3 class="drawer-title">主题风格设置</h3>
           </div>
           <div class="setting-drawer-block-checbox">
-            <div class="setting-drawer-block-checbox-item" @click="handleTheme('theme-dark')">
-              <img src="@/assets/images/dark.svg" alt="dark">
-              <div v-if="sideTheme === 'theme-dark'" class="setting-drawer-block-checbox-selectIcon" style="display: block;">
-                <i aria-label="图标: check" class="anticon anticon-check">
-                  <svg viewBox="64 64 896 896" data-icon="check" width="1em" height="1em" :fill="theme" aria-hidden="true" focusable="false" class="">
-                    <path d="M912 190h-69.9c-9.8 0-19.1 4.5-25.1 12.2L404.7 724.5 207 474a32 32 0 0 0-25.1-12.2H112c-6.7 0-10.4 7.7-6.3 12.9l273.9 347c12.8 16.2 37.4 16.2 50.3 0l488.4-618.9c4.1-5.1.4-12.8-6.3-12.8z"/>
-                  </svg>
-                </i>
-              </div>
-            </div>
-            <div class="setting-drawer-block-checbox-item" @click="handleTheme('theme-light')">
-              <img src="@/assets/images/light.svg" alt="light">
-              <div v-if="sideTheme === 'theme-light'" class="setting-drawer-block-checbox-selectIcon" style="display: block;">
+            <div
+              v-for="item in sideThemeOptions"
+              :key="item.value"
+              class="setting-drawer-block-checbox-item"
+              @click="handleTheme(item.value)"
+            >
+              <img :src="item.img" :alt="item.label">
+              <div class="setting-drawer-block-checbox-label">{{ item.label }}</div>
+              <div v-if="sideTheme === item.value" class="setting-drawer-block-checbox-selectIcon" style="display: block;">
                 <i aria-label="图标: check" class="anticon anticon-check">
                   <svg viewBox="64 64 896 896" data-icon="check" width="1em" height="1em" :fill="theme" aria-hidden="true" focusable="false" class="">
                     <path d="M912 190h-69.9c-9.8 0-19.1 4.5-25.1 12.2L404.7 724.5 207 474a32 32 0 0 0-25.1-12.2H112c-6.7 0-10.4 7.7-6.3 12.9l273.9 347c12.8 16.2 37.4 16.2 50.3 0l488.4-618.9c4.1-5.1.4-12.8-6.3-12.8z"/>
@@ -88,13 +84,25 @@
 
 <script>
 import ThemePicker from '@/components/ThemePicker'
+import imgDark from '@/assets/images/dark.svg'
+import imgLight from '@/assets/images/light.svg'
+import imgMedical from '@/assets/images/medical.svg'
+import imgTeal from '@/assets/images/teal.svg'
+import imgSky from '@/assets/images/sky.svg'
 
 export default {
   components: { ThemePicker },
   data() {
     return {
       theme: this.$store.state.settings.theme,
-      sideTheme: this.$store.state.settings.sideTheme
+      sideTheme: this.$store.state.settings.sideTheme,
+      sideThemeOptions: [
+        { value: 'theme-dark', label: '深色', img: imgDark },
+        { value: 'theme-light', label: '浅色', img: imgLight },
+        { value: 'theme-medical', label: '医疗蓝', img: imgMedical },
+        { value: 'theme-teal', label: '青绿', img: imgTeal },
+        { value: 'theme-sky', label: '柔蓝', img: imgSky }
+      ]
     };
   },
   computed: {
@@ -212,30 +220,42 @@ export default {
 
     .setting-drawer-block-checbox {
       display: flex;
+      flex-wrap: wrap;
       justify-content: flex-start;
-      align-items: center;
+      align-items: flex-start;
       margin-top: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
 
       .setting-drawer-block-checbox-item {
         position: relative;
-        margin-right: 16px;
+        margin-right: 12px;
+        margin-bottom: 12px;
         border-radius: 2px;
         cursor: pointer;
+        text-align: center;
 
         img {
           width: 48px;
           height: 48px;
+          display: block;
+        }
+
+        .setting-drawer-block-checbox-label {
+          margin-top: 4px;
+          font-size: 12px;
+          line-height: 18px;
+          color: rgba(0, 0, 0, .65);
         }
 
         .setting-drawer-block-checbox-selectIcon {
           position: absolute;
           top: 0;
-          right: 0;
-          width: 100%;
-          height: 100%;
+          left: 0;
+          width: 48px;
+          height: 48px;
           padding-top: 15px;
           padding-left: 24px;
+          box-sizing: border-box;
           color: #1890ff;
           font-weight: 700;
           font-size: 14px;
