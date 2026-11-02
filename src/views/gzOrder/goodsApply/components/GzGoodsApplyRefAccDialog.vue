@@ -20,7 +20,7 @@ import { createHostProxyMixin } from '@/mixins/hostProxyMixin'
 
 export default {
   name: 'GzGoodsApplyRefAccDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Goods')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'GoodsApply')],
   inheritAttrs: false
 }
 </script>

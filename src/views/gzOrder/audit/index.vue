@@ -240,7 +240,8 @@ import {STOCK_IN_TEMPLATE} from "@/utils/printData";
 import RMBConverter from "@/utils/tools";
 
 export default {
-  name: "OrderAudit",
+  // 须与后端菜单 path「audit」生成的路由 name「Audit」一致，否则 keep-alive 不缓存，切页后查询条件丢失
+  name: "Audit",
   dicts: ['biz_status','bill_type'],
   components: {
     SelectWarehouse,
@@ -440,8 +441,9 @@ export default {
       }
       return this.buildDialogSnapshot() !== this.dialogSavedSnapshot;
     },
+    /** 明细表尽量铺满弹窗剩余高度，减少底部留白 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      return 'max(320px, calc(100vh - 300px))';
     }
   },
   watch: {
@@ -479,6 +481,10 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  activated() {
+    // keep-alive 切回：仅重算表格高度，不重新拉数，保留查询条件与列表
     this.scheduleApplyLayoutRefresh();
   },
   beforeDestroy() {
@@ -678,7 +684,9 @@ export default {
           return;
         }
         if (prop === 'amt') {
-          sums[index] = '￥' + this.formatAmount(sumNum('amt'));
+          sums[index] = this.$createElement('span', {
+            style: { color: '#f56c6c', fontWeight: '600' }
+          }, '￥' + this.formatAmount(sumNum('amt')));
           return;
         }
         sums[index] = '';
@@ -900,6 +908,10 @@ export default {
       const currentWarehouseId = this.form.warehouseId || row.warehouseId || (row.warehouse && row.warehouse.id);
       if (currentWarehouseId) {
         this.form.warehouseId = String(currentWarehouseId);
+      }
+      // 字典 option 为字符串，后端可能返回数字；不转成字符串会显示成裸值「2」
+      if (this.form.orderStatus != null && this.form.orderStatus !== '') {
+        this.form.orderStatus = String(this.form.orderStatus);
       }
       const creatorName = this.getCreatorName(this.form);
       this.$set(this.form, 'creatorName', creatorName || (this.form.createBy != null && String(this.form.createBy).trim() !== '' ? String(this.form.createBy) : '--'));
@@ -3066,10 +3078,26 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
   width: 100%;
 }
 
+/* 备注：固定适中宽度，避免通栏过长 */
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  max-width: 280px !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-form-item__content {
+  flex: 0 0 auto !important;
+}
+
+.app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-input {
+  width: 220px !important;
+  max-width: 220px !important;
+}
+
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
   flex: 1 1 auto !important;
-  min-width: 240px;
-  max-width: none !important;
+  min-width: 200px;
+  max-width: 320px !important;
 }
 
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item {
@@ -3083,7 +3111,16 @@ html body .app-container.gz-order-audit-page .apply-inbound-nested-modal .apply-
 
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input {
   width: 100% !important;
-  max-width: none !important;
+  max-width: 280px !important;
+}
+
+/* 表头总金额：红色加粗（含 disabled） */
+.app-container.gz-order-audit-page .local-modal-content .input-total-amount-inline .el-input__inner,
+.app-container.gz-order-audit-page .local-modal-content .input-total-amount-inline.is-disabled .el-input__inner,
+.app-container.gz-order-audit-page .local-modal-content .el-input.is-disabled.input-total-amount-inline .el-input__inner {
+  color: #f56c6c !important;
+  font-weight: 600 !important;
+  -webkit-text-fill-color: #f56c6c !important;
 }
 
 .app-container.gz-order-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {

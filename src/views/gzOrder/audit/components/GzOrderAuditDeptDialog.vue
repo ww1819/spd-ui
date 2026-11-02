@@ -26,7 +26,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 
 export default {
   name: 'GzOrderAuditDeptDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'OrderAudit')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Audit' && vm.refAcceptOpen !== undefined)],
   components: { SelectDepartment },
   inheritAttrs: false
 }

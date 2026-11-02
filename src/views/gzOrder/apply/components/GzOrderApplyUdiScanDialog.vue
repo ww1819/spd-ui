@@ -50,12 +50,12 @@
             empty-text="请点击「解析」自动检索产品；列与单据明细一致，批号/生产日期/有效期可编辑"
             class="udi-scan-preview-table"
           >
-            <el-table-column label="耗材编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
+            <el-table-column label="产品编码" align="center" prop="materialCode" width="110" show-overflow-tooltip>
               <template slot-scope="scope">
                 {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
               </template>
             </el-table-column>
-            <el-table-column label="耗材名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
+            <el-table-column label="产品名称" align="center" prop="materialName" width="130" show-overflow-tooltip>
               <template slot-scope="scope">{{ scope.row.materialName || '--' }}</template>
             </el-table-column>
             <el-table-column label="规格" align="center" prop="speci" width="90" show-overflow-tooltip>

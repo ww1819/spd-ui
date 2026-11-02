@@ -323,19 +323,19 @@ export const dynamicRoutes = [
       {
         path: 'audit',
         component: () => import('@/views/gzOrder/audit/index'),
-        name: 'GzOrderAudit',
+        name: 'Audit',
         meta: { title: '入库审核', icon: 'audit' }
       },
       {
         path: 'goodsApply',
         component: () => import('@/views/gzOrder/goodsApply/index'),
-        name: 'GzOrderGoodsApply',
+        name: 'GoodsApply',
         meta: { title: '退货申请', icon: 'list' }
       },
       {
         path: 'refund',
         component: () => import('@/views/gzOrder/refund/index'),
-        name: 'GzOrderRefund',
+        name: 'Refund',
         meta: { title: '备货退货', icon: 'international' }
       },
       {

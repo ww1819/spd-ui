@@ -23,7 +23,7 @@ import { createHostProxyMixin } from '@/mixins/hostProxyMixin'
 
 export default {
   name: 'GzOrderRefundRefShipDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'RefundGoods')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Refund' && vm.gzRefundGoodsEntryList !== undefined)],
   inheritAttrs: false
 }
 </script>

@@ -40,7 +40,7 @@ import gzOrderPrint from '@/views/gzOrder/audit/gzOrderPrint'
 
 export default {
   name: 'GzOrderRefundPrintDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'RefundGoods')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Refund' && vm.gzRefundGoodsEntryList !== undefined)],
   components: { gzOrderPrint },
   inheritAttrs: false
 }

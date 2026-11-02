@@ -68,7 +68,7 @@
                       </el-input>
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col class="apply-modal-field apply-modal-field--remark">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" :placeholder="(action && !isAuditedForm) ? '备注' : ''" clearable :disabled="!action || isAuditedForm" />
                     </el-form-item>
@@ -234,7 +234,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 
 export default {
   name: 'GzOrderRefundEditDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'RefundGoods')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Refund' && vm.gzRefundGoodsEntryList !== undefined)],
   components: { SelectWarehouse, SelectDepartment },
   dicts: ['biz_status'],
   inheritAttrs: false

@@ -74,7 +74,7 @@
                       </el-input>
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col class="apply-modal-field apply-modal-field--remark">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" :placeholder="(action && !isAuditedForm) ? '备注' : ''" clearable :disabled="!action || isAuditedForm" />
                     </el-form-item>
@@ -235,7 +235,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 
 export default {
   name: 'GzGoodsApplyEditDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Goods')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'GoodsApply')],
   components: { SelectSupplier, SelectWarehouse },
   dicts: ['biz_status'],
   inheritAttrs: false

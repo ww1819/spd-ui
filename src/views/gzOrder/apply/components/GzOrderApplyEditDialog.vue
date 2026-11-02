@@ -102,7 +102,7 @@
                       />
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col class="apply-modal-field apply-modal-field--remark">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable :disabled="isAudited" />
                     </el-form-item>
@@ -145,12 +145,12 @@
                           :height="detailTableHeight">
                   <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" resizable />
                   <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable/>
-                  <el-table-column label="耗材编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
+                  <el-table-column label="产品编码" align="center" prop="materialCode" width="120" show-overflow-tooltip resizable>
                     <template slot-scope="scope">
                       {{ scope.row.materialCode || (scope.row.material && scope.row.material.code) || '--' }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="耗材名称" align="center" prop="materialName" width="150" resizable sortable :sort-method="sortByDetailMaterialName">
+                  <el-table-column label="产品名称" align="center" prop="materialName" width="150" resizable sortable :sort-method="sortByDetailMaterialName">
                     <template slot-scope="scope">
                       <el-tooltip effect="dark" placement="top" :enterable="false" :content="(scope.row.materialName || '') || '—'">
                         <span class="gz-detail-line-clip">{{ scope.row.materialName }}</span>

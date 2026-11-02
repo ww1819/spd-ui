@@ -865,6 +865,7 @@ export default {
       this.selectedTemplate = null;
       this.templateDetailList = [];
       this.loadTemplateList();
+      this.$nextTick(() => this.calcTemplateDetailTableHeight());
     },
     /** 按模板名称加载制单模板列表；refresh 为 true 时不自动选中第一项（用于点击刷新按钮） */
     loadTemplateList(refresh) {
@@ -896,12 +897,14 @@ export default {
         this.templateDetailList = [];
       });
     },
-    /** 计算引用模板右侧明细表高度（固定表头用） */
+    /** 计算引用模板右侧明细表高度（固定表头用；ref 在子弹窗子组件内） */
     calcTemplateDetailTableHeight() {
       this.$nextTick(() => {
-        const el = this.$refs.templateDetailTableInner;
+        const dialog = (this.$children || []).find(c => c && c.$options && c.$options.name === 'DApplyTemplateDialog');
+        const el = (dialog && dialog.$refs && dialog.$refs.templateDetailTableInner)
+          || document.querySelector('.template-dialog-content .template-detail-table-inner');
         if (el && el.clientHeight) {
-          this.templateDetailTableHeight = el.clientHeight;
+          this.templateDetailTableHeight = Math.max(el.clientHeight, 200);
         }
       });
     },
@@ -2989,6 +2992,34 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
 .app-container.d-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item__content > * {
   width: 100% !important;
   max-width: none !important;
+}
+
+/* 备注跟在审核日期后：固定适中宽度，避免通栏过长 */
+.app-container.d-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  max-width: 280px !important;
+}
+.app-container.d-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-form-item__content {
+  flex: 0 0 auto !important;
+}
+.app-container.d-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-input {
+  width: 220px !important;
+  max-width: 220px !important;
+}
+
+/* 数量列输入框随列宽缩放 */
+.app-container.d-apply-page .local-modal-content .apply-detail-table td.apply-qty-col .cell {
+  overflow: visible;
+}
+.app-container.d-apply-page .local-modal-content .apply-detail-table .apply-detail-qty-input,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .apply-detail-qty-input.el-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block;
+}
+.app-container.d-apply-page .local-modal-content .apply-detail-table .apply-detail-qty-input .el-input__inner {
+  width: 100% !important;
 }
 
 .app-container.d-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content {

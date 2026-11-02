@@ -134,8 +134,8 @@
               </el-select>
             </div>
             <div class="material-fixed-query-actions query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
             </div>
           </div>
         </el-form>
@@ -1101,11 +1101,6 @@ export default {
         code: [
           { validator: (rule, value, callback) => {
             if (!value || !String(value).trim()) {
-              callback();
-              return;
-            }
-            // 衡水三院新增时编码由后端按规则生成，前端不做唯一性拦截，避免误判
-            if (this.isHsThirdTenant && !this.form.id) {
               callback();
               return;
             }
@@ -2410,8 +2405,10 @@ export default {
       if (!this.isHsThirdTenant || this.form.id) {
         return;
       }
-      // 新增场景：衡水三院编码不可编辑，库房分类变化后由系统重新生成
-      this.form.code = await this.generateCode();
+      // 新增：仅当未手工维护编码时，按库房分类自动生成；已手工录入则保留并重新校验
+      if (!this.form.code || !String(this.form.code).trim()) {
+        this.form.code = await this.generateCode();
+      }
       this.$nextTick(() => {
         if (this.$refs.form) {
           this.$refs.form.validateField('storeroomId');
@@ -2788,8 +2785,8 @@ export default {
                 this.refreshListAfterMutation();
               });
             } else {
-              if (this.isHsThirdTenant) {
-                // 衡水三院新增编码以服务端为准，避免本地生成并发重复
+              // 衡水三院：有手工编码则提交；留空由服务端按库房分类自动生成
+              if (this.isHsThirdTenant && (!this.form.code || !String(this.form.code).trim())) {
                 this.form.code = '';
               }
               addMaterial(this.form).then(response => {
@@ -3715,7 +3712,7 @@ export default {
 }
 
 .material-six-col-grid .el-form-item {
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 ::v-deep .material-modal-content .modal-header.material-modal-header{
@@ -4437,42 +4434,7 @@ export default {
   color: #8c939d;
 }
 
-/* 耗材弹窗开关：方形 + 加大点击区域（scoped 穿透） */
-::v-deep .material-modal-content ::v-deep .switch-container--square .el-switch__core {
-  width: 52px !important;
-  height: 28px !important;
-  border-radius: 3px !important;
-}
-::v-deep .material-modal-content ::v-deep .switch-container--square .el-switch__core::after {
-  width: 24px !important;
-  height: 24px !important;
-  top: 2px !important;
-  left: 2px !important;
-  border-radius: 2px !important;
-}
-::v-deep .material-modal-content ::v-deep .switch-container--square .el-switch.is-checked .el-switch__core {
-  border-color: #2563eb !important;
-  background-color: #2563eb !important;
-}
-::v-deep .material-modal-content ::v-deep .switch-container--square .el-switch.is-checked .el-switch__core::after {
-  left: 100% !important;
-  margin-left: -26px !important;
-}
-::v-deep .material-modal-content ::v-deep .switch-container--square .switch-form-item-is-use .el-switch__core {
-  width: 56px !important;
-  height: 30px !important;
-}
-::v-deep .material-modal-content ::v-deep .switch-container--square .switch-form-item-is-use .el-switch__core::after {
-  width: 26px !important;
-  height: 26px !important;
-}
-::v-deep .material-modal-content ::v-deep .switch-container--square .switch-form-item-is-use .el-switch.is-checked .el-switch__core::after {
-  margin-left: -28px !important;
-}
-::v-deep .material-modal-content ::v-deep .switch-container--square .el-switch {
-  line-height: 30px;
-  height: 30px;
-}
+/* 旧 square 容器样式已并入下方非 scoped 开关规则，避免 left/margin 与半宽贴边两套定位冲突闪烁 */
 
 ::v-deep .material-modal-content ::v-deep .switch-container--square .switch-row-single {
   gap: 10px;
@@ -4493,6 +4455,8 @@ export default {
 
 .period-date-col {
   overflow: visible;
+  position: relative;
+  z-index: 2;
 }
 
 .period-date-col ::v-deep .el-form-item__content {
@@ -4500,23 +4464,24 @@ export default {
 }
 
 .period-date-longterm-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
   position: relative;
   width: 100%;
 }
 
 .period-date-longterm-wrap .period-date-picker.el-date-editor {
-  flex: 1 1 auto;
+  width: 100% !important;
   min-width: 0;
-  width: auto !important;
 }
 
 .period-date-longterm-wrap .period-longterm-btn {
-  position: static;
-  flex-shrink: 0;
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  transform: translateY(-50%);
   margin: 0;
+  white-space: nowrap;
+  z-index: 3;
 }
 </style>
 
@@ -4579,31 +4544,50 @@ export default {
   width: 100%;
 }
 
-/* 注册证有效期 + 长期：同一行（flex，不再绝对定位到格外） */
-.material-modal-content .period-date-longterm-wrap {
-  display: flex !important;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
+/* 注册证有效期：日期框与单价同宽；「长期」缩小后挂在输入框后面 */
+.material-modal-content .material-detail-card--period-hang {
+  overflow: visible !important;
 }
-.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor {
-  flex: 1 1 auto !important;
+.material-modal-content .material-detail-card--period-hang .material-detail-card__body {
+  overflow: visible !important;
+}
+.material-modal-content .period-date-col {
+  overflow: visible !important;
+  position: relative;
+  z-index: 2;
+}
+.material-modal-content .period-date-col .el-form-item__content {
+  overflow: visible !important;
+}
+.material-modal-content .period-date-longterm-wrap {
+  display: block !important;
+  width: 100%;
+  position: relative;
+}
+.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor,
+.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor.el-input {
+  width: 100% !important;
+  max-width: 100% !important;
   min-width: 0 !important;
-  width: auto !important;
 }
 .material-modal-content .period-date-longterm-wrap .period-longterm-btn.el-button {
-  position: static !important;
-  left: auto !important;
-  top: auto !important;
-  transform: none !important;
-  flex: 0 0 auto !important;
-  width: auto !important;
-  min-width: auto !important;
-  max-width: none !important;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+  position: absolute !important;
+  left: calc(100% + 4px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   margin: 0 !important;
+  padding: 0 6px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  line-height: 20px !important;
+  font-size: 12px !important;
+  border-radius: 3px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
   box-sizing: border-box !important;
+  white-space: nowrap;
+  z-index: 3;
 }
 .material-modal-content .material-modal-footer {
   justify-content: center !important;
@@ -4900,12 +4884,56 @@ export default {
   margin-bottom: 0;
 }
 
+/* 弹窗内分区卡片边框（子组件不受本页 scoped 影响，须写非 scoped） */
+.material-modal-content .material-detail-card {
+  background: #fff;
+  border: 1px solid #DCDFE6;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.material-modal-content .material-detail-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #EFF6FF;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  border-bottom: 1px solid #DCDFE6;
+}
+
+.material-modal-content .material-detail-card__header i {
+  color: #2563EB;
+  font-size: 16px;
+}
+
+.material-modal-content .material-detail-card__body {
+  padding: 8px 16px 4px;
+}
+
+/* 弹窗表单：收紧行间距；校验只保留输入框红框，不占位显示错误文案 */
+.material-modal-content .material-form-grid .el-form-item {
+  margin-bottom: 6px !important;
+}
+
+.material-modal-content .material-form-grid .el-form-item__error {
+  display: none !important;
+}
+
+.material-modal-content .material-six-col-grid .el-form-item {
+  margin-bottom: 6px !important;
+}
+
 /* HIS/HRP/阳光平台卡片：与详情卡片规范统一 */
 .material-modal-content .his-compare-container,
 .material-modal-content .hrp-compare-container,
 .material-modal-content .sunshine-platform-container {
   background: #fff;
-  border: none;
+  border: 1px solid #DCDFE6;
   margin-top: 0;
 }
 
@@ -5027,44 +5055,125 @@ export default {
   margin-right: 2px;
 }
 
-/* 耗材弹窗开关：方形 + 加大（与 scoped 一致，非 scoped 块勿用 >>>） */
+/* 业务开关：直接放在卡片内；标签贴近开关；项间竖线间隔 */
+.material-modal-content .material-switch-body {
+  padding-top: 8px;
+  padding-bottom: 6px;
+}
+
+.material-modal-content .switch-row-flat {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+}
+
+.material-modal-content .switch-row-flat .switch-form-item {
+  flex: 0 0 auto;
+  margin: 0 !important;
+}
+
+.material-modal-content .switch-row-flat .switch-form-item .el-form-item__content {
+  margin-left: 0 !important;
+  line-height: 24px;
+}
+
+.material-modal-content .switch-row-flat .switch-with-label-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  min-height: 24px;
+}
+
+.material-modal-content .switch-row-flat .switch-with-label-left .switch-label {
+  min-width: unset;
+  margin-right: 0;
+  line-height: 24px;
+  font-size: 13px;
+}
+
+.material-modal-content .switch-row-flat .switch-sep {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  margin: 0 8px;
+  background: #DCDFE6;
+  color: transparent;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+/*
+ * 方形开关：滑块只用 left 定位（0 ↔ 50%），关掉 transition，避免与 Element 默认动画打架闪烁
+ */
+.material-modal-content .material-switch-body .el-switch,
+.material-modal-content .switch-container--square .el-switch {
+  line-height: 24px;
+  height: 24px;
+}
+.material-modal-content .material-switch-body .el-switch__core,
 .material-modal-content .switch-container--square .el-switch__core {
-  width: 52px !important;
-  height: 28px !important;
-  border-radius: 3px !important;
-}
-.material-modal-content .switch-container--square .el-switch__core::after {
-  width: 24px !important;
+  width: 48px !important;
   height: 24px !important;
-  top: 2px !important;
-  left: 2px !important;
+  border: 1px solid #C0C4CC !important;
   border-radius: 2px !important;
+  background-color: #fff !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  transition: none !important;
 }
+.material-modal-content .material-switch-body .el-switch__core::after,
+.material-modal-content .switch-container--square .el-switch__core::after {
+  width: 50% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  background-color: #C0C4CC !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+.material-modal-content .material-switch-body .el-switch.is-checked .el-switch__core,
 .material-modal-content .switch-container--square .el-switch.is-checked .el-switch__core {
   border-color: #2563eb !important;
   background-color: #2563eb !important;
 }
+.material-modal-content .material-switch-body .el-switch.is-checked .el-switch__core::after,
 .material-modal-content .switch-container--square .el-switch.is-checked .el-switch__core::after {
-  left: 100% !important;
-  margin-left: -26px !important;
+  left: 50% !important;
+  right: auto !important;
+  margin-left: 0 !important;
+  background-color: #fff !important;
 }
+.material-modal-content .material-switch-body .switch-form-item-is-use .el-switch,
+.material-modal-content .switch-container--square .switch-form-item-is-use .el-switch {
+  line-height: 26px;
+  height: 26px;
+}
+.material-modal-content .material-switch-body .switch-form-item-is-use .el-switch__core,
 .material-modal-content .switch-container--square .switch-form-item-is-use .el-switch__core {
-  width: 56px !important;
-  height: 30px !important;
-}
-.material-modal-content .switch-container--square .switch-form-item-is-use .el-switch__core::after {
-  width: 26px !important;
+  width: 50px !important;
   height: 26px !important;
 }
-.material-modal-content .switch-container--square .switch-form-item-is-use .el-switch.is-checked .el-switch__core::after {
-  margin-left: -28px !important;
+.material-modal-content .material-switch-body .switch-form-item-is-use .el-switch__core::after,
+.material-modal-content .switch-container--square .switch-form-item-is-use .el-switch__core::after {
+  width: 50% !important;
+  height: 100% !important;
 }
+.material-modal-content .material-switch-body .switch-form-item-is-use .switch-label,
 .material-modal-content .switch-container--square .switch-form-item-is-use .switch-label {
-  min-width: 48px;
-  font-size: 14px;
-}
-.material-modal-content .switch-container--square .switch-form-item .el-form-item__content {
-  line-height: 30px;
+  min-width: unset;
+  font-size: 13px;
 }
 
 /* 表格滚动条样式 - 固定加粗，不随 hover 变粗 */
@@ -5268,11 +5377,12 @@ export default {
   left: 0 !important;
   z-index: 3;
   box-sizing: border-box !important;
-}
-.material-page-container .material-main-table td.material-select-col,
-.material-page-container .material-main-table td.el-table-column--selection {
-  background-color: #fff !important;
   border-right: 1px solid #e2e8f0;
+}
+/* 未选中/未悬停才钉白底；选中后由下方 material-row-selected 整行盖住 */
+.material-page-container .material-main-table .el-table__body tr:not(.material-row-selected):not(:hover) > td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr:not(.material-row-selected):not(:hover) > td.el-table-column--selection {
+  background-color: #fff !important;
 }
 .material-page-container .material-main-table th.material-select-col,
 .material-page-container .material-main-table th.el-table-column--selection {
@@ -5280,10 +5390,10 @@ export default {
   background-color: #f1f5f9 !important;
   border-right: 1px solid #e2e8f0;
 }
-.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-select-col,
-.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection,
-.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-select-col .cell,
-.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection .cell {
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-select-col .cell,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.el-table-column--selection .cell {
   background-color: #fafafa !important;
 }
 .material-page-container .material-main-table td.material-select-col .cell,
@@ -5313,8 +5423,10 @@ export default {
 }
 .material-page-container .material-main-table td.material-action-col {
   right: 0 !important;
-  background-color: #fff !important;
   border-left: 1px solid #e2e8f0;
+}
+.material-page-container .material-main-table .el-table__body tr:not(.material-row-selected):not(:hover) > td.material-action-col {
+  background-color: #fff !important;
 }
 .material-page-container .material-main-table th.material-action-col {
   right: var(--material-v-scrollbar, 0px) !important;
@@ -5322,8 +5434,8 @@ export default {
   background-color: #f1f5f9 !important;
   border-left: 1px solid #e2e8f0;
 }
-.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-action-col,
-.material-page-container .material-main-table .el-table__body tr.el-table__row--striped td.material-action-col .cell {
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-action-col,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-action-col .cell {
   background-color: #fafafa !important;
 }
 .material-page-container .material-main-table td.material-action-col .cell,
@@ -5348,23 +5460,31 @@ export default {
   background-color: #D6EBFF !important;
 }
 
-/* 勾选选中行常驻变色；取消勾选后恢复；不覆盖未选中行的悬停 */
+/* 勾选选中行常驻变色（含 sticky 勾选列/操作列）；无需悬停也整行盖住 */
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td,
-.material-page-container .material-main-table .el-table__body tr.material-row-selected > td .cell {
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td .cell,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-action-col,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-select-col .cell,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-action-col .cell,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-select-col,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-action-col,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-select-col .cell,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-action-col .cell {
   background-color: #B8DAFF !important;
 }
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td,
-.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td .cell {
-  background-color: #A0CBFF !important;
-}
-.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-select-col,
-.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.el-table-column--selection,
-.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-action-col {
-  background-color: #B8DAFF !important;
-}
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td .cell,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-select-col,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.el-table-column--selection,
-.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-action-col {
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-action-col,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-select-col .cell,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-action-col .cell {
   background-color: #A0CBFF !important;
 }
 
@@ -5691,6 +5811,28 @@ export default {
 .app-container.material-page-container .form-fields-container .el-range-editor.is-active {
   border-color: #93c5fd !important;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
+}
+
+/* 更多检索：collapse-tags 的「+ N」必须留在下拉框内，勿溢出到「保存查询条件」 */
+.app-container.material-page-container .toolbar-more-search .el-select--multiple .el-select__tags > span {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+.app-container.material-page-container .toolbar-more-search .el-select--multiple .el-tag {
+  max-width: 70px !important;
+  margin: 0 0 0 4px !important;
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+}
+.app-container.material-page-container .toolbar-more-search .el-select--multiple .el-select__tags > span > .el-tag:last-child {
+  max-width: none !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
 }
 </style>
 

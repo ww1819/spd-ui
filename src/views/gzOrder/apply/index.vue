@@ -399,9 +399,9 @@ export default {
         ? this.$options.filters.formatCurrency(v)
         : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
-    /** 与到货验收弹窗明细表高度一致 */
+    /** 明细表尽量铺满弹窗剩余高度，减少底部留白 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      return 'max(320px, calc(100vh - 300px))';
     },
     isAudited() {
       return this.form.orderStatus == 2 || this.form.orderStatus == '2';
@@ -3088,15 +3088,17 @@ export default {
 }
 
 .udi-scan-inline {
-  display: flex;
-  align-items: flex-start;
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
-  width: 268px;
-  max-width: 268px;
+  width: auto;
+  max-width: none;
+  overflow: visible;
 }
 
 .udi-scan-inline-input {
-  flex: 1;
+  width: 180px;
+  flex: 0 0 180px;
   min-width: 0;
 }
 
@@ -3361,6 +3363,18 @@ export default {
   max-height: none !important;
   border-radius: 0 !important;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container.gz-order-apply-page .local-modal-content > .modal-form-compact {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 0 8px !important;
+  margin-bottom: 0 !important;
 }
 
 /* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
@@ -3522,6 +3536,10 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
   overflow: hidden;
   border-bottom: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-toolbar.list-toolbar {
@@ -3540,12 +3558,17 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-table-panel {
   margin-left: 0 !important;
   margin-right: 0 !important;
+  margin-bottom: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
   border-radius: 0;
   border-left: none;
   border-right: none;
-  overflow: visible;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .app-container.gz-order-apply-page .list-query-panel,
@@ -4263,11 +4286,13 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 14px 16px;
   margin-left: 0 !important;
   margin-right: 0 !important;
   padding-left: 12px;
+  padding-right: 12px;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
@@ -4282,39 +4307,72 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
   white-space: nowrap;
 }
 
+/* UDI + 扫描：给标签与按钮留足宽度，避免扫描按钮被裁切遮挡 */
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan {
   flex: 0 0 auto !important;
   min-width: 0;
-  max-width: 300px !important;
+  max-width: none !important;
+  margin-right: 4px;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan .el-form-item {
-  width: 100%;
+  width: auto;
+  max-width: none;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan .el-form-item__content {
   flex: 0 0 auto !important;
-  max-width: 268px;
+  max-width: none !important;
+  overflow: visible !important;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan .udi-scan-inline {
-  width: 268px;
-  max-width: 268px;
+  display: inline-flex !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0;
   align-items: center;
+  gap: 8px;
+  overflow: visible !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan .udi-scan-inline-input {
+  width: 180px !important;
+  max-width: 180px !important;
+  flex: 0 0 180px !important;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-field--udi-scan .udi-scan-inline .el-button {
+  flex: 0 0 auto !important;
   height: 32px !important;
   min-height: 32px !important;
-  padding: 0 10px !important;
+  padding: 0 12px !important;
   line-height: 30px !important;
   font-size: 13px !important;
+  margin-left: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* 备注：固定适中宽度，避免通栏过长 */
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  max-width: 280px !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-form-item__content {
+  flex: 0 0 auto !important;
+}
+
+.app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-input {
+  width: 220px !important;
+  max-width: 220px !important;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
   flex: 1 1 auto !important;
-  min-width: 240px;
-  max-width: none !important;
+  min-width: 200px;
+  max-width: 320px !important;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item {
@@ -4328,7 +4386,7 @@ html body .app-container.gz-order-apply-page .apply-inbound-nested-modal .apply-
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input {
   width: 100% !important;
-  max-width: none !important;
+  max-width: 280px !important;
 }
 
 .app-container.gz-order-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {

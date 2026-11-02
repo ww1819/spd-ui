@@ -67,9 +67,7 @@
                       <el-input :value="auditorDateText" disabled placeholder="—" />
                     </el-form-item>
                   </el-col>
-                </el-row>
-                <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col class="apply-modal-field apply-modal-field--remark">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" />
                     </el-form-item>
@@ -125,13 +123,15 @@
                     <span>{{ scope.row.unitPrice != null && scope.row.unitPrice !== '' ? formatPrice(scope.row.unitPrice) : '--' }}</span>
                   </template>
                 </el-table-column>
-                <el-table-column :label="action ? '数量' : '申请数量'" prop="qty" width="96" show-overflow-tooltip resizable>
+                <el-table-column :label="action ? '数量' : '申请数量'" prop="qty" min-width="96" width="96" show-overflow-tooltip resizable class-name="apply-qty-col">
                   <template slot-scope="scope">
                     <el-input
                       v-if="action"
                       clearable
                       v-model="scope.row.qty"
                       placeholder="数量"
+                      class="apply-detail-qty-input"
+                      style="width: 100%"
                       onkeyup="value=value.replace(/\D/g,'')"
                       onafterpaste="value=value.replace(/\D/g,'')"
                       @blur="form.result=$event.target.value"

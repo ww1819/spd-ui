@@ -39,7 +39,7 @@ import { createHostProxyMixin } from '@/mixins/hostProxyMixin'
 
 export default {
   name: 'GzOrderAuditChangeLogDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'OrderAudit')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Audit' && vm.refAcceptOpen !== undefined)],
   inheritAttrs: false
 }
 </script>

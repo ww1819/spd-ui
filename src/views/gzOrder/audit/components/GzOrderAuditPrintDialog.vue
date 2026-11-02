@@ -40,7 +40,7 @@ import gzOrderPrint from '@/views/gzOrder/audit/gzOrderPrint'
 
 export default {
   name: 'GzOrderAuditPrintDialog',
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'OrderAudit')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Audit' && vm.refAcceptOpen !== undefined)],
   components: { gzOrderPrint },
   inheritAttrs: false
 }

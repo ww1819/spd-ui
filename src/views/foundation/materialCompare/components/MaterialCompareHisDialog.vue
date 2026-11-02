@@ -17,21 +17,21 @@
       <div class="his-current-material-box">
         <div class="his-current-material-title">产品档案基本信息</div>
         <div class="his-current-material-grid">
-          <div class="his-current-material-item"><span class="label">产品编码：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.code) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">产品名称：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.name) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">规格：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.speci) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">型号：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.model) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">产品编码：</span><span class="value" :title="(currentMaterialRow && currentMaterialRow.code) || ''">{{ (currentMaterialRow && currentMaterialRow.code) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">产品名称：</span><span class="value" :title="(currentMaterialRow && currentMaterialRow.name) || ''">{{ (currentMaterialRow && currentMaterialRow.name) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">规格：</span><span class="value" :title="(currentMaterialRow && currentMaterialRow.speci) || ''">{{ (currentMaterialRow && currentMaterialRow.speci) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">型号：</span><span class="value" :title="(currentMaterialRow && currentMaterialRow.model) || ''">{{ (currentMaterialRow && currentMaterialRow.model) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">单位：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdUnit && currentMaterialRow.fdUnit.unitName) || (currentMaterialRow && currentMaterialRow.unitName) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">价格：</span><span class="value">{{ formatCurrency(currentMaterialRow && currentMaterialRow.price) }}</span></div>
-          <div class="his-current-material-item"><span class="label">供应商：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.supplier && currentMaterialRow.supplier.name) || (currentMaterialRow && currentMaterialRow.supplierName) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">生产厂家：</span><span class="value">{{ (currentMaterialRow && currentMaterialRow.fdFactory && currentMaterialRow.fdFactory.factoryName) || (currentMaterialRow && currentMaterialRow.factoryName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">供应商：</span><span class="value" :title="(currentMaterialRow && currentMaterialRow.supplier && currentMaterialRow.supplier.name) || (currentMaterialRow && currentMaterialRow.supplierName) || ''">{{ (currentMaterialRow && currentMaterialRow.supplier && currentMaterialRow.supplier.name) || (currentMaterialRow && currentMaterialRow.supplierName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">生产厂家：</span><span class="value" :title="(currentMaterialRow && currentMaterialRow.fdFactory && currentMaterialRow.fdFactory.factoryName) || (currentMaterialRow && currentMaterialRow.factoryName) || ''">{{ (currentMaterialRow && currentMaterialRow.fdFactory && currentMaterialRow.fdFactory.factoryName) || (currentMaterialRow && currentMaterialRow.factoryName) || '--' }}</span></div>
         </div>
         <div class="his-current-material-title his-current-material-subtitle">对照收费项目</div>
         <div class="his-current-material-grid">
-          <div class="his-current-material-item"><span class="label">收费编码：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeCode) || (currentMaterialRow && currentMaterialRow.hisCode) || (currentMaterialRow && currentMaterialRow.hisChargeItemId) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">收费名称：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeName) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">收费规格：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeSpeci) || '--' }}</span></div>
-          <div class="his-current-material-item"><span class="label">收费型号：</span><span class="value">{{ (currentHisChargeItem && currentHisChargeItem.chargeModel) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费编码：</span><span class="value" :title="(currentHisChargeItem && currentHisChargeItem.chargeCode) || (currentMaterialRow && currentMaterialRow.hisCode) || (currentMaterialRow && currentMaterialRow.hisChargeItemId) || ''">{{ (currentHisChargeItem && currentHisChargeItem.chargeCode) || (currentMaterialRow && currentMaterialRow.hisCode) || (currentMaterialRow && currentMaterialRow.hisChargeItemId) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费名称：</span><span class="value" :title="(currentHisChargeItem && currentHisChargeItem.chargeName) || ''">{{ (currentHisChargeItem && currentHisChargeItem.chargeName) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费规格：</span><span class="value" :title="(currentHisChargeItem && currentHisChargeItem.chargeSpeci) || ''">{{ (currentHisChargeItem && currentHisChargeItem.chargeSpeci) || '--' }}</span></div>
+          <div class="his-current-material-item"><span class="label">收费型号：</span><span class="value" :title="(currentHisChargeItem && currentHisChargeItem.chargeModel) || ''">{{ (currentHisChargeItem && currentHisChargeItem.chargeModel) || '--' }}</span></div>
           <div class="his-current-material-item"><span class="label">收费单价：</span><span class="value">{{ currentHisChargeItem && currentHisChargeItem.chargePrice != null ? formatCurrency(currentHisChargeItem.chargePrice) : '--' }}</span></div>
         </div>
       </div>
@@ -136,7 +136,60 @@ export default {
 </script>
 
 <style>
-/* HIS 明细：悬停变色 + 双击选中更深色（与主列表一致）。弹窗已拆出，样式不能留在父页 scoped 里。 */
+/* 弹窗已拆出，样式须写在本组件（父页 scoped 穿不进来） */
+
+/* 产品档案 / 对照收费：每行 4 列，便于上下对照 */
+.material-compare-page .his-current-material-box {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid #EBEEF5;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.material-compare-page .his-current-material-title {
+  color: #303133;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.material-compare-page .his-current-material-subtitle {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #EBEEF5;
+}
+
+.material-compare-page .his-current-material-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.material-compare-page .his-current-material-item {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  color: #606266;
+  line-height: 22px;
+  font-size: 13px;
+}
+
+.material-compare-page .his-current-material-item .label {
+  flex: 0 0 auto;
+  color: #909399;
+  white-space: nowrap;
+}
+
+.material-compare-page .his-current-material-item .value {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #303133;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* HIS 明细：悬停变色 + 双击选中更深色（与主列表一致） */
 .material-compare-page .his-detail-table .el-table__body tr > td,
 .material-compare-page .his-detail-table .el-table__body tr > td .cell {
   transition: none !important;

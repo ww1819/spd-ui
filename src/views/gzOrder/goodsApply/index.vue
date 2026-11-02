@@ -235,7 +235,8 @@ import { listUserAll } from "@/api/system/user";
 import RMBConverter from "@/utils/tools";
 
 export default {
-  name: "Goods",
+  // 须与后端菜单 path「goodsApply」生成的路由 name「GoodsApply」一致，否则 keep-alive 不缓存，切页后查询条件丢失
+  name: "GoodsApply",
   dicts: ['biz_status','bill_type'],
   components: {
     SelectWarehouse,
@@ -411,6 +412,10 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize);
+    this.scheduleApplyLayoutRefresh();
+  },
+  activated() {
+    // keep-alive 切回：仅重算表格高度，不重新拉数，保留查询条件与列表
     this.scheduleApplyLayoutRefresh();
   },
   beforeDestroy() {
@@ -1803,12 +1808,24 @@ export default {
   box-shadow: none;
 }
 
+/* 产品名称/规格等可换行列：与产品编码、单位同一水平中线 */
+::v-deep .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
+  display: flex !important;
+  align-items: center !important;
+  line-height: normal !important;
+  min-height: 28px !important;
+  white-space: normal;
+  word-break: break-word;
+}
+
 ::v-deep .local-modal-content .modal-detail-section .el-table .detail-text-cell-2line{
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.35;
+  line-height: 20px;
+  max-height: 40px;
+  width: 100%;
   word-break: break-all;
 }
 
@@ -1957,10 +1974,26 @@ export default {
   width: 100%;
 }
 
+/* 备注：固定适中宽度，避免通栏过长 */
+.app-container.gzOrder-goodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  max-width: 280px !important;
+}
+
+.app-container.gzOrder-goodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-form-item__content {
+  flex: 0 0 auto !important;
+}
+
+.app-container.gzOrder-goodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-input {
+  width: 220px !important;
+  max-width: 220px !important;
+}
+
 .app-container.gzOrder-goodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow {
   flex: 1 1 auto !important;
   min-width: 200px;
-  max-width: none !important;
+  max-width: 320px !important;
 }
 
 .app-container.gzOrder-goodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-form-item {
@@ -1974,7 +2007,7 @@ export default {
 
 .app-container.gzOrder-goodsApply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--grow .el-input {
   width: 100% !important;
-  max-width: none !important;
+  max-width: 280px !important;
 }
 
 .app-container.gzOrder-goodsApply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
@@ -2130,6 +2163,27 @@ export default {
   line-height: 28px !important;
   min-height: 28px !important;
   box-sizing: border-box;
+}
+
+/* 覆盖上行通用 line-height，保证名称/规格与编码、单位水平对齐 */
+.app-container.gzOrder-goodsApply-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.detail-col-text-wrap.el-table__cell > .cell {
+  display: flex !important;
+  align-items: center !important;
+  line-height: normal !important;
+  min-height: 28px !important;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.app-container.gzOrder-goodsApply-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.detail-col-text-wrap .detail-text-cell-2line {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 20px;
+  max-height: 40px;
+  width: 100%;
+  word-break: break-all;
 }
 
 /* 明细表行悬停、勾选高亮 */

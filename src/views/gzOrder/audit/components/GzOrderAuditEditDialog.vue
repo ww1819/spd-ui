@@ -34,7 +34,12 @@
                   <el-col class="apply-modal-field apply-modal-field--standard">
                     <el-form-item label="单据状态" prop="orderStatus">
                       <el-select v-model="form.orderStatus" placeholder="单据状态" :disabled="true" clearable>
-                        <el-option v-for="dict in dict.type.biz_status" :key="dict.value" :label="dict.label" :value="dict.value" />
+                        <el-option
+                          v-for="dict in dict.type.biz_status"
+                          :key="dict.value"
+                          :label="dict.label"
+                          :value="dict.value == null ? dict.value : String(dict.value)"
+                        />
                       </el-select>
                     </el-form-item>
                   </el-col>
@@ -68,7 +73,7 @@
                       </el-input>
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--grow">
+                  <el-col class="apply-modal-field apply-modal-field--remark">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action || isAuditedForm" />
                     </el-form-item>
@@ -279,7 +284,7 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 export default {
   name: 'GzOrderAuditEditDialog',
   dicts: ['biz_status'],
-  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'OrderAudit')],
+  mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Audit' && vm.refAcceptOpen !== undefined)],
   components: { SelectWarehouse, SelectDepartment },
   inheritAttrs: false
 }

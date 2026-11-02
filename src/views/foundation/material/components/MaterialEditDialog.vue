@@ -15,7 +15,7 @@
               </el-tooltip>
             </span>
             <div class="material-tab-pane-body">
-            <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode" :class="{ 'zq-material-limited-edit': zqTcmLimitedEdit, 'material-form-grid': true }">
+            <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode" :show-message="false" :class="{ 'zq-material-limited-edit': zqTcmLimitedEdit, 'material-form-grid': true }">
               <el-alert
                 v-if="zqTcmLimitedEdit"
                 type="warning"
@@ -24,7 +24,7 @@
                 title="枣强县中医院仅可修改财务分类、生产厂家、供应商与单价，其他字段暂不可变更"
                 class="zq-edit-hint"
               />
-              <div class="material-detail-card">
+              <div class="material-detail-card material-detail-card--period-hang">
                 <div class="material-detail-card__header">
                   <i class="el-icon-document" />
                   <span>基础档案</span>
@@ -35,8 +35,8 @@
                   <el-form-item label="产品编码：" prop="code">
                 <el-input
                   v-model="form.code"
-                  :disabled="isDisabled || form.id != null || isHsThirdTenant"
-                  :placeholder="isHsThirdTenant ? '产品编码由系统自动生成' : '产品编码（留空自动生成6位数字，手工输入可为任意长度）'"
+                  :disabled="isDisabled || form.id != null"
+                  :placeholder="isHsThirdTenant ? '产品编码（留空按库房分类自动生成，手工输入不可重复）' : '产品编码（留空自动生成6位数字，手工输入不可重复）'"
                   @blur="validateCode"
                   @input="handleCodeInput"
                 />
@@ -137,6 +137,7 @@
                         size="mini"
                         class="period-longterm-btn"
                         :type="periodDateLongTerm ? 'primary' : 'default'"
+                        :plain="!periodDateLongTerm"
                         @click="togglePeriodDateLongTerm"
                       >长期</el-button>
                     </div>
@@ -346,134 +347,136 @@
                 </div>
               </div>
 
-              <!-- 业务开关 -->
+              <!-- 业务开关：直接放在卡片内，开关之间用间隔符分隔 -->
               <div class="material-detail-card">
                 <div class="material-detail-card__header">
                   <i class="el-icon-setting" />
                   <span>业务开关</span>
                 </div>
-                <div class="material-detail-card__body">
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <div class="switch-container switch-container--square">
-                <div class="switch-row switch-row-single">
-                  <el-form-item label="" prop="isUse" class="switch-form-item switch-form-item-is-use">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ active: form.isUse === '1' }">
-                        <span class="switch-required-mark">*</span>启用
-                      </span>
-                      <el-switch
-                        v-model="form.isUse"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                        @change="onIsUseChange"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isTemporaryPurchase" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isTemporaryPurchase === '1' }" style="white-space: nowrap;">临购</span>
-                      <el-switch
-                        v-model="form.isTemporaryPurchase"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isBilling" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isBilling === '1' }">计费</span>
-                      <el-switch
-                        v-model="form.isBilling"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isServiceFee" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isServiceFee === '1' }">服务费</span>
-                      <el-switch
-                        v-model="form.isServiceFee"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isGz" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isGz === '1' }">高值</span>
-                      <el-switch
-                        v-model="form.isGz"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isFollow" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isFollow === '1' }">跟台</span>
-                      <el-switch
-                        v-model="form.isFollow"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isMonitor" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isMonitor === '1' }" style="white-space: nowrap;">重点监测</span>
-                      <el-switch
-                        v-model="form.isMonitor"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isCentralizedProcurement" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isProcure === '1' }">集采</span>
-                      <el-switch
-                        v-model="form.isProcure"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                  <el-form-item label="" prop="isSunshineProcurement" class="switch-form-item">
-                    <div class="switch-with-label-left">
-                      <span class="switch-label" :class="{ 'active': form.isSunshineProcurement === '1' }">阳采</span>
-                      <el-switch
-                        v-model="form.isSunshineProcurement"
-                        :active-value="'1'"
-                        :inactive-value="'2'"
-                      />
-                    </div>
-                  </el-form-item>
-                </div>
-                <el-row v-if="form.isProcure === '1'" :gutter="20" style="margin-top: 8px;">
-                  <el-col :span="8">
-                    <el-form-item label="集采类型：" prop="jcTypeId">
-                      <SelectJcType v-model="form.jcTypeId" placeholder="请选择集采类型" />
+                <div class="material-detail-card__body material-switch-body">
+                  <div class="switch-row switch-row-single switch-row-flat">
+                    <el-form-item label="" prop="isUse" class="switch-form-item switch-form-item-is-use">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ active: form.isUse === '1' }">
+                          <span class="switch-required-mark">*</span>启用
+                        </span>
+                        <el-switch
+                          v-model="form.isUse"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                          @change="onIsUseChange"
+                        />
+                      </div>
                     </el-form-item>
-                  </el-col>
-                </el-row>
-                <div
-                  v-if="form.id && form.isUse !== originalIsUse"
-                  class="switch-status-reason-row"
-                >
-                  <el-form-item label="状态变更原因：" prop="statusChangeReason" class="status-reason-form-item">
-                    <el-input
-                      v-model="form.statusChangeReason"
-                      type="textarea"
-                      :rows="2"
-                      :placeholder="form.isUse === '1' ? '请填写启用原因' : '请填写停用原因'"
-                    />
-                  </el-form-item>
-                </div>
-              </div>
-            </el-col>
-          </el-row>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isTemporaryPurchase" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isTemporaryPurchase === '1' }" style="white-space: nowrap;">临购</span>
+                        <el-switch
+                          v-model="form.isTemporaryPurchase"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isBilling" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isBilling === '1' }">计费</span>
+                        <el-switch
+                          v-model="form.isBilling"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isServiceFee" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isServiceFee === '1' }">服务费</span>
+                        <el-switch
+                          v-model="form.isServiceFee"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isGz" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isGz === '1' }">高值</span>
+                        <el-switch
+                          v-model="form.isGz"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isFollow" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isFollow === '1' }">跟台</span>
+                        <el-switch
+                          v-model="form.isFollow"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isMonitor" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isMonitor === '1' }" style="white-space: nowrap;">重点监测</span>
+                        <el-switch
+                          v-model="form.isMonitor"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isCentralizedProcurement" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isProcure === '1' }">集采</span>
+                        <el-switch
+                          v-model="form.isProcure"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                    <span class="switch-sep" aria-hidden="true">|</span>
+                    <el-form-item label="" prop="isSunshineProcurement" class="switch-form-item">
+                      <div class="switch-with-label-left">
+                        <span class="switch-label" :class="{ 'active': form.isSunshineProcurement === '1' }">阳采</span>
+                        <el-switch
+                          v-model="form.isSunshineProcurement"
+                          :active-value="'1'"
+                          :inactive-value="'2'"
+                        />
+                      </div>
+                    </el-form-item>
+                  </div>
+                  <el-row v-if="form.isProcure === '1'" :gutter="20" style="margin-top: 8px;">
+                    <el-col :span="8">
+                      <el-form-item label="集采类型：" prop="jcTypeId">
+                        <SelectJcType v-model="form.jcTypeId" placeholder="请选择集采类型" />
+                      </el-form-item>
+                    </el-col>
+                  </el-row>
+                  <div
+                    v-if="form.id && form.isUse !== originalIsUse"
+                    class="switch-status-reason-row"
+                  >
+                    <el-form-item label="状态变更原因：" prop="statusChangeReason" class="status-reason-form-item">
+                      <el-input
+                        v-model="form.statusChangeReason"
+                        type="textarea"
+                        :rows="2"
+                        :placeholder="form.isUse === '1' ? '请填写启用原因' : '请填写停用原因'"
+                      />
+                    </el-form-item>
+                  </div>
                 </div>
               </div>
 
@@ -967,10 +970,10 @@
         </el-tabs>
         <div class="material-modal-footer">
           <template v-if="!isViewMode">
-            <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
-            <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
+            <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">确 定</el-button>
+            <el-button type="warning" icon="el-icon-close" size="small" class="spd-btn spd-btn--warning" @click="cancel">取 消</el-button>
           </template>
-          <el-button v-else size="small" class="spd-btn spd-btn--secondary" @click="cancel">关 闭</el-button>
+          <el-button v-else type="warning" icon="el-icon-close" size="small" class="spd-btn spd-btn--warning" @click="cancel">关 闭</el-button>
         </div>
       </div>
     </div>
@@ -1116,30 +1119,48 @@ export default {
   margin: 0;
 }
 
-/* 注册证有效期 + 长期：同一行 */
+/* 注册证有效期：日期框与单价同宽（100%）；「长期」缩小后挂在输入框后面 */
+.material-modal-content .material-detail-card--period-hang {
+  overflow: visible;
+}
+.material-modal-content .material-detail-card--period-hang .material-detail-card__body {
+  overflow: visible;
+}
+.material-modal-content .period-date-col {
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+}
+.material-modal-content .period-date-col .el-form-item__content {
+  overflow: visible;
+}
 .material-modal-content .period-date-longterm-wrap {
-  display: flex !important;
-  align-items: center;
-  gap: 6px;
+  display: block !important;
   width: 100%;
   position: relative;
 }
-.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor {
-  flex: 1 1 auto;
-  min-width: 0;
-  width: auto !important;
+.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor,
+.material-modal-content .period-date-longterm-wrap .period-date-picker.el-date-editor.el-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
 }
 .material-modal-content .period-date-longterm-wrap .period-longterm-btn.el-button {
-  position: static !important;
-  left: auto !important;
-  top: auto !important;
-  transform: none !important;
-  flex: 0 0 auto;
-  width: auto !important;
-  min-width: auto !important;
-  max-width: none !important;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+  position: absolute !important;
+  left: calc(100% + 4px) !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   margin: 0 !important;
+  padding: 0 6px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  line-height: 20px !important;
+  font-size: 12px !important;
+  border-radius: 3px !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  white-space: nowrap;
+  z-index: 3;
 }
 </style>
