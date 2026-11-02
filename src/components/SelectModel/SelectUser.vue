@@ -2,7 +2,7 @@
   <el-select v-model="user" filterable
              clearable
              :disabled="disabled"
-             placeholder="请选择操作人">
+             :placeholder="selectPlaceholder">
     <el-option
       v-for="item in userOptions"
       :key="item.userId"
@@ -22,36 +22,33 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    placeholder: {
+      type: String,
+      default: ''
     }
   },
   data() {
     return {
-      // 用户选项
       userOptions: [],
-      // 表单参数
       form: {},
     }
   },
   computed: {
+    selectPlaceholder() {
+      const t = this.placeholder != null ? String(this.placeholder).trim() : '';
+      return t || '请选择操作人';
+    },
     user: {
-      get() {
-        return this.value;
-      },
-      set(v) {
-        this.$emit('input', v);
-      }
+      get() { return this.value; },
+      set(v) { this.$emit('input', v); }
     }
   },
-  created() {
-    this.getList();
-  },
+  created() { this.getList(); },
   methods: {
-    /** 查询供应商列表 */
     getList() {
       this.loading = true;
-      listUserAll().then(response => {
-        this.userOptions = response;
-      });
+      listUserAll().then(response => { this.userOptions = response; });
     },
   }
 }

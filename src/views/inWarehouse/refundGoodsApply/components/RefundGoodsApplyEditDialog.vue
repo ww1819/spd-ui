@@ -62,7 +62,7 @@
         <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
           <el-col class="apply-modal-field apply-modal-field--compact">
             <el-form-item label="采购员" prop="proPerson">
-              <SelectUser v-model="form.proPerson"/>
+              <SelectUser v-model="form.proPerson" placeholder="采购员"/>
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--compact">

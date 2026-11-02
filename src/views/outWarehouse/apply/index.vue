@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page outWarehouse-apply-page">
+  <div class="app-container list-page outWarehouse-apply-page" :class="{ 'is-modal-open': open }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -376,6 +376,8 @@ export default {
         totalAmt: 0
       },
       mainTableHeight: 400,
+      /** 弹窗明细表高度（按剩余空间测量，与到货验收观感一致） */
+      detailTableHeightPx: null,
       // 出库表格数据
       warehouseList: [],
       selectRow: [],
@@ -459,9 +461,12 @@ export default {
       if (!m || !m.form) return false
       return Number(m.form.value) === 2 || m.component === 'window-print-preview'
     },
-    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    /** 与到货验收「添加入库」弹窗明细表高度一致；优先用实测剩余高度 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      if (this.detailTableHeightPx != null && this.detailTableHeightPx > 0) {
+        return this.detailTableHeightPx;
+      }
+      return 'max(240px, calc(100vh - 360px))';
     },
     /** 枣强县中医院：出库申请弹窗内可直接审核（其他租户仍走出库审核菜单） */
     isZqTenant() {
@@ -527,9 +532,13 @@ export default {
     },
     open(val) {
       if (val) {
-        this.$nextTick(() => this.refreshEntryStockQty())
+        this.$nextTick(() => {
+          this.refreshEntryStockQty();
+          this.scheduleDetailTableHeightRefresh();
+        });
       } else {
         this.detailSelectedRowMap = {};
+        this.detailTableHeightPx = null;
       }
     },
     'form.warehouseId'(val, oldVal) {
@@ -542,6 +551,9 @@ export default {
   methods: {
     onApplyWindowResize() {
       this.updateMainTableHeight();
+      if (this.open) {
+        this.updateDetailTableHeight();
+      }
     },
     scheduleApplyLayoutRefresh() {
       const run = () => this.updateMainTableHeight();
@@ -551,6 +563,38 @@ export default {
           run();
           [50, 120, 300].forEach((ms) => setTimeout(run, ms));
         });
+      });
+    },
+    scheduleDetailTableHeightRefresh() {
+      const run = () => this.updateDetailTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 280].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    /** 按弹窗明细区剩余高度铺满，避免与到货验收明细框高度偏差 */
+    updateDetailTableHeight() {
+      if (!this.open) return;
+      const root = this.$el && this.$el.querySelector
+        ? this.$el.querySelector('.local-modal-content.apply-modal-root-content')
+        : null;
+      const wrap = root && root.querySelector('.apply-modal-table-panel .table-wrapper');
+      if (!wrap || !wrap.getBoundingClientRect) return;
+      const h = Math.floor(wrap.clientHeight || wrap.getBoundingClientRect().height || 0);
+      if (!h) return;
+      const next = Math.max(240, h);
+      if (this.detailTableHeightPx == null || Math.abs(this.detailTableHeightPx - next) >= 2) {
+        this.detailTableHeightPx = next;
+      }
+      this.$nextTick(() => {
+        const host = this.$children && this.$children.find(c => c.$refs && c.$refs.stkIoBillEntry);
+        const table = (host && host.$refs.stkIoBillEntry) || null;
+        if (table && typeof table.doLayout === 'function') {
+          table.doLayout();
+        }
       });
     },
     updateMainTableHeight() {
@@ -1929,7 +1973,8 @@ export default {
 
 ::v-deep .local-modal-content .el-form{
   flex: 1;
-  overflow: visible;
+  min-height: 0;
+  overflow: hidden;
   padding: 8px 0 8px;
   background: #fff;
   box-shadow: none;
@@ -1956,7 +2001,7 @@ export default {
   margin-top: 0;
   margin-bottom: 0;
   flex-shrink: 0;
-  padding: 12px 8px;
+  padding: 6px 8px 8px;
   border-radius: 0;
   border-left: none;
   border-right: none;
@@ -2003,6 +2048,27 @@ export default {
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item{
   margin-bottom: 0;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label{
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content{
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
@@ -2067,17 +2133,17 @@ export default {
   white-space: nowrap;
 }
 
-/* 弹窗内明细表区：与列表 apply-table-panel 同款白卡片 */
+/* 弹窗内明细表区：与到货验收一致（flex 铺满剩余高度） */
 ::v-deep .local-modal-content .apply-modal-table-panel{
   margin-top: 0;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #e8ecf1;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -2123,21 +2189,7 @@ export default {
   width: 98px !important;
 }
 
-/* 明细表紧凑行高：单元格与输入框 */
-::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
-  padding: 4px 0 !important;
-}
-::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell > .cell {
-  padding-left: 6px !important;
-  padding-right: 6px !important;
-  line-height: 28px;
-  min-height: 28px;
-  box-sizing: border-box;
-}
-::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.detail-col-text-wrap > .cell {
-  line-height: 1.35;
-  min-height: 0;
-}
+/* 明细表紧凑行高：与到货验收完全一致 */
 ::v-deep .local-modal-content .modal-detail-section .el-table ::v-deep tbody td.el-table__cell {
   padding: 4px 0 !important;
 }
@@ -3557,12 +3609,13 @@ export default {
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
   vertical-align: middle;
 }
-.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table tbody td.el-table__cell > .cell {
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell > .cell {
   padding-left: 6px !important;
   padding-right: 6px !important;
-  line-height: 28px !important;
-  min-height: 28px !important;
-  box-sizing: border-box;
+  line-height: 1.35;
+}
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table thead th.el-table__cell {
+  padding: 6px 0 !important;
 }
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-field-input .cell {
   vertical-align: middle;
@@ -3575,8 +3628,7 @@ export default {
   white-space: normal;
   word-break: break-word;
   padding: 4px 6px;
-  line-height: 1.35 !important;
-  min-height: 0 !important;
+  line-height: 1.35;
 }
 .app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .detail-text-cell-2line {
   display: -webkit-box;
@@ -3677,16 +3729,109 @@ export default {
   white-space: nowrap !important;
   word-break: keep-all !important;
 }
+
+/* 弹窗明细区：与到货验收一致（铺满、无圆角卡片边） */
+.app-container.outWarehouse-apply-page .local-modal-content .apply-modal-table-panel {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
+  overflow: visible;
+}
+
+/* 弹窗明细表头：与到货验收主列表/明细一致 */
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+}
+
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  line-height: 20px !important;
+}
+
 .app-container.outWarehouse-apply-page .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
 }
-.app-container.outWarehouse-apply-page .local-modal-mask {
+
+/* 外扩抵消 container 边距；四周灰边均为 8px（与到货验收一致） */
+.app-container.outWarehouse-apply-page.is-modal-open {
+  padding-bottom: 0 !important;
+}
+.app-container.outWarehouse-apply-page .local-modal-mask:not(.material-filter-mask--nested) {
   left: -8px;
   right: -8px;
+  top: -8px;
+  bottom: -8px;
   width: auto;
   position: absolute;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
+.app-container.outWarehouse-apply-page .local-modal-mask > .local-modal-content,
+.app-container.outWarehouse-apply-page .local-modal-mask .local-modal-content.apply-modal-root-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+}
+/* 弹窗表头：inline-flex 保证标签与输入框同一行（与到货验收一致） */
+.app-container.outWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.outWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.app-container.outWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
 .app-container.outWarehouse-apply-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
   color: #f56c6c !important;
 }
@@ -3697,6 +3842,17 @@ export default {
 /* 总金额：标签与数值红色 */
 .app-container.outWarehouse-apply-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
   color: #f56c6c !important;
+}
+
+/* 明细操作列表头强制显示「操作」 */
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.detail-action-col .cell,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.detail-action-col .cell,
+.app-container.outWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-action-col .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 .app-container.outWarehouse-apply-page .local-modal-content .apply-modal-header-amount .el-input__inner {
   color: #f56c6c !important;

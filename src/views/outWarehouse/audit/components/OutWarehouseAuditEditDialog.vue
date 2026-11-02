@@ -73,7 +73,7 @@
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable disabled />
+              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -216,9 +216,9 @@
                   style="width: 100%"
                   onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                   onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                        @blur="form.result=$event.target.value"
-                        @input="qtyChange(scope.row)"
-              />
+                  @blur="form.result=$event.target.value"
+                  @input="qtyChange(scope.row)"
+                />
               </div>
             </template>
           </el-table-column>
@@ -326,7 +326,18 @@
             </template>
           </el-table-column>
           <el-table-column v-if="isZaoqiangTenant" label="pharmacyStockId" prop="hisPharmacyStockId" width="130" show-overflow-tooltip />
-          <el-table-column v-if="action" label="操作" width="188" align="center" fixed="right" resizable>
+          <el-table-column
+            v-if="action"
+            label="操作"
+            width="188"
+            align="center"
+            header-align="center"
+            fixed="right"
+            resizable
+            class-name="detail-action-col"
+            header-cell-class-name="detail-action-col"
+            :render-header="renderDetailActionHeader"
+          >
             <template slot-scope="scope">
               <el-button type="text" size="small" @click="copyOutEntryRow(scope.$index)">复制</el-button>
               <el-button type="text" size="small" style="color:#f56c6c" @click="deleteOutEntryRow(scope.$index)">删除</el-button>
@@ -359,6 +370,12 @@ export default {
   mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Audit' && vm.hisEntryView !== undefined)],
   components: { SelectWarehouse, SelectDepartment, SelectUser },
   dicts: ['way_status', 'bill_type'],
-  inheritAttrs: false
+  inheritAttrs: false,
+  methods: {
+    /** 固定右列表头「操作」：render-header 比 slot 在 fixed 列上更稳 */
+    renderDetailActionHeader() {
+      return this.$createElement('span', '操作')
+    }
+  }
 }
 </script>

@@ -12,7 +12,7 @@
                       @keyup.enter.native="handleQuery"
             />
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
-              <SelectSupplier v-model="queryParams.supplerId"/>
+              <SelectSupplier v-model="queryParams.supplerId" placeholder="供应商"/>
             </div>
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectWarehouse v-model="queryParams.warehouseId" :excludeWarehouseType="['高值', '设备']" placeholder="仓库"/>
@@ -2101,24 +2101,17 @@ export default {
   color: #606266;
 }
 
-/* 弹窗表头：供应商/仓库/总金额标签红色，不显示 * 号 */
-.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
-  color: #f56c6c !important;
-}
-.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
-  content: none !important;
-  display: none !important;
-}
-
+/* 弹窗表头：inline-flex 保证标签与输入框同一行（与到货验收一致） */
+.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
 .app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
   margin-bottom: 0;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   vertical-align: top;
-  width: 100%;
 }
 
+.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
 .app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
   float: none;
   width: auto !important;
@@ -2128,6 +2121,17 @@ export default {
   line-height: 28px;
   height: 28px;
   font-size: 13px;
+  color: #606266;
+}
+
+.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+  width: 100%;
 }
 
 .app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
@@ -2139,6 +2143,15 @@ export default {
 
 .app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .return-reason-form-item .el-form-item__label {
   white-space: nowrap;
+}
+
+/* 弹窗表头：供应商/仓库/总金额标签红色，不显示 * 号 */
+.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+.app-container.inWarehouse-refundGoodsAudit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
 }
 
 /* 添加入库弹窗：有效期列单元格允许换行展示 */

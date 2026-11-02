@@ -332,7 +332,10 @@
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
-          <el-table-column v-if="action" label="操作" width="188" align="center" fixed="right" resizable>
+          <el-table-column v-if="action" label="操作" width="188" align="center" header-align="center" fixed="right" resizable class-name="detail-action-col" header-cell-class-name="detail-action-col">
+            <template slot="header">
+              <span>操作</span>
+            </template>
             <template slot-scope="scope">
               <el-button type="text" size="small" @click="copyOutEntryRow(scope.$index)">复制</el-button>
               <el-button type="text" size="small" style="color:#f56c6c" @click="deleteOutEntryRow(scope.$index)">删除</el-button>

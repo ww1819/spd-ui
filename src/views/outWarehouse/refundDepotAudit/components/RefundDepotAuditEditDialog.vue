@@ -32,7 +32,7 @@
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
-            <el-form-item label="总金额" prop="totalAmount">
+            <el-form-item label="总金额" prop="totalAmount" class="apply-modal-header-amount">
               <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
@@ -57,9 +57,9 @@
               <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用单号" />
             </el-form-item>
           </el-col>
-          <el-col class="apply-modal-field apply-modal-field--grow" style="flex: 1 1 auto; min-width: 200px;">
+          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable disabled style="width: 100%; max-width: none;" />
+              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
             </el-form-item>
           </el-col>
         </el-row>

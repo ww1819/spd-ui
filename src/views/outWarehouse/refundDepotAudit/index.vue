@@ -350,6 +350,8 @@ export default {
         totalAmt: 0
       },
       mainTableHeight: 400,
+      /** 弹窗明细表高度（按剩余空间测量） */
+      detailTableHeightPx: null,
       // 退库表格数据
       warehouseList: [],
       selectRow: [],
@@ -433,9 +435,12 @@ export default {
       if (!m || !m.form) return false
       return Number(m.form.value) === 2 || m.component === 'window-print-preview'
     },
-    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    /** 与到货验收「添加入库」弹窗明细表高度一致；优先用实测剩余高度 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      if (this.detailTableHeightPx != null && this.detailTableHeightPx > 0) {
+        return this.detailTableHeightPx;
+      }
+      return 'max(240px, calc(100vh - 360px))';
     }
   },
   created() {
@@ -455,6 +460,13 @@ export default {
     total() {
       this.$nextTick(() => this.updateMainTableHeight());
     },
+    open(val) {
+      if (val) {
+        this.$nextTick(() => this.scheduleDetailTableHeightRefresh());
+      } else {
+        this.detailTableHeightPx = null;
+      }
+    },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
     }
@@ -462,6 +474,9 @@ export default {
   methods: {
     onApplyWindowResize() {
       this.updateMainTableHeight();
+      if (this.open) {
+        this.updateDetailTableHeight();
+      }
     },
     scheduleApplyLayoutRefresh() {
       const run = () => this.updateMainTableHeight();
@@ -471,6 +486,38 @@ export default {
           run();
           [50, 120, 300].forEach((ms) => setTimeout(run, ms));
         });
+      });
+    },
+    scheduleDetailTableHeightRefresh() {
+      const run = () => this.updateDetailTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 280].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    /** 按弹窗明细区剩余高度铺满，与到货验收/退库申请一致 */
+    updateDetailTableHeight() {
+      if (!this.open) return;
+      const root = this.$el && this.$el.querySelector
+        ? this.$el.querySelector('.local-modal-content.apply-modal-root-content')
+        : null;
+      const wrap = root && root.querySelector('.apply-modal-table-panel .table-wrapper');
+      if (!wrap || !wrap.getBoundingClientRect) return;
+      const h = Math.floor(wrap.clientHeight || wrap.getBoundingClientRect().height || 0);
+      if (!h) return;
+      const next = Math.max(240, h);
+      if (this.detailTableHeightPx == null || Math.abs(this.detailTableHeightPx - next) >= 2) {
+        this.detailTableHeightPx = next;
+      }
+      this.$nextTick(() => {
+        const host = this.$children && this.$children.find(c => c.$refs && c.$refs.stkIoBillEntry);
+        const table = (host && host.$refs.stkIoBillEntry) || null;
+        if (table && typeof table.doLayout === 'function') {
+          table.doLayout();
+        }
       });
     },
     updateMainTableHeight() {
@@ -1202,31 +1249,36 @@ export default {
   color: #606266;
   margin-right: 8px;
 }
-/* 内部弹窗样式 - 与到货验收 / 退库申请一致 */
-::v-deep .local-modal-mask{
+/* 内部弹窗：四周灰边等宽（与到货验收/退库申请一致） */
+::v-deep .local-modal-mask:not(.material-filter-mask--nested){
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.35);
   z-index: 1000;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 ::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
+  padding-bottom: 0;
   box-sizing: border-box;
+  border-radius: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 ::v-deep .modal-header{
@@ -1268,7 +1320,8 @@ export default {
 
 ::v-deep .local-modal-content .el-form{
   flex: 1;
-  overflow: visible;
+  min-height: 0;
+  overflow: hidden;
   padding: 8px 0 8px;
   background: #fff;
   box-shadow: none;
@@ -1295,7 +1348,7 @@ export default {
   margin-top: 0;
   margin-bottom: 0;
   flex-shrink: 0;
-  padding: 12px 8px;
+  padding: 6px 8px 8px;
   border-radius: 0;
   border-left: none;
   border-right: none;
@@ -1331,6 +1384,27 @@ export default {
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item{
   margin-bottom: 0;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label{
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content{
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
@@ -1383,14 +1457,14 @@ export default {
 
 ::v-deep .local-modal-content .apply-modal-table-panel{
   margin-top: 0;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #e8ecf1;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -1686,8 +1760,10 @@ export default {
   text-align: center !important;
 }
 
-::v-deep .local-modal-content {
-  min-height: 95vh !important;
+/* 嵌套外弹窗高度随遮罩，禁止 95vh 顶破主内容区 */
+::v-deep .local-modal-content:not(.material-filter-modal--nested) {
+  min-height: 0 !important;
+  max-height: 100% !important;
 }
 
 ::v-deep .local-modal-content .el-table:not(.apply-detail-table) .el-table__body-wrapper {
@@ -1816,17 +1892,67 @@ export default {
 }
 
 
-/* 退库审核弹窗：与到货验收 / 退库申请明细框一致 */
-.app-container.outWarehouse-refundDepotAudit-page .local-modal-mask {
+/* 退库审核弹窗：与到货验收 / 退库申请一致 */
+.app-container.outWarehouse-refundDepotAudit-page.is-modal-open {
+  padding-bottom: 0 !important;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-mask:not(.material-filter-mask--nested) {
   left: -8px;
   right: -8px;
+  top: -8px;
+  bottom: -8px;
   width: auto;
   position: absolute;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-mask > .local-modal-content,
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-mask .local-modal-content.apply-modal-root-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
 }
 
 .app-container.outWarehouse-refundDepotAudit-page .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 .app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
@@ -1837,25 +1963,15 @@ export default {
   content: none !important;
   display: none !important;
 }
-.app-container.outWarehouse-refundDepotAudit-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  position: absolute;
-}
 
-.app-container.outWarehouse-refundDepotAudit-page .local-modal-content.apply-modal-root-content {
-  position: relative;
-  overflow: hidden;
-}
-
-.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
   color: #f56c6c !important;
 }
 
-.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
-  content: none !important;
-  display: none !important;
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .apply-modal-header-amount .el-input__inner {
+  color: #f56c6c !important;
+  font-weight: 600;
+  -webkit-text-fill-color: #f56c6c !important;
 }
 
 .app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header th.gutter {
@@ -1896,10 +2012,23 @@ export default {
   margin-right: 0 !important;
   width: 100% !important;
   max-width: 100% !important;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
   overflow: visible;
+}
+
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
+  padding: 4px 0 !important;
+}
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  line-height: 1.35;
+}
+.app-container.outWarehouse-refundDepotAudit-page .local-modal-content .modal-detail-section .el-table thead th.el-table__cell {
+  padding: 6px 0 !important;
 }
 
 /* 弹窗明细表头：与到货验收主列表一致 */
@@ -2191,16 +2320,26 @@ export default {
   text-align: center;
 }
 
-/* 科室库存明细嵌套层：对齐 RK-添加明细 */
+/* 科室库存明细嵌套层：对齐 RK-添加明细（铺满父白底，无额外灰边） */
 .app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
-  position: absolute;
-  left: 0;
-  right: -8px;
-  top: 0;
-  bottom: 0;
-  width: auto;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
   box-sizing: border-box;
   z-index: 3100;
+  overflow: hidden;
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested .modal-header {
@@ -2218,9 +2357,12 @@ export default {
 }
 
 html body .app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+  width: 100% !important;
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
 }
 
 .app-container.outWarehouse-refundDepotAudit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .material-filter-modal--nested {

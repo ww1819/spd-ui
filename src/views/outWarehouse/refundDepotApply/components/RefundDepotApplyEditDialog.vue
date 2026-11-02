@@ -32,7 +32,7 @@
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
-            <el-form-item label="总金额" prop="totalAmount">
+            <el-form-item label="总金额" prop="totalAmount" class="apply-modal-header-amount">
               <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
@@ -59,12 +59,12 @@
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--compact">
             <el-form-item label="退库原因" prop="returnReason">
-              <el-input v-model="form.returnReason" placeholder="退库原因" />
+              <el-input v-model="form.returnReason" placeholder="退库原因" :disabled="!action" />
             </el-form-item>
           </el-col>
-          <el-col class="apply-modal-field apply-modal-field--grow" style="flex: 1 1 auto; min-width: 200px;">
+          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" style="width: 100%; max-width: none;" />
+              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -225,7 +225,7 @@
           </el-table-column>
           <el-table-column label="备注" prop="remark" width="140" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.remark" size="small" placeholder="备注" />
+              <el-input v-model="scope.row.remark" size="small" placeholder="备注" :disabled="!action" />
             </template>
           </el-table-column>
           <el-table-column label="注册证号" align="center" prop="material.registerNo" width="140" show-overflow-tooltip resizable/>
