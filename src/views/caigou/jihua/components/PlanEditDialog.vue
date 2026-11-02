@@ -12,17 +12,17 @@
               <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
                 <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="单号" prop="planNo" class="form-item-header-billno">
-                    <el-input v-model="form.planNo" :disabled="true" :title="form.planNo || ''" />
+                    <el-input v-model="form.planNo" :disabled="true" :title="form.planNo || ''" placeholder="单号" />
                   </el-form-item>
                 </el-col>
                 <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
-                    <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备"/>
+                    <SelectWarehouse v-model="form.warehouseId" :value2="warehouseLocked" excludeWarehouseType="设备" placeholder="仓库"/>
                   </el-form-item>
                 </el-col>
                 <el-col class="apply-modal-field apply-modal-field--compact plan-field-is-gz">
                   <el-form-item label="高值/低值" prop="isGz" class="apply-modal-label-required">
-                    <el-select v-model="form.isGz" placeholder="请选择" clearable :disabled="!editable || headerLocked">
+                    <el-select v-model="form.isGz" placeholder="高值/低值" clearable :disabled="!editable || headerLocked">
                       <el-option label="高值" value="1" />
                       <el-option label="低值" value="2" />
                     </el-select>
@@ -35,7 +35,7 @@
                 </el-col>
                 <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="操作人" prop="createBy">
-                    <el-input :value="operatorName" :disabled="true" />
+                    <el-input :value="operatorName" :disabled="true" placeholder="操作人" />
                   </el-form-item>
                 </el-col>
                 <el-col class="apply-modal-field apply-modal-field--compact plan-field-phone">
@@ -47,12 +47,12 @@
               <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
                 <el-col class="apply-modal-field apply-modal-field--compact">
                   <el-form-item label="采购员" prop="proPerson">
-                    <SelectUser v-model="form.proPerson" v-if="editable"/>
-                    <el-input :value="purchaserName" :disabled="true" v-else/>
+                    <SelectUser v-model="form.proPerson" v-if="editable" placeholder="采购员"/>
+                    <el-input :value="purchaserName" :disabled="true" placeholder="采购员" v-else/>
                   </el-form-item>
                 </el-col>
                 <el-col class="apply-modal-field apply-modal-field--compact">
-                  <el-form-item label="总金额" prop="totalAmount">
+                  <el-form-item label="总金额" prop="totalAmount" class="apply-modal-header-amount">
                     <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
                   </el-form-item>
                 </el-col>
@@ -155,7 +155,7 @@ export default {
     headerLocked: { type: Boolean, default: false },
     planEntryModeDisabled: { type: Boolean, default: false },
     planSourceDisplay: { type: String, default: '' },
-    tableHeight: { type: String, default: 'max(240px, calc(100vh - 384px))' },
+    tableHeight: { type: [String, Number], default: 'max(240px, calc(100vh - 360px))' },
     summaryMethod: { type: Function, required: true },
     supplierDisplayFn: { type: Function, default: null },
     submitLoading: { type: Boolean, default: false },
@@ -202,16 +202,11 @@ export default {
 <style lang="scss" scoped>
 @import '../styles/plan-modal-common.scss';
 
-.plan-edit-dialog ::v-deep .plan-field-is-gz .el-form-item__label {
-  width: 82px !important;
-}
-
-.plan-edit-dialog ::v-deep .plan-field-phone .el-form-item__label {
-  width: 82px !important;
-}
-
+/* 标签宽度随文案，与到货验收一致（勿强制 82px 盖住 inline-flex） */
+.plan-edit-dialog ::v-deep .plan-field-is-gz .el-form-item__label,
+.plan-edit-dialog ::v-deep .plan-field-phone .el-form-item__label,
 .plan-edit-dialog ::v-deep .plan-entry-mode-item .el-form-item__label {
-  width: 82px !important;
+  width: auto !important;
 }
 
 .plan-edit-dialog ::v-deep .plan-entry-mode-item .el-form-item__content {

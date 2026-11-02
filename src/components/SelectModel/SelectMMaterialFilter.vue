@@ -118,6 +118,7 @@
             :data="materialList"
             :row-class-name="materialFilterDetailRowClassName"
             @selection-change="handleSelectionChange"
+            @row-dblclick="handleRowDblclick"
             :height="filterTableHeight"
             border
             stripe
@@ -215,6 +216,7 @@
               :data="materialList"
               :row-class-name="materialFilterDetailRowClassName"
               @selection-change="handleSelectionChange"
+              @row-dblclick="handleRowDblclick"
               height="calc(55vh)"
               border
             >
@@ -656,6 +658,15 @@ export default {
           this.$set(this.detailSelectedRowMap, idx, true);
         }
       });
+    },
+    /** 双击行切换勾选（再次双击取消） */
+    handleRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const table = this.$refs.singleTable;
+      if (!table) return;
+      const selected = (this.selectRow || []).indexOf(row) >= 0;
+      table.toggleRowSelection(row, !selected);
     },
     handleClose() {
       this.show = false;

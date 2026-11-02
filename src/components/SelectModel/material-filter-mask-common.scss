@@ -198,7 +198,7 @@ html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nest
   margin-top: 0;
   margin-bottom: 0;
   flex-shrink: 0;
-  padding: 6px 8px;
+  padding: 6px 8px 6px 14px;
   border-radius: 0;
   border-left: none;
   border-right: none;
@@ -207,17 +207,64 @@ html body .material-filter-mask.material-filter-mask--nested .apply-inbound-nest
   box-sizing: border-box;
 }
 
+/* 搜索条件靠左：一行多字段横向排列，标签在输入框前 */
 .material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row {
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   margin-bottom: 4px;
+  padding-left: 0;
+  box-sizing: border-box;
 }
 
 .material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row:last-child {
   margin-bottom: 0;
 }
 
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto;
+  max-width: none;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  float: none;
+}
+
 .material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
   margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-input,
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-select,
+.material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--standard .el-form-item__content > * {
+  width: 140px !important;
+  max-width: 140px !important;
 }
 
 .material-filter-mask .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--material-keyword .el-input {

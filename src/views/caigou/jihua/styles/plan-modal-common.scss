@@ -1,4 +1,4 @@
-/* 采购计划弹窗：白底刚好铺满灰色遮罩（主内容区内，不盖导航/侧栏） */
+/* 采购计划弹窗：与到货验收一致，四周 8px 灰边（页面级 inset 外扩后由 padding 留白） */
 .local-modal-mask {
   position: absolute;
   left: 0;
@@ -10,7 +10,7 @@
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  padding: 0;
+  padding: 8px;
   box-sizing: border-box;
 }
 
@@ -25,10 +25,10 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
+  padding-bottom: 0;
   box-sizing: border-box;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 .modal-header {
@@ -121,6 +121,27 @@
 .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
   margin-bottom: 0;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item.apply-modal-label-required .el-form-item__label,
@@ -179,14 +200,14 @@
 
 .local-modal-content .apply-modal-table-panel {
   margin-top: 0;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #e8ecf1;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
 }
 

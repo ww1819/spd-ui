@@ -8,6 +8,7 @@
       show-summary
       :summary-method="summaryMethod"
       @selection-change="$emit('selection-change', $event)"
+      @row-dblclick="handleRowDblclick"
       ref="entryTable"
       border
       :height="tableHeight"
@@ -76,17 +77,19 @@
           <span>{{ scope.row.stockQty != null ? scope.row.stockQty : '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="采购数量" align="center" header-align="center" prop="qty" width="120" show-overflow-tooltip>
+      <el-table-column label="采购数量" align="center" header-align="center" prop="qty" width="120" min-width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-input
             v-if="editable"
             clearable
             size="small"
-            class="detail-input-compact"
+            class="plan-qty-input"
+            style="width: 100%"
             v-model="scope.row.qty"
-            placeholder="请输入采购数量"
+            placeholder="采购数量"
             @input="$emit('qty-input', scope.row)"
             @blur="$emit('qty-blur', scope.row)"
+            @dblclick.native.stop
           />
           <span v-else>{{ scope.row.qty != null ? scope.row.qty : '--' }}</span>
         </template>
@@ -189,7 +192,7 @@ export default {
   props: {
     list: { type: Array, default: () => [] },
     editable: { type: Boolean, default: true },
-    tableHeight: { type: String, default: 'max(240px, calc(100vh - 384px))' },
+    tableHeight: { type: [String, Number], default: 'max(240px, calc(100vh - 360px))' },
     supplierOptions: { type: Array, default: () => [] },
     supplierLoading: { type: Boolean, default: false },
     headerForm: { type: Object, default: () => ({}) },
@@ -225,6 +228,20 @@ export default {
         return 'apply-row-selected';
       }
       return '';
+    },
+    /** 双击行切换勾选（再次双击取消；勾选列/输入框除外） */
+    handleRowDblclick(row, column, event) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const t = event && event.target;
+      if (t && typeof t.closest === 'function' && (t.closest('.el-input') || t.closest('.el-select') || t.closest('input') || t.closest('textarea'))) {
+        return;
+      }
+      const table = this.$refs.entryTable;
+      if (!table) return;
+      const idx = (this.list || []).indexOf(row);
+      const selected = idx >= 0 && !!(this.detailSelectedRowMap && this.detailSelectedRowMap[idx]);
+      table.toggleRowSelection(row, !selected);
     },
     entryRowKey(row) {
       if (!row) return ''
@@ -347,5 +364,15 @@ export default {
 }
 .plan-supplier-cell__text:hover {
   color: #409eff;
+}
+
+/* 采购数量：随列宽铺满（覆盖弹窗表头区对 .el-input 的固定宽度） */
+::v-deep .plan-qty-input.el-input,
+::v-deep .plan-qty-input {
+  width: 100% !important;
+  max-width: none !important;
+}
+::v-deep .plan-qty-input .el-input__inner {
+  width: 100% !important;
 }
 </style>

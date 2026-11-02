@@ -392,7 +392,7 @@ export default {
     },
     /** 与到货验收「添加入库」弹窗明细表高度一致 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      return 'max(240px, calc(100vh - 360px))';
     },
     /** 操作人姓名（优先昵称） */
     operatorName() {
@@ -971,30 +971,35 @@ getSummaries(param) {
 @import '../jihua/styles/plan-modal-common.scss';
 
 /* 内部弹窗样式 */
-::v-deep .local-modal-mask{
+::v-deep .local-modal-mask:not(.material-filter-mask--nested){
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.35);
   z-index: 1000;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 ::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
+  padding-bottom: 0;
   box-sizing: border-box;
+  border-radius: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 ::v-deep .modal-header{
@@ -1026,7 +1031,7 @@ getSummaries(param) {
 
 ::v-deep .local-modal-content .el-form{
   flex: 1;
-  overflow: visible;
+  overflow: hidden;
   padding: 8px 0 8px;
   background: #fff;
   box-shadow: none;
@@ -1089,14 +1094,15 @@ getSummaries(param) {
   max-width: 100%;
   box-sizing: border-box;
   margin-top: 0;
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   background: #fff;
-  border: 1px solid #e8ecf1;
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: hidden;
   overflow: hidden;
 }
 
@@ -1515,12 +1521,45 @@ getSummaries(param) {
   box-shadow: none;
 }
 
-/* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
-.app-container.caigou-publish-page .local-modal-mask {
+/* 外扩抵消 container 边距；四周灰边均为 8px（与到货验收一致） */
+.app-container.caigou-publish-page.is-modal-open {
+  padding-bottom: 0 !important;
+}
+
+.app-container.caigou-publish-page .local-modal-mask:not(.material-filter-mask--nested) {
   left: -8px;
   right: -8px;
+  top: -8px;
+  bottom: -8px;
   width: auto;
   position: absolute;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.app-container.caigou-publish-page .local-modal-mask > .local-modal-content,
+.app-container.caigou-publish-page .local-modal-mask .local-modal-content.apply-modal-root-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+}
+
+/* 仓库 / 总金额标签红色 */
+.app-container.caigou-publish-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+.app-container.caigou-publish-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
 }
 
 /* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */
@@ -1694,7 +1733,11 @@ html body .app-container.caigou-publish-page .apply-inbound-nested-modal .apply-
   border-radius: 0;
   border-left: none;
   border-right: none;
-  overflow: visible;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-container.caigou-publish-page .list-query-panel,
@@ -2248,12 +2291,6 @@ html body .app-container.caigou-publish-page .apply-inbound-nested-modal .apply-
 }
 
 
-.app-container.caigou-publish-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  overflow: hidden;
-}
 
 .app-container.caigou-publish-page .apply-main-table td.plan-creator-col .cell {
   white-space: nowrap !important;

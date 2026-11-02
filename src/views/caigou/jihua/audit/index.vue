@@ -127,7 +127,13 @@
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="planStatus" width="120" min-width="120" show-overflow-tooltip resizable sortable label-class-name="plan-col-status" class-name="plan-col-status">
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus"/>
+          <el-tag
+            v-if="planStatusLabel(scope.row.planStatus)"
+            :type="planStatusTagType(scope.row.planStatus)"
+            size="small"
+            disable-transitions
+          >{{ planStatusLabel(scope.row.planStatus) }}</el-tag>
+          <span v-else>{{ scope.row.planStatus != null && scope.row.planStatus !== '' ? scope.row.planStatus : '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="审核意见" align="center" prop="auditOpinion" width="160" min-width="140" show-overflow-tooltip resizable sortable />
@@ -249,6 +255,8 @@ export default {
       // 显示搜索条件
       showSearch: true,
       mainTableHeight: 400,
+      /** 弹窗明细表高度（按剩余空间测量，与到货验收观感一致） */
+      detailTableHeightPx: null,
       selectedRowMap: {},
       mainListSelectionTick: 0,
       // 总条数
@@ -330,6 +338,13 @@ export default {
     },
     '$store.state.app.sidebarNavTick'(nav) {
       this.handleSidebarNavTick(nav);
+    },
+    open(val) {
+      if (val) {
+        this.$nextTick(() => this.scheduleDetailTableHeightRefresh());
+      } else {
+        this.detailTableHeightPx = null;
+      }
     }
   },
   computed: {
@@ -355,9 +370,12 @@ export default {
       });
       return [...set].join('，') || '';
     },
-    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    /** 与到货验收「添加入库」弹窗明细表高度一致；优先用实测剩余高度 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      if (this.detailTableHeightPx != null && this.detailTableHeightPx > 0) {
+        return this.detailTableHeightPx;
+      }
+      return 'max(240px, calc(100vh - 360px))';
     },
     /** 采购计划状态筛选项：仅未提交、待审核、已审核 */
     planStatusFilterOptions() {
@@ -368,6 +386,9 @@ export default {
   methods: {
     onApplyWindowResize() {
       this.updateMainTableHeight();
+      if (this.open) {
+        this.updateDetailTableHeight();
+      }
     },
     scheduleApplyLayoutRefresh() {
       const run = () => this.updateMainTableHeight();
@@ -377,6 +398,37 @@ export default {
           run();
           [50, 120, 300].forEach((ms) => setTimeout(run, ms));
         });
+      });
+    },
+    scheduleDetailTableHeightRefresh() {
+      const run = () => this.updateDetailTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 280].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    /** 按弹窗明细区剩余高度铺满，避免与到货验收明细框高度偏差 */
+    updateDetailTableHeight() {
+      if (!this.open) return;
+      const root = this.$el && this.$el.querySelector
+        ? this.$el.querySelector('.local-modal-content.apply-modal-root-content')
+        : null;
+      const wrap = root && root.querySelector('.apply-modal-table-panel .table-wrapper');
+      if (!wrap || !wrap.getBoundingClientRect) return;
+      const h = Math.floor(wrap.clientHeight || wrap.getBoundingClientRect().height || 0);
+      if (!h) return;
+      const next = Math.max(240, h);
+      if (this.detailTableHeightPx == null || Math.abs(this.detailTableHeightPx - next) >= 2) {
+        this.detailTableHeightPx = next;
+      }
+      this.$nextTick(() => {
+        const dlg = this.$refs.planEditDialog;
+        if (dlg && typeof dlg.layoutEntryTable === 'function') {
+          dlg.layoutEntryTable();
+        }
       });
     },
     updateMainTableHeight() {
@@ -458,6 +510,21 @@ export default {
       if (va < vb) return -1;
       if (va > vb) return 1;
       return 0;
+    },
+    /** 计划状态文案（字典） */
+    planStatusLabel(val) {
+      if (val == null || val === '') return '';
+      const list = (this.dict && this.dict.type && this.dict.type.plan_status) || [];
+      const hit = list.find((d) => d && String(d.value) === String(val));
+      return hit ? hit.label : '';
+    },
+    /** 计划状态标签色：0未提交灰 / 1待审核橙 / 2已审核绿 / 其他红 */
+    planStatusTagType(val) {
+      const s = String(val);
+      if (s === '0') return 'info';
+      if (s === '1') return 'warning';
+      if (s === '2') return 'success';
+      return 'danger';
     },
     sortByAmount(a, b) {
       const va = parseFloat(a && a.totalAmount);
@@ -921,7 +988,7 @@ handleQuery() {
 
 <style scoped>
 /* 内部弹窗：白底刚好盖住灰色遮罩 */
-::v-deep .local-modal-mask{
+::v-deep .local-modal-mask:not(.material-filter-mask--nested){
   position: absolute;
   left: 0;
   top: 0;
@@ -932,7 +999,7 @@ handleQuery() {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  padding: 0;
+  padding: 8px;
   box-sizing: border-box;
 }
 
@@ -1591,27 +1658,64 @@ handleQuery() {
   overflow: hidden;
 }
 
-.app-container.caigou-jihua-audit-page .local-modal-mask {
+.app-container.caigou-jihua-audit-page .local-modal-mask:not(.material-filter-mask--nested) {
   left: -8px;
   right: -8px;
   top: -8px;
-  bottom: 0;
+  bottom: -8px;
   width: auto;
   position: absolute;
   align-items: stretch;
   justify-content: stretch;
-  padding: 0;
+  padding: 8px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .app-container.caigou-jihua-audit-page .local-modal-content.apply-modal-root-content {
   width: 100% !important;
-  max-width: none !important;
+  max-width: 100% !important;
   min-height: 0 !important;
   height: 100% !important;
   max-height: 100% !important;
-  border-radius: 0 !important;
-  box-shadow: none;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+/* 弹窗表头：inline-flex 保证标签与输入框同一行（与到货验收一致） */
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
 }
 
 /* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */
@@ -1666,6 +1770,54 @@ html body .app-container.caigou-jihua-audit-page .apply-modal-root-content > .ma
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* JH-添加明细：搜索条件靠左横向排列 */
+.app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .apply-modal-query-panel {
+  padding: 6px 8px 6px 14px !important;
+}
+
+.app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-start !important;
+  align-items: flex-start;
+  gap: 12px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+}
+
+.app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto !important;
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  float: none !important;
+}
+
+.app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  display: inline-flex !important;
+  align-items: center;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none !important;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left !important;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+}
+
+.app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 .app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
@@ -1753,6 +1905,16 @@ html body .app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .ap
 }
 
 /* 明细框与按钮行间距由按钮行 margin-bottom 控制，此处不再负 margin */
+/* 采购数量输入框随列宽铺满 */
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-detail-table .plan-qty-input.el-input,
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-detail-table .plan-qty-input {
+  width: 100% !important;
+  max-width: none !important;
+}
+.app-container.caigou-jihua-audit-page .local-modal-content .apply-detail-table .plan-qty-input .el-input__inner {
+  width: 100% !important;
+}
+
 .app-container.caigou-jihua-audit-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
   border-radius: 10px 10px 0 0;
   box-shadow: none;

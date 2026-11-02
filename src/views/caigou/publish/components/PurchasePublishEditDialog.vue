@@ -8,11 +8,11 @@
               <el-button size="small" @click="cancel" class="close-btn">关闭</el-button>
             </div>
             <el-form ref="form" :model="form" :rules="rules" label-width="70px" size="small" class="modal-form-compact" hide-required-asterisk>
-              <div class="form-fields-container apply-modal-query-panel">
+              <div class="form-fields-container list-query-panel apply-modal-query-panel">
                 <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
                   <el-col class="apply-modal-field apply-modal-field--compact">
                     <el-form-item label="单据状态" prop="orderStatus">
-                      <el-select v-model="form.orderStatus" placeholder="请选择单据状态" :disabled="true" clearable>
+                      <el-select v-model="form.orderStatus" placeholder="单据状态" :disabled="true" clearable>
                         <el-option
                           v-for="dict in dict.type.biz_status"
                           :key="dict.value"
@@ -23,40 +23,13 @@
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="仓库" prop="warehouseId">
-                      <SelectWarehouse v-model="form.warehouseId" :disabled="true"/>
+                    <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
+                      <SelectWarehouse v-model="form.warehouseId" :disabled="true" placeholder="仓库"/>
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="供应商编码">
-                      <el-input :value="formatSpdSupplierCode(form)" :disabled="true" placeholder="fd_supplier.code" :title="formatSpdSupplierCode(form)" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="对照平台编码" class="publish-field-long-label">
-                      <el-input :value="formatBindScmSupplierCode(form)" :disabled="true" placeholder="绑定表当前对照" :title="formatBindScmSupplierCode(form)" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="发布平台编码" class="publish-field-long-label">
-                      <el-input :value="formatOrderScmSupplierCode(form)" :disabled="true" placeholder="订单发布回写" :title="formatOrderScmSupplierCode(form)" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--date">
-                    <el-form-item label="订单时间" prop="orderDate">
-                      <el-input :value="parseTime(form.orderDate, '{y}-{m}-{d} {h}:{i}')" :disabled="true" placeholder="订单时间" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
                   <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="操作人" prop="createBy">
-                      <el-input :value="operatorName" :disabled="true" />
-                    </el-form-item>
-                  </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--compact">
-                    <el-form-item label="联系电话" prop="contactPhone">
-                      <el-input v-model="form.contactPhone" :disabled="true" placeholder="联系电话" />
+                    <el-form-item label="总金额" prop="totalAmount" class="apply-modal-label-required">
+                      <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
                     </el-form-item>
                   </el-col>
                   <el-col class="apply-modal-field apply-modal-field--compact">
@@ -64,16 +37,41 @@
                       <el-input :value="purchaserName" :disabled="true" placeholder="采购员" />
                     </el-form-item>
                   </el-col>
-                  <el-col class="apply-modal-field apply-modal-field--standard">
-                    <el-form-item label="总金额" prop="totalAmount">
-                      <el-input v-model="form.totalAmount" :disabled="true" placeholder="总金额" />
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-third" type="flex">
                   <el-col class="apply-modal-field apply-modal-field--grow">
                     <el-form-item label="备注" prop="remark">
                       <el-input v-model="form.remark" placeholder="备注" clearable disabled />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="供应商编码">
+                      <el-input :value="formatSpdSupplierCode(form)" :disabled="true" placeholder="供应商编码" :title="formatSpdSupplierCode(form)" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="对照平台编码" class="publish-field-long-label">
+                      <el-input :value="formatBindScmSupplierCode(form)" :disabled="true" placeholder="对照平台编码" :title="formatBindScmSupplierCode(form)" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="发布平台编码" class="publish-field-long-label">
+                      <el-input :value="formatOrderScmSupplierCode(form)" :disabled="true" placeholder="发布平台编码" :title="formatOrderScmSupplierCode(form)" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--date">
+                    <el-form-item label="订单时间" prop="orderDate">
+                      <el-input :value="parseTime(form.orderDate, '{y}-{m}-{d} {h}:{i}')" :disabled="true" placeholder="订单时间" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--standard">
+                    <el-form-item label="操作人" prop="createBy">
+                      <el-input :value="operatorName" :disabled="true" placeholder="操作人" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col class="apply-modal-field apply-modal-field--compact">
+                    <el-form-item label="联系电话" prop="contactPhone">
+                      <el-input v-model="form.contactPhone" :disabled="true" placeholder="联系电话" />
                     </el-form-item>
                   </el-col>
                 </el-row>
@@ -82,20 +80,6 @@
               <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
                 <div class="list-toolbar-left">
                   <span class="apply-modal-detail-title">订单明细信息</span>
-                  <el-button
-                    v-if="form.planId"
-                    type="primary"
-                    size="small"
-                    class="spd-btn spd-btn--primary"
-                    @click="handleViewPlan"
-                  >查看采购计划</el-button>
-                  <el-button
-                    v-if="form.planId"
-                    type="primary"
-                    size="small"
-                    class="spd-btn spd-btn--secondary"
-                    @click="handleShowApplyBillNoList"
-                  >查看申购单</el-button>
                 </div>
               </el-row>
 

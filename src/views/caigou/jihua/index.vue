@@ -153,7 +153,13 @@
       </el-table-column>
       <el-table-column label="单据状态" align="center" prop="planStatus" width="120" min-width="120" show-overflow-tooltip resizable sortable label-class-name="plan-col-status" class-name="plan-col-status">
         <template slot-scope="scope">
-          <dict-tag :options="dict.type.plan_status" :value="scope.row.planStatus"/>
+          <el-tag
+            v-if="planStatusLabel(scope.row.planStatus)"
+            :type="planStatusTagType(scope.row.planStatus)"
+            size="small"
+            disable-transitions
+          >{{ planStatusLabel(scope.row.planStatus) }}</el-tag>
+          <span v-else>{{ scope.row.planStatus != null && scope.row.planStatus !== '' ? scope.row.planStatus : '--' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="制单人" align="center" prop="createByName" width="120" min-width="100" show-overflow-tooltip resizable sortable :sort-method="sortByCreatorName" class-name="plan-creator-col" label-class-name="plan-creator-col">
@@ -366,6 +372,8 @@ export default {
       // 显示搜索条件
       showSearch: true,
       mainTableHeight: 400,
+      /** 弹窗明细表高度（按剩余空间测量，与到货验收观感一致） */
+      detailTableHeightPx: null,
       selectedRowMap: {},
       mainListSelectionTick: 0,
       // 总条数
@@ -504,9 +512,12 @@ export default {
       const list = this.stkIoBillEntryList || [];
       return list.length > 0;
     },
-    /** 计划明细表高度 */
+    /** 与到货验收「添加入库」弹窗明细表高度一致；优先用实测剩余高度 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      if (this.detailTableHeightPx != null && this.detailTableHeightPx > 0) {
+        return this.detailTableHeightPx;
+      }
+      return 'max(240px, calc(100vh - 360px))';
     },
     /** 已有明细或已引用申购单时锁定仓库，避免跨仓混入明细 */
     isPlanWarehouseLocked() {
@@ -535,7 +546,12 @@ export default {
         this.loadPlanDetailSupplierOptions();
       }
       if (val) {
-        this.$nextTick(() => this.layoutPlanEntryTable());
+        this.$nextTick(() => {
+          this.layoutPlanEntryTable();
+          this.scheduleDetailTableHeightRefresh();
+        });
+      } else {
+        this.detailTableHeightPx = null;
       }
     },
     action(val) {
@@ -561,6 +577,9 @@ export default {
   methods: {
     onApplyWindowResize() {
       this.updateMainTableHeight();
+      if (this.open) {
+        this.updateDetailTableHeight();
+      }
     },
     scheduleApplyLayoutRefresh() {
       const run = () => this.updateMainTableHeight();
@@ -571,6 +590,32 @@ export default {
           [50, 120, 300].forEach((ms) => setTimeout(run, ms));
         });
       });
+    },
+    scheduleDetailTableHeightRefresh() {
+      const run = () => this.updateDetailTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 280].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    /** 按弹窗明细区剩余高度铺满，避免与到货验收明细框高度偏差 */
+    updateDetailTableHeight() {
+      if (!this.open) return;
+      const root = this.$el && this.$el.querySelector
+        ? this.$el.querySelector('.local-modal-content.apply-modal-root-content')
+        : null;
+      const wrap = root && root.querySelector('.apply-modal-table-panel .table-wrapper');
+      if (!wrap || !wrap.getBoundingClientRect) return;
+      const h = Math.floor(wrap.clientHeight || wrap.getBoundingClientRect().height || 0);
+      if (!h) return;
+      const next = Math.max(240, h);
+      if (this.detailTableHeightPx == null || Math.abs(this.detailTableHeightPx - next) >= 2) {
+        this.detailTableHeightPx = next;
+      }
+      this.$nextTick(() => this.layoutPlanEntryTable());
     },
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
@@ -651,6 +696,21 @@ export default {
       if (va < vb) return -1;
       if (va > vb) return 1;
       return 0;
+    },
+    /** 计划状态文案（字典） */
+    planStatusLabel(val) {
+      if (val == null || val === '') return '';
+      const list = (this.dict && this.dict.type && this.dict.type.plan_status) || [];
+      const hit = list.find((d) => d && String(d.value) === String(val));
+      return hit ? hit.label : '';
+    },
+    /** 计划状态标签色：0未提交灰 / 1待审核橙 / 2已审核绿 / 其他红 */
+    planStatusTagType(val) {
+      const s = String(val);
+      if (s === '0') return 'info';
+      if (s === '1') return 'warning';
+      if (s === '2') return 'success';
+      return 'danger';
     },
     sortByAmount(a, b) {
       const va = parseFloat(a && a.totalAmount);
@@ -1780,7 +1840,7 @@ listPurchasePlan(queryParams).then(response => {
 
 <style scoped>
 /* 相对 .app-container：白底刚好盖住灰色遮罩，不盖导航/侧栏（勿用 fixed 全屏） */
-::v-deep .local-modal-mask{
+::v-deep .local-modal-mask:not(.material-filter-mask--nested){
   position: absolute;
   left: 0;
   top: 0;
@@ -1791,7 +1851,7 @@ listPurchasePlan(queryParams).then(response => {
   display: flex;
   align-items: stretch;
   justify-content: stretch;
-  padding: 0;
+  padding: 8px;
   box-sizing: border-box;
 }
 
@@ -1807,17 +1867,17 @@ listPurchasePlan(queryParams).then(response => {
   display: flex;
   flex-direction: column;
   position: relative;
-  padding-bottom: 16px;
+  padding-bottom: 0;
   box-sizing: border-box;
-  border-radius: 0;
-  box-shadow: none;
+  border-radius: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 ::v-deep .modal-header{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 20px;
+  padding: 6px 8px;
   border-bottom: 1px solid #EBEEF5;
   background: #EBEEF5;
   flex-shrink: 0;
@@ -1874,13 +1934,14 @@ listPurchasePlan(queryParams).then(response => {
 ::v-deep .local-modal-content .el-form{
   flex: 1;
   min-height: 0;
-  overflow: visible;
-  padding: 6px 20px 12px;
+  overflow: hidden;
+  padding: 8px 0 8px;
   background: #fff;
   box-shadow: none;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 ::v-deep .local-modal-content .modal-detail-section:not(.apply-modal-table-panel){
@@ -2216,15 +2277,15 @@ listPurchasePlan(queryParams).then(response => {
     text-overflow: ellipsis;
   }
 
-  /* 计划明细生成方式：标签较长，单独加宽避免被单选遮挡 */
+  /* 计划明细生成方式：随 inline-flex 标签，勿再强制 margin-left */
   ::v-deep .local-modal-content .modal-form-compact .plan-entry-mode-item .el-form-item__label{
-    width: 130px !important;
-    min-width: 130px;
+    width: auto !important;
+    min-width: 0;
     overflow: visible;
     text-overflow: unset;
   }
   ::v-deep .local-modal-content .modal-form-compact .plan-entry-mode-item .el-form-item__content{
-    margin-left: 130px !important;
+    margin-left: 0 !important;
   }
 
   ::v-deep .local-modal-content .modal-form-compact .el-input,
@@ -2271,26 +2332,28 @@ listPurchasePlan(queryParams).then(response => {
     font-size: 13px;
   }
   ::v-deep .local-modal-content .modal-form-compact .plan-entry-mode-item .el-form-item__label{
-    width: 130px !important;
-    min-width: 130px;
+    width: auto !important;
+    min-width: 0;
     overflow: visible;
   }
   ::v-deep .local-modal-content .modal-form-compact .plan-entry-mode-item .el-form-item__content{
-    margin-left: 130px !important;
+    margin-left: 0 !important;
   }
 
-  /* 表单字段容器（仅弹窗内，勿影响主列表 list-query-panel） */
-  ::v-deep .local-modal-content .form-fields-container{
+  /* 弹窗表头区：与到货验收一致，取消负边距卡片框 */
+  ::v-deep .local-modal-content .form-fields-container.apply-modal-query-panel{
     background: #fff;
-    padding: 8px 16px 8px;
-    border-radius: 8px;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-    margin-bottom: 8px;
-    margin-left: -20px;
-    margin-right: -20px;
-    width: calc(100% + 40px);
+    padding: 12px 8px;
+    border-radius: 0;
+    box-shadow: none;
+    margin-bottom: 0;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
     box-sizing: border-box;
-    border: 1px solid #EBEEF5;
+    border: none;
+    border-left: none;
+    border-right: none;
     flex-shrink: 0;
   }
 
@@ -3003,35 +3066,71 @@ listPurchasePlan(queryParams).then(response => {
   padding-bottom: 0 !important;
 }
 
-/* 修改/新增计划弹窗：白底 100% 盖住灰色遮罩 */
+/* 修改/新增计划弹窗：白底铺满遮罩内边距后的区域 */
 .app-container.caigou-jihua-page .local-modal-mask > .local-modal-content,
 .app-container.caigou-jihua-page .local-modal-mask .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
   width: 100% !important;
-  max-width: none !important;
+  max-width: 100% !important;
   min-width: 0 !important;
   min-height: 0 !important;
   height: 100% !important;
   max-height: 100% !important;
-  border-radius: 0 !important;
-  box-shadow: none;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
   box-sizing: border-box;
 }
 
-/* 外扩抵消本页 container 的 8px 边距，使遮罩/白底刚好铺满主内容可视区 */
-.app-container.caigou-jihua-page .local-modal-mask {
+/* 外扩抵消 container 边距；四周灰边均为 8px（与到货验收一致） */
+.app-container.caigou-jihua-page .local-modal-mask:not(.material-filter-mask--nested) {
   left: -8px;
   right: -8px;
   top: -8px;
-  bottom: 0;
+  bottom: -8px;
   width: auto;
   position: absolute;
   overflow: hidden;
   align-items: stretch;
   justify-content: stretch;
-  padding: 0;
+  padding: 8px;
   box-sizing: border-box;
+}
+
+/* 弹窗表头：inline-flex 保证标签与输入框同一行（与到货验收一致） */
+.app-container.caigou-jihua-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  margin-bottom: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: top;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+
+.app-container.caigou-jihua-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
 }
 
 /* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */
@@ -3086,6 +3185,54 @@ html body .app-container.caigou-jihua-page .apply-modal-root-content > .material
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* JH-添加明细：搜索条件靠左横向排列 */
+.app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-modal-query-panel {
+  padding: 6px 8px 6px 14px !important;
+}
+
+.app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row.el-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-start !important;
+  align-items: flex-start;
+  gap: 12px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+}
+
+.app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row > .el-col {
+  width: auto !important;
+  flex: 0 0 auto !important;
+  max-width: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  float: none !important;
+}
+
+.app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row .el-form-item {
+  display: inline-flex !important;
+  align-items: center;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none !important;
+  width: auto !important;
+  flex: 0 0 auto;
+  text-align: left !important;
+  padding-right: 6px;
+  line-height: 28px;
+  height: 28px;
+}
+
+.app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
+  margin-left: 0 !important;
+  line-height: 28px;
 }
 
 .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
@@ -3179,6 +3326,16 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   margin-bottom: 0;
 }
 
+/* 采购数量输入框随列宽铺满（覆盖 modal-form-compact 对 el-input 的固定宽度） */
+.app-container.caigou-jihua-page .local-modal-content .apply-detail-table .plan-qty-input.el-input,
+.app-container.caigou-jihua-page .local-modal-content .apply-detail-table .plan-qty-input {
+  width: 100% !important;
+  max-width: none !important;
+}
+.app-container.caigou-jihua-page .local-modal-content .apply-detail-table .plan-qty-input .el-input__inner {
+  width: 100% !important;
+}
+
 .app-container.caigou-jihua-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
   overflow: hidden;
   border-bottom: none;
@@ -3205,7 +3362,11 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   border-radius: 0;
   border-left: none;
   border-right: none;
-  overflow: visible;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-container.caigou-jihua-page .list-query-panel,
