@@ -175,12 +175,6 @@
           <span v-else>{{ scope.row.remark || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column v-if="editable" label="操作" align="center" header-align="center" width="120" fixed="right">
-        <template slot-scope="scope">
-          <el-button v-if="scope.row.id" type="text" size="small" @click="$emit('view-apply-details', scope.row)">查看申购明细</el-button>
-          <span v-else>--</span>
-        </template>
-      </el-table-column>
     </el-table>
   </div>
 </template>

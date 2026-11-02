@@ -112,7 +112,6 @@
                 @selection-change="$emit('entry-selection-change', $event)"
                 @qty-input="$emit('qty-input', $event)"
                 @qty-blur="$emit('qty-blur', $event)"
-                @view-apply-details="$emit('view-apply-details', $event)"
               />
             </div>
           </el-form>

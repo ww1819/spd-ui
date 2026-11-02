@@ -1,4 +1,4 @@
-.material-filter-mask--nested {
+﻿.material-filter-mask--nested {
   position: absolute;
   z-index: 3100;
 }
@@ -82,7 +82,7 @@
 .material-filter-mask.material-filter-mask--nested .material-filter-form.modal-form-compact > .apply-table-panel {
   flex: 1 1 auto;
   min-height: 0;
-  margin-bottom: 40px;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
   background: #fff;

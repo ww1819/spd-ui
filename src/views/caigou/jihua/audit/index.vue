@@ -920,31 +920,37 @@ handleQuery() {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 */
+/* 内部弹窗：白底刚好盖住灰色遮罩 */
 ::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.35);
   z-index: 1000;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 ::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
+  max-width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding-bottom: 16px;
   box-sizing: border-box;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 ::v-deep .modal-header{
@@ -1585,19 +1591,34 @@ handleQuery() {
   overflow: hidden;
 }
 
-/* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
 .app-container.caigou-jihua-audit-page .local-modal-mask {
   left: -8px;
   right: -8px;
+  top: -8px;
+  bottom: 0;
   width: auto;
   position: absolute;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.app-container.caigou-jihua-audit-page .local-modal-content.apply-modal-root-content {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  border-radius: 0 !important;
+  box-shadow: none;
 }
 
 /* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */
 .app-container.caigou-jihua-audit-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
   position: absolute;
   left: 0;
-  right: -8px;
+  right: 0;
   top: 0;
   bottom: 0;
   width: auto;
@@ -2317,13 +2338,6 @@ html body .app-container.caigou-jihua-audit-page .apply-inbound-nested-modal .ap
   z-index: 31 !important;
 }
 
-
-.app-container.caigou-jihua-audit-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  overflow: hidden;
-}
 
 .app-container.caigou-jihua-audit-page .apply-main-table td.plan-creator-col .cell {
   white-space: nowrap !important;

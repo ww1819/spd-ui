@@ -432,9 +432,9 @@ export default {
     };
   },
   computed: {
-    /** 明细表高度：calc(100vh - 384px) */
+    /** 明细表高度（弹窗留边后略收） */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      return 'max(240px, calc(100vh - 360px))';
     },
     /** 列表全量总金额（后端合计） */
     listTotalAmtFormatted() {
@@ -1894,31 +1894,36 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
-::v-deep .local-modal-mask{
+/* 内部弹窗：限制在主内容区；四周灰边等宽（嵌套 RK 层单独处理） */
+::v-deep .local-modal-mask:not(.material-filter-mask--nested){
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.35);
   z-index: 1000;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  padding: 8px;
+  box-sizing: border-box;
 }
 
 ::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
+  padding-bottom: 0;
   box-sizing: border-box;
+  border-radius: 6px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
 }
 
 ::v-deep .modal-header{
@@ -2270,7 +2275,7 @@ export default {
   margin-top: 0;
   margin-bottom: 0;
   flex-shrink: 0;
-  padding: 12px 8px;
+  padding: 6px 8px 8px;
   border-radius: 0;
   border-left: none;
   border-right: none;
@@ -2874,13 +2879,15 @@ export default {
   position: relative;
 }
 
-/* 覆盖弹窗组件的高度 - 调高添加弹窗中的弹窗高度（嵌套 RK-添加明细 除外） */
+/* 嵌套外弹窗高度随遮罩，禁止 95vh 顶破主内容区 */
 ::v-deep .local-modal-content:not(.material-filter-modal--nested) {
-  min-height: 95vh !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
 }
 
 ::v-deep .purchase-modal-content {
-  min-height: 95vh !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
 }
 
 /* 弹窗内非明细表表格滚动条：细 */
@@ -3315,24 +3322,59 @@ export default {
   overflow: hidden;
 }
 
-/* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
-.app-container.inWarehouse-apply-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  position: absolute;
+/* 弹窗打开时去掉容器底边距，避免底部多出一截灰边 */
+.app-container.inWarehouse-apply-page.is-modal-open {
+  padding-bottom: 0 !important;
 }
 
-/* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */
-.app-container.inWarehouse-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
-  position: absolute;
-  left: 0;
+/* 外扩抵消 container 边距；底边与顶边同样外扩，四周灰边均为 8px（不含 RK 嵌套层） */
+.app-container.inWarehouse-apply-page .local-modal-mask:not(.material-filter-mask--nested) {
+  left: -8px;
   right: -8px;
-  top: 0;
-  bottom: 0;
+  top: -8px;
+  bottom: -8px;
   width: auto;
+  position: absolute;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 8px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.app-container.inWarehouse-apply-page .local-modal-mask > .local-modal-content,
+.app-container.inWarehouse-apply-page .local-modal-mask .local-modal-content.apply-modal-root-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+}
+
+/* RK-添加明细：与「修改入库」白底同尺寸，四周不再多出灰边 */
+.app-container.inWarehouse-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
   box-sizing: border-box;
   z-index: 3100;
+  overflow: hidden;
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 /* RK-添加明细：标题栏与修改入库一致 */
@@ -3351,9 +3393,12 @@ export default {
 }
 
 html body .app-container.inWarehouse-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+  width: 100% !important;
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
 }
 
 .app-container.inWarehouse-apply-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested > .material-filter-modal--nested {
@@ -3390,11 +3435,11 @@ html body .app-container.inWarehouse-apply-page .apply-modal-root-content > .mat
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
 }
 
-/* RK-添加明细：明细框与到货验收主列表 apply-table-panel 完全一致 */
+/* RK-添加明细：明细框铺满剩余高度（分页在面板内，勿再留底边距） */
 .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
   flex: 1 1 auto;
   min-height: 0;
-  margin-bottom: 40px;
+  margin-bottom: 0;
 }
 
 .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .apply-table-panel > .apply-main-table {

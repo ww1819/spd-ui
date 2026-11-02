@@ -1334,8 +1334,8 @@ export default {
 </script>
 
 <style scoped>
-/* 内部弹窗样式 - 占满整个遮罩层 */
-.local-modal-mask {
+/* 独立全屏遮罩（非嵌套） */
+.local-modal-mask:not(.material-filter-mask--nested) {
   position: fixed;
   left: 0;
   top: 0;
@@ -1351,15 +1351,47 @@ export default {
   overflow: hidden;
 }
 
+/* 嵌套：铺满父弹窗内容区，尺寸与到货验收「修改入库」一致 */
+.local-modal-mask.material-filter-mask--nested {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  z-index: 3100;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 6px;
+}
+
 .local-modal-content {
   background: #fff;
   width: 100%;
-  height: 100vh;
-  max-height: 100vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   position: relative;
+  box-sizing: border-box;
+}
+
+.local-modal-mask:not(.material-filter-mask--nested) > .local-modal-content {
+  height: 100vh;
+  max-height: 100vh;
+}
+
+.local-modal-mask.material-filter-mask--nested > .local-modal-content {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  border-radius: 6px;
 }
 
 .modal-header {
@@ -1562,11 +1594,23 @@ export default {
 
 <style lang="scss">
 .material-filter-mask--nested {
-  position: absolute;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
   z-index: 3100;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .material-filter-mask.material-filter-mask--nested .local-modal-content.material-filter-modal--nested {
+  width: 100% !important;
   height: 100% !important;
   max-height: 100% !important;
   min-height: 0 !important;
@@ -1645,7 +1689,7 @@ export default {
 .material-filter-mask.material-filter-mask--nested .material-filter-form.modal-form-compact > .apply-table-panel {
   flex: 1 1 auto;
   min-height: 0;
-  margin-bottom: 40px;
+  margin-bottom: 0;
   display: flex;
   flex-direction: column;
   background: #fff;

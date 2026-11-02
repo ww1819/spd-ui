@@ -504,7 +504,7 @@ export default {
       const list = this.stkIoBillEntryList || [];
       return list.length > 0;
     },
-    /** 与到货验收「添加入库」弹窗明细表高度一致 */
+    /** 计划明细表高度 */
     detailTableHeight() {
       return 'max(240px, calc(100vh - 384px))';
     },
@@ -1779,25 +1779,29 @@ listPurchasePlan(queryParams).then(response => {
 </script>
 
 <style scoped>
-/* 相对 .app-container 铺满主内容区，不盖住顶部导航栏与左侧菜单（勿用 fixed 全屏） */
+/* 相对 .app-container：白底刚好盖住灰色遮罩，不盖导航/侧栏（勿用 fixed 全屏） */
 ::v-deep .local-modal-mask{
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.35);
   z-index: 1000;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 ::v-deep .local-modal-content{
   background: #fff;
   width: 100%;
+  max-width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
@@ -1805,6 +1809,8 @@ listPurchasePlan(queryParams).then(response => {
   position: relative;
   padding-bottom: 16px;
   box-sizing: border-box;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 ::v-deep .modal-header{
@@ -2993,11 +2999,11 @@ listPurchasePlan(queryParams).then(response => {
   padding-bottom: 14px !important;
 }
 
-/* 侧栏收起后主区变宽：覆盖 global modal.css 的 width:90%/max-width:1200px，弹窗铺满遮罩无右侧灰缝 */
 .app-container.caigou-jihua-page.is-modal-open {
   padding-bottom: 0 !important;
 }
 
+/* 修改/新增计划弹窗：白底 100% 盖住灰色遮罩 */
 .app-container.caigou-jihua-page .local-modal-mask > .local-modal-content,
 .app-container.caigou-jihua-page .local-modal-mask .local-modal-content.apply-modal-root-content {
   position: relative;
@@ -3005,28 +3011,34 @@ listPurchasePlan(queryParams).then(response => {
   width: 100% !important;
   max-width: none !important;
   min-width: 0 !important;
+  min-height: 0 !important;
   height: 100% !important;
-  max-height: none !important;
+  max-height: 100% !important;
   border-radius: 0 !important;
+  box-shadow: none;
   box-sizing: border-box;
 }
 
-/* 弹窗整层加宽：向外扩展抵消本页 container 左右 8px，只动外层遮罩不改表单内部 */
+/* 外扩抵消本页 container 的 8px 边距，使遮罩/白底刚好铺满主内容可视区 */
 .app-container.caigou-jihua-page .local-modal-mask {
   left: -8px;
   right: -8px;
+  top: -8px;
+  bottom: 0;
   width: auto;
   position: absolute;
   overflow: hidden;
   align-items: stretch;
   justify-content: stretch;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 /* RK-添加明细嵌套层：向右铺满父弹窗，消除右侧 8px 黑缝 */
 .app-container.caigou-jihua-page .apply-modal-root-content > .material-filter-mask.material-filter-mask--nested {
   position: absolute;
   left: 0;
-  right: -8px;
+  right: 0;
   top: 0;
   bottom: 0;
   width: auto;
@@ -3874,13 +3886,6 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
   z-index: 31 !important;
 }
 
-
-.app-container.caigou-jihua-page .local-modal-mask {
-  left: -8px;
-  right: -8px;
-  width: auto;
-  overflow: hidden;
-}
 
 .app-container.caigou-jihua-page .apply-main-table td.plan-creator-col .cell {
   white-space: nowrap !important;

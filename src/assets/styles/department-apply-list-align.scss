@@ -46,45 +46,52 @@ $apply-list-pages: config-page, receipt-confirm-page, d-purchase-agg-page, d-pur
     box-sizing: border-box !important;
   }
 
-  .app-container.#{$page} .local-modal-mask {
+  /* 与到货验收一致：四周灰边 8px；嵌套明细层单独铺满父白底 */
+  .app-container.#{$page} .local-modal-mask:not(.material-filter-mask--nested) {
     left: -8px;
     right: -8px;
+    top: -8px;
+    bottom: -8px;
     width: auto;
     position: absolute;
     overflow: hidden;
     align-items: stretch;
     justify-content: stretch;
+    padding: 8px;
+    box-sizing: border-box;
   }
 
   /*
    * 全页 apply 弹窗：覆盖 global modal.css 的 width:90% / max-width:1200px。
    * 侧栏收起后主区变宽时弹窗须同步铺满，否则右侧露出灰缝。
    */
-  .app-container.#{$page} .local-modal-mask > .local-modal-content,
-  .app-container.#{$page} .local-modal-mask .local-modal-content.apply-modal-root-content {
+  .app-container.#{$page} .local-modal-mask:not(.material-filter-mask--nested) > .local-modal-content,
+  .app-container.#{$page} .local-modal-mask:not(.material-filter-mask--nested) .local-modal-content.apply-modal-root-content {
     width: 100% !important;
     max-width: none !important;
     min-width: 0 !important;
+    min-height: 0 !important;
     height: 100% !important;
-    max-height: none !important;
-    border-radius: 0 !important;
+    max-height: 100% !important;
+    border-radius: 6px !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
     box-sizing: border-box;
   }
 
   /* 拆弹窗后父页 scoped 不再作用到子组件内部，这里兜底铺满内容区 */
-  .app-container.#{$page} .local-modal-content {
+  .app-container.#{$page} .local-modal-content:not(.material-filter-modal--nested) {
     width: 100%;
     height: 100%;
     min-width: 0;
     min-height: 0;
     max-width: none;
-    max-height: none;
-    border-radius: 0;
+    max-height: 100%;
+    border-radius: 6px;
     padding: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: none;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
     box-sizing: border-box;
   }
 
