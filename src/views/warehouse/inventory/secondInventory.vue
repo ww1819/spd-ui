@@ -598,7 +598,7 @@ export default {
     },
     moreSearchPlaceholderFor(t) {
       const map = {
-        materialName: "名称/编码/拼音模糊",
+        materialName: "产品编码/名称/简码",
         materialSpeci: "规格模糊",
         materialModel: "型号模糊",
         hisChargeItemId: "收费项目ID模糊"

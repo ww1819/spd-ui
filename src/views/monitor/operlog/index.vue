@@ -1,74 +1,68 @@
-<template>
-  <div class="app-container list-page">
+﻿<template>
+  <div class="app-container list-page operlog-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--text"
-          >
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-if="t === 'operName'"
-              v-model="queryParams.operName"
-              placeholder="操作人员"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.title"
               placeholder="系统模块"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <el-input
+              v-model="queryParams.operName"
+              placeholder="操作人员"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-select
+              v-model="queryParams.businessType"
+              placeholder="操作类型"
+              clearable
+              class="apply-query-field"
+            >
+              <el-option
+                v-for="dict in dict.type.sys_oper_type"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+            <el-select
+              v-model="queryParams.status"
+              placeholder="操作状态"
+              clearable
+              class="apply-query-field"
+            >
+              <el-option
+                v-for="dict in dict.type.sys_common_status"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+            <div class="query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item prop="businessType" class="query-item-inline">
-              <el-select v-model="queryParams.businessType" placeholder="操作类型" clearable class="more-search-select-wrap">
-                <el-option
-                  v-for="dict in dict.type.sys_oper_type"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item prop="status" class="query-item-inline">
-              <el-select v-model="queryParams.status" placeholder="操作状态" clearable class="more-search-select-wrap">
-                <el-option
-                  v-for="dict in dict.type.sys_common_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="dateRange"
                 value-format="yyyy-MM-dd HH:mm:ss"
-                type="daterange"
+                type="datetimerange"
                 range-separator="至"
                 start-placeholder="开始日期"
                 end-placeholder="结束日期"
                 :default-time="['00:00:00', '23:59:59']"
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
           </el-col>
@@ -78,63 +72,133 @@
 
     <el-row :gutter="0" class="mb8 list-toolbar">
       <div class="list-toolbar-left">
-        <el-button size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['monitor:operlog:remove']">删除</el-button>
-        <el-button size="small" class="spd-btn spd-btn--danger" @click="handleClean" v-hasPermi="['monitor:operlog:remove']">清空</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['monitor:operlog:export']">导出</el-button>
+        <el-button
+          size="small"
+          icon="el-icon-delete"
+          class="spd-btn spd-btn--danger"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['monitor:operlog:remove']"
+        >删除</el-button>
+        <el-button
+          size="small"
+          icon="el-icon-delete"
+          class="spd-btn spd-btn--danger"
+          @click="handleClean"
+          v-hasPermi="['monitor:operlog:remove']"
+        >清空</el-button>
+        <el-button
+          type="warning"
+          size="small"
+          icon="el-icon-download"
+          class="spd-btn"
+          @click="handleExport"
+          v-hasPermi="['monitor:operlog:export']"
+        >导出</el-button>
       </div>
       <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
-    <el-table ref="tables" v-loading="loading" :data="list" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" stripe>
-      <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="日志编号" align="center" prop="operId" />
-      <el-table-column label="系统模块" align="center" prop="title" :show-overflow-tooltip="true" />
-      <el-table-column label="操作类型" align="center" prop="businessType">
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_oper_type" :value="scope.row.businessType"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作人员" align="center" prop="operName" width="110" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" />
-      <el-table-column label="操作地址" align="center" prop="operIp" width="130" :show-overflow-tooltip="true" />
-      <el-table-column label="操作地点" align="center" prop="operLocation" :show-overflow-tooltip="true" />
-      <el-table-column label="操作状态" align="center" prop="status">
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_common_status" :value="scope.row.status"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作日期" align="center" prop="operTime" width="160" sortable="custom" :sort-orders="['descending', 'ascending']">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.operTime) }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="消耗时间" align="center" prop="costTime" width="110" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']">
-        <template slot-scope="scope">
-          <span>{{ scope.row.costTime }}毫秒</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            @click="handleView(scope.row,scope.index)"
-            v-hasPermi="['monitor:operlog:query']"
-          >详细</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="apply-table-panel" ref="tablePanel">
+      <el-table
+        ref="tables"
+        v-loading="loading"
+        :data="list"
+        class="table-compact apply-main-table"
+        row-key="operId"
+        :height="mainTableHeight"
+        border
+        stripe
+        :default-sort="defaultSort"
+        @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
+      >
+        <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+        <el-table-column label="序号" align="center" type="index" width="60" show-overflow-tooltip resizable />
+        <el-table-column label="日志编号" align="center" prop="operId" width="100" show-overflow-tooltip resizable />
+        <el-table-column label="系统模块" align="center" prop="title" min-width="140" show-overflow-tooltip resizable />
+        <el-table-column label="操作类型" align="center" prop="businessType" width="110" resizable>
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.sys_oper_type" :value="scope.row.businessType"/>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作人员"
+          align="center"
+          prop="operName"
+          width="110"
+          show-overflow-tooltip
+          resizable
+          sortable="custom"
+          :sort-orders="['descending', 'ascending']"
+        />
+        <el-table-column label="操作地址" align="center" prop="operIp" width="130" show-overflow-tooltip resizable />
+        <el-table-column label="操作地点" align="center" prop="operLocation" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="操作状态" align="center" prop="status" width="100" resizable>
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.sys_common_status" :value="scope.row.status"/>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作日期"
+          align="center"
+          prop="operTime"
+          width="170"
+          resizable
+          sortable="custom"
+          :sort-orders="['descending', 'ascending']"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.operTime) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="消耗时间"
+          align="center"
+          prop="costTime"
+          width="110"
+          show-overflow-tooltip
+          resizable
+          sortable="custom"
+          :sort-orders="['descending', 'ascending']"
+        >
+          <template slot-scope="scope">
+            <span>{{ scope.row.costTime }}毫秒</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          align="center"
+          width="100"
+          class-name="apply-action-col small-padding fixed-width"
+          fixed="right"
+        >
+          <template slot-scope="scope">
+            <el-button
+              size="small"
+              type="text"
+              icon="el-icon-view"
+              style="padding: 0 5px; margin: 0;"
+              @click="handleView(scope.row, scope.index)"
+              v-hasPermi="['monitor:operlog:query']"
+            >详细</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+      <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+        <div class="pagination-summary" />
+        <pagination
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
+    </div>
 
-    <!-- 操作日志详细 -->
     <OperlogDetailDialog v-if="open" />
   </div>
 </template>
@@ -150,32 +214,17 @@ export default {
   dicts: ['sys_oper_type', 'sys_common_status'],
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '系统模块', value: 'title' },
-        { label: '操作人员', value: 'operName' }
-      ],
-      // 总条数
+      mainTableHeight: 400,
       total: 0,
-      // 表格数据
       list: [],
-      // 是否显示弹出层
       open: false,
-      // 日期范围
       dateRange: [],
-      // 默认排序
-      defaultSort: {prop: 'operTime', order: 'descending'},
-      // 表单参数
+      defaultSort: { prop: 'operTime', order: 'descending' },
       form: {},
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -186,97 +235,103 @@ export default {
       }
     };
   },
-  computed: {
-    moreSearchStorageKey() {
-      return 'spd.monitor.operlog.moreSearchTypes'
+  watch: {
+    showSearch() {
+      this.scheduleLayoutRefresh();
     },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
+    total() {
+      this.scheduleLayoutRefresh();
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    this.scheduleLayoutRefresh();
+    window.addEventListener('resize', this.onWindowResize);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onWindowResize);
+  },
   methods: {
-    /** 查询登录日志 */
+    onWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          ;[50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.tables;
+        if (table && table.doLayout) table.doLayout();
+      });
+    },
     getList() {
       this.loading = true;
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      list(this.addDateRange(params, this.dateRange)).then( response => {
-          this.list = response.rows;
-          this.total = response.total;
-          this.loading = false;
-        }
-      );
+      list(this.addDateRange({ ...this.queryParams }, this.dateRange)).then(response => {
+        this.list = response.rows;
+        this.total = response.total;
+        this.loading = false;
+        this.scheduleLayoutRefresh();
+      }).catch(() => {
+        this.loading = false;
+      });
     },
-    // 操作日志类型字典翻译
     typeFormat(row, column) {
       return this.selectDictLabel(this.dict.type.sys_oper_type, row.businessType);
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.dateRange = [];
+      this.queryParams = {
+        pageNum: 1,
+        pageSize: this.queryParams.pageSize || 10,
+        title: undefined,
+        operName: undefined,
+        businessType: undefined,
+        status: undefined
+      };
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
-      this.queryParams.pageNum = 1;
-      this.$refs.tables.sort(this.defaultSort.prop, this.defaultSort.order)
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
+      if (this.$refs.tables && this.$refs.tables.sort) {
+        this.$refs.tables.sort(this.defaultSort.prop, this.defaultSort.order);
+      } else {
+        this.handleQuery();
       }
     },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = { title: 'title', operName: 'operName' };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
-    /** 多选框选中数据 */
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.operId)
-      this.multiple = !selection.length
+      this.ids = selection.map(item => item.operId);
+      this.multiple = !selection.length;
     },
-    /** 排序触发事件 */
-    handleSortChange(column, prop, order) {
+    handleSortChange(column) {
       this.queryParams.orderByColumn = column.prop;
       this.queryParams.isAsc = column.order;
       this.getList();
     },
-    /** 详细按钮操作 */
     handleView(row) {
       this.open = true;
       this.form = row;
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const operIds = row.operId || this.ids;
       this.$modal.confirm('是否确认删除日志编号为"' + operIds + '"的数据项？').then(function() {
@@ -286,7 +341,6 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    /** 清空按钮操作 */
     handleClean() {
       this.$modal.confirm('是否确认清空所有操作日志数据项？').then(function() {
         return cleanOperlog();
@@ -295,19 +349,11 @@ export default {
         this.$modal.msgSuccess("清空成功");
       }).catch(() => {});
     },
-    /** 导出按钮操作 */
     handleExport() {
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('monitor/operlog/export', params, `operlog_${new Date().getTime()}.xlsx`)
+      this.download('monitor/operlog/export', {
+        ...this.queryParams
+      }, `operlog_${new Date().getTime()}.xlsx`);
     }
   }
 };
 </script>
-
-<style scoped>
-.list-query-panel {
-  margin-top: -20px;
-}
-</style>
-

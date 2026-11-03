@@ -1,64 +1,55 @@
 <template>
-  <div class="app-container list-page">
+  <div class="app-container list-page logininfor-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--text"
-          >
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-if="t === 'userName'"
-              v-model="queryParams.userName"
-              placeholder="用户名称"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.ipaddr"
               placeholder="登录地址"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
+            <el-input
+              v-model="queryParams.userName"
+              placeholder="用户名称"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-select
+              v-model="queryParams.status"
+              placeholder="登录状态"
+              clearable
+              class="apply-query-field"
+            >
+              <el-option
+                v-for="dict in dict.type.sys_common_status"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+            <div class="query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
+          </el-col>
+        </el-row>
 
         <el-row :gutter="16" class="query-row-second">
           <el-col :span="24" class="query-row-second-inner">
-            <el-form-item prop="status" class="query-item-inline">
-              <el-select v-model="queryParams.status" placeholder="登录状态" clearable class="more-search-select-wrap">
-                <el-option
-                  v-for="dict in dict.type.sys_common_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item class="query-item-inline query-item-date-range">
+            <el-form-item class="query-date-range-form-item query-item-inline">
               <el-date-picker
                 v-model="dateRange"
                 value-format="yyyy-MM-dd HH:mm:ss"
-                type="daterange"
+                type="datetimerange"
                 range-separator="至"
                 start-placeholder="开始日期"
                 end-placeholder="结束日期"
                 :default-time="['00:00:00', '23:59:59']"
-                class="query-date-picker"
+                class="query-date-picker apply-query-date"
               />
             </el-form-item>
           </el-col>
@@ -68,44 +59,105 @@
 
     <el-row :gutter="0" class="mb8 list-toolbar">
       <div class="list-toolbar-left">
-        <el-button size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['monitor:logininfor:remove']">删除</el-button>
-        <el-button size="small" class="spd-btn spd-btn--danger" @click="handleClean" v-hasPermi="['monitor:logininfor:remove']">清空</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUnlock" v-hasPermi="['monitor:logininfor:unlock']">解锁</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['monitor:logininfor:export']">导出</el-button>
+        <el-button
+          size="small"
+          icon="el-icon-delete"
+          class="spd-btn spd-btn--danger"
+          :disabled="multiple"
+          @click="handleDelete"
+          v-hasPermi="['monitor:logininfor:remove']"
+        >删除</el-button>
+        <el-button
+          size="small"
+          icon="el-icon-delete"
+          class="spd-btn spd-btn--danger"
+          @click="handleClean"
+          v-hasPermi="['monitor:logininfor:remove']"
+        >清空</el-button>
+        <el-button
+          size="small"
+          icon="el-icon-unlock"
+          class="spd-btn spd-btn--secondary"
+          :disabled="single"
+          @click="handleUnlock"
+          v-hasPermi="['monitor:logininfor:unlock']"
+        >解锁</el-button>
+        <el-button
+          type="warning"
+          size="small"
+          icon="el-icon-download"
+          class="spd-btn"
+          @click="handleExport"
+          v-hasPermi="['monitor:logininfor:export']"
+        >导出</el-button>
       </div>
       <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
-    <el-table ref="tables" v-loading="loading" :data="list" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange" stripe>
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="访问编号" align="center" prop="infoId" />
-      <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" />
-      <el-table-column label="登录地址" align="center" prop="ipaddr" width="130" :show-overflow-tooltip="true" />
-      <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" />
-      <el-table-column label="浏览器" align="center" prop="browser" :show-overflow-tooltip="true" />
-      <el-table-column label="操作系统" align="center" prop="os" />
-      <el-table-column label="登录状态" align="center" prop="status">
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_common_status" :value="scope.row.status"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作信息" align="center" prop="msg" :show-overflow-tooltip="true" />
-      <el-table-column label="登录日期" align="center" prop="loginTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="180">
-        <template slot-scope="scope">
-          <span>{{ parseTime(scope.row.loginTime) }}</span>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="apply-table-panel" ref="tablePanel">
+      <el-table
+        ref="tables"
+        v-loading="loading"
+        :data="list"
+        class="table-compact apply-main-table"
+        row-key="infoId"
+        :height="mainTableHeight"
+        border
+        stripe
+        :default-sort="defaultSort"
+        @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
+      >
+        <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+        <el-table-column label="序号" align="center" type="index" width="60" show-overflow-tooltip resizable />
+        <el-table-column label="访问编号" align="center" prop="infoId" width="100" show-overflow-tooltip resizable />
+        <el-table-column
+          label="用户名称"
+          align="center"
+          prop="userName"
+          min-width="120"
+          show-overflow-tooltip
+          resizable
+          sortable="custom"
+          :sort-orders="['descending', 'ascending']"
+        />
+        <el-table-column label="登录地址" align="center" prop="ipaddr" width="130" show-overflow-tooltip resizable />
+        <el-table-column label="登录地点" align="center" prop="loginLocation" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="浏览器" align="center" prop="browser" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="操作系统" align="center" prop="os" min-width="120" show-overflow-tooltip resizable />
+        <el-table-column label="登录状态" align="center" prop="status" width="100" resizable>
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.sys_common_status" :value="scope.row.status"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作信息" align="center" prop="msg" min-width="140" show-overflow-tooltip resizable />
+        <el-table-column
+          label="登录日期"
+          align="center"
+          prop="loginTime"
+          width="170"
+          resizable
+          sortable="custom"
+          :sort-orders="['descending', 'ascending']"
+        >
+          <template slot-scope="scope">
+            <span>{{ parseTime(scope.row.loginTime) }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+      <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+        <div class="pagination-summary" />
+        <pagination
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -117,32 +169,17 @@ export default {
   dicts: ['sys_common_status'],
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 选择用户名
       selectName: "",
-      // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '登录地址', value: 'ipaddr' },
-        { label: '用户名称', value: 'userName' }
-      ],
-      // 总条数
+      mainTableHeight: 400,
       total: 0,
-      // 表格数据
       list: [],
-      // 日期范围
       dateRange: [],
-      // 默认排序
-      defaultSort: {prop: 'loginTime', order: 'descending'},
-      // 查询参数
+      defaultSort: { prop: 'loginTime', order: 'descending' },
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -152,90 +189,97 @@ export default {
       }
     };
   },
-  computed: {
-    moreSearchStorageKey() {
-      return 'spd.monitor.logininfor.moreSearchTypes'
+  watch: {
+    showSearch() {
+      this.scheduleLayoutRefresh();
     },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
+    total() {
+      this.scheduleLayoutRefresh();
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    this.scheduleLayoutRefresh();
+    window.addEventListener('resize', this.onWindowResize);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onWindowResize);
+  },
   methods: {
-    /** 查询登录日志列表 */
+    onWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          ;[50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.tables;
+        if (table && table.doLayout) table.doLayout();
+      });
+    },
     getList() {
       this.loading = true;
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      list(this.addDateRange(params, this.dateRange)).then(response => {
-          this.list = response.rows;
-          this.total = response.total;
-          this.loading = false;
-        }
-      );
+      list(this.addDateRange({ ...this.queryParams }, this.dateRange)).then(response => {
+        this.list = response.rows;
+        this.total = response.total;
+        this.loading = false;
+        this.scheduleLayoutRefresh();
+      }).catch(() => {
+        this.loading = false;
+      });
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
       this.dateRange = [];
+      this.queryParams = {
+        pageNum: 1,
+        pageSize: this.queryParams.pageSize || 10,
+        ipaddr: undefined,
+        userName: undefined,
+        status: undefined
+      };
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
-      this.queryParams.pageNum = 1;
-      this.$refs.tables.sort(this.defaultSort.prop, this.defaultSort.order)
-    },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
+      if (this.$refs.tables && this.$refs.tables.sort) {
+        this.$refs.tables.sort(this.defaultSort.prop, this.defaultSort.order);
+      } else {
+        this.handleQuery();
       }
     },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = { ipaddr: 'ipaddr', userName: 'userName' };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
-    /** 多选框选中数据 */
     handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.infoId)
-      this.single = selection.length!=1
-      this.multiple = !selection.length
+      this.ids = selection.map(item => item.infoId);
+      this.single = selection.length != 1;
+      this.multiple = !selection.length;
       this.selectName = selection.map(item => item.userName);
     },
-    /** 排序触发事件 */
-    handleSortChange(column, prop, order) {
+    handleSortChange(column) {
       this.queryParams.orderByColumn = column.prop;
       this.queryParams.isAsc = column.order;
       this.getList();
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const infoIds = row.infoId || this.ids;
       this.$modal.confirm('是否确认删除访问编号为"' + infoIds + '"的数据项？').then(function() {
@@ -245,7 +289,6 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    /** 清空按钮操作 */
     handleClean() {
       this.$modal.confirm('是否确认清空所有登录日志数据项？').then(function() {
         return cleanLogininfor();
@@ -254,7 +297,6 @@ export default {
         this.$modal.msgSuccess("清空成功");
       }).catch(() => {});
     },
-    /** 解锁按钮操作 */
     handleUnlock() {
       const username = this.selectName;
       this.$modal.confirm('是否确认解锁用户"' + username + '"数据项?').then(function() {
@@ -263,19 +305,11 @@ export default {
         this.$modal.msgSuccess("用户" + username + "解锁成功");
       }).catch(() => {});
     },
-    /** 导出按钮操作 */
     handleExport() {
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('monitor/logininfor/export', params, `logininfor_${new Date().getTime()}.xlsx`)
+      this.download('monitor/logininfor/export', {
+        ...this.queryParams
+      }, `logininfor_${new Date().getTime()}.xlsx`);
     }
   }
 };
 </script>
-
-<style scoped>
-.list-query-panel {
-  margin-top: -20px;
-}
-</style>
-

@@ -277,6 +277,8 @@ export default {
       return (this.queryParams.pageNum - 1) * this.queryParams.pageSize + index + 1;
     },
     moreSearchPlaceholderFor(t) {
+      if (t === "materialName") return "产品编码/名称/简码";
+      if (t === "materialCode") return "产品编码";
       const hit = this.moreSearchOptions.find((o) => o.value === t);
       return (hit && hit.label) || t;
     },

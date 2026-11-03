@@ -2,48 +2,39 @@
   <div class="app-container list-page hc-customer-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field more-search-field--text"
-          >
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
             <el-input
-              v-if="t === 'customerCode'"
-              v-model="queryParams.customerCode"
-              placeholder="客户编码"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-            <el-input
-              v-else
               v-model="queryParams.customerName"
-              placeholder="客户名称"
+              placeholder="机构名称"
               clearable
-              class="more-search-input more-search-input--dynamic"
+              class="apply-query-input apply-query-field"
               @keyup.enter.native="handleQuery"
             />
-          </div>
-        </more-search-bar>
-
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item prop="hcStatus" class="query-item-inline">
-              <el-select v-model="queryParams.hcStatus" placeholder="耗材状态" clearable class="more-search-short-select">
-                <el-option v-for="dict in dict.type.sys_normal_disable" :key="dict.value" :label="dict.label" :value="dict.value" />
-              </el-select>
-            </el-form-item>
+            <el-input
+              v-model="queryParams.customerCode"
+              placeholder="简码"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
+            <el-select
+              v-model="queryParams.hcStatus"
+              placeholder="机构状态"
+              clearable
+              class="apply-query-field"
+            >
+              <el-option
+                v-for="dict in dict.type.sys_normal_disable"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+            <div class="query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -54,6 +45,7 @@
         <el-button
           type="primary"
           size="small"
+          icon="el-icon-plus"
           class="spd-btn spd-btn--primary"
           @click="handleAdd"
           v-hasPermi="['hc:system:customer:list']"
@@ -83,40 +75,107 @@
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
-    <el-table v-loading="loading" :data="customerList" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="客户编号" prop="customerId" width="220" show-overflow-tooltip />
-      <el-table-column label="租户类型" prop="tenantKey" width="120" show-overflow-tooltip />
-      <el-table-column label="客户名称" prop="customerName" min-width="160" show-overflow-tooltip />
-      <el-table-column label="客户编码" prop="customerCode" width="140" show-overflow-tooltip />
-      <el-table-column label="耗材状态" align="center" width="90">
-        <template slot-scope="scope">
-          <el-tag :type="(scope.row.hcStatus || '0') === '0' ? 'success' : 'danger'">{{ (scope.row.hcStatus || '0') === '0' ? '正常' : '停用' }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="耗材系统计划停用时间" align="center" width="190">
-        <template slot-scope="scope">{{ scope.row.hcPlannedDisableTime ? parseTime(scope.row.hcPlannedDisableTime, '{y}-{m}-{d} {h}:{i}') : '-' }}</template>
-      </el-table-column>
-      <el-table-column label="单价小数位" align="center" width="100" prop="priceDecimalPlaces" />
-      <el-table-column label="金额小数位" align="center" width="100" prop="amountDecimalPlaces" />
-      <el-table-column label="创建时间" align="center" width="160">
-        <template slot-scope="scope">{{ parseTime(scope.row.createTime) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" width="600" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(scope.row)" v-hasPermi="['hc:system:customer:query']">修改</el-button>
-          <el-button size="mini" type="text" icon="el-icon-video-pause" @click="handleChangeStatus(scope.row, '1')" v-hasPermi="['hc:system:customer:query']" v-if="(scope.row.hcStatus || '0') === '0'">停用</el-button>
-          <el-button size="mini" type="text" icon="el-icon-video-play" @click="handleChangeStatus(scope.row, '0')" v-hasPermi="['hc:system:customer:query']" v-if="(scope.row.hcStatus || '0') === '1'">启用</el-button>
-          <el-button size="mini" type="text" icon="el-icon-s-operation" @click="handleAssignMenu(scope.row)" v-hasPermi="['hc:system:customer:query']">耗材客户权限</el-button>
-          <el-button size="mini" type="text" icon="el-icon-coin" @click="handleMoneyScale(scope.row)" v-hasPermi="['hc:system:customer:query']">金额小数位</el-button>
-          <el-button size="mini" type="text" icon="el-icon-refresh-right" @click="handleResetMaterial(scope.row)" v-hasPermi="['hc:system:customerMenuManage:edit']">耗材功能重置</el-button>
-          <el-button size="mini" type="text" icon="el-icon-document" @click="handleStatusLog(scope.row)" v-hasPermi="['hc:system:customer:query']">启停用记录</el-button>
-          <el-button size="mini" type="text" icon="el-icon-delete" @click="handleDelete(scope.row)" v-hasPermi="['hc:system:customer:list']">删除</el-button>
-          <el-button size="mini" type="text" class="text-danger" icon="el-icon-remove-outline" @click="handlePurgeHc(scope.row)" v-hasPermi="['hc:system:customer:purgeHc']">清理耗材数据</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <pagination v-show="total > 0" :total="total" :page.sync="queryParams.pageNum" :limit.sync="queryParams.pageSize" @pagination="getList" />
+
+    <div class="apply-table-panel" ref="tablePanel">
+      <el-table
+        ref="applyMainTable"
+        v-loading="loading"
+        :data="customerList"
+        class="table-compact apply-main-table"
+        row-key="customerId"
+        :height="mainTableHeight"
+        border
+        stripe
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+        <el-table-column label="序号" align="center" type="index" width="60" show-overflow-tooltip resizable />
+        <el-table-column label="机构编码" align="center" prop="customerId" min-width="180" show-overflow-tooltip resizable sortable />
+        <el-table-column label="机构类型" align="center" prop="tenantKey" width="120" show-overflow-tooltip resizable />
+        <el-table-column label="机构名称" align="center" prop="customerName" min-width="160" show-overflow-tooltip resizable sortable />
+        <el-table-column label="简码" align="center" prop="customerCode" width="140" show-overflow-tooltip resizable />
+        <el-table-column label="社会统一信用代码" align="center" prop="socialCreditCode" min-width="180" show-overflow-tooltip resizable>
+          <template slot-scope="scope">{{ scope.row.socialCreditCode || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="地址" align="center" prop="address" min-width="160" show-overflow-tooltip resizable>
+          <template slot-scope="scope">{{ scope.row.address || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="联系人" align="center" prop="contactName" width="100" show-overflow-tooltip resizable>
+          <template slot-scope="scope">{{ scope.row.contactName || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="联系人电话" align="center" prop="contactPhone" width="130" show-overflow-tooltip resizable>
+          <template slot-scope="scope">{{ scope.row.contactPhone || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="机构状态" align="center" width="90" resizable>
+          <template slot-scope="scope">
+            <el-tag :type="(scope.row.hcStatus || '0') === '0' ? 'success' : 'danger'" size="small">
+              {{ (scope.row.hcStatus || '0') === '0' ? '正常' : '停用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="计划停用时间" align="center" width="170" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            {{ scope.row.hcPlannedDisableTime ? parseTime(scope.row.hcPlannedDisableTime, '{y}-{m}-{d} {h}:{i}') : '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column label="单价小数位" align="center" width="100" prop="priceDecimalPlaces" resizable />
+        <el-table-column label="金额小数位" align="center" width="100" prop="amountDecimalPlaces" resizable />
+        <el-table-column label="创建时间" align="center" width="170" show-overflow-tooltip resizable>
+          <template slot-scope="scope">{{ parseTime(scope.row.createTime) }}</template>
+        </el-table-column>
+        <el-table-column label="金额小数位" align="center" width="120" class-name="small-padding fixed-width" resizable>
+          <template slot-scope="scope">
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-coin"
+              style="padding: 0 5px; margin: 0;"
+              @click="handleMoneyScale(scope.row)"
+              v-hasPermi="['hc:system:customer:query']"
+            >金额小数位</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column label="启停用记录" align="center" width="120" class-name="small-padding fixed-width" resizable>
+          <template slot-scope="scope">
+            <el-button
+              size="mini"
+              type="text"
+              icon="el-icon-document"
+              style="padding: 0 5px; margin: 0;"
+              @click="handleStatusLog(scope.row)"
+              v-hasPermi="['hc:system:customer:query']"
+            >启停用记录</el-button>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          align="center"
+          header-align="center"
+          width="360"
+          class-name="apply-action-col small-padding fixed-width"
+          fixed="right"
+        >
+          <template slot-scope="scope">
+            <span style="white-space: nowrap; display: inline-block;">
+              <el-button size="mini" type="text" icon="el-icon-s-operation" style="padding: 0 5px; margin: 0;" @click="handleAssignMenu(scope.row)" v-hasPermi="['hc:system:customer:query']">授权</el-button>
+              <el-button size="mini" type="text" icon="el-icon-refresh-right" style="padding: 0 5px; margin: 0;" @click="handleResetMaterial(scope.row)" v-hasPermi="['hc:system:customerMenuManage:edit']">初始化</el-button>
+              <el-button size="mini" type="text" class="text-danger" icon="el-icon-remove-outline" style="padding: 0 5px; margin: 0;" @click="handlePurgeHc(scope.row)" v-hasPermi="['hc:system:customer:purgeHc']">清理耗材数据</el-button>
+            </span>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+        <div class="pagination-summary" />
+        <pagination
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
+    </div>
+
     <HcCustomerEditDialog v-if="open" />
     <HcCustomerStatusDialog v-if="openStatus" />
     <HcCustomerLogDialog v-if="openLog" />
@@ -148,11 +207,7 @@ export default {
       single: true,
       multiple: true,
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '客户名称', value: 'customerName' },
-        { label: '客户编码', value: 'customerCode' }
-      ],
+      mainTableHeight: 400,
       total: 0,
       customerList: [],
       title: '',
@@ -194,66 +249,141 @@ export default {
       form: {},
       pickerOptions: { disabledDate(time) { return time.getTime() < Date.now() - 8.64e7 } },
       rules: {
-        customerName: [{ required: true, message: '客户名称不能为空', trigger: 'blur' }],
-        tenantKey: [{ required: true, validator: (r, v, cb) => { if (this.form.customerId) return cb(); if (!v || !String(v).trim()) cb(new Error('请选择租户类型')); else cb(); }, trigger: 'change' }]
+        customerName: [{ required: true, message: '机构名称不能为空', trigger: 'blur' }],
+        tenantKey: [{ required: true, validator: (r, v, cb) => { if (this.form.customerId) return cb(); if (!v || !String(v).trim()) cb(new Error('请选择机构类型')); else cb(); }, trigger: 'change' }],
+        hcStatus: [{ required: true, message: '请选择状态', trigger: 'change' }]
       }
     }
   },
   computed: {
-    moreSearchStorageKey() {
-      return 'spd.material.system.customer.moreSearchTypes'
-    },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
-    },
     selectedTenantEnum() {
       if (!this.form.tenantKey || !this.tenantEnumList.length) return null
       return this.tenantEnumList.find(t => t.name === this.form.tenantKey) || null
     }
   },
+  watch: {
+    showSearch() {
+      this.scheduleLayoutRefresh()
+    },
+    total() {
+      this.scheduleLayoutRefresh()
+    }
+  },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults()
-    this.onMoreSearchTypesChange()
     this.getList()
     getTenantEnumList().then(res => { this.tenantEnumList = res.data || [] }).catch(() => { this.tenantEnumList = [] })
   },
+  mounted() {
+    this.scheduleLayoutRefresh()
+    window.addEventListener('resize', this.onWindowResize)
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onWindowResize)
+  },
   methods: {
+    onWindowResize() {
+      this.updateMainTableHeight()
+    },
+    scheduleLayoutRefresh() {
+      const run = () => this.updateMainTableHeight()
+      this.$nextTick(() => {
+        run()
+        requestAnimationFrame(() => {
+          run()
+          ;[50, 120, 300].forEach((ms) => setTimeout(run, ms))
+        })
+      })
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel
+      const pagWrap = this.$refs.paginationWrap
+      if (!panel || !panel.getBoundingClientRect) return
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height
+      if (!panelH) return
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8
+      const next = Math.floor(panelH - pagH)
+      const height = Math.max(200, next)
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.applyMainTable
+        if (table && table.doLayout) table.doLayout()
+      })
+    },
     getList() {
       this.loading = true
-      const params = { ...this.queryParams }
-      this.applyMoreSearchToQueryParams(params)
-      listHcCustomers(params).then(res => {
+      listHcCustomers({ ...this.queryParams }).then(res => {
         this.customerList = res.rows || []
         this.total = res.total || 0
         this.loading = false
+        this.scheduleLayoutRefresh()
       }).catch(() => { this.loading = false })
     },
     cancel() { this.open = false; this.resetForm('form'); this.form = {} },
-    reset() { this.form = { customerId: undefined, customerName: undefined, customerCode: undefined, tenantKey: undefined, status: '0', hcStatus: '0', hcPlannedDisableTime: undefined, remark: undefined }; this.resetForm('form') },
+    reset() {
+      this.form = {
+        customerId: undefined,
+        customerName: undefined,
+        customerCode: undefined,
+        socialCreditCode: undefined,
+        address: undefined,
+        contactName: undefined,
+        contactPhone: undefined,
+        tenantKey: undefined,
+        status: '0',
+        hcStatus: '0',
+        hcPlannedDisableTime: undefined,
+        remark: undefined
+      }
+      this.resetForm('form')
+    },
     onTenantKeyChange(val) { const item = this.tenantEnumList.find(t => t.name === val); if (item) this.form.customerCode = item.customerCode },
-    handleAdd() { this.reset(); this.open = true; this.title = '新增客户' },
+    handleAdd() { this.reset(); this.open = true; this.title = '新增机构' },
     handleUpdate(row) {
       this.reset()
-      const id = row.customerId || this.ids[0]
-      getHcCustomer(id).then(res => { this.form = res.data; this.open = true; this.title = '修改客户' })
+      const id = (row && row.customerId) || this.ids[0]
+      getHcCustomer(id).then(res => {
+        const data = res.data || {}
+        this.form = {
+          ...data,
+          hcStatus: data.hcStatus != null && data.hcStatus !== '' ? String(data.hcStatus) : '0'
+        }
+        this.open = true
+        this.title = '修改机构'
+      })
     },
     submitForm() {
       this.$refs.form.validate(valid => {
         if (!valid) return
         if (this.form.customerId) {
-          updateHcCustomer({ customerId: this.form.customerId, customerName: this.form.customerName, remark: this.form.remark, hcStatus: this.form.hcStatus, hcPlannedDisableTime: this.form.hcPlannedDisableTime }).then(() => { this.$modal.msgSuccess('修改成功'); this.open = false; this.getList() })
+          updateHcCustomer({
+            customerId: this.form.customerId,
+            customerName: this.form.customerName,
+            remark: this.form.remark,
+            hcStatus: this.form.hcStatus,
+            hcPlannedDisableTime: this.form.hcPlannedDisableTime,
+            socialCreditCode: this.form.socialCreditCode,
+            address: this.form.address,
+            contactName: this.form.contactName,
+            contactPhone: this.form.contactPhone
+          }).then(() => { this.$modal.msgSuccess('修改成功'); this.open = false; this.getList() })
         } else {
           addCustomer(this.form).then(() => { this.$modal.msgSuccess('新增成功'); this.open = false; this.getList() })
         }
       })
     },
     handleDelete(row) {
-      const ids = row.customerId ? [row.customerId] : this.ids
+      const ids = row && row.customerId ? [row.customerId] : this.ids
       this.$modal.confirm('是否确认删除所选客户？').then(() => delCustomer(ids[0])).then(() => { this.getList(); this.$modal.msgSuccess('删除成功') }).catch(() => {})
     },
     handleSelectionChange(selection) { this.ids = selection.map(item => item.customerId); this.single = selection.length !== 1; this.multiple = !selection.length },
     handleQuery() { this.queryParams.pageNum = 1; this.getList() },
-    resetQuery() { this.resetForm('queryForm'); this.moreSearchTypes = this.loadMoreSearchDefaults(); this.onMoreSearchTypesChange(); this.handleQuery() },
+    resetQuery() {
+      this.queryParams = { pageNum: 1, pageSize: this.queryParams.pageSize || 10, customerName: undefined, customerCode: undefined, hcStatus: undefined }
+      this.resetForm('queryForm')
+      this.handleQuery()
+    },
     collectCustomerMenuTreeIds(nodes, acc) {
       const set = acc || new Set()
       if (!nodes || !nodes.length) return set
@@ -355,39 +485,6 @@ export default {
       ).map(String)
       saveHcCustomerMenus(this.menuForm.customerId, menuIds).then(() => { this.$modal.msgSuccess('保存成功'); this.openMenu = false })
     },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults()
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice()
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey)
-        if (!raw) return fallback
-        const parsed = JSON.parse(raw)
-        if (!Array.isArray(parsed)) return fallback
-        const allow = new Set(this.moreSearchOptions.map(o => o.value))
-        const cleaned = parsed.filter(v => allow.has(v))
-        return cleaned.length ? cleaned : fallback
-      } catch (e) {
-        return fallback
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || [])
-      const map = {
-        customerName: 'customerName',
-        customerCode: 'customerCode'
-      }
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null
-        }
-      })
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams)
-    },
     handleMoneyScale(row) {
       this.moneyScaleForm = {
         customerId: row.customerId,
@@ -450,9 +547,5 @@ export default {
 </script>
 
 <style scoped>
-.list-query-panel {
-  margin-top: -20px;
-}
-.log-dialog-header { margin-bottom: 12px; font-weight: 600; color: #303133; }
 .text-danger { color: #f56c6c; }
 </style>

@@ -777,7 +777,7 @@ export default {
       moreSearchOptions: [
         { value: "receiptOrderNo", label: "单号" },
         { value: "warehouse", label: "仓库" },
-        { value: "materialName", label: "产品" },
+        { value: "materialName", label: "产品名称" },
         { value: "materialSpeci", label: "规格" },
         { value: "materialModel", label: "型号" },
         { value: "factoryKeyword", label: "生产厂家" },
@@ -1264,7 +1264,7 @@ export default {
       const map = {
         receiptOrderNo: '单号',
         warehouse: '仓库',
-        materialName: '产品',
+        materialName: '产品名称',
         materialSpeci: '规格',
         materialModel: '型号',
         factoryKeyword: '生产厂家',
@@ -1278,7 +1278,7 @@ export default {
     moreSearchPlaceholderFor(t) {
       const map = {
         receiptOrderNo: '入库单号',
-        materialName: '产品',
+        materialName: '产品编码/名称/简码',
         materialSpeci: '规格',
         materialModel: '型号',
         factoryKeyword: '生产厂家',

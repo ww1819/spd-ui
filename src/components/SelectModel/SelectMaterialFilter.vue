@@ -58,7 +58,7 @@
               <el-form-item :label="nested ? '产品名称' : '耗材'" prop="materialKeyword">
                 <el-input
                   v-model="queryParams.materialKeyword"
-                  :placeholder="nested ? '产品名称' : '产品编码、名称或首字母'"
+                  placeholder="产品编码/名称/简码"
                   clearable
                   size="small"
                   @keyup.enter.native="handleQuery"
@@ -441,7 +441,7 @@ import { checkInHospitalCode } from "@/api/gz/order";
 import { listMaterialPost, listMaterialDeptSafe } from "@/api/foundation/material";
 import { listFixedNumber } from "@/api/monitoring/fixedNumber";
 import { isForbiddenError } from "@/utils/requestFallback";
-import { matchSpecKeyword, normalizeMaterialSearchKeyword } from "@/utils/materialSearch";
+import { matchMaterialKeyword, matchSpecKeyword, normalizeMaterialSearchKeyword } from "@/utils/materialSearch";
 
 export default {
   name: "SelectMaterialFilter",
@@ -958,7 +958,7 @@ export default {
       let apiCall;
       const params = { ...this.queryParams };
       if (this.queryParams.materialKeyword) {
-        params.materialName = this.queryParams.materialKeyword;
+        params.materialName = normalizeMaterialSearchKeyword(this.queryParams.materialKeyword);
       }
       const specKeyword = normalizeMaterialSearchKeyword(this.queryParams.specKeyword);
       if (specKeyword) {
@@ -1053,26 +1053,10 @@ export default {
           materialList = materialList.filter(item => matchSpecKeyword(item.material && item.material.speci, specKeyword));
         }
         
-        // 根据耗材关键词过滤（支持编码、名称、首字母）
+        // 根据耗材关键词过滤（编码/名称模糊/拼音简码首字母）
         if (this.queryParams.materialKeyword) {
-          const keyword = this.queryParams.materialKeyword.toLowerCase().trim();
-          materialList = materialList.filter(item => {
-            if (!item.material) return false;
-            const material = item.material;
-            // 检查编码
-            if (material.code && material.code.toLowerCase().includes(keyword)) {
-              return true;
-            }
-            // 检查名称
-            if (material.name && material.name.toLowerCase().includes(keyword)) {
-              return true;
-            }
-            // 检查首字母（名称简码）
-            if (material.referredName && material.referredName.toLowerCase().includes(keyword)) {
-              return true;
-            }
-            return false;
-          });
+          const keyword = normalizeMaterialSearchKeyword(this.queryParams.materialKeyword);
+          materialList = materialList.filter(item => matchMaterialKeyword(item.material, keyword));
         }
         
         this.materialList = materialList.slice();

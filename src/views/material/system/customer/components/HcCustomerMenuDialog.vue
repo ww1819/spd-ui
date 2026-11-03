@@ -1,7 +1,8 @@
 <template>
-    <el-dialog title="耗材客户权限" :visible.sync="openMenu" width="560px" append-to-body>
-      <el-form label-width="80px">
-        <el-form-item label="客户名称"><el-input v-model="menuForm.customerName" disabled /></el-form-item>
+    <el-dialog title="组织机构授权" :visible.sync="openMenu" width="560px" append-to-body>
+      <el-form label-width="90px">
+        <el-form-item label="机构编码"><span class="menu-org-text">{{ menuForm.customerId || '-' }}</span></el-form-item>
+        <el-form-item label="机构名称"><span class="menu-org-text">{{ menuForm.customerName || '-' }}</span></el-form-item>
         <el-form-item>
           <el-checkbox v-model="menuExpand" @change="handleMenuTreeExpand">展开/折叠</el-checkbox>
           <el-button size="mini" style="margin-left: 8px;" @click="handleMenuSelectAll(true)">全选</el-button>
@@ -18,6 +19,7 @@
             :existing-menu-ids="menuExistingIds"
             :parent-child-linked="menuParentChildLinked"
             :default-expand-all="menuExpand"
+            :show-hint="false"
             max-height="360px"
           />
         </el-form-item>
@@ -40,3 +42,11 @@ export default {
   inheritAttrs: false
 }
 </script>
+
+<style scoped>
+.menu-org-text {
+  color: #303133;
+  line-height: 32px;
+  word-break: break-all;
+}
+</style>

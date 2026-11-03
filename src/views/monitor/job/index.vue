@@ -1,30 +1,21 @@
 <template>
-  <div class="app-container list-page">
+  <div class="app-container list-page job-page">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
-        <more-search-bar
-          ref="moreSearchBar"
-          v-model="moreSearchTypes"
-          :options="moreSearchOptions"
-          :storage-key="moreSearchStorageKey"
-          :default-types="builtInMoreSearchDefaults"
-          :auto-load="false"
-          @change="onMoreSearchTypesChange"
-          @search="handleQuery"
-          @reset="resetQuery"
-        >
-          <div
-            v-for="t in moreSearchTypes"
-            :key="t"
-            class="more-search-dynamic-field"
-            :class="t === 'jobGroup' ? 'more-search-field--select' : 'more-search-field--text'"
-          >
+        <el-row :gutter="16" class="query-row-first">
+          <el-col :span="24" class="query-row-first-inner">
+            <el-input
+              v-model="queryParams.jobName"
+              placeholder="任务名称"
+              clearable
+              class="apply-query-input apply-query-field"
+              @keyup.enter.native="handleQuery"
+            />
             <el-select
-              v-if="t === 'jobGroup'"
               v-model="queryParams.jobGroup"
               placeholder="任务组名"
               clearable
-              class="more-search-select-wrap"
+              class="apply-query-field"
             >
               <el-option
                 v-for="dict in dict.type.sys_job_group"
@@ -33,29 +24,23 @@
                 :value="dict.value"
               />
             </el-select>
-            <el-input
-              v-else
-              v-model="queryParams.jobName"
-              placeholder="任务名称"
+            <el-select
+              v-model="queryParams.status"
+              placeholder="任务状态"
               clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
-          </div>
-        </more-search-bar>
-
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item prop="status" class="query-item-inline">
-              <el-select v-model="queryParams.status" placeholder="任务状态" clearable class="more-search-select-wrap">
-                <el-option
-                  v-for="dict in dict.type.sys_job_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
+              class="apply-query-field"
+            >
+              <el-option
+                v-for="dict in dict.type.sys_job_status"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
+              />
+            </el-select>
+            <div class="query-actions">
+              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+            </div>
           </el-col>
         </el-row>
       </el-form>
@@ -63,78 +48,97 @@
 
     <el-row :gutter="0" class="mb8 list-toolbar">
       <div class="list-toolbar-left">
-        <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['monitor:job:add']">新增</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['monitor:job:edit']">修改</el-button>
-        <el-button size="small" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['monitor:job:remove']">删除</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['monitor:job:export']">导出</el-button>
-        <el-button size="small" class="spd-btn spd-btn--secondary" @click="handleJobLog" v-hasPermi="['monitor:job:query']">日志</el-button>
+        <el-button type="primary" size="small" icon="el-icon-plus" class="spd-btn spd-btn--primary" @click="handleAdd" v-hasPermi="['monitor:job:add']">新增</el-button>
+        <el-button size="small" icon="el-icon-edit" class="spd-btn spd-btn--secondary" :disabled="single" @click="handleUpdate" v-hasPermi="['monitor:job:edit']">修改</el-button>
+        <el-button size="small" icon="el-icon-delete" class="spd-btn spd-btn--danger" :disabled="multiple" @click="handleDelete" v-hasPermi="['monitor:job:remove']">删除</el-button>
+        <el-button size="small" icon="el-icon-download" class="spd-btn spd-btn--secondary" @click="handleExport" v-hasPermi="['monitor:job:export']">导出</el-button>
+        <el-button size="small" icon="el-icon-s-operation" class="spd-btn spd-btn--secondary" @click="handleJobLog" v-hasPermi="['monitor:job:query']">日志</el-button>
       </div>
       <div class="list-toolbar-right">
         <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
       </div>
     </el-row>
 
-    <el-table v-loading="loading" :data="jobList" @selection-change="handleSelectionChange" stripe>
-      <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="任务编号" width="100" align="center" prop="jobId" />
-      <el-table-column label="任务名称" align="center" prop="jobName" :show-overflow-tooltip="true" />
-      <el-table-column label="任务组名" align="center" prop="jobGroup">
-        <template slot-scope="scope">
-          <dict-tag :options="dict.type.sys_job_group" :value="scope.row.jobGroup"/>
-        </template>
-      </el-table-column>
-      <el-table-column label="调用目标字符串" align="center" prop="invokeTarget" :show-overflow-tooltip="true" />
-      <el-table-column label="cron执行表达式" align="center" prop="cronExpression" :show-overflow-tooltip="true" />
-      <el-table-column label="状态" align="center">
-        <template slot-scope="scope">
-          <el-switch
-            v-model="scope.row.status"
-            active-value="0"
-            inactive-value="1"
-            @change="handleStatusChange(scope.row)"
-          ></el-switch>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
-          <el-button
-            size="small"
-            type="text"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['monitor:job:edit']"
-          >修改</el-button>
-          <el-button
-            size="small"
-            type="text"
-            @click="handleDelete(scope.row)"
-            v-hasPermi="['monitor:job:remove']"
-          >删除</el-button>
-          <el-dropdown size="small" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['monitor:job:changeStatus', 'monitor:job:query']">
-            <el-button size="small" type="text">更多</el-button>
-            <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item command="handleRun" v-hasPermi="['monitor:job:changeStatus']">执行一次</el-dropdown-item>
-              <el-dropdown-item command="handleView" v-hasPermi="['monitor:job:query']">任务详细</el-dropdown-item>
-              <el-dropdown-item command="handleJobLog" v-hasPermi="['monitor:job:query']">调度日志</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="apply-table-panel" ref="tablePanel">
+      <el-table
+        ref="tables"
+        v-loading="loading"
+        :data="jobList"
+        class="table-compact apply-main-table"
+        row-key="jobId"
+        :height="mainTableHeight"
+        border
+        stripe
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" />
+        <el-table-column label="序号" align="center" type="index" width="60" show-overflow-tooltip resizable />
+        <el-table-column label="任务编号" width="100" align="center" prop="jobId" show-overflow-tooltip resizable />
+        <el-table-column label="任务名称" align="center" prop="jobName" min-width="140" show-overflow-tooltip resizable />
+        <el-table-column label="任务组名" align="center" prop="jobGroup" width="110" resizable>
+          <template slot-scope="scope">
+            <dict-tag :options="dict.type.sys_job_group" :value="scope.row.jobGroup"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="调用目标字符串" align="center" prop="invokeTarget" min-width="180" show-overflow-tooltip resizable />
+        <el-table-column label="cron执行表达式" align="center" prop="cronExpression" min-width="160" show-overflow-tooltip resizable />
+        <el-table-column label="状态" align="center" width="90" resizable>
+          <template slot-scope="scope">
+            <el-switch
+              v-model="scope.row.status"
+              active-value="0"
+              inactive-value="1"
+              @change="handleStatusChange(scope.row)"
+            ></el-switch>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          align="center"
+          width="180"
+          class-name="apply-action-col small-padding fixed-width"
+          fixed="right"
+        >
+          <template slot-scope="scope">
+            <el-button
+              size="small"
+              type="text"
+              style="padding: 0 5px; margin: 0;"
+              @click="handleUpdate(scope.row)"
+              v-hasPermi="['monitor:job:edit']"
+            >修改</el-button>
+            <el-button
+              size="small"
+              type="text"
+              style="padding: 0 5px; margin: 0;"
+              @click="handleDelete(scope.row)"
+              v-hasPermi="['monitor:job:remove']"
+            >删除</el-button>
+            <el-dropdown size="small" @command="(command) => handleCommand(command, scope.row)" v-hasPermi="['monitor:job:changeStatus', 'monitor:job:query']">
+              <el-button size="small" type="text" style="padding: 0 5px; margin: 0;">更多</el-button>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item command="handleRun" v-hasPermi="['monitor:job:changeStatus']">执行一次</el-dropdown-item>
+                <el-dropdown-item command="handleView" v-hasPermi="['monitor:job:query']">任务详细</el-dropdown-item>
+                <el-dropdown-item command="handleJobLog" v-hasPermi="['monitor:job:query']">调度日志</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <pagination
-      v-show="total>0"
-      :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
-      @pagination="getList"
-    />
+      <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+        <div class="pagination-summary" />
+        <pagination
+          :total="total"
+          :page.sync="queryParams.pageNum"
+          :limit.sync="queryParams.pageSize"
+          @pagination="getList"
+        />
+      </div>
+    </div>
 
-    <!-- 添加或修改定时任务对话框 -->
     <JobEditDialog v-if="open" />
-
     <JobCronDialog v-if="openCron" />
-
-    <!-- 任务日志详细 -->
     <JobViewDialog v-if="openView" />
   </div>
 </template>
@@ -152,36 +156,19 @@ export default {
   dicts: ['sys_job_group', 'sys_job_status'],
   data() {
     return {
-      // 遮罩层
       loading: true,
-      // 选中数组
       ids: [],
-      // 非单个禁用
       single: true,
-      // 非多个禁用
       multiple: true,
-      // 显示搜索条件
       showSearch: true,
-      moreSearchTypes: [],
-      moreSearchOptions: [
-        { label: '任务名称', value: 'jobName' },
-        { label: '任务组名', value: 'jobGroup' }
-      ],
-      // 总条数
+      mainTableHeight: 400,
       total: 0,
-      // 定时任务表格数据
       jobList: [],
-      // 弹出层标题
       title: "",
-      // 是否显示弹出层
       open: false,
-      // 是否显示详细弹出层
       openView: false,
-      // 是否显示Cron表达式弹出层
       openCron: false,
-      // 传入的表达式
       expression: "",
-      // 查询参数
       queryParams: {
         pageNum: 1,
         pageSize: 10,
@@ -189,9 +176,7 @@ export default {
         jobGroup: undefined,
         status: undefined
       },
-      // 表单参数
       form: {},
-      // 表单校验
       rules: {
         jobName: [
           { required: true, message: "任务名称不能为空", trigger: "blur" }
@@ -205,41 +190,73 @@ export default {
       }
     };
   },
-  computed: {
-    moreSearchStorageKey() {
-      return 'spd.monitor.job.moreSearchTypes'
+  watch: {
+    showSearch() {
+      this.scheduleLayoutRefresh();
     },
-    builtInMoreSearchDefaults() {
-      return this.moreSearchOptions.map(o => o.value)
+    total() {
+      this.scheduleLayoutRefresh();
     }
   },
   created() {
-    this.moreSearchTypes = this.loadMoreSearchDefaults();
-    this.onMoreSearchTypesChange();
     this.getList();
   },
+  mounted() {
+    this.scheduleLayoutRefresh();
+    window.addEventListener('resize', this.onWindowResize);
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.onWindowResize);
+  },
   methods: {
-    /** 查询定时任务列表 */
+    onWindowResize() {
+      this.updateMainTableHeight();
+    },
+    scheduleLayoutRefresh() {
+      const run = () => this.updateMainTableHeight();
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          ;[50, 120, 300].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateMainTableHeight() {
+      const panel = this.$refs.tablePanel;
+      const pagWrap = this.$refs.paginationWrap;
+      if (!panel || !panel.getBoundingClientRect) return;
+      const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+      if (!panelH) return;
+      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+      const next = Math.floor(panelH - pagH);
+      const height = Math.max(200, next);
+      if (Math.abs(this.mainTableHeight - height) >= 2) {
+        this.mainTableHeight = height;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.tables;
+        if (table && table.doLayout) table.doLayout();
+      });
+    },
     getList() {
       this.loading = true;
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      listJob(params).then(response => {
+      listJob({ ...this.queryParams }).then(response => {
         this.jobList = response.rows;
         this.total = response.total;
         this.loading = false;
+        this.scheduleLayoutRefresh();
+      }).catch(() => {
+        this.loading = false;
       });
     },
-    // 任务组名字典翻译
-    jobGroupFormat(row, column) {
+    jobGroupFormat(row) {
       return this.selectDictLabel(this.dict.type.sys_job_group, row.jobGroup);
     },
-    // 取消按钮
     cancel() {
       this.open = false;
       this.reset();
     },
-    // 表单重置
     reset() {
       this.form = {
         jobId: undefined,
@@ -253,55 +270,26 @@ export default {
       };
       this.resetForm("form");
     },
-    /** 搜索按钮操作 */
     handleQuery() {
       this.queryParams.pageNum = 1;
       this.getList();
     },
-    /** 重置按钮操作 */
     resetQuery() {
+      this.queryParams = {
+        pageNum: 1,
+        pageSize: this.queryParams.pageSize || 10,
+        jobName: undefined,
+        jobGroup: undefined,
+        status: undefined
+      };
       this.resetForm("queryForm");
-      this.moreSearchTypes = this.loadMoreSearchDefaults();
-      this.onMoreSearchTypesChange();
       this.handleQuery();
     },
-    loadMoreSearchDefaults() {
-      const bar = this.$refs.moreSearchBar;
-      if (bar && typeof bar.loadDefaults === 'function') {
-        return bar.loadDefaults();
-      }
-      const fallback = this.builtInMoreSearchDefaults.slice();
-      try {
-        const raw = localStorage.getItem(this.moreSearchStorageKey);
-        if (!raw) return fallback;
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return fallback;
-        const allow = new Set(this.moreSearchOptions.map(o => o.value));
-        const cleaned = parsed.filter(v => allow.has(v));
-        return cleaned.length ? cleaned : fallback;
-      } catch (e) {
-        return fallback;
-      }
-    },
-    applyMoreSearchToQueryParams(target) {
-      const set = new Set(this.moreSearchTypes || []);
-      const map = { jobName: 'jobName', jobGroup: 'jobGroup' };
-      Object.keys(map).forEach((type) => {
-        if (!set.has(type)) {
-          target[map[type]] = null;
-        }
-      });
-    },
-    onMoreSearchTypesChange() {
-      this.applyMoreSearchToQueryParams(this.queryParams);
-    },
-    // 多选框选中数据
     handleSelectionChange(selection) {
       this.ids = selection.map(item => item.jobId);
       this.single = selection.length != 1;
       this.multiple = !selection.length;
     },
-    // 更多操作触发
     handleCommand(command, row) {
       switch (command) {
         case "handleRun":
@@ -317,7 +305,6 @@ export default {
           break;
       }
     },
-    // 任务状态修改
     handleStatusChange(row) {
       let text = row.status === "0" ? "启用" : "停用";
       this.$modal.confirm('确认要"' + text + '""' + row.jobName + '"任务吗？').then(function() {
@@ -328,7 +315,6 @@ export default {
         row.status = row.status === "0" ? "1" : "0";
       });
     },
-    /* 立即执行一次 */
     handleRun(row) {
       this.$modal.confirm('确认要立即执行一次"' + row.jobName + '"任务吗？').then(function() {
         return runJob(row.jobId, row.jobGroup);
@@ -336,34 +322,28 @@ export default {
         this.$modal.msgSuccess("执行成功");
       }).catch(() => {});
     },
-    /** 任务详细信息 */
     handleView(row) {
       getJob(row.jobId).then(response => {
         this.form = response.data;
         this.openView = true;
       });
     },
-    /** cron表达式按钮操作 */
     handleShowCron() {
       this.expression = this.form.cronExpression;
       this.openCron = true;
     },
-    /** 确定后回传值 */
     crontabFill(value) {
       this.form.cronExpression = value;
     },
-    /** 任务日志列表查询 */
     handleJobLog(row) {
-      const jobId = row.jobId || 0;
-      this.$router.push('/monitor/job-log/index/' + jobId)
+      const jobId = (row && row.jobId) || 0;
+      this.$router.push('/monitor/job-log/index/' + jobId);
     },
-    /** 新增按钮操作 */
     handleAdd() {
       this.reset();
       this.open = true;
       this.title = "添加任务";
     },
-    /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
       const jobId = row.jobId || this.ids;
@@ -373,18 +353,17 @@ export default {
         this.title = "修改任务";
       });
     },
-    /** 提交按钮 */
-    submitForm: function() {
+    submitForm() {
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (this.form.jobId != undefined) {
-            updateJob(this.form).then(response => {
+            updateJob(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            addJob(this.form).then(response => {
+            addJob(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -393,7 +372,6 @@ export default {
         }
       });
     },
-    /** 删除按钮操作 */
     handleDelete(row) {
       const jobIds = row.jobId || this.ids;
       this.$modal.confirm('是否确认删除定时任务编号为"' + jobIds + '"的数据项？').then(function() {
@@ -403,18 +381,11 @@ export default {
         this.$modal.msgSuccess("删除成功");
       }).catch(() => {});
     },
-    /** 导出按钮操作 */
     handleExport() {
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download('monitor/job/export', params, `job_${new Date().getTime()}.xlsx`)
+      this.download('monitor/job/export', {
+        ...this.queryParams
+      }, `job_${new Date().getTime()}.xlsx`);
     }
   }
 };
 </script>
-
-<style scoped>
-.list-query-panel {
-  margin-top: -20px;
-}
-</style>
