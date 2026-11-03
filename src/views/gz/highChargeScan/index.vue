@@ -65,8 +65,8 @@
               </el-select>
             </el-form-item>
             <div class="hc-query-actions">
-              <el-button type="primary" size="small" class="spd-btn spd-btn--primary" @click="handleDetailQuery">搜索</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" @click="resetDetailQuery">重置</el-button>
+              <el-button type="primary" icon="el-icon-search" size="small" class="spd-btn spd-btn--primary" @click="handleDetailQuery">搜索</el-button>
+              <el-button icon="el-icon-refresh" size="small" class="spd-btn spd-btn--secondary" @click="resetDetailQuery">重置</el-button>
             </div>
           </div>
           <div class="hc-query-row hc-query-row--second">
@@ -872,14 +872,6 @@ export default {
     },
     handleDetailQuery() {
       this.detailQuery.pageNum = 1
-      if (!this.detailQuery.beginChargeDate && this.detailQuery.endChargeDate) {
-        const end = new Date(String(this.detailQuery.endChargeDate).replace(/-/g, '/'))
-        if (!isNaN(end.getTime())) {
-          this.detailQuery.beginChargeDate = parseTime(new Date(end.getFullYear(), end.getMonth(), 1), '{y}-{m}-{d}')
-        } else {
-          Object.assign(this.detailQuery, buildDefaultChargeDateRange())
-        }
-      }
       this.loadDetailList()
     },
     onDetailVisitTypeChange() {
@@ -912,14 +904,6 @@ export default {
       this.loadDetailList()
     },
     loadDetailList() {
-      if (!this.detailQuery.beginChargeDate && this.detailQuery.endChargeDate) {
-        const end = new Date(String(this.detailQuery.endChargeDate).replace(/-/g, '/'))
-        if (!isNaN(end.getTime())) {
-          this.detailQuery.beginChargeDate = parseTime(new Date(end.getFullYear(), end.getMonth(), 1), '{y}-{m}-{d}')
-        } else {
-          Object.assign(this.detailQuery, buildDefaultChargeDateRange())
-        }
-      }
       this.detailLoading = true
       const q = { ...this.detailQuery }
       q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
