@@ -192,14 +192,36 @@ function isBlankText(val) {
   return val == null || String(val).trim() === '';
 }
 
+/** 仓库入库必填开关：未配置时默认开启（兼容旧数据） */
+export function resolveInboundRequireFlag(val, defaultOn = true) {
+  if (val === undefined || val === null || val === '') {
+    return !!defaultOn;
+  }
+  if (val === true || val === 1 || val === '1') {
+    return true;
+  }
+  if (val === false || val === 0 || val === '0') {
+    return false;
+  }
+  return !!defaultOn;
+}
+
 /**
- * 低值入库明细：批号、有效期均不能为空（空白字符串视为空）
+ * 低值入库明细：按仓库配置校验批号/生产日期/有效期必填
  * @param {Array} entryList 明细列表
  * @param {Vue} vm 组件实例
  * @param {string} [actionLabel] 操作名，如「保存」「审核」
+ * @param {Object} [requireOpts] { requireBatchNo, requireProduceDate, requireExpiryDate }
  */
-export function assertInboundBillEntriesHaveBatchAndExpiry(entryList, vm, actionLabel) {
+export function assertInboundBillEntriesHaveBatchAndExpiry(entryList, vm, actionLabel, requireOpts) {
   const action = actionLabel || '保存';
+  const opts = requireOpts || {};
+  const requireBatchNo = resolveInboundRequireFlag(opts.requireBatchNo, true);
+  const requireProduceDate = resolveInboundRequireFlag(opts.requireProduceDate, true);
+  const requireExpiryDate = resolveInboundRequireFlag(opts.requireExpiryDate, true);
+  if (!requireBatchNo && !requireProduceDate && !requireExpiryDate) {
+    return true;
+  }
   const list = entryList || [];
   for (let i = 0; i < list.length; i++) {
     const e = list[i];
@@ -209,16 +231,37 @@ export function assertInboundBillEntriesHaveBatchAndExpiry(entryList, vm, action
     if (e.materialId == null || e.materialId === '') {
       continue;
     }
-    const name = resolveEntryMaterialName(e);
-    const lineLabel = name !== '--' ? name : formatChineseRowNo(i + 1);
-    if (isBlankText(e.batchNumber) || isBlankText(e.endTime)) {
-      if (vm && vm.$modal) {
-        vm.$modal.msgError(`明细【${lineLabel}】批号或有效期为空，请维护批号和效期后再${action}`);
-      }
-      return false;
+    const missing = [];
+    if (requireBatchNo && isBlankText(e.batchNumber)) {
+      missing.push('批号');
     }
+    if (requireProduceDate && isBlankText(e.beginTime)) {
+      missing.push('生产日期');
+    }
+    if (requireExpiryDate && isBlankText(e.endTime)) {
+      missing.push('有效期');
+    }
+    if (!missing.length) {
+      continue;
+    }
+    const name = resolveEntryMaterialName(e);
+    const rowLabel = formatChineseRowNo(i + 1);
+    if (vm && vm.$modal) {
+      vm.$modal.msgError(`入库明细${rowLabel}【${name}】${missing.join('、')}为空，请维护后再${action}！`);
+    }
+    return false;
   }
   return true;
+}
+
+/** 从仓库对象解析入库必填开关 */
+export function resolveInboundRequireOptsFromWarehouse(warehouse) {
+  const w = warehouse || {};
+  return {
+    requireBatchNo: resolveInboundRequireFlag(w.requireBatchNo, true),
+    requireProduceDate: resolveInboundRequireFlag(w.requireProduceDate, true),
+    requireExpiryDate: resolveInboundRequireFlag(w.requireExpiryDate, true)
+  };
 }
 
 function parseYmdDateOnly(str) {
@@ -242,6 +285,57 @@ function parseYmdDateOnly(str) {
 function todayLocalDateOnly() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+function normalizeInboundDateKey(val) {
+  if (val == null || String(val).trim() === '') {
+    return '';
+  }
+  return String(val).trim().slice(0, 10);
+}
+
+function normalizeInboundBatchKey(val) {
+  if (val == null) {
+    return '';
+  }
+  return String(val).trim();
+}
+
+/**
+ * 低值入库明细：同一产品在同一入库单内，批号+生产日期+有效期不可完全相同
+ * （三者有任一不同则允许）
+ */
+export function assertInboundBillEntriesUniqueBatchExpiry(entryList, vm) {
+  const list = entryList || [];
+  const seen = Object.create(null);
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!e || !isEntryNotDeleted(e)) {
+      continue;
+    }
+    if (e.materialId == null || e.materialId === '') {
+      continue;
+    }
+    const materialKey = String(e.materialId);
+    const batchKey = normalizeInboundBatchKey(e.batchNumber);
+    const beginKey = normalizeInboundDateKey(e.beginTime);
+    const endKey = normalizeInboundDateKey(e.endTime);
+    const dupKey = `${materialKey}|${batchKey}|${beginKey}|${endKey}`;
+    if (Object.prototype.hasOwnProperty.call(seen, dupKey)) {
+      const firstIdx = seen[dupKey];
+      const first = list[firstIdx];
+      const name1 = resolveEntryMaterialName(first);
+      const name2 = resolveEntryMaterialName(e);
+      const row1 = formatChineseRowNo(firstIdx + 1);
+      const row2 = formatChineseRowNo(i + 1);
+      if (vm && vm.$modal) {
+        vm.$modal.msgError(`入库明细${row1}【${name1}】与${row2}【${name2}】生产日期、有效期、批号完全一致，请核对！`);
+      }
+      return false;
+    }
+    seen[dupKey] = i;
+  }
+  return true;
 }
 
 /**

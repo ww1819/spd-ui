@@ -245,10 +245,13 @@ import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
+import { getWarehouse } from '@/api/foundation/warehouse';
 import {
   assertBillHasEntries,
   assertBillHasActiveEntriesForAudit,
-  assertInboundBillEntriesHaveBatchAndExpiry
+  assertInboundBillEntriesHaveBatchAndExpiry,
+  assertInboundBillEntriesUniqueBatchExpiry,
+  resolveInboundRequireOptsFromWarehouse
 } from '@/utils/billEntryValidate';
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
@@ -1252,15 +1255,24 @@ export default {
         if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
           return;
         }
-        if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核')) {
-          return;
-        }
-        this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
-          return auditWarehouse({ id: id, auditBy: auditBy });
-        }).then(() => {
-          this.getList();
-          this.$modal.msgSuccess("审核入库成功！");
-        }).catch(() => {});
+        const whId = res.data && res.data.warehouseId;
+        const loadOpts = whId
+          ? getWarehouse(whId).then(wRes => resolveInboundRequireOptsFromWarehouse(wRes && wRes.data)).catch(() => resolveInboundRequireOptsFromWarehouse(null))
+          : Promise.resolve(resolveInboundRequireOptsFromWarehouse(null));
+        return loadOpts.then((requireOpts) => {
+          if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核', requireOpts)) {
+            return;
+          }
+          if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
+            return;
+          }
+          this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+            return auditWarehouse({ id: id, auditBy: auditBy });
+          }).then(() => {
+            this.getList();
+            this.$modal.msgSuccess("审核入库成功！");
+          }).catch(() => {});
+        });
       }).catch(() => {});
     },
     /** 批量审核按钮操作 */
@@ -1280,9 +1292,18 @@ export default {
             if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
               return Promise.reject(new Error('audit_entry_validate_failed'));
             }
-            if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核')) {
-              return Promise.reject(new Error('audit_entry_validate_failed'));
-            }
+            const whId = res.data && res.data.warehouseId;
+            const loadOpts = whId
+              ? getWarehouse(whId).then(wRes => resolveInboundRequireOptsFromWarehouse(wRes && wRes.data)).catch(() => resolveInboundRequireOptsFromWarehouse(null))
+              : Promise.resolve(resolveInboundRequireOptsFromWarehouse(null));
+            return loadOpts.then((requireOpts) => {
+              if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核', requireOpts)) {
+                return Promise.reject(new Error('audit_entry_validate_failed'));
+              }
+              if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
+                return Promise.reject(new Error('audit_entry_validate_failed'));
+              }
+            });
           })
         );
         return Promise.all(validatePromises).then(() =>
@@ -1315,37 +1336,44 @@ export default {
     /** 提交按钮 */
     submitForm() {
       this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条入库明细')) {
+        if (!valid) {
+          return;
+        }
+        if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条入库明细')) {
+          return;
+        }
+        const doSave = (requireOpts) => {
+          if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存', requireOpts)) {
             return;
           }
-          if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存')) {
+          if (!assertInboundBillEntriesUniqueBatchExpiry(this.stkIoBillEntryList, this)) {
             return;
           }
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           var totalAmt = 0;
           this.stkIoBillEntryList.forEach(item => {
-            if(item.amt){
+            if (item.amt) {
               totalAmt += parseFloat(item.amt);
             }
           });
           this.form.totalAmount = this.toMoneyStorage(totalAmt);
           if (this.form.id != null) {
-            updateWarehouse(this.form).then(response => {
+            updateWarehouse(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.getList();
-              // 保存成功后不关闭弹窗，允许继续修改
-              // this.open = false;
             });
           } else {
-            addWarehouse(this.form).then(response => {
+            addWarehouse(this.form).then(() => {
               this.$modal.msgSuccess("新增成功");
               this.getList();
-              // 保存成功后不关闭弹窗，允许继续新增
-              // this.open = false;
             });
           }
-        }
+        };
+        const whId = this.form.warehouseId;
+        const loadOpts = whId
+          ? getWarehouse(whId).then(wRes => resolveInboundRequireOptsFromWarehouse(wRes && wRes.data)).catch(() => resolveInboundRequireOptsFromWarehouse(null))
+          : Promise.resolve(resolveInboundRequireOptsFromWarehouse(null));
+        loadOpts.then((requireOpts) => doSave(requireOpts));
       });
     },
     /** 打印按钮操作 */

@@ -53,6 +53,32 @@
                 inactive-text="否"
               />
             </el-form-item>
+            <el-form-item label="入库必填" class="warehouse-inbound-require-item">
+              <div class="warehouse-inbound-require-switches">
+                <el-switch
+                  v-model="form.requireProduceDate"
+                  :active-value="1"
+                  :inactive-value="0"
+                  active-text="生产日期"
+                  inactive-text="生产日期"
+                />
+                <el-switch
+                  v-model="form.requireExpiryDate"
+                  :active-value="1"
+                  :inactive-value="0"
+                  active-text="有效期"
+                  inactive-text="有效期"
+                />
+                <el-switch
+                  v-model="form.requireBatchNo"
+                  :active-value="1"
+                  :inactive-value="0"
+                  active-text="批号"
+                  inactive-text="批号"
+                />
+              </div>
+              <div class="warehouse-inbound-require-tip">点亮后，到货验收添加明细保存时对应字段必填</div>
+            </el-form-item>
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
             </el-form-item>

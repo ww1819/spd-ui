@@ -352,6 +352,9 @@ export default {
         warehouseType: '低值',
         settlementType: null,
         isSettlementWarehouse: 0,
+        requireProduceDate: 1,
+        requireExpiryDate: 1,
+        requireBatchNo: 1,
         remark: null,
         hisId: null,
       };
@@ -415,6 +418,9 @@ export default {
       this.form.warehouseStatus = '2';
       this.form.warehouseType = '低值';
       this.form.isSettlementWarehouse = 0;
+      this.form.requireProduceDate = 1;
+      this.form.requireExpiryDate = 1;
+      this.form.requireBatchNo = 1;
       this.title = "添加仓库";
     },
     handleUpdate(row) {
@@ -422,7 +428,14 @@ export default {
       this.dialogMode = 'edit';
       const id = row.id || this.ids;
       getWarehouse(id).then(response => {
-        this.form = response.data;
+        const data = response.data || {};
+        this.form = {
+          ...data,
+          isSettlementWarehouse: Number(data.isSettlementWarehouse) === 1 ? 1 : 0,
+          requireProduceDate: data.requireProduceDate == null ? 1 : (Number(data.requireProduceDate) === 1 ? 1 : 0),
+          requireExpiryDate: data.requireExpiryDate == null ? 1 : (Number(data.requireExpiryDate) === 1 ? 1 : 0),
+          requireBatchNo: data.requireBatchNo == null ? 1 : (Number(data.requireBatchNo) === 1 ? 1 : 0)
+        };
         this.open = true;
         this.isDisabled = true;
         this.title = "修改仓库";
@@ -458,22 +471,31 @@ export default {
     submitForm() {
       if (this.dialogMode === 'view') return;
       this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.id != null) {
-            updateWarehouse(this.form).then(() => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-              this.getAllWarehouseList();
-            });
-          } else {
-            addWarehouse(this.form).then(() => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-              this.getAllWarehouseList();
-            });
-          }
+        if (!valid) {
+          return;
+        }
+        // 开关关闭时为 0，显式转数字，避免被当成空值丢掉
+        const payload = {
+          ...this.form,
+          isSettlementWarehouse: Number(this.form.isSettlementWarehouse) === 1 ? 1 : 0,
+          requireProduceDate: Number(this.form.requireProduceDate) === 1 ? 1 : 0,
+          requireExpiryDate: Number(this.form.requireExpiryDate) === 1 ? 1 : 0,
+          requireBatchNo: Number(this.form.requireBatchNo) === 1 ? 1 : 0
+        };
+        if (this.form.id != null) {
+          updateWarehouse(payload).then(() => {
+            this.$modal.msgSuccess("修改成功");
+            this.open = false;
+            this.getList();
+            this.getAllWarehouseList();
+          });
+        } else {
+          addWarehouse(payload).then(() => {
+            this.$modal.msgSuccess("新增成功");
+            this.open = false;
+            this.getList();
+            this.getAllWarehouseList();
+          });
         }
       });
     },
@@ -926,5 +948,19 @@ export default {
 
 .warehouse-code-link:hover {
   text-decoration: underline;
+}
+
+.warehouse-inbound-require-switches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+
+.warehouse-inbound-require-tip {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
 }
 </style>

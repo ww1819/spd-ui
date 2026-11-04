@@ -506,6 +506,29 @@
               </div>
             </template>
           </el-table-column>
+          <el-table-column
+            v-if="action"
+            label="操作"
+            align="center"
+            width="120"
+            fixed="right"
+            class-name="apply-action-col small-padding fixed-width"
+          >
+            <template slot-scope="scope">
+              <el-button
+                size="small"
+                type="text"
+                style="padding: 0 5px; margin: 0;"
+                @click="handleCopyStkIoBillEntry(scope.row, scope.$index)"
+              >复制</el-button>
+              <el-button
+                size="small"
+                type="text"
+                style="padding: 0 5px; margin: 0; color: #F56C6C;"
+                @click="handleDeleteStkIoBillEntryRow(scope.row, scope.$index)"
+              >删除</el-button>
+            </template>
+          </el-table-column>
         </el-table>
         </div>
         </div>

@@ -250,6 +250,7 @@
 <script>
 import { listWarehouse, getInWarehouse, delWarehouse, addWarehouse, updateWarehouse, auditWarehouse, createRkEntriesByDingdan, queryZsDelivery, createRkEntriesByDeliveryNo, listEntryChangeLog } from "@/api/warehouse/warehouse";
 import { getMaterialByMainBarcode, jxTm } from "@/api/foundation/material";
+import { getWarehouse } from "@/api/foundation/warehouse";
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
@@ -258,7 +259,9 @@ import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import {
   assertBillHasActiveEntriesForAudit,
   assertInboundBillEntriesHaveBatchAndExpiry,
-  assertInboundBillEntryDatesValid
+  assertInboundBillEntriesUniqueBatchExpiry,
+  assertInboundBillEntryDatesValid,
+  resolveInboundRequireOptsFromWarehouse
 } from '@/utils/billEntryValidate'
 import { ZQ_TCM_TENANT } from '@/utils/msunHis'
 import { normalizeCompactDateInput, readDatePickerInputValue, isValidYmd } from '@/utils/compactDateInput'
@@ -1536,14 +1539,6 @@ export default {
             return;
           }
 
-          if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存')) {
-            return;
-          }
-
-          if (!assertInboundBillEntryDatesValid(this.stkIoBillEntryList, this)) {
-            return;
-          }
-
           const submitAfterWarehouseCheck = () => {
           if (!this.form.createBy && this.$store.state.user && this.$store.state.user.userId) {
             this.form.createBy = this.$store.state.user.userId;
@@ -1601,10 +1596,37 @@ export default {
           }
           };
 
-          assertWarehouseInboundEnabled(this.form.warehouseId, this).then((ok) => {
-            if (ok) {
-              submitAfterWarehouseCheck();
+          const runInboundFieldValidate = (requireOpts) => {
+            if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存', requireOpts)) {
+              return false;
             }
+            if (!assertInboundBillEntriesUniqueBatchExpiry(this.stkIoBillEntryList, this)) {
+              return false;
+            }
+            if (!assertInboundBillEntryDatesValid(this.stkIoBillEntryList, this)) {
+              return false;
+            }
+            return true;
+          };
+
+          const loadRequireOpts = () => {
+            if (!this.form.warehouseId) {
+              return Promise.resolve(resolveInboundRequireOptsFromWarehouse(null));
+            }
+            return getWarehouse(this.form.warehouseId).then((res) => {
+              return resolveInboundRequireOptsFromWarehouse(res && res.data);
+            }).catch(() => resolveInboundRequireOptsFromWarehouse(null));
+          };
+
+          assertWarehouseInboundEnabled(this.form.warehouseId, this).then((ok) => {
+            if (!ok) {
+              return;
+            }
+            loadRequireOpts().then((requireOpts) => {
+              if (runInboundFieldValidate(requireOpts)) {
+                submitAfterWarehouseCheck();
+              }
+            });
           });
     },
     /** 枣强：弹窗内审核当前入库单（逻辑与入库审核页 handleAudit 一致） */
@@ -1618,18 +1640,33 @@ export default {
         this.$modal.msgWarning('该单据已审核，不能再次审核');
         return;
       }
-      if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '审核')) {
-        return;
-      }
-      if (!assertInboundBillEntryDatesValid(this.stkIoBillEntryList, this)) {
-        return;
-      }
       const auditBy = this.$store.state.user.userId;
-      getInWarehouse(id).then(res => {
+      const loadRequireOpts = () => {
+        if (!this.form.warehouseId) {
+          return Promise.resolve(resolveInboundRequireOptsFromWarehouse(null));
+        }
+        return getWarehouse(this.form.warehouseId).then((res) => {
+          return resolveInboundRequireOptsFromWarehouse(res && res.data);
+        }).catch(() => resolveInboundRequireOptsFromWarehouse(null));
+      };
+      loadRequireOpts().then((requireOpts) => {
+        if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '审核', requireOpts)) {
+          return;
+        }
+        if (!assertInboundBillEntriesUniqueBatchExpiry(this.stkIoBillEntryList, this)) {
+          return;
+        }
+        if (!assertInboundBillEntryDatesValid(this.stkIoBillEntryList, this)) {
+          return;
+        }
+        getInWarehouse(id).then(res => {
         if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
           return;
         }
-        if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核')) {
+        if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核', requireOpts)) {
+          return;
+        }
+        if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
           return;
         }
         if (!assertInboundBillEntryDatesValid(res.data.stkIoBillEntryList, this)) {
@@ -1654,6 +1691,7 @@ export default {
           this.$nextTick(() => this.refreshDetailSummary());
         }).catch(() => {});
       }).catch(() => {});
+      });
     },
     /** 枣强：弹窗内打印（仅已审核单据） */
     handleModalPrint() {
@@ -1826,6 +1864,40 @@ export default {
         });
         this.refreshDetailSummary();
       }
+    },
+    /** 明细行复制：在下方新增一行，产品等信息保留，数量/批号/生产日期/有效期清空 */
+    handleCopyStkIoBillEntry(row, rowIndex) {
+      if (!row) return;
+      const list = this.stkIoBillEntryList || [];
+      const idx = typeof rowIndex === 'number' && rowIndex >= 0 ? rowIndex : list.indexOf(row);
+      if (idx < 0) return;
+      const cloned = JSON.parse(JSON.stringify(row));
+      delete cloned.id;
+      delete cloned.entryId;
+      delete cloned.index;
+      cloned.qty = "";
+      cloned.amt = "";
+      cloned.batchNumber = "";
+      cloned.batchNo = "";
+      cloned.beginTime = "";
+      cloned.endTime = "";
+      this.initRowLongTermFlag(cloned);
+      list.splice(idx + 1, 0, cloned);
+      this.stkIoBillEntryList = list.slice();
+      this.refreshDetailSummary();
+    },
+    /** 明细行删除 */
+    handleDeleteStkIoBillEntryRow(row, rowIndex) {
+      const list = this.stkIoBillEntryList || [];
+      const idx = typeof rowIndex === 'number' && rowIndex >= 0 ? rowIndex : list.indexOf(row);
+      if (idx < 0) return;
+      this.$modal.confirm('确认删除该明细行？').then(() => {
+        this.stkIoBillEntryList.splice(idx, 1);
+        this.stkIoBillEntryList = this.stkIoBillEntryList.slice();
+        this.checkedStkIoBillEntry = [];
+        this.detailSelectedRowMap = {};
+        this.refreshDetailSummary();
+      }).catch(() => {});
     },
     /** 复选框选中数据 */
     handleStkIoBillEntrySelectionChange(selection) {
