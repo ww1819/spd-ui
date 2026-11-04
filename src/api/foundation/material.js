@@ -37,6 +37,15 @@ export function listMaterialAll(query) {
   })
 }
 
+/** 预览下一条可落库产品编码（衡水三院按库房分类 GZ/DZ/SJ+5 位） */
+export function nextMaterialCode(storeroomId) {
+  return request({
+    url: '/foundation/material/nextCode',
+    method: 'get',
+    params: storeroomId != null && storeroomId !== '' ? { storeroomId } : {}
+  })
+}
+
 /** 采购计划添加明细：产品档案低敏分页（过滤条件在 query 中，含 pageNum/pageSize） */
 export function listMaterialPurchasePlanPickPost(data) {
   return request({

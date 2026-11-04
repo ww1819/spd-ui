@@ -36,7 +36,7 @@
                 <el-input
                   v-model="form.code"
                   :disabled="isDisabled || form.id != null"
-                  :placeholder="isHsThirdTenant ? '产品编码（留空按库房分类自动生成，手工输入不可重复）' : '产品编码（留空自动生成6位数字，手工输入不可重复）'"
+                  :placeholder="isHsThirdTenant ? '留空则保存成功后按库房分类自动生成；手工输入不可重复' : '留空则保存成功后自动生成；手工输入不可重复'"
                   @blur="validateCode"
                   @input="handleCodeInput"
                 />
@@ -562,7 +562,7 @@
                 <div class="his-compare-content material-six-col-grid">
                   <el-row :gutter="20">
                     <el-col :span="4">
-                      <el-form-item label="收费项ID：">
+                      <el-form-item label="收费编码：">
                         <el-input :value="form.hisChargeItemId || '--'" disabled />
                       </el-form-item>
                     </el-col>
@@ -579,49 +579,6 @@
                     <el-col :span="4">
                       <el-form-item label="收费单价：">
                         <el-input :value="form.hisChargeItemPrice != null && form.hisChargeItemPrice !== '' ? formatPrice4(form.hisChargeItemPrice) : '--'" disabled />
-                      </el-form-item>
-                    </el-col>
-                  </el-row>
-                </div>
-              </div>
-            </el-col>
-          </el-row>
-
-              <!-- 第九行 - HIS对照框 -->
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <div v-if="!isEditMode" class="material-detail-card his-compare-container">
-                <div class="material-detail-card__header his-compare-header">
-                  <i class="el-icon-connection" />
-                  <span class="his-compare-title">HIS对照</span>
-                </div>
-                <div class="his-compare-content">
-                  <el-row :gutter="20">
-                <el-col :span="4">
-                      <el-form-item label="收费编码：" prop="hisChargeCode">
-                        <el-input v-model="form.hisChargeCode" placeholder="收费编码" />
-                  </el-form-item>
-                </el-col>
-                <el-col :span="4">
-                      <el-form-item label="收费规格：" prop="hisChargeSpeci">
-                        <el-input v-model="form.hisChargeSpeci" placeholder="收费规格" />
-                      </el-form-item>
-                    </el-col>
-                    <el-col :span="4">
-                      <el-form-item label="收费型号：" prop="hisChargeModel">
-                        <el-input v-model="form.hisChargeModel" placeholder="收费型号" />
-                      </el-form-item>
-                    </el-col>
-                    <el-col :span="4">
-                      <el-form-item label="收费单价：" prop="hisChargePrice">
-                        <el-input v-model="form.hisChargePrice" placeholder="收费单价" />
-              </el-form-item>
-                    </el-col>
-                  </el-row>
-                  <el-row :gutter="20">
-                    <el-col :span="4">
-                      <el-form-item label="收费名称：" prop="hisChargeName">
-                        <el-input v-model="form.hisChargeName" placeholder="收费名称" />
                       </el-form-item>
                     </el-col>
                   </el-row>

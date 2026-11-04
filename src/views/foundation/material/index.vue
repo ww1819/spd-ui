@@ -727,7 +727,7 @@
         <el-table-column
           v-else-if="Number(item.col.key) === 23"
           :key="'tc-' + tableColumnEpoch + '-23'"
-          label="his收费项目编码"
+          label="收费编码"
           align="center"
           prop="hisChargeItemId"
           resizable
@@ -744,7 +744,7 @@
         <el-table-column
           v-else-if="Number(item.col.key) === 24"
           :key="'tc-' + tableColumnEpoch + '-24'"
-          label="收费项目名称"
+          label="收费名称"
           align="center"
           prop="hisChargeItemName"
           :show-overflow-tooltip="materialTableLightMode"
@@ -762,7 +762,7 @@
         <el-table-column
           v-else-if="Number(item.col.key) === 25"
           :key="'tc-' + tableColumnEpoch + '-25'"
-          label="收费项目规格"
+          label="收费规格"
           align="center"
           prop="hisChargeItemSpeci"
           :show-overflow-tooltip="materialTableLightMode"
@@ -875,7 +875,7 @@
 </template>
 
 <script>
-import { listMaterial, listMaterialAll, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, createFactoriesForMaterialImport, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel, batchUpdateHisChargeItemValueLevel, syncMaterialValueLevelToHisChargeItem } from "@/api/foundation/material";
+import { listMaterial, getMaterial, delMaterial, addMaterial, updateMaterial, pushMaterialArchive, updateMaterialReferred, batchUpdateMaterial, disableMaterial, enableMaterial, getMaterialStatusLog, getMaterialChangeLog, getMaterialTimeline, validateMaterialImportAdd, importMaterialAddData, validateMaterialImportUpdate, importMaterialUpdateData, createFactoriesForMaterialImport, listHisChargeItem, fetchHisChargeItemMirror, exportHisChargeItem, updateHisChargeItemValueLevel, batchUpdateHisChargeItemValueLevel, syncMaterialValueLevelToHisChargeItem } from "@/api/foundation/material";
 import { matchFocus18ByMedicalNo } from "@/api/foundation/focus18";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { runConfiguredTableExport } from "@/utils/tableExportRunner";
@@ -922,9 +922,9 @@ function createDefaultMaterialColumns() {
     { key: 20, label: "集采类型", visible: true, width: 120, align: "center", sortable: false },
     { key: 21, label: "品牌", visible: false, width: 120, align: "center", sortable: false },
     { key: 22, label: "创建日期", visible: true, width: 100, align: "center", sortable: false },
-    { key: 23, label: "his收费项目编码", visible: true, width: 150, align: "center", sortable: false },
-    { key: 24, label: "收费项目名称", visible: true, width: 160, align: "center", sortable: false },
-    { key: 25, label: "收费项目规格", visible: true, width: 140, align: "center", sortable: false },
+    { key: 23, label: "收费编码", visible: true, width: 150, align: "center", sortable: false },
+    { key: 24, label: "收费名称", visible: true, width: 160, align: "center", sortable: false },
+    { key: 25, label: "收费规格", visible: true, width: 140, align: "center", sortable: false },
     { key: 26, label: "收费单价(HIS)", visible: true, width: 120, align: "center", sortable: false },
     { key: 27, label: "最小包装数", visible: true, width: 110, align: "center", sortable: false }
   ];
@@ -1060,6 +1060,8 @@ export default {
         registerNo: undefined,
         sunshineCode: undefined,
         hisChargeItemId: undefined,
+        hisChargeItemName: undefined,
+        hisChargeItemSpeci: undefined,
         hisBindStatus: undefined,
         nameSearch: undefined, // 用于名称/编码/首字母综合搜索
         beginDate: undefined,
@@ -1074,7 +1076,9 @@ export default {
         { value: 'code', label: '产品编码' },
         { value: 'name', label: '产品名称' },
         { value: 'speci', label: '规格' },
-        { value: 'hisChargeItemId', label: 'his收费项目编码' },
+        { value: 'hisChargeItemId', label: '收费编码' },
+        { value: 'hisChargeItemName', label: '收费名称' },
+        { value: 'hisChargeItemSpeci', label: '收费规格' },
         { value: 'factory', label: '生产厂家' },
         { value: 'udiNo', label: 'UDI' },
         { value: 'registerNo', label: '注册证号' },
@@ -1469,6 +1473,8 @@ export default {
       base.registerNo = strip(base.registerNo);
       base.sunshineCode = strip(base.sunshineCode);
       base.hisChargeItemId = strip(base.hisChargeItemId);
+      base.hisChargeItemName = strip(base.hisChargeItemName);
+      base.hisChargeItemSpeci = strip(base.hisChargeItemSpeci);
       base.speci = strip(base.speci);
       const keyword = base.name;
       const derived = this.deriveNameSearchParams(keyword);
@@ -1900,7 +1906,7 @@ export default {
       }
     },
     sanitizeAllQueryTextFields() {
-      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'hisChargeItemId', 'speci'].forEach((field) => {
+      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'hisChargeItemId', 'hisChargeItemName', 'hisChargeItemSpeci', 'speci'].forEach((field) => {
         this.normalizeQueryTextField(field);
       });
       this.queryParams.udiNo = sanitizeUdiNo(this.queryParams.udiNo);
@@ -1917,7 +1923,7 @@ export default {
       if (!set.has('storeroomIds')) this.queryParams.storeroomIds = [];
       if (!set.has('financeCategoryIds')) this.queryParams.financeCategoryIds = [];
       if (!set.has('materialCategoryIds')) this.queryParams.materialCategoryIds = [];
-      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId'].forEach((k) => {
+      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId', 'hisChargeItemName', 'hisChargeItemSpeci'].forEach((k) => {
         if (!set.has(k)) this.queryParams[k] = undefined;
       });
     },
@@ -1942,7 +1948,9 @@ export default {
         registerNo: '注册证号',
         sunshineCode: '阳采编码',
         speci: '规格',
-        hisChargeItemId: 'his收费项目编码'
+        hisChargeItemId: '收费编码',
+        hisChargeItemName: '收费名称',
+        hisChargeItemSpeci: '收费规格'
       };
       return map[t] || '请输入关键字';
     },
@@ -1989,7 +1997,7 @@ export default {
       if (!set.has('storeroomIds')) target.storeroomIds = [];
       if (!set.has('financeCategoryIds')) target.financeCategoryIds = [];
       if (!set.has('materialCategoryIds')) target.materialCategoryIds = [];
-      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId'].forEach((k) => {
+      ['code', 'name', 'udiNo', 'registerNo', 'sunshineCode', 'speci', 'hisChargeItemId', 'hisChargeItemName', 'hisChargeItemSpeci'].forEach((k) => {
         if (!set.has(k)) target[k] = undefined;
       });
     },
@@ -2171,6 +2179,8 @@ export default {
       this.queryParams.registerNo = undefined;
       this.queryParams.sunshineCode = undefined;
       this.queryParams.hisChargeItemId = undefined;
+      this.queryParams.hisChargeItemName = undefined;
+      this.queryParams.hisChargeItemSpeci = undefined;
       this.queryParams.hisBindStatus = undefined;
       this.queryParams.speci = undefined;
       // 清空派生搜索参数，避免残留影响查询/导出
@@ -2338,62 +2348,6 @@ export default {
       });
       this.syncSelectionStateFromMap();
     },
-    /** 按库房分类规则生成编码（衡水三院：GZ/DZ/SJ+5位；其他租户：6位数字） */
-    async generateCode() {
-      if (this.isHsThirdTenant) {
-        if (!this.form.storeroomId) {
-          return '';
-        }
-        try {
-          const wcResp = await getWarehouseCategory(this.form.storeroomId);
-          const wc = wcResp && wcResp.data ? wcResp.data : null;
-          const prefix = this.resolveHsPrefixByWarehouseName(wc && wc.warehouseCategoryName ? wc.warehouseCategoryName : '');
-          if (prefix) {
-            const response = await listMaterialAll({ includeDisabledInList: true });
-            const materialList = response.rows || response.data || [];
-            const reg = new RegExp("^" + prefix + "(\\d{5})$");
-            let max = 0;
-            materialList.forEach(item => {
-              const code = (item && item.code ? String(item.code) : '').toUpperCase();
-              const m = code.match(reg);
-              if (m) {
-                const n = parseInt(m[1], 10);
-                if (!Number.isNaN(n) && n > max) max = n;
-              }
-            });
-            const next = Math.min(max + 1, 99999);
-            return `${prefix}${String(next).padStart(5, '0')}`;
-          }
-        } catch (e) {
-          console.error('按库房分类生成编码失败:', e);
-        }
-      }
-
-      // 查询所有耗材编码，找出最大的6位数字编码
-      try {
-        const response = await listMaterialAll({ includeDisabledInList: true });
-        const materialList = response.rows || response.data || [];
-        const codes = materialList
-          .map(item => item.code)
-          .filter(code => code && /^\d{6}$/.test(code))
-          .map(code => parseInt(code))
-          .filter(num => !isNaN(num) && num >= 100000 && num <= 999999);
-
-        if (codes.length > 0) {
-          const maxCode = Math.max(...codes);
-          const nextCode = maxCode + 1;
-          // 确保不超过999999
-          if (nextCode <= 999999) {
-            return String(nextCode).padStart(6, '0');
-          }
-        }
-      } catch (error) {
-        console.error('查询编码失败:', error);
-      }
-
-      // 如果没有现有编码或已达到最大值，从100000开始
-      return '100000';
-    },
     resolveHsPrefixByWarehouseName(name) {
       const n = (name || '').trim();
       if (n.includes('高值耗材')) return 'GZ';
@@ -2401,57 +2355,45 @@ export default {
       if (n.includes('检验试剂')) return 'SJ';
       return '';
     },
-    async onStoreroomChange() {
+    onStoreroomChange() {
       if (!this.isHsThirdTenant || this.form.id) {
         return;
       }
-      // 新增：仅当未手工维护编码时，按库房分类自动生成；已手工录入则保留并重新校验
-      if (!this.form.code || !String(this.form.code).trim()) {
-        this.form.code = await this.generateCode();
-      }
+      // 编码不在选分类时预生成：留空由保存落库时后端取号，避免未保存也占号/撞号
       this.$nextTick(() => {
         if (this.$refs.form) {
           this.$refs.form.validateField('storeroomId');
-          this.$refs.form.validateField('code');
+          if (this.form.code && String(this.form.code).trim()) {
+            this.$refs.form.validateField('code');
+          }
         }
       });
     },
     /** 处理编码输入 */
     handleCodeInput(value) {
-      // 如果用户清空编码，在blur时自动生成
       if (!value || value.trim() === '') {
         this.form.code = '';
       }
     },
-    /** 验证编码（blur事件） */
+    /** 验证编码（blur）：留空不取号；有值才校验前缀与唯一性 */
     async validateCode() {
       if (!this.form.code || this.form.code.trim() === '') {
-        if (this.isHsThirdTenant && !this.form.storeroomId) {
-          return;
-        }
-        // 如果没有输入编码，自动生成
-        this.form.code = await this.generateCode();
-        // 触发验证
-        this.$nextTick(() => {
-          this.$refs.form.validateField('code');
-        });
-      } else {
-        if (this.isHsThirdTenant && this.form.storeroomId) {
-          try {
-            const wcResp = await getWarehouseCategory(this.form.storeroomId);
-            const wc = wcResp && wcResp.data ? wcResp.data : null;
-            const prefix = this.resolveHsPrefixByWarehouseName(wc && wc.warehouseCategoryName ? wc.warehouseCategoryName : '');
-            if (prefix && !new RegExp("^" + prefix + "\\d{5}$", "i").test(this.form.code.trim())) {
-              this.$modal.msgError(`当前库房分类编码规则为：${prefix}+5位数字（如 ${prefix}00001）`);
-              return;
-            }
-          } catch (e) {
-            console.error('校验库房分类编码规则失败:', e);
-          }
-        }
-        // 如果有输入，验证唯一性
-        this.$refs.form.validateField('code');
+        return;
       }
+      if (this.isHsThirdTenant && this.form.storeroomId) {
+        try {
+          const wcResp = await getWarehouseCategory(this.form.storeroomId);
+          const wc = wcResp && wcResp.data ? wcResp.data : null;
+          const prefix = this.resolveHsPrefixByWarehouseName(wc && wc.warehouseCategoryName ? wc.warehouseCategoryName : '');
+          if (prefix && !new RegExp("^" + prefix + "\\d{5}$", "i").test(this.form.code.trim())) {
+            this.$modal.msgError(`当前库房分类编码规则为：${prefix}+5位数字（如 ${prefix}00001）`);
+            return;
+          }
+        } catch (e) {
+          console.error('校验库房分类编码规则失败:', e);
+        }
+      }
+      this.$refs.form.validateField('code');
     },
     async validateHsHighValueRule() {
       if (!this.isHsThirdTenant || !this.form.financeCategoryId) {
@@ -2490,8 +2432,8 @@ export default {
       this.form.isTemporaryPurchase = '2';
       this.form.isServiceFee = '2';
       this.form.isUse = '1'; // 默认为启用
-      // 衡水三院按库房分类生成编码：新增时先等待选择库房分类
-      this.form.code = this.isHsThirdTenant ? '' : await this.generateCode();
+      // 产品编码留空：保存成功时由后端生成；未保存不取号
+      this.form.code = '';
       this.activeTab = 'form'; // 默认显示表单视图
     },
     /** 枣强：单条从众阳 HIS 同步耗材档案 */
@@ -2616,7 +2558,8 @@ export default {
         copied.statusChangeReason = null;
         this.form = copied;
         this.syncPeriodDateLongTermFromForm();
-        this.form.code = this.isHsThirdTenant ? '' : await this.generateCode();
+        // 复制新增同样留空，保存成功时再生成，避免未保存占号
+        this.form.code = '';
         this.dialogMode = 'add';
         this.isDisabled = false;
         this.originalIsUse = null;
@@ -2838,8 +2781,8 @@ export default {
                 this.refreshListAfterMutation();
               });
             } else {
-              // 衡水三院：有手工编码则提交；留空由服务端按库房分类自动生成
-              if (this.isHsThirdTenant && (!this.form.code || !String(this.form.code).trim())) {
+              // 留空编码：由服务端在落库成功路径生成；有手工编码则原样提交并查重
+              if (!this.form.code || !String(this.form.code).trim()) {
                 this.form.code = '';
               }
               addMaterial(this.form).then(response => {
@@ -3040,16 +2983,16 @@ export default {
               label: "创建日期",
               valueGetter: (row) => fmtCreateDate(row && row.createTime),
             },
-            { label: "his收费项目编码", prop: "hisChargeItemId" },
+            { label: "收费编码", prop: "hisChargeItemId" },
             {
-              label: "收费项目名称",
+              label: "收费名称",
               valueGetter: (row) => {
                 const v = row && row.hisChargeItemName;
                 return v != null && String(v).trim() !== "" ? v : "--";
               },
             },
             {
-              label: "收费项目规格",
+              label: "收费规格",
               valueGetter: (row) => {
                 const v = row && row.hisChargeItemSpeci;
                 return v != null && String(v).trim() !== "" ? v : "--";
