@@ -15,15 +15,7 @@
     @input="handleAutocompleteInput"
   >
     <template slot-scope="{ item }">
-      <el-tooltip
-        :content="item.name || ''"
-        placement="top"
-        effect="dark"
-        :open-delay="250"
-        popper-class="select-model-dropdown-tooltip"
-      >
-        <span class="select-option-label-wrap">{{ item.name }}</span>
-      </el-tooltip>
+      <span class="select-option-label-wrap">{{ item.name }}</span>
     </template>
   </el-autocomplete>
   <el-select
@@ -46,15 +38,7 @@
       :label="item.name"
       :value="item.id"
     >
-      <el-tooltip
-        :content="item.name || ''"
-        placement="top"
-        effect="dark"
-        :open-delay="250"
-        popper-class="select-model-dropdown-tooltip"
-      >
-        <span class="select-option-label-wrap">{{ item.name }}</span>
-      </el-tooltip>
+      <span class="select-option-label-wrap">{{ item.name }}</span>
     </el-option>
   </el-select>
 </template>

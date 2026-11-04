@@ -135,7 +135,7 @@
                 </template>
               </el-table-column>
               <el-table-column label="备注" align="center" prop="remark" min-width="160" show-overflow-tooltip />
-              <el-table-column label="操作" align="center" class-name="apply-action-col" width="140">
+              <el-table-column label="操作" align="center" class-name="apply-action-col" width="90">
                 <template slot-scope="scope">
                   <el-button
                     size="small"
@@ -144,13 +144,6 @@
                     @click="handleUpdate(scope.row)"
                     v-hasPermi="['foundation:warehouse:edit']"
                   >修改</el-button>
-                  <el-button
-                    size="small"
-                    type="text"
-                    icon="el-icon-delete"
-                    @click="handleDelete(scope.row)"
-                    v-hasPermi="['foundation:warehouse:remove']"
-                  >删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
@@ -355,6 +348,7 @@ export default {
         requireProduceDate: 1,
         requireExpiryDate: 1,
         requireBatchNo: 1,
+        inboundExpiryWarnDays: 60,
         remark: null,
         hisId: null,
       };
@@ -421,6 +415,7 @@ export default {
       this.form.requireProduceDate = 1;
       this.form.requireExpiryDate = 1;
       this.form.requireBatchNo = 1;
+      this.form.inboundExpiryWarnDays = 60;
       this.title = "添加仓库";
     },
     handleUpdate(row) {
@@ -434,7 +429,10 @@ export default {
           isSettlementWarehouse: Number(data.isSettlementWarehouse) === 1 ? 1 : 0,
           requireProduceDate: data.requireProduceDate == null ? 1 : (Number(data.requireProduceDate) === 1 ? 1 : 0),
           requireExpiryDate: data.requireExpiryDate == null ? 1 : (Number(data.requireExpiryDate) === 1 ? 1 : 0),
-          requireBatchNo: data.requireBatchNo == null ? 1 : (Number(data.requireBatchNo) === 1 ? 1 : 0)
+          requireBatchNo: data.requireBatchNo == null ? 1 : (Number(data.requireBatchNo) === 1 ? 1 : 0),
+          inboundExpiryWarnDays: data.inboundExpiryWarnDays == null || data.inboundExpiryWarnDays === ''
+            ? 60
+            : Number(data.inboundExpiryWarnDays)
         };
         this.open = true;
         this.isDisabled = true;
@@ -480,7 +478,11 @@ export default {
           isSettlementWarehouse: Number(this.form.isSettlementWarehouse) === 1 ? 1 : 0,
           requireProduceDate: Number(this.form.requireProduceDate) === 1 ? 1 : 0,
           requireExpiryDate: Number(this.form.requireExpiryDate) === 1 ? 1 : 0,
-          requireBatchNo: Number(this.form.requireBatchNo) === 1 ? 1 : 0
+          requireBatchNo: Number(this.form.requireBatchNo) === 1 ? 1 : 0,
+          inboundExpiryWarnDays: (() => {
+            const n = Number(this.form.inboundExpiryWarnDays);
+            return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 60;
+          })()
         };
         if (this.form.id != null) {
           updateWarehouse(payload).then(() => {

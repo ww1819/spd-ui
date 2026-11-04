@@ -55,29 +55,32 @@
             </el-form-item>
             <el-form-item label="入库必填" class="warehouse-inbound-require-item">
               <div class="warehouse-inbound-require-switches">
-                <el-switch
-                  v-model="form.requireProduceDate"
-                  :active-value="1"
-                  :inactive-value="0"
-                  active-text="生产日期"
-                  inactive-text="生产日期"
-                />
-                <el-switch
-                  v-model="form.requireExpiryDate"
-                  :active-value="1"
-                  :inactive-value="0"
-                  active-text="有效期"
-                  inactive-text="有效期"
-                />
-                <el-switch
-                  v-model="form.requireBatchNo"
-                  :active-value="1"
-                  :inactive-value="0"
-                  active-text="批号"
-                  inactive-text="批号"
-                />
+                <label class="warehouse-inbound-require-switch">
+                  <el-switch v-model="form.requireProduceDate" :active-value="1" :inactive-value="0" />
+                  <span>生产日期</span>
+                </label>
+                <label class="warehouse-inbound-require-switch">
+                  <el-switch v-model="form.requireExpiryDate" :active-value="1" :inactive-value="0" />
+                  <span>有效期</span>
+                </label>
+                <label class="warehouse-inbound-require-switch">
+                  <el-switch v-model="form.requireBatchNo" :active-value="1" :inactive-value="0" />
+                  <span>批号</span>
+                </label>
               </div>
               <div class="warehouse-inbound-require-tip">点亮后，到货验收添加明细保存时对应字段必填</div>
+            </el-form-item>
+            <el-form-item label="设置入库提示日期" prop="inboundExpiryWarnDays" class="warehouse-inbound-warn-item">
+              <el-input-number
+                v-model="form.inboundExpiryWarnDays"
+                :min="1"
+                :max="3650"
+                :precision="0"
+                controls-position="right"
+                style="width: 160px"
+              />
+              <span class="warehouse-inbound-warn-unit">天</span>
+              <div class="warehouse-inbound-require-tip">到货验收保存/审核时，明细有效期剩余天数小于该值将弹窗提示，点「继续」后才可提交；默认60天</div>
             </el-form-item>
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
@@ -111,3 +114,31 @@ export default {
   inheritAttrs: false
 }
 </script>
+
+<style scoped>
+.warehouse-inbound-require-switches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+.warehouse-inbound-require-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: normal;
+  color: #606266;
+  cursor: pointer;
+}
+.warehouse-inbound-require-tip {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+}
+.warehouse-inbound-warn-unit {
+  margin-left: 8px;
+  color: #606266;
+}
+</style>

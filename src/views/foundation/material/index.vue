@@ -2676,6 +2676,37 @@ export default {
     isBlankValue(v) {
       return v === null || v === undefined || String(v).trim() === '';
     },
+    /** 表单字段 prop → 中文名（保存拦截提示用） */
+    getMaterialFieldLabel(prop) {
+      const map = {
+        code: '产品编码',
+        name: '产品名称',
+        supplierId: '供应商',
+        factoryId: '生产厂家',
+        speci: '规格',
+        unitId: '单位',
+        storeroomId: '库房分类',
+        financeCategoryId: '财务分类',
+        price: '单价',
+        isUse: '启用状态',
+        minPackageQty: '最小包装数',
+        jcTypeId: '集采类型',
+        statusChangeReason: '状态变更原因'
+      };
+      return map[prop] || prop;
+    },
+    /** 将校验错误整理成「供应商未维护」类文案 */
+    formatMaterialFieldErrorTip(prop, message) {
+      const label = this.getMaterialFieldLabel(prop);
+      const msg = message ? String(message) : '';
+      if (!msg || msg.includes('不能为空') || msg.includes('请选择') || msg.includes('请维护')) {
+        return `${label}未维护`;
+      }
+      if (prop === 'price' && (msg.includes('数字') || msg.includes('有效'))) {
+        return '单价未维护为有效数字';
+      }
+      return msg.indexOf(label) >= 0 ? msg : `${label}：${msg}`;
+    },
     collectSaveBlockTips() {
       const tips = [];
       const requiredFields = [
@@ -2691,23 +2722,44 @@ export default {
       ];
       requiredFields.forEach(item => {
         if (this.isBlankValue(this.form[item.key])) {
-          tips.push(`请维护「${item.label}」`);
+          tips.push(`${item.label}未维护`);
         }
       });
       if (!this.isBlankValue(this.form.price) && Number.isNaN(Number(this.form.price))) {
-        tips.push('请维护「单价」为有效数字');
+        tips.push('单价未维护为有效数字');
       }
       if (this.form.id != null && this.form.isUse !== this.originalIsUse) {
         const reason = (this.form.statusChangeReason || '').trim();
         if (!reason) {
-          tips.push(`请维护「状态变更原因」（当前为${this.form.isUse === '1' ? '启用' : '停用'}）`);
+          tips.push(`状态变更原因未维护（当前为${this.form.isUse === '1' ? '启用' : '停用'}）`);
         }
       }
       return Array.from(new Set(tips));
     },
+    /** 从表单校验失败结果 / fields 提取具体未通过项 */
+    collectFormInvalidTips(invalidFields) {
+      const tips = [];
+      if (invalidFields && typeof invalidFields === 'object') {
+        Object.keys(invalidFields).forEach(prop => {
+          const errs = invalidFields[prop];
+          const msg = errs && errs[0] && errs[0].message;
+          tips.push(this.formatMaterialFieldErrorTip(prop, msg));
+        });
+      }
+      const formRef = this.$refs && this.$refs.form;
+      const fields = formRef && formRef.fields;
+      if (Array.isArray(fields)) {
+        fields.forEach(f => {
+          if (f && f.validateState === 'error') {
+            tips.push(this.formatMaterialFieldErrorTip(f.prop, f.validateMessage));
+          }
+        });
+      }
+      return Array.from(new Set(tips.filter(Boolean)));
+    },
     showSaveBlockedDialog(tips, title = '当前不允许保存') {
       const list = (tips || []).filter(Boolean).map(t => `<li>${t}</li>`).join('');
-      const html = `<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'><p>请先完善以下信息后再点击“确定”：</p><ul style='padding-left:18px;line-height:1.8;margin:6px 0 0'>${list || '<li>请检查表单必填项</li>'}</ul></div>`;
+      const html = `<div style='overflow:auto;max-height:60vh;padding:10px 20px 0'><p>请先完善以下信息后再点击“确定”：</p><ul style='padding-left:18px;line-height:1.8;margin:6px 0 0'>${list || '<li>请检查表单必填项（如规格、供应商、单价等）</li>'}</ul></div>`;
       this.$alert(html, title, { dangerouslyUseHTMLString: true });
     },
     /** 枣强受限编辑：仅校验允许修改的字段 */
@@ -2735,11 +2787,11 @@ export default {
       ];
       requiredFields.forEach(item => {
         if (this.isBlankValue(this.form[item.key])) {
-          tips.push(`请维护「${item.label}」`);
+          tips.push(`${item.label}未维护`);
         }
       });
       if (!this.isBlankValue(this.form.price) && Number.isNaN(Number(this.form.price))) {
-        tips.push('请维护「单价」为有效数字');
+        tips.push('单价未维护为有效数字');
       }
       return Array.from(new Set(tips));
     },
@@ -2748,7 +2800,8 @@ export default {
       if (this.zqTcmLimitedEdit) {
         this.validateZqTcmLimitedFields().then(valid => {
           if (!valid) {
-            this.showSaveBlockedDialog(this.collectZqTcmSaveBlockTips());
+            const tips = this.collectZqTcmSaveBlockTips().concat(this.collectFormInvalidTips());
+            this.showSaveBlockedDialog(Array.from(new Set(tips)));
             return;
           }
           updateMaterial(this.buildUpdatePayload(this.form)).then(() => {
@@ -2764,12 +2817,12 @@ export default {
         const reason = (this.form.statusChangeReason || '').trim();
         if (!reason) {
           this.showSaveBlockedDialog([
-            `请维护「状态变更原因」（当前为${this.form.isUse === '1' ? '启用' : '停用'}）`
+            `状态变更原因未维护（当前为${this.form.isUse === '1' ? '启用' : '停用'}）`
           ]);
           return;
         }
       }
-      this.$refs["form"].validate(valid => {
+      this.$refs["form"].validate((valid, invalidFields) => {
         if (valid) {
           this.form.udiNo = sanitizeUdiNo(this.form.udiNo);
           this.validateHsHighValueRule().then(pass => {
@@ -2797,7 +2850,8 @@ export default {
             }
           });
         } else {
-          this.showSaveBlockedDialog(this.collectSaveBlockTips());
+          const tips = this.collectSaveBlockTips().concat(this.collectFormInvalidTips(invalidFields));
+          this.showSaveBlockedDialog(Array.from(new Set(tips)));
         }
       });
     },

@@ -251,6 +251,8 @@ import {
   assertBillHasActiveEntriesForAudit,
   assertInboundBillEntriesHaveBatchAndExpiry,
   assertInboundBillEntriesUniqueBatchExpiry,
+  collectInboundNearExpiryWarnLines,
+  confirmInboundNearExpiryWarn,
   resolveInboundRequireOptsFromWarehouse
 } from '@/utils/billEntryValidate';
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
@@ -1266,11 +1268,20 @@ export default {
           if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
             return;
           }
-          this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
-            return auditWarehouse({ id: id, auditBy: auditBy });
-          }).then(() => {
-            this.getList();
-            this.$modal.msgSuccess("审核入库成功！");
+          return confirmInboundNearExpiryWarn(
+            this,
+            res.data.stkIoBillEntryList,
+            requireOpts && requireOpts.inboundExpiryWarnDays
+          ).then((cont) => {
+            if (!cont) {
+              return;
+            }
+            return this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+              return auditWarehouse({ id: id, auditBy: auditBy });
+            }).then(() => {
+              this.getList();
+              this.$modal.msgSuccess("审核入库成功！");
+            });
           }).catch(() => {});
         });
       }).catch(() => {});
@@ -1287,6 +1298,7 @@ export default {
       const auditBy = this.$store.state.user.userId;
       const skipTip = pending.length < rows.length ? "（已跳过" + (rows.length - pending.length) + "条已审核单据）" : "";
       this.$modal.confirm('确定要审核选中的"' + pending.length + '"条待审核数据？' + skipTip).then(() => {
+        const warnLines = [];
         const validatePromises = ids.map(id =>
           getInWarehouse(id).then(res => {
             if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
@@ -1303,10 +1315,25 @@ export default {
               if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
                 return Promise.reject(new Error('audit_entry_validate_failed'));
               }
+              const billNo = (res.data && res.data.billNo) || id;
+              const lines = collectInboundNearExpiryWarnLines(
+                res.data.stkIoBillEntryList,
+                requireOpts && requireOpts.inboundExpiryWarnDays
+              );
+              lines.forEach((line) => warnLines.push(`单据${billNo}：${line}`));
             });
           })
         );
-        return Promise.all(validatePromises).then(() =>
+        return Promise.all(validatePromises).then(() => {
+          if (!warnLines.length) {
+            return true;
+          }
+          return this.$confirm(warnLines.join('\n') + '\n是否继续？', '系统提示', {
+            confirmButtonText: '继续',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => true).catch(() => Promise.reject(new Error('audit_entry_validate_failed')));
+        }).then(() =>
           Promise.all(ids.map(id => auditWarehouse({ id: id, auditBy: auditBy })))
         );
       }).then(() => {
@@ -1342,13 +1369,7 @@ export default {
         if (!assertBillHasEntries(this.stkIoBillEntryList, this, '请至少添加一条入库明细')) {
           return;
         }
-        const doSave = (requireOpts) => {
-          if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存', requireOpts)) {
-            return;
-          }
-          if (!assertInboundBillEntriesUniqueBatchExpiry(this.stkIoBillEntryList, this)) {
-            return;
-          }
+        const doSave = () => {
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           var totalAmt = 0;
           this.stkIoBillEntryList.forEach(item => {
@@ -1373,7 +1394,23 @@ export default {
         const loadOpts = whId
           ? getWarehouse(whId).then(wRes => resolveInboundRequireOptsFromWarehouse(wRes && wRes.data)).catch(() => resolveInboundRequireOptsFromWarehouse(null))
           : Promise.resolve(resolveInboundRequireOptsFromWarehouse(null));
-        loadOpts.then((requireOpts) => doSave(requireOpts));
+        loadOpts.then((requireOpts) => {
+          if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '保存', requireOpts)) {
+            return;
+          }
+          if (!assertInboundBillEntriesUniqueBatchExpiry(this.stkIoBillEntryList, this)) {
+            return;
+          }
+          confirmInboundNearExpiryWarn(
+            this,
+            this.stkIoBillEntryList,
+            requireOpts && requireOpts.inboundExpiryWarnDays
+          ).then((cont) => {
+            if (cont) {
+              doSave();
+            }
+          });
+        });
       });
     },
     /** 打印按钮操作 */

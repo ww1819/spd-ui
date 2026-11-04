@@ -261,6 +261,7 @@ import {
   assertInboundBillEntriesHaveBatchAndExpiry,
   assertInboundBillEntriesUniqueBatchExpiry,
   assertInboundBillEntryDatesValid,
+  confirmInboundNearExpiryWarn,
   resolveInboundRequireOptsFromWarehouse
 } from '@/utils/billEntryValidate'
 import { ZQ_TCM_TENANT } from '@/utils/msunHis'
@@ -1623,9 +1624,18 @@ export default {
               return;
             }
             loadRequireOpts().then((requireOpts) => {
-              if (runInboundFieldValidate(requireOpts)) {
-                submitAfterWarehouseCheck();
+              if (!runInboundFieldValidate(requireOpts)) {
+                return;
               }
+              confirmInboundNearExpiryWarn(
+                this,
+                this.stkIoBillEntryList,
+                requireOpts && requireOpts.inboundExpiryWarnDays
+              ).then((cont) => {
+                if (cont) {
+                  submitAfterWarehouseCheck();
+                }
+              });
             });
           });
     },
@@ -1660,37 +1670,46 @@ export default {
           return;
         }
         getInWarehouse(id).then(res => {
-        if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
-          return;
-        }
-        if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核', requireOpts)) {
-          return;
-        }
-        if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
-          return;
-        }
-        if (!assertInboundBillEntryDatesValid(res.data.stkIoBillEntryList, this)) {
-          return;
-        }
-        const billNo = res.data.billNo || id;
-        this.$modal.confirm('确定要审核"' + billNo + '"的数据项？').then(() => {
-          return auditWarehouse({ id: id, auditBy: auditBy });
-        }).then(() => {
-          this.$modal.msgSuccess('审核入库成功！');
-          this.getList();
-          return getInWarehouse(id);
-        }).then(response => {
-          this.form = response.data;
-          this.form.billStatus = '2';
-          this.form.billType = '101';
-          const entries = response.data.stkIoBillEntryList || [];
-          entries.forEach(r => this.initRowLongTermFlag(r));
-          this.stkIoBillEntryList = entries;
-          this.action = false;
-          this.title = '查看入库';
-          this.$nextTick(() => this.refreshDetailSummary());
+          if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+            return;
+          }
+          if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核', requireOpts)) {
+            return;
+          }
+          if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
+            return;
+          }
+          if (!assertInboundBillEntryDatesValid(res.data.stkIoBillEntryList, this)) {
+            return;
+          }
+          confirmInboundNearExpiryWarn(
+            this,
+            res.data.stkIoBillEntryList,
+            requireOpts && requireOpts.inboundExpiryWarnDays
+          ).then((cont) => {
+            if (!cont) {
+              return;
+            }
+            const billNo = res.data.billNo || id;
+            this.$modal.confirm('确定要审核"' + billNo + '"的数据项？').then(() => {
+              return auditWarehouse({ id: id, auditBy: auditBy });
+            }).then(() => {
+              this.$modal.msgSuccess('审核入库成功！');
+              this.getList();
+              return getInWarehouse(id);
+            }).then(response => {
+              this.form = response.data;
+              this.form.billStatus = '2';
+              this.form.billType = '101';
+              const entries = response.data.stkIoBillEntryList || [];
+              entries.forEach(r => this.initRowLongTermFlag(r));
+              this.stkIoBillEntryList = entries;
+              this.action = false;
+              this.title = '查看入库';
+              this.$nextTick(() => this.refreshDetailSummary());
+            }).catch(() => {});
+          });
         }).catch(() => {});
-      }).catch(() => {});
       });
     },
     /** 枣强：弹窗内打印（仅已审核单据） */
@@ -1886,18 +1905,16 @@ export default {
       this.stkIoBillEntryList = list.slice();
       this.refreshDetailSummary();
     },
-    /** 明细行删除 */
+    /** 明细行删除（直接删，不弹确认） */
     handleDeleteStkIoBillEntryRow(row, rowIndex) {
       const list = this.stkIoBillEntryList || [];
       const idx = typeof rowIndex === 'number' && rowIndex >= 0 ? rowIndex : list.indexOf(row);
       if (idx < 0) return;
-      this.$modal.confirm('确认删除该明细行？').then(() => {
-        this.stkIoBillEntryList.splice(idx, 1);
-        this.stkIoBillEntryList = this.stkIoBillEntryList.slice();
-        this.checkedStkIoBillEntry = [];
-        this.detailSelectedRowMap = {};
-        this.refreshDetailSummary();
-      }).catch(() => {});
+      this.stkIoBillEntryList.splice(idx, 1);
+      this.stkIoBillEntryList = this.stkIoBillEntryList.slice();
+      this.checkedStkIoBillEntry = [];
+      this.detailSelectedRowMap = {};
+      this.refreshDetailSummary();
     },
     /** 复选框选中数据 */
     handleStkIoBillEntrySelectionChange(selection) {

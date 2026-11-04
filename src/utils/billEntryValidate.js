@@ -260,8 +260,86 @@ export function resolveInboundRequireOptsFromWarehouse(warehouse) {
   return {
     requireBatchNo: resolveInboundRequireFlag(w.requireBatchNo, true),
     requireProduceDate: resolveInboundRequireFlag(w.requireProduceDate, true),
-    requireExpiryDate: resolveInboundRequireFlag(w.requireExpiryDate, true)
+    requireExpiryDate: resolveInboundRequireFlag(w.requireExpiryDate, true),
+    inboundExpiryWarnDays: resolveInboundExpiryWarnDays(w.inboundExpiryWarnDays)
   };
+}
+
+/** 入库有效期临近提示天数：未配置默认 60；非法值回退 60；≤0 表示不提示 */
+export function resolveInboundExpiryWarnDays(val) {
+  if (val === undefined || val === null || val === '') {
+    return 60;
+  }
+  const n = Number(val);
+  if (!Number.isFinite(n)) {
+    return 60;
+  }
+  return Math.floor(n);
+}
+
+/**
+ * 收集「有效期剩余天数 < warnDays」的提示行（跳过空有效期、长期 2099）
+ * @returns {string[]}
+ */
+export function collectInboundNearExpiryWarnLines(entryList, warnDays) {
+  const days = Number(warnDays);
+  if (!Number.isFinite(days) || days <= 0) {
+    return [];
+  }
+  const list = entryList || [];
+  const today = todayLocalDateOnly();
+  const msDay = 24 * 60 * 60 * 1000;
+  const lines = [];
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!e || !isEntryNotDeleted(e)) {
+      continue;
+    }
+    if (e.materialId == null || e.materialId === '') {
+      continue;
+    }
+    const endKey = normalizeInboundDateKey(e.endTime);
+    if (!endKey || endKey.startsWith('2099-01-01')) {
+      continue;
+    }
+    const endDate = parseYmdDateOnly(endKey);
+    if (!endDate) {
+      continue;
+    }
+    const remain = Math.floor((endDate.getTime() - today.getTime()) / msDay);
+    if (remain < days) {
+      const name = resolveEntryMaterialName(e);
+      const rowLabel = formatChineseRowNo(i + 1);
+      lines.push(`${rowLabel}【${name}】的有效期小于${days}天`);
+    }
+  }
+  return lines;
+}
+
+/**
+ * 有效期临近确认：有提示则弹窗，确认按钮文案为「继续」；无提示直接通过
+ * @returns {Promise<boolean>}
+ */
+export function confirmInboundNearExpiryWarn(vm, entryList, warnDays) {
+  const lines = collectInboundNearExpiryWarnLines(entryList, warnDays);
+  if (!lines.length) {
+    return Promise.resolve(true);
+  }
+  const content = lines.join('\n') + '\n是否继续？';
+  const confirmFn = vm && (vm.$confirm || (vm.$modal && vm.$modal.confirm));
+  if (!confirmFn) {
+    return Promise.resolve(true);
+  }
+  // Element MessageBox：优先 $confirm 以便自定义「继续」
+  if (typeof vm.$confirm === 'function') {
+    return vm.$confirm(content, '系统提示', {
+      confirmButtonText: '继续',
+      cancelButtonText: '取消',
+      type: 'warning',
+      distinguishCancelAndClose: true
+    }).then(() => true).catch(() => false);
+  }
+  return vm.$modal.confirm(content).then(() => true).catch(() => false);
 }
 
 function parseYmdDateOnly(str) {
