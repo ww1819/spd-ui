@@ -902,10 +902,16 @@ export default {
       this.$nextTick(() => {
         const dialog = (this.$children || []).find(c => c && c.$options && c.$options.name === 'DApplyTemplateDialog');
         const el = (dialog && dialog.$refs && dialog.$refs.templateDetailTableInner)
-          || document.querySelector('.template-dialog-content .template-detail-table-inner');
+          || document.querySelector('.template-dialog-content .template-detail-table-panel .table-wrapper');
         if (el && el.clientHeight) {
           this.templateDetailTableHeight = Math.max(el.clientHeight, 200);
         }
+        this.$nextTick(() => {
+          const table = dialog && dialog.$refs && dialog.$refs.templateDetailTable;
+          if (table && typeof table.doLayout === 'function') {
+            table.doLayout();
+          }
+        });
       });
     },
     /** 关闭引用模板弹窗 */
@@ -1847,28 +1853,29 @@ export default {
   margin-bottom: 0;
 }
 
-/* 引用模板弹窗：贴顶、左右无留白、高度加倍 */
-.template-dialog-mask {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 0;
+/* 引用模板弹窗：贴满内容区（盖住左右容器），高度随父级 mask */
+::v-deep .local-modal-mask.template-dialog-mask {
+  padding: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
 }
 
 ::v-deep .local-modal-content.template-dialog-content{
-  min-height: 100vh !important;
-  height: 100vh !important;
-  max-width: none;
-  width: 100%;
-  max-height: 100vh !important;
-  margin: 0;
+  min-height: 0 !important;
+  height: 100% !important;
+  max-width: none !important;
+  width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-.template-dialog-body {
-  padding: 16px 20px 12px;
+::v-deep .template-dialog-body {
+  padding: 0 !important;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1908,13 +1915,13 @@ export default {
   flex-shrink: 0;
 }
 
-/* 下部分：仅模板名称列表，高度与弹窗匹配 */
-.template-split-layout {
+/* 下部分：左右铺满，不再限制 max-height */
+::v-deep .template-split-layout {
   display: flex;
-  gap: 16px;
+  gap: 0;
   flex: 1;
   min-height: 0;
-  max-height: 520px;
+  max-height: none;
   overflow: hidden;
 }
 
