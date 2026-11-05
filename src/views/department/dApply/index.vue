@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page d-apply-page" :class="{ 'is-modal-open': open, 'is-select-filter-open': DialogComponentShow && selectTarget === 'apply' }">
+  <div class="app-container list-page d-apply-page" :class="{ 'is-modal-open': open || historyRefDialogVisible, 'is-select-filter-open': DialogComponentShow && selectTarget === 'apply' }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -187,6 +187,7 @@
     <DApplyRenameTemplateDialog v-if="renameTemplateDialogVisible" />
     <DApplyNewTemplateNameDialog v-if="newTemplateNameDialogVisible" />
     <DApplyOutboundRefDialog v-if="outboundRefDialogVisible" />
+    <DApplyHistoryRefDialog v-if="historyRefDialogVisible" />
 
     <SelectInventory
       v-if="DialogComponentShow && selectTarget === 'template'"
@@ -229,7 +230,8 @@ export default {
     DApplyTemplateDialog: () => import('./components/DApplyTemplateDialog'),
     DApplyRenameTemplateDialog: () => import('./components/DApplyRenameTemplateDialog'),
     DApplyNewTemplateNameDialog: () => import('./components/DApplyNewTemplateNameDialog'),
-    DApplyOutboundRefDialog: () => import('./components/DApplyOutboundRefDialog')
+    DApplyOutboundRefDialog: () => import('./components/DApplyOutboundRefDialog'),
+    DApplyHistoryRefDialog: () => import('./components/DApplyHistoryRefDialog')
   },
   data() {
     return {
@@ -325,6 +327,25 @@ export default {
       outboundRefDialogVisible: false,
       /** null=整单全部明细；有值=仅该 bas_apply_entry.id */
       outboundRefFilterEntryId: null,
+      /** 引用历史单据弹窗 */
+      historyRefDialogVisible: false,
+      historyRefLoading: false,
+      historyRefDetailLoading: false,
+      historyRefBillList: [],
+      historyRefTotal: 0,
+      historyRefDetailList: [],
+      historyRefDetailSelection: [],
+      selectedHistoryRefBill: null,
+      historyRefTableHeight: 420,
+      historyRefQuery: {
+        pageNum: 1,
+        pageSize: 10,
+        applyBillNo: null,
+        applyBillStatus: '2',
+        beginDate: null,
+        endDate: null,
+        billType: 1
+      },
       // 查询参数
       queryParams: {
         pageNum: 1,
@@ -459,6 +480,16 @@ export default {
     }
   },
   watch: {
+    open(val) {
+      if (val) {
+        this.scheduleSyncDetailTableSticky();
+      }
+    },
+    basApplyEntryList() {
+      if (this.open) {
+        this.scheduleSyncDetailTableSticky();
+      }
+    },
     templateDialogVisible(val) {
       if (val) {
         this.$nextTick(() => {
@@ -560,6 +591,28 @@ export default {
       if (!bodyWrap) return;
       const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
       root.style.setProperty('--apply-v-scrollbar', `${sw}px`);
+    },
+    /** 明细表操作列 sticky：按纵向滚动条宽度校正表头 right */
+    syncDetailTableSticky() {
+      const table = this.$refs.basApplyEntry;
+      const root = table && table.$el;
+      if (!root) return;
+      const bodyWrap = root.querySelector('.el-table__body-wrapper');
+      if (!bodyWrap) return;
+      const sw = Math.max(0, bodyWrap.offsetWidth - bodyWrap.clientWidth);
+      root.style.setProperty('--apply-detail-v-scrollbar', `${sw}px`);
+      if (typeof table.doLayout === 'function') {
+        table.doLayout();
+      }
+    },
+    scheduleSyncDetailTableSticky() {
+      this.$nextTick(() => {
+        this.syncDetailTableSticky();
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => this.syncDetailTableSticky());
+        }
+        ;[50, 120, 300].forEach(ms => setTimeout(() => this.syncDetailTableSticky(), ms));
+      });
     },
     normalizeRoutePath(path) {
       if (!path) {
@@ -1775,7 +1828,243 @@ export default {
       const idx = list.findIndex(e => e.id == entryId);
       return idx >= 0 ? `第${idx + 1}行` : `明细${entryId}`;
     },
-    
+    /** 引用历史单据：日期控件只选天，查询时补齐整天起止 */
+    normalizeHistoryRefDay(val, endOfDay) {
+      if (val == null || val === '') return null;
+      const day = String(val).trim().slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+      return endOfDay ? `${day} 23:59:59` : `${day} 00:00:00`;
+    },
+    buildHistoryRefDefaultQuery(pageSize) {
+      const range = buildDefaultDateRange();
+      return {
+        pageNum: 1,
+        pageSize: pageSize || 10,
+        applyBillNo: null,
+        applyBillStatus: '2',
+        beginDate: String(range.beginDate).slice(0, 10),
+        endDate: String(range.endDate).slice(0, 10),
+        billType: 1
+      };
+    },
+    historyRefBillRowClassName({ row }) {
+      if (this.selectedHistoryRefBill && row && this.selectedHistoryRefBill.id === row.id) {
+        return 'history-ref-bill-row--selected';
+      }
+      return '';
+    },
+    openHistoryRefDialog() {
+      if (!this.form || !this.form.departmentId) {
+        this.$message.warning('请先选择科室');
+        return;
+      }
+      this.historyRefQuery = this.buildHistoryRefDefaultQuery(10);
+      this.historyRefBillList = [];
+      this.historyRefTotal = 0;
+      this.historyRefDetailList = [];
+      this.historyRefDetailSelection = [];
+      this.selectedHistoryRefBill = null;
+      this.historyRefDialogVisible = true;
+      this.loadHistoryRefBillList();
+      this.$nextTick(() => this.calcHistoryRefTableHeight());
+    },
+    closeHistoryRefDialog() {
+      this.historyRefDialogVisible = false;
+      this.historyRefBillList = [];
+      this.historyRefDetailList = [];
+      this.historyRefDetailSelection = [];
+      this.selectedHistoryRefBill = null;
+      this.historyRefTotal = 0;
+    },
+    handleHistoryRefSearch() {
+      this.historyRefQuery.pageNum = 1;
+      this.loadHistoryRefBillList();
+    },
+    handleHistoryRefReset() {
+      this.historyRefQuery = this.buildHistoryRefDefaultQuery(this.historyRefQuery.pageSize || 10);
+      this.loadHistoryRefBillList();
+    },
+    loadHistoryRefBillList() {
+      this.historyRefLoading = true;
+      const params = {
+        ...this.historyRefQuery,
+        beginDate: this.normalizeHistoryRefDay(this.historyRefQuery.beginDate, false),
+        endDate: this.normalizeHistoryRefDay(this.historyRefQuery.endDate, true),
+        billType: 1,
+        orderByColumn: 'create_time',
+        isAsc: 'desc'
+      };
+      listApply(params).then(res => {
+        this.historyRefBillList = res.rows || [];
+        this.historyRefTotal = res.total != null ? Number(res.total) : 0;
+        this.selectedHistoryRefBill = null;
+        this.historyRefDetailList = [];
+        this.historyRefDetailSelection = [];
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+          if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow();
+          this.calcHistoryRefTableHeight();
+        });
+      }).catch(() => {
+        this.historyRefBillList = [];
+        this.historyRefTotal = 0;
+      }).finally(() => {
+        this.historyRefLoading = false;
+      });
+    },
+    getHistoryRefDialogVm() {
+      return (this.$children || []).find(c => c && c.$options && c.$options.name === 'DApplyHistoryRefDialog') || null;
+    },
+    onSelectHistoryRefBill(row) {
+      if (!row || !row.id) {
+        this.selectedHistoryRefBill = null;
+        this.historyRefDetailList = [];
+        this.historyRefDetailSelection = [];
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+          if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow();
+        });
+        return;
+      }
+      // 同一行重复点击不重复拉明细
+      if (this.selectedHistoryRefBill && this.selectedHistoryRefBill.id === row.id) {
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+          if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow(row);
+        });
+        return;
+      }
+      this.selectedHistoryRefBill = row;
+      this.historyRefDetailLoading = true;
+      this.historyRefDetailSelection = [];
+      this.$nextTick(() => {
+        const dialog = this.getHistoryRefDialogVm();
+        const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+        if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow(row);
+      });
+      getApply(row.id).then(res => {
+        const data = (res && res.data) ? res.data : {};
+        this.historyRefDetailList = data.basApplyEntryList || [];
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const table = dialog && dialog.$refs && dialog.$refs.historyRefDetailTable;
+          if (table && typeof table.clearSelection === 'function') table.clearSelection();
+          this.calcHistoryRefTableHeight();
+        });
+      }).catch(() => {
+        this.historyRefDetailList = [];
+      }).finally(() => {
+        this.historyRefDetailLoading = false;
+      });
+    },
+    handleHistoryRefDetailSelectionChange(rows) {
+      this.historyRefDetailSelection = rows || [];
+    },
+    handleHistoryRefDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const dialog = this.getHistoryRefDialogVm();
+      const table = dialog && dialog.$refs && dialog.$refs.historyRefDetailTable;
+      if (!table || typeof table.toggleRowSelection !== 'function') return;
+      const selection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = selection.indexOf(row) !== -1;
+      table.toggleRowSelection(row, !selected);
+    },
+    calcHistoryRefTableHeight() {
+      if (!this.historyRefDialogVisible) return;
+      const run = () => {
+        const wraps = document.querySelectorAll('.history-ref-table-wrap');
+        if (!wraps || !wraps.length) return;
+        const rect = wraps[0].getBoundingClientRect();
+        const h = Math.floor(rect.height || 0);
+        if (h >= 160 && Math.abs(this.historyRefTableHeight - h) >= 2) {
+          this.historyRefTableHeight = h;
+        }
+      };
+      this.$nextTick(run);
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+      ;[50, 120, 300].forEach(ms => setTimeout(run, ms));
+    },
+    confirmRefHistoryBill() {
+      const rows = this.historyRefDetailSelection || [];
+      if (!rows.length) {
+        this.$message.warning('请勾选要引用的明细');
+        return;
+      }
+      const normalizeId = (v) => {
+        if (v == null) return null;
+        const s = String(v).trim();
+        return s === '' ? null : s;
+      };
+      const existedKeys = new Set(
+        (this.basApplyEntryList || [])
+          .filter(e => e && e.materialId != null)
+          .map(e => {
+            const mid = normalizeId(e.materialId) || 'x';
+            const wid = normalizeId(
+              e.stockWarehouseId != null
+                ? e.stockWarehouseId
+                : (e.stockWarehouse && e.stockWarehouse.id != null ? e.stockWarehouse.id : e.warehouseId)
+            ) || 'x';
+            return `${mid}__${wid}`;
+          })
+      );
+      let added = 0;
+      let skipped = 0;
+      rows.forEach(entry => {
+        if (!entry || entry.materialId == null) {
+          skipped++;
+          return;
+        }
+        const material = entry.material || {};
+        const warehouseId = entry.stockWarehouseId != null
+          ? entry.stockWarehouseId
+          : (entry.stockWarehouse && entry.stockWarehouse.id != null ? entry.stockWarehouse.id : null);
+        const key = `${normalizeId(entry.materialId) || 'x'}__${normalizeId(warehouseId) || 'x'}`;
+        if (existedKeys.has(key)) {
+          skipped++;
+          return;
+        }
+        const rawPrice = entry.unitPrice != null ? entry.unitPrice
+          : (entry.price != null ? entry.price
+            : (material.price != null ? material.price : null));
+        const unitPrice = rawPrice != null && rawPrice !== '' ? Number(rawPrice) : null;
+        const qty = entry.qty != null && entry.qty !== '' ? entry.qty : 1;
+        const row = {
+          materialId: entry.materialId,
+          material,
+          qty: String(qty),
+          unitPrice: unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice : null,
+          price: unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice : null,
+          amt: null,
+          availableStockQty: entry.availableStockQty != null ? entry.availableStockQty : null,
+          stockWarehouseId: warehouseId,
+          stockWarehouse: entry.stockWarehouse || (warehouseId != null ? {
+            id: warehouseId,
+            name: entry.stockWarehouse && entry.stockWarehouse.name
+          } : null),
+          remark: entry.remark != null ? entry.remark : null
+        };
+        this.basApplyEntryList.push(row);
+        existedKeys.add(key);
+        if (row.qty && row.unitPrice != null) {
+          this.qtyChange(row);
+        }
+        added++;
+      });
+      this.calculateTotals();
+      if (added > 0) {
+        this.debouncedAutoSaveApply();
+        this.$message.success(`已引用 ${added} 条明细${skipped > 0 ? `，跳过 ${skipped} 条重复` : ''}`);
+        this.closeHistoryRefDialog();
+      } else {
+        this.$message.warning(skipped > 0 ? '所选明细均已存在，未新增' : '请勾选要引用的明细');
+      }
+    },
+
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
@@ -1939,10 +2228,13 @@ export default {
             const row = overStock[0];
             const m = row.material || {};
             const name = m.name || m.code || '该耗材';
-            const stockShow = row.availableStockQty != null && row.availableStockQty !== ''
-              ? row.availableStockQty
-              : 0;
-            this.$modal.msgError(`【${name}】仓库库存为 ${stockShow}，申领数量不能大于仓库库存，无法保存。`);
+            const list = this.basApplyEntryList || [];
+            let rowNo = list.indexOf(row) + 1;
+            if (rowNo <= 0 && row.index != null) {
+              rowNo = Number(row.index) || 1;
+            }
+            if (rowNo <= 0) rowNo = 1;
+            this.$modal.msgError(`第${rowNo}行，产品名称【${name}】不能大于库存数量，请核对！`);
             return;
           }
           if (!assertMinPackageQtyOnSave(this, validEntries, '科室申领')) {
@@ -3890,6 +4182,36 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
   border-right: 1px solid #e2e8f0;
 }
 
+/* 操作列改 sticky，避免 fixed 列悬停不同步、表头丢失 */
+.app-container.d-apply-page .local-modal-content .apply-detail-table th.apply-action-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-apply-page .local-modal-content .apply-detail-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.d-apply-page .local-modal-content .apply-detail-table th.apply-action-col {
+  right: var(--apply-detail-v-scrollbar, 0px) !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-container.d-apply-page .local-modal-content .apply-detail-table th.apply-action-col .cell {
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr > td,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr > td .cell {
   transition: none !important;
@@ -3904,13 +4226,7 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td .cell,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-select-col,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.el-table-column--selection,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-action-col,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr:hover > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.hover-row > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td.apply-action-col,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.hover-row > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.hover-row > td.apply-action-col {
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-action-col {
   background-color: #D6EBFF !important;
 }
 
@@ -3918,10 +4234,7 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-action-col,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.apply-row-selected > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td.apply-action-col {
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-action-col {
   background-color: #B8DAFF !important;
 }
 
@@ -3932,11 +4245,7 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td .cell,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td.apply-action-col,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected:hover > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected:hover > td.apply-action-col,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected.hover-row > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected.hover-row > td.apply-action-col {
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td.apply-action-col {
   background-color: #A0CBFF !important;
 }
 
