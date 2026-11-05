@@ -126,7 +126,7 @@
                         </el-table-column>
                         <el-table-column label="仓库" width="140" align="center" show-overflow-tooltip resizable>
                           <template slot-scope="scope">
-                            {{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) ? scope.row.stockWarehouse.name : '—' }}
+                            {{ scope.row.warehouseName || (scope.row.stockWarehouse && scope.row.stockWarehouse.name) || '—' }}
                           </template>
                         </el-table-column>
                         <el-table-column label="生产厂家" width="180" align="center" show-overflow-tooltip resizable>

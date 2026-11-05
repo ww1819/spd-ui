@@ -201,10 +201,9 @@
 <script>
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/department/apply";
 import { listApplyTemplate, getApplyTemplate, addApplyTemplate, updateApplyTemplate, deleteApplyTemplate } from "@/api/department/applyTemplate";
-import { listMaterialDeptSafe } from "@/api/foundation/material";
 import { listDeptApplyAvailableStock } from "@/api/warehouse/inventory";
 import { pinyin } from 'pinyin-pro';
-import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from '@/utils/materialSearch';
+import { normalizeMaterialSearchKeyword } from '@/utils/materialSearch';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import SelectInventory from '@/components/SelectModel/SelectInventory';
 import { assertMinPackageQtyOnSave } from '@/utils/minPackageQty';
@@ -244,16 +243,19 @@ export default {
       currentSelectWarehouseValue: '',
       /** 新增制单模板弹窗：搜索条件（首字母+模糊） */
       addTemplateDialogVisible: false,
-      addTemplateForm: { supplierId: null, materialKeyword: '', speciSearch: '' },
-      /** 耗材基础产品字典（仅在用），加载后前端过滤 */
+      addTemplateForm: { materialKeyword: '', materialModel: '', warehouseName: '', speciSearch: '' },
+      /** 可用库存（耗材+仓库）列表，含库存为 0 */
       addTemplateMaterialList: [],
+      addTemplateTotal: 0,
+      addTemplateLoading: false,
       checkedAddTemplateEntry: [],
-      /** 新增制单模板-明细分页 */
+      /** 新增制单模板-明细分页（服务端分页） */
       addTemplateDetailPageNum: 1,
       addTemplateDetailPageSize: 10,
       /** 往当前模板插入明细：明细表高度（对齐 RK-添加明细 filterTableHeight） */
       addTemplateTableHeight: 400,
-      /** 跨页勾选：已选中的耗材 id 数组（响应式） */
+      /** 跨页勾选：pickKey(materialId__warehouseId) -> row */
+      addTemplateSelectedMap: {},
       addTemplateSelectedIds: [],
       addTemplateRules: {},
       // 选中数组
@@ -386,33 +388,13 @@ export default {
       const start = (this.templateDetailPageNum - 1) * this.templateDetailPageSize;
       return list.slice(start, start + this.templateDetailPageSize);
     },
-    /** 新增制单模板-耗材字典列表（按供应商/耗材名称/规格搜索过滤，支持首字母+模糊） */
-    addTemplateFilteredList() {
-      let list = this.addTemplateMaterialList || [];
-      const supplierId = this.addTemplateForm.supplierId;
-      const kw = (this.addTemplateForm.materialKeyword || '').trim();
-      const spec = (this.addTemplateForm.speciSearch || '').trim();
-      if (supplierId != null && supplierId !== '') {
-        list = list.filter(row => row.supplierId === supplierId);
-      }
-      if (kw) {
-        const normalizedKw = normalizeMaterialSearchKeyword(kw);
-        list = list.filter(row => matchMaterialKeyword(row, normalizedKw));
-      }
-      if (spec) {
-        const normalizedSpec = normalizeMaterialSearchKeyword(spec);
-        list = list.filter(row => {
-          const speci = row.speci || '';
-          return speci.includes(normalizedSpec) || matchMaterialKeyword(row, normalizedSpec);
-        });
-      }
-      return list;
-    },
-    /** 新增制单模板-当前页明细（分页切片） */
+    /** 新增制单模板-当前页明细（服务端分页：可用库存耗材+仓库） */
     addTemplateDetailPageList() {
-      const list = this.addTemplateFilteredList || [];
-      const start = (this.addTemplateDetailPageNum - 1) * this.addTemplateDetailPageSize;
-      return list.slice(start, start + this.addTemplateDetailPageSize);
+      return this.addTemplateMaterialList || [];
+    },
+    /** 兼容旧过滤名：跨页勾选全集 */
+    addTemplateFilteredList() {
+      return Object.values(this.addTemplateSelectedMap || {});
     },
     /** 弹窗明细表固定高度：表体可滚动，合计行始终在表格区域最底部（略高于到货验收，明细框更高） */
     detailTableHeight() {
@@ -489,7 +471,8 @@ export default {
         if (!this.addTemplateDialogVisible || !list || !this.$refs.addTemplateEntryTable) return
         this.$nextTick(() => {
           list.forEach(row => {
-            this.$refs.addTemplateEntryTable.toggleRowSelection(row, this.addTemplateSelectedIds.includes(row.id))
+            const key = this.getAddTemplateRowKey(row)
+            this.$refs.addTemplateEntryTable.toggleRowSelection(row, !!(key && this.addTemplateSelectedMap[key]))
           })
           this.calcAddTemplateTableHeight()
         })
@@ -719,34 +702,77 @@ export default {
     openAddTemplateDialog() {
       if (this.selectedTemplate) {
         this.addTemplateAppendMode = true
-        this.addTemplateForm = { supplierId: null, materialKeyword: '', speciSearch: '' }
+        this.addTemplateForm = { materialKeyword: '', materialModel: '', warehouseName: '', speciSearch: '' }
         this.addTemplateMaterialList = []
+        this.addTemplateTotal = 0
         this.checkedAddTemplateEntry = []
         this.addTemplateDetailPageNum = 1
         this.addTemplateDetailPageSize = 10
+        this.addTemplateSelectedMap = {}
         this.addTemplateSelectedIds = []
         this.addTemplateDialogVisible = true
-        // 耗材档案：仅在用 + 排除高值标识；明细列字段由 listDeptSafe 返回档案关联
-        listMaterialDeptSafe({ onlyEnabled: true }).then(res => {
-          const rows = Array.isArray(res) ? res : (res && res.data ? res.data : [])
-          this.addTemplateMaterialList = (rows || []).filter(row => {
-            if (!row) return false
-            // 过滤高值耗材标识（isGz=1）
-            if (String(row.isGz) === '1') return false
-            // 双保险：过滤停用（isUse=2）；onlyEnabled 已限制启用
-            if (row.isUse != null && String(row.isUse).trim() === '2') return false
-            return true
-          })
-          this.$nextTick(() => this.calcAddTemplateTableHeight())
-        }).catch(() => {
-          this.addTemplateMaterialList = []
-          this.$nextTick(() => this.calcAddTemplateTableHeight())
-        })
+        this.loadAddTemplateStockList()
       } else {
         this.templateNameDialogMode = 'new'
         this.newTemplateName = ''
         this.newTemplateNameDialogVisible = true
       }
+    },
+    getAddTemplateRowKey(row) {
+      if (!row) return null
+      if (row.pickKey) return String(row.pickKey)
+      if (row.materialId != null && row.warehouseId != null) {
+        return `${row.materialId}__${row.warehouseId}`
+      }
+      return row.id != null ? String(row.id) : null
+    },
+    /** 加载可用库存（耗材+仓库），含库存数量为 0 */
+    loadAddTemplateStockList() {
+      this.addTemplateLoading = true
+      const kw = normalizeMaterialSearchKeyword((this.addTemplateForm.materialKeyword || '').trim())
+      const model = normalizeMaterialSearchKeyword((this.addTemplateForm.materialModel || '').trim())
+      const wh = normalizeMaterialSearchKeyword((this.addTemplateForm.warehouseName || '').trim())
+      const spec = normalizeMaterialSearchKeyword((this.addTemplateForm.speciSearch || '').trim())
+      const q = {
+        pageNum: this.addTemplateDetailPageNum,
+        pageSize: this.addTemplateDetailPageSize,
+        includeZeroQty: true
+      }
+      if (kw) q.materialName = kw
+      if (model) q.materialModel = model
+      if (wh) q.warehouseName = wh
+      if (spec) q.materialSpeci = spec
+      return listDeptApplyAvailableStock(q).then(res => {
+        const rows = (res && res.rows) ? res.rows : []
+        this.addTemplateMaterialList = rows.map(row => {
+          const materialId = row.materialId
+          const warehouseId = row.warehouseId
+          const pickKey = (materialId != null && warehouseId != null)
+            ? `${materialId}__${warehouseId}`
+            : null
+          return {
+            ...row,
+            id: pickKey,
+            pickKey,
+            materialId,
+            warehouseId,
+            warehouseName: row.warehouseName,
+            code: row.materialCode,
+            name: row.materialName,
+            speci: row.materialSpeci,
+            model: row.materialModel,
+            price: row.unitPrice,
+            registerNo: row.registerNo
+          }
+        })
+        this.addTemplateTotal = res && res.total != null ? Number(res.total) : 0
+        this.$nextTick(() => this.calcAddTemplateTableHeight())
+      }).catch(() => {
+        this.addTemplateMaterialList = []
+        this.addTemplateTotal = 0
+      }).finally(() => {
+        this.addTemplateLoading = false
+      })
     },
     /** 申领明细另存为制单模板：先维护名称 */
     openSaveAsTemplateDialog() {
@@ -763,25 +789,27 @@ export default {
     closeAddTemplateDialog() {
       this.addTemplateDialogVisible = false
       this.addTemplateAppendMode = false
-      this.addTemplateForm = { supplierId: null, materialKeyword: '', speciSearch: '' }
+      this.addTemplateForm = { materialKeyword: '', materialModel: '', warehouseName: '', speciSearch: '' }
       this.addTemplateMaterialList = []
+      this.addTemplateTotal = 0
       this.checkedAddTemplateEntry = []
+      this.addTemplateSelectedMap = {}
       this.addTemplateSelectedIds = []
     },
-    /** 新增制单模板-搜索（条件已实时过滤，此处仅将分页重置为第 1 页） */
+    /** 新增制单模板-搜索 */
     handleAddTemplateSearch() {
       this.addTemplateDetailPageNum = 1
-      this.$nextTick(() => this.calcAddTemplateTableHeight())
+      this.loadAddTemplateStockList()
     },
-    /** 重置搜索条件（对齐 RK-添加明细） */
+    /** 重置搜索条件 */
     handleAddTemplateReset() {
-      this.addTemplateForm = { supplierId: null, materialKeyword: '', speciSearch: '' }
+      this.addTemplateForm = { materialKeyword: '', materialModel: '', warehouseName: '', speciSearch: '' }
       this.addTemplateDetailPageNum = 1
-      this.$nextTick(() => this.calcAddTemplateTableHeight())
+      this.loadAddTemplateStockList()
     },
     /** 新增制单模板-明细分页变更 */
     handleAddTemplateDetailPagination() {
-      this.$nextTick(() => this.calcAddTemplateTableHeight())
+      this.loadAddTemplateStockList()
     },
     /** 计算插入明细表高度（对齐 RK-添加明细 updateFilterTableHeight） */
     calcAddTemplateTableHeight() {
@@ -809,7 +837,8 @@ export default {
     },
     /** 插入明细选中行高亮（对齐 RK apply-row-selected） */
     addTemplateDetailRowClassName({ row }) {
-      if (row && row.id != null && this.addTemplateSelectedIds && this.addTemplateSelectedIds.includes(row.id)) {
+      const key = this.getAddTemplateRowKey(row)
+      if (key && this.addTemplateSelectedMap && this.addTemplateSelectedMap[key]) {
         return 'apply-row-selected'
       }
       return ''
@@ -820,7 +849,8 @@ export default {
       if (column && column.type === 'selection') return
       const table = this.$refs.addTemplateEntryTable
       if (!table) return
-      const selected = !!(row.id != null && this.addTemplateSelectedIds && this.addTemplateSelectedIds.includes(row.id))
+      const key = this.getAddTemplateRowKey(row)
+      const selected = !!(key && this.addTemplateSelectedMap && this.addTemplateSelectedMap[key])
       table.toggleRowSelection(row, !selected)
     },
     /** 首字母（用于搜索过滤） */
@@ -855,11 +885,19 @@ export default {
       this.addTemplateEntryList = this.addTemplateEntryList.filter(row => !rows.includes(row))
     },
     handleAddTemplateEntrySelectionChange(rows) {
-      this.checkedAddTemplateEntry = rows
+      this.checkedAddTemplateEntry = rows || []
       const pageList = this.addTemplateDetailPageList || []
-      const pageIds = new Set(pageList.map(r => r.id))
-      this.addTemplateSelectedIds = this.addTemplateSelectedIds.filter(id => !pageIds.has(id))
-      rows.forEach(row => this.addTemplateSelectedIds.push(row.id))
+      const pageKeys = new Set(pageList.map(r => this.getAddTemplateRowKey(r)).filter(Boolean))
+      Object.keys(this.addTemplateSelectedMap || {}).forEach(k => {
+        if (pageKeys.has(k)) {
+          this.$delete(this.addTemplateSelectedMap, k)
+        }
+      })
+      ;(rows || []).forEach(row => {
+        const key = this.getAddTemplateRowKey(row)
+        if (key) this.$set(this.addTemplateSelectedMap, key, row)
+      })
+      this.addTemplateSelectedIds = Object.keys(this.addTemplateSelectedMap || {})
     },
     rowAddTemplateEntryIndex({ row, rowIndex }) {
       row.index = rowIndex + 1
@@ -870,27 +908,66 @@ export default {
     },
     /** 确认：往当前模板插入明细（追加模式）或 保存为新制单模板（支持跨页勾选） */
     submitAddTemplate() {
-      const ids = this.addTemplateSelectedIds
-      const list = (this.addTemplateFilteredList || []).filter(row => ids.includes(row.id))
+      const list = Object.values(this.addTemplateSelectedMap || {})
       if (list.length === 0) {
         this.$message.warning('请至少勾选一条耗材明细')
         return
       }
+      const toEntry = (row) => {
+        const materialId = row.materialId != null ? row.materialId : row.id
+        const warehouseId = row.warehouseId != null ? Number(row.warehouseId) : null
+        return {
+          materialId,
+          warehouseId: Number.isFinite(warehouseId) ? warehouseId : null,
+          warehouseName: row.warehouseName || '',
+          availableStockQty: row.availableQty != null ? row.availableQty : 0,
+          stockWarehouseId: Number.isFinite(warehouseId) ? warehouseId : null,
+          stockWarehouse: Number.isFinite(warehouseId) ? {
+            id: warehouseId,
+            code: row.warehouseCode,
+            name: row.warehouseName
+          } : null,
+          material: {
+            id: materialId,
+            code: row.materialCode || row.code,
+            name: row.materialName || row.name,
+            speci: row.materialSpeci || row.speci,
+            model: row.materialModel || row.model,
+            price: row.unitPrice != null ? row.unitPrice : row.price,
+            registerNo: row.registerNo,
+            fdUnit: row.unitName ? { unitName: row.unitName } : null,
+            fdFactory: row.factoryName ? { factoryName: row.factoryName } : null,
+            fdWarehouseCategory: row.warehouseCategoryName ? { warehouseCategoryName: row.warehouseCategoryName } : null,
+            fdFinanceCategory: row.financeCategoryName ? { financeCategoryName: row.financeCategoryName } : null
+          },
+          qty: 1
+        }
+      }
       if (this.addTemplateAppendMode && this.selectedTemplate) {
-        const existingMaterialIds = new Set((this.templateDetailList || []).map(e => e.materialId))
-        const duplicates = list.filter(row => existingMaterialIds.has(row.id))
+        const existingKeys = new Set(
+          (this.templateDetailList || []).map(e => {
+            const mid = e.materialId
+            const wid = e.warehouseId != null
+              ? e.warehouseId
+              : (e.stockWarehouseId != null ? e.stockWarehouseId : null)
+            return (mid != null && wid != null) ? `${mid}__${wid}` : (mid != null ? String(mid) : null)
+          }).filter(Boolean)
+        )
+        const duplicates = list.filter(row => {
+          const key = this.getAddTemplateRowKey(row)
+          return key && existingKeys.has(key)
+        })
         if (duplicates.length > 0) {
-          const name = (duplicates[0].name || duplicates[0].code || '该耗材')
-          this.$message.warning('【' + name + '】该产品已经存在模板中了，请勿重复维护！')
+          const name = (duplicates[0].materialName || duplicates[0].name || duplicates[0].materialCode || duplicates[0].code || '该耗材')
+          this.$message.warning('【' + name + '】该产品在该仓库已存在模板中了，请勿重复维护！')
           return
         }
-        const newEntries = list.map(row => ({
-          materialId: row.id,
-          material: row,
-          qty: 1
-        }))
+        const newEntries = list.map(toEntry)
+        if (newEntries.some(e => e.warehouseId == null)) {
+          this.$message.warning('所选明细缺少仓库信息，请重新选择')
+          return
+        }
         this.templateDetailList = (this.templateDetailList || []).concat(newEntries)
-        this.enrichTemplateDetailStock(newEntries)
         this.$message.success('已插入明细，请点击保存按钮保存模板')
         this.closeAddTemplateDialog()
         return
@@ -901,8 +978,8 @@ export default {
         warehouseId: null,
         remark: '',
         entryList: list.map(row => ({
-          materialId: row.id,
-          material: row,
+          materialId: row.materialId != null ? row.materialId : row.id,
+          warehouseId: row.warehouseId != null ? Number(row.warehouseId) : null,
           qty: 1
         }))
       }
@@ -965,7 +1042,7 @@ export default {
         this.$message.error('创建失败')
       })
     },
-    /** 将当前申领明细另存为制单模板（同耗材合并数量） */
+    /** 将当前申领明细另存为制单模板（同耗材+仓库合并数量） */
     confirmSaveAsTemplate(templateName) {
       const list = this.basApplyEntryList || []
       if (!list.length) {
@@ -978,7 +1055,14 @@ export default {
           ? row.materialId
           : (row.material && row.material.id != null ? row.material.id : null)
         if (materialId == null || materialId === '') return
-        const key = String(materialId)
+        const warehouseIdRaw = row.stockWarehouseId != null
+          ? row.stockWarehouseId
+          : (row.stockWarehouse && row.stockWarehouse.id != null
+            ? row.stockWarehouse.id
+            : row.warehouseId)
+        const warehouseIdNum = warehouseIdRaw != null ? Number(warehouseIdRaw) : null
+        const warehouseId = Number.isFinite(warehouseIdNum) ? warehouseIdNum : null
+        const key = warehouseId != null ? `${materialId}__${warehouseId}` : String(materialId)
         const qtyNum = Number(row.qty)
         const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1
         if (merged.has(key)) {
@@ -987,6 +1071,7 @@ export default {
         } else {
           merged.set(key, {
             materialId,
+            warehouseId,
             qty,
             material: row.material || null
           })
@@ -994,6 +1079,7 @@ export default {
       })
       const entryList = [...merged.values()].map((e, i) => ({
         materialId: e.materialId,
+        warehouseId: e.warehouseId,
         qty: e.qty,
         sortOrder: i + 1
       }))
@@ -1069,7 +1155,7 @@ export default {
     },
     /**
      * 按库存明细（科室申领可用库存：耗材+仓库聚合）补全模板明细的库存数量、仓库。
-     * 同一耗材多仓时取可用数量最大的仓库。
+     * 已保存 warehouseId 的明细固定该仓；未指定仓时同耗材取可用数量最大的仓库。
      */
     enrichTemplateDetailStock(list) {
       const entries = Array.isArray(list) ? list : [];
@@ -1085,37 +1171,55 @@ export default {
         return Number.isFinite(n) ? n : 0;
       };
       return Promise.all(ids.map(materialId =>
-        listDeptApplyAvailableStock({ materialId, pageNum: 1, pageSize: 100 })
+        listDeptApplyAvailableStock({ materialId, pageNum: 1, pageSize: 200, includeZeroQty: true })
           .then(res => {
             const rows = (res && res.rows) ? res.rows : [];
             return { materialId: String(materialId), rows };
           })
           .catch(() => ({ materialId: String(materialId), rows: [] }))
       )).then(results => {
-        const bestByMaterial = {};
+        const rowsByMaterial = {};
         results.forEach(({ materialId, rows }) => {
-          let best = null;
-          (rows || []).forEach(row => {
-            if (!row) return;
-            if (!best || toNum(row.availableQty) > toNum(best.availableQty)) {
-              best = row;
-            }
-          });
-          if (best) {
-            bestByMaterial[materialId] = best;
-          }
+          rowsByMaterial[materialId] = rows || [];
         });
         entries.forEach(entry => {
           if (!entry) return;
           const key = entry.materialId != null ? String(entry.materialId) : '';
-          const stock = bestByMaterial[key];
+          const rows = rowsByMaterial[key] || [];
+          const preferWid = entry.warehouseId != null
+            ? String(entry.warehouseId)
+            : (entry.stockWarehouseId != null ? String(entry.stockWarehouseId) : null);
+          let stock = null;
+          if (preferWid) {
+            stock = rows.find(r => r && String(r.warehouseId) === preferWid) || null;
+          }
+          if (!stock) {
+            rows.forEach(row => {
+              if (!row) return;
+              if (!stock || toNum(row.availableQty) > toNum(stock.availableQty)) {
+                stock = row;
+              }
+            });
+          }
           if (stock) {
-            this.$set(entry, 'availableStockQty', stock.availableQty != null ? stock.availableQty : null);
-            this.$set(entry, 'stockWarehouseId', stock.warehouseId != null ? stock.warehouseId : null);
-            this.$set(entry, 'stockWarehouse', stock.warehouseId != null ? {
-              id: stock.warehouseId,
+            const wid = stock.warehouseId != null ? stock.warehouseId : (preferWid != null ? Number(preferWid) : null);
+            this.$set(entry, 'availableStockQty', stock.availableQty != null ? stock.availableQty : 0);
+            this.$set(entry, 'warehouseId', wid);
+            this.$set(entry, 'warehouseName', stock.warehouseName || entry.warehouseName || '');
+            this.$set(entry, 'stockWarehouseId', wid);
+            this.$set(entry, 'stockWarehouse', wid != null ? {
+              id: wid,
               code: stock.warehouseCode,
-              name: stock.warehouseName
+              name: stock.warehouseName || entry.warehouseName
+            } : null);
+          } else if (preferWid || entry.warehouseName) {
+            const wid = preferWid != null ? Number(preferWid) : null;
+            this.$set(entry, 'availableStockQty', entry.availableStockQty != null ? entry.availableStockQty : 0);
+            this.$set(entry, 'warehouseId', Number.isFinite(wid) ? wid : entry.warehouseId);
+            this.$set(entry, 'stockWarehouseId', Number.isFinite(wid) ? wid : entry.stockWarehouseId);
+            this.$set(entry, 'stockWarehouse', (Number.isFinite(wid) || entry.warehouseName) ? {
+              id: Number.isFinite(wid) ? wid : entry.warehouseId,
+              name: entry.warehouseName || ''
             } : null);
           } else {
             this.$set(entry, 'availableStockQty', null);
@@ -1171,6 +1275,14 @@ export default {
             : (material.price != null ? material.price : null));
         const unitPrice = rawPrice != null && rawPrice !== '' ? Number(rawPrice) : null;
         const qty = entry.qty != null && entry.qty !== '' ? entry.qty : 1;
+        const warehouseId = entry.warehouseId != null
+          ? entry.warehouseId
+          : (entry.stockWarehouseId != null
+            ? entry.stockWarehouseId
+            : (entry.stockWarehouse && entry.stockWarehouse.id != null ? entry.stockWarehouse.id : null));
+        const warehouseName = entry.warehouseName
+          || (entry.stockWarehouse && entry.stockWarehouse.name)
+          || '';
         const row = {
           materialId: entry.materialId,
           material,
@@ -1179,10 +1291,11 @@ export default {
           price: unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice : null,
           amt: null,
           availableStockQty: entry.availableStockQty != null ? entry.availableStockQty : null,
-          stockWarehouseId: entry.stockWarehouseId != null
-            ? entry.stockWarehouseId
-            : (entry.stockWarehouse && entry.stockWarehouse.id != null ? entry.stockWarehouse.id : null),
-          stockWarehouse: entry.stockWarehouse || null,
+          stockWarehouseId: warehouseId,
+          stockWarehouse: entry.stockWarehouse || (warehouseId != null ? {
+            id: warehouseId,
+            name: warehouseName
+          } : null),
           remark: entry.remark != null ? entry.remark : null
         };
         this.basApplyEntryList.push(row);
@@ -1292,11 +1405,22 @@ export default {
         this.$message.warning('请先选择要保存的模板');
         return;
       }
-      const entryList = (this.templateDetailList || []).map((e, i) => ({
-        materialId: e.materialId,
-        qty: e.qty != null ? e.qty : 1,
-        sortOrder: i + 1
-      }));
+      const entryList = (this.templateDetailList || []).map((e, i) => {
+        const warehouseId = e.warehouseId != null
+          ? Number(e.warehouseId)
+          : (e.stockWarehouseId != null ? Number(e.stockWarehouseId) : null);
+        return {
+          materialId: e.materialId,
+          warehouseId: Number.isFinite(warehouseId) ? warehouseId : null,
+          qty: e.qty != null ? e.qty : 1,
+          sortOrder: i + 1
+        };
+      });
+      const missingWh = entryList.filter(e => e.materialId != null && e.warehouseId == null);
+      if (missingWh.length > 0) {
+        this.$message.warning('存在明细未关联仓库，请从可用库存重新插入后再保存');
+        return;
+      }
       const payload = {
         id: this.selectedTemplate.id,
         templateName: this.selectedTemplate.templateName,

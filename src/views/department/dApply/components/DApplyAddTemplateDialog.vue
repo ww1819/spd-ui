@@ -1,5 +1,5 @@
 <template>
-  <!-- 往当前模板插入明细 / 新增制单模板：布局与到货验收 RK-添加明细完全一致 -->
+  <!-- 往当前模板插入明细-SL：数据口径对齐「可用库存（按耗材+仓库汇总）」，含库存为 0 -->
   <div
     v-show="addTemplateDialogVisible"
     class="local-modal-mask material-filter-mask material-filter-mask--nested add-template-mask"
@@ -8,7 +8,7 @@
       class="local-modal-content material-filter-modal material-filter-modal--nested apply-inbound-nested-modal add-template-modal"
     >
       <div class="modal-header">
-        <div class="modal-title">{{ addTemplateAppendMode ? '往当前模板插入明细' : '新增制单模板' }}</div>
+        <div class="modal-title">{{ addTemplateAppendMode ? '往当前模板插入明细-SL' : '新增制单模板-SL' }}</div>
         <el-button size="small" @click="closeAddTemplateDialog" class="close-btn">关闭</el-button>
       </div>
       <el-form
@@ -24,15 +24,10 @@
         <div class="form-fields-container list-query-panel apply-modal-query-panel">
           <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-first" type="flex">
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="供应商名称" prop="supplierId">
-                <SelectSupplier v-model="addTemplateForm.supplierId" :value2="false"/>
-              </el-form-item>
-            </el-col>
-            <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="产品名称" prop="materialKeyword">
+              <el-form-item label="产品名称" prop="materialKeyword" label-width="84px">
                 <el-input
                   v-model="addTemplateForm.materialKeyword"
-                  placeholder="产品编码/名称/简码"
+                  placeholder="名称/编码/简码"
                   clearable
                   size="small"
                   @keyup.enter.native="handleAddTemplateSearch"
@@ -40,10 +35,32 @@
               </el-form-item>
             </el-col>
             <el-col class="apply-modal-field apply-modal-field--standard">
-              <el-form-item label="规格搜索" prop="speciSearch">
+              <el-form-item label="型号" prop="materialModel">
+                <el-input
+                  v-model="addTemplateForm.materialModel"
+                  placeholder="型号"
+                  clearable
+                  size="small"
+                  @keyup.enter.native="handleAddTemplateSearch"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col class="apply-modal-field apply-modal-field--standard">
+              <el-form-item label="仓库" prop="warehouseName">
+                <el-input
+                  v-model="addTemplateForm.warehouseName"
+                  placeholder="仓库名称"
+                  clearable
+                  size="small"
+                  @keyup.enter.native="handleAddTemplateSearch"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col class="apply-modal-field apply-modal-field--standard">
+              <el-form-item label="规格" prop="speciSearch">
                 <el-input
                   v-model="addTemplateForm.speciSearch"
-                  placeholder="规格或首字母"
+                  placeholder="规格"
                   clearable
                   size="small"
                   @keyup.enter.native="handleAddTemplateSearch"
@@ -55,7 +72,7 @@
 
         <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
           <div class="list-toolbar-left">
-            <span class="apply-modal-detail-title">模板明细信息</span>
+            <span class="apply-modal-detail-title">可用库存明细信息</span>
             <el-button
               type="primary"
               size="small"
@@ -83,9 +100,10 @@
         <div class="apply-table-panel" ref="addTemplateTablePanel">
           <el-table
             ref="addTemplateEntryTable"
+            v-loading="addTemplateLoading"
             class="table-compact apply-main-table"
             :data="addTemplateDetailPageList"
-            row-key="id"
+            :row-key="getAddTemplateRowKey"
             :row-class-name="addTemplateDetailRowClassName"
             :height="addTemplateTableHeight"
             border
@@ -99,63 +117,63 @@
                 {{ (addTemplateDetailPageNum - 1) * addTemplateDetailPageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
-            <el-table-column label="产品编码" align="center" prop="code" width="130" show-overflow-tooltip resizable sortable />
-            <el-table-column label="产品名称" align="center" prop="name" width="150" show-overflow-tooltip resizable sortable />
-            <el-table-column label="规格" align="center" prop="speci" width="100" show-overflow-tooltip resizable sortable>
+            <el-table-column label="仓库" align="center" prop="warehouseName" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.speci || '--' }}</span>
+                <span>{{ scope.row.warehouseName || '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="型号" align="center" prop="model" width="100" show-overflow-tooltip resizable>
+            <el-table-column label="编码" align="center" prop="materialCode" width="130" show-overflow-tooltip resizable />
+            <el-table-column label="产品名称" align="center" prop="materialName" width="160" show-overflow-tooltip resizable />
+            <el-table-column label="规格" align="center" prop="materialSpeci" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.model || '--' }}</span>
+                <span>{{ scope.row.materialSpeci || '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="单位" align="center" width="80" show-overflow-tooltip resizable>
+            <el-table-column label="型号" align="center" prop="materialModel" width="100" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.fdUnit && scope.row.fdUnit.unitName ? scope.row.fdUnit.unitName : '--' }}</span>
+                <span>{{ scope.row.materialModel || '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="单价" align="center" width="100" show-overflow-tooltip resizable>
+            <el-table-column label="单位" align="center" prop="unitName" width="80" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.price != null ? scope.row.price : '--' }}</span>
+                <span>{{ scope.row.unitName || '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="生产厂家" align="center" width="150" show-overflow-tooltip resizable>
+            <el-table-column label="本仓可用数量" align="center" prop="availableQty" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.fdFactory && scope.row.fdFactory.factoryName ? scope.row.fdFactory.factoryName : '--' }}</span>
+                <span>{{ scope.row.availableQty != null ? scope.row.availableQty : 0 }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="供应商" align="center" width="150" show-overflow-tooltip resizable>
+            <el-table-column label="参考单价" align="center" prop="unitPrice" width="110" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.supplier && scope.row.supplier.name ? scope.row.supplier.name : '--' }}</span>
+                <span>{{ scope.row.unitPrice != null ? scope.row.unitPrice : '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="注册证号" align="center" prop="registerNo" width="180" show-overflow-tooltip resizable>
+            <el-table-column label="生产厂家" align="center" prop="factoryName" width="160" show-overflow-tooltip resizable>
+              <template slot-scope="scope">
+                <span>{{ scope.row.factoryName || '--' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="注册证号" align="center" prop="registerNo" width="160" show-overflow-tooltip resizable>
               <template slot-scope="scope">
                 <span>{{ scope.row.registerNo || '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="注册证有效期" align="center" width="130" show-overflow-tooltip resizable>
+            <el-table-column label="财务分类" align="center" prop="financeCategoryName" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.periodDate ? parseTime(scope.row.periodDate, '{y}-{m}-{d}') : '--' }}</span>
+                <span>{{ scope.row.financeCategoryName || '--' }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="库房分类" align="center" width="120" show-overflow-tooltip resizable>
+            <el-table-column label="库房分类" align="center" prop="warehouseCategoryName" width="120" show-overflow-tooltip resizable>
               <template slot-scope="scope">
-                <span>{{ scope.row.fdWarehouseCategory && scope.row.fdWarehouseCategory.warehouseCategoryName ? scope.row.fdWarehouseCategory.warehouseCategoryName : '--' }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="财务分类" align="center" width="120" show-overflow-tooltip resizable>
-              <template slot-scope="scope">
-                <span>{{ scope.row.fdFinanceCategory && scope.row.fdFinanceCategory.financeCategoryName ? scope.row.fdFinanceCategory.financeCategoryName : '--' }}</span>
+                <span>{{ scope.row.warehouseCategoryName || '--' }}</span>
               </template>
             </el-table-column>
           </el-table>
 
           <div class="apply-pagination-wrap" ref="addTemplatePaginationWrap">
             <pagination
-              :total="addTemplateFilteredList.length"
+              :total="addTemplateTotal"
               :page.sync="addTemplateDetailPageNum"
               :limit.sync="addTemplateDetailPageSize"
               :page-sizes="[10, 20, 50, 100]"
@@ -170,12 +188,10 @@
 
 <script>
 import { createHostProxyMixin } from '@/mixins/hostProxyMixin'
-import SelectSupplier from '@/components/SelectModel/SelectSupplierDept'
 
 export default {
   name: 'DApplyAddTemplateDialog',
   mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'DApply')],
-  components: { SelectSupplier },
   inheritAttrs: false,
   watch: {
     addTemplateDialogVisible(val) {
