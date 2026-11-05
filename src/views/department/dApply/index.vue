@@ -272,6 +272,8 @@ export default {
       // 显示搜索条件
       showSearch: true,
       mainTableHeight: 400,
+      /** 弹窗明细表实测高度（px）；按 table-wrapper 剩余空间铺满，避免合计被裁 */
+      detailTableHeightPx: null,
       selectedRowMap: {},
       // 总条数
       total: 0,
@@ -417,9 +419,12 @@ export default {
     addTemplateFilteredList() {
       return Object.values(this.addTemplateSelectedMap || {});
     },
-    /** 弹窗明细表固定高度：表体可滚动，合计行始终在表格区域最底部（略高于到货验收，明细框更高） */
+    /** 弹窗明细表高度：优先用实测值铺满剩余区域（与采购计划/汇总申购一致） */
     detailTableHeight() {
-      return 'max(280px, calc(100vh - 300px))';
+      if (this.detailTableHeightPx != null && this.detailTableHeightPx > 0) {
+        return this.detailTableHeightPx;
+      }
+      return 'max(240px, calc(100vh - 360px))';
     },
     /** 已有明细、修改模式或正在选库存时锁定科室 */
     isDeptLocked() {
@@ -482,11 +487,16 @@ export default {
   watch: {
     open(val) {
       if (val) {
+        this.detailTableHeightPx = null;
+        this.scheduleDetailTableHeightRefresh();
         this.scheduleSyncDetailTableSticky();
+      } else {
+        this.detailTableHeightPx = null;
       }
     },
     basApplyEntryList() {
       if (this.open) {
+        this.scheduleDetailTableHeightRefresh();
         this.scheduleSyncDetailTableSticky();
       }
     },
@@ -549,6 +559,9 @@ export default {
   methods: {
     onApplyWindowResize() {
       this.updateMainTableHeight();
+      if (this.open) {
+        this.scheduleDetailTableHeightRefresh();
+      }
     },
     scheduleApplyLayoutRefresh() {
       const run = () => this.updateMainTableHeight();
@@ -558,6 +571,47 @@ export default {
           run();
           [50, 120, 300].forEach((ms) => setTimeout(run, ms));
         });
+      });
+    },
+    /** 按弹窗明细区剩余高度铺满，消除按钮与明细过大间隙、合计被裁 */
+    scheduleDetailTableHeightRefresh() {
+      const run = () => {
+        this.updateDetailTableHeight();
+        this.layoutDetailTable();
+      };
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 280].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateDetailTableHeight() {
+      if (!this.open) return;
+      const root = this.$el && this.$el.querySelector
+        ? this.$el.querySelector('.local-modal-content.apply-modal-root-content')
+        : null;
+      const wrap = root && root.querySelector('.apply-modal-table-panel .table-wrapper');
+      if (!wrap || !wrap.getBoundingClientRect) return;
+      const h = Math.floor(wrap.clientHeight || wrap.getBoundingClientRect().height || 0);
+      if (!h) return;
+      const next = Math.max(240, h);
+      if (this.detailTableHeightPx == null || Math.abs(this.detailTableHeightPx - next) >= 2) {
+        this.detailTableHeightPx = next;
+      }
+    },
+    layoutDetailTable() {
+      const run = () => {
+        const table = this.$refs.basApplyEntry;
+        if (table && table.doLayout) {
+          table.doLayout();
+        }
+      };
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(run);
+        [50, 120, 300].forEach((ms) => setTimeout(run, ms));
       });
     },
     updateMainTableHeight() {
@@ -2819,6 +2873,8 @@ export default {
 ::v-deep .local-modal-content .apply-modal-table-panel .table-wrapper{
   margin-top: 0 !important;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
   padding-bottom: 0;
 }
 
@@ -4051,6 +4107,8 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
 }
 
 .app-container.d-apply-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   border-bottom: none;
 }

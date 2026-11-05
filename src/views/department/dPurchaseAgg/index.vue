@@ -267,6 +267,8 @@ export default {
       // 显示搜索条件
       showSearch: true,
       mainTableHeight: 400,
+      /** 弹窗明细表实测高度（px）；按 table-wrapper 剩余空间铺满，避免合计被裁 */
+      detailTableHeightPx: null,
       selectedRowMap: {},
       detailSelectedRowMap: {},
       // 总条数
@@ -356,9 +358,12 @@ export default {
         ? this.$options.filters.formatCurrency(v)
         : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
-    /** 弹窗明细表高度：与到货验收 apply-modal 一致 */
+    /** 弹窗明细表高度：优先用实测值铺满剩余区域（与采购计划/科室申领一致） */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      if (this.detailTableHeightPx != null && this.detailTableHeightPx > 0) {
+        return this.detailTableHeightPx;
+      }
+      return 'max(240px, calc(100vh - 360px))';
     },
     /** 引用模板明细默认排序 */
     templateDetailDefaultSort() {
@@ -463,12 +468,15 @@ export default {
     },
     open(val) {
       if (val) {
-        this.layoutDetailTable();
+        this.detailTableHeightPx = null;
+        this.scheduleDetailTableHeightRefresh();
+      } else {
+        this.detailTableHeightPx = null;
       }
     },
     entryList() {
       if (this.open) {
-        this.layoutDetailTable();
+        this.scheduleDetailTableHeightRefresh();
       }
     },
     templateDialogVisible(val) {
@@ -503,7 +511,35 @@ export default {
     onApplyWindowResize() {
       this.updateMainTableHeight();
       if (this.open) {
+        this.scheduleDetailTableHeightRefresh();
+      }
+    },
+    /** 按弹窗明细区剩余高度铺满，消除按钮与明细过大间隙、合计被裁 */
+    scheduleDetailTableHeightRefresh() {
+      const run = () => {
+        this.updateDetailTableHeight();
         this.layoutDetailTable();
+      };
+      this.$nextTick(() => {
+        run();
+        requestAnimationFrame(() => {
+          run();
+          [50, 120, 280].forEach((ms) => setTimeout(run, ms));
+        });
+      });
+    },
+    updateDetailTableHeight() {
+      if (!this.open) return;
+      const root = this.$el && this.$el.querySelector
+        ? this.$el.querySelector('.local-modal-content.apply-modal-root-content')
+        : null;
+      const wrap = root && root.querySelector('.apply-modal-table-panel .table-wrapper');
+      if (!wrap || !wrap.getBoundingClientRect) return;
+      const h = Math.floor(wrap.clientHeight || wrap.getBoundingClientRect().height || 0);
+      if (!h) return;
+      const next = Math.max(240, h);
+      if (this.detailTableHeightPx == null || Math.abs(this.detailTableHeightPx - next) >= 2) {
+        this.detailTableHeightPx = next;
       }
     },
     /** 打开引用模板弹窗（申购 SG） */
@@ -1959,12 +1995,14 @@ export default {
   background: #fff;
   width: 100%;
   height: 100%;
-  min-height: 95vh;
+  max-height: 100%;
+  min-height: 0;
   overflow-x: hidden;
-  overflow-y: auto;
+  /* 与科室申领一致：弹窗白底自身不滚动，只在明细表 body 内滚动 */
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
-  padding-bottom: 8px;
+  padding-bottom: 16px;
   box-sizing: border-box;
 }
 
@@ -2010,8 +2048,6 @@ export default {
   padding: 8px 0 8px !important;
   overflow: visible;
   box-sizing: border-box;
-  justify-content: flex-start;
-  align-content: flex-start;
 }
 
 ::v-deep .local-modal-content.apply-modal-root-content .modal-header{
@@ -2114,6 +2150,20 @@ export default {
   max-width: 150px !important;
 }
 
+/* 备注跟在审核日期后：与科室申领一致 */
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark {
+  flex: 0 0 auto !important;
+  min-width: 0;
+  max-width: 280px !important;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-form-item__content {
+  flex: 0 0 auto !important;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row .apply-modal-field--remark .el-input {
+  width: 220px !important;
+  max-width: 220px !important;
+}
+
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-field--compact .el-form-item__content{
   max-width: 162px;
 }
@@ -2165,6 +2215,8 @@ export default {
 ::v-deep .local-modal-content .apply-modal-table-panel .table-wrapper{
   margin-top: 0 !important;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
   padding-bottom: 0;
 }
 
@@ -2173,7 +2225,7 @@ export default {
   overflow: hidden;
 }
 
-/* 明细表行高：与到货验收一致（到货验收由 28px 输入框撑高，只读页用等高校内容） */
+/* 明细表行高：与科室申领/到货验收一致 */
 ::v-deep .local-modal-content .modal-detail-section .apply-detail-table ::v-deep tbody td.el-table__cell {
   padding: 4px 0 !important;
 }
@@ -2182,6 +2234,7 @@ export default {
   padding-left: 6px !important;
   padding-right: 6px !important;
   line-height: 28px;
+  white-space: nowrap !important;
   min-height: 28px;
   box-sizing: border-box;
 }
@@ -2651,10 +2704,11 @@ html body .app-container.d-purchase-agg-page .apply-modal-root-content > .materi
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  overflow: visible;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
 }
 
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-table-panel > .table-wrapper > .apply-detail-table {
@@ -2664,6 +2718,8 @@ html body .app-container.d-purchase-agg-page .apply-modal-root-content > .materi
 }
 
 .app-container.d-purchase-agg-page .local-modal-content .apply-modal-table-panel > .table-wrapper {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
   border-bottom: none;
 }
@@ -2681,12 +2737,31 @@ html body .app-container.d-purchase-agg-page .apply-modal-root-content > .materi
   height: 34px !important;
 }
 
+/* 数量列输入框随列宽缩放 */
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table td.apply-qty-col .cell {
+  overflow: visible;
+}
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .apply-detail-qty-input,
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .apply-detail-qty-input.el-input {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block;
+}
+.app-container.d-purchase-agg-page .local-modal-content .apply-detail-table .apply-detail-qty-input .el-input__inner {
+  width: 100% !important;
+}
+
 .app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell {
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   text-align: center !important;
   line-height: 20px !important;
+  white-space: nowrap !important;
+}
+
+.app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__body .cell {
+  white-space: nowrap !important;
 }
 
 .app-container.d-purchase-agg-page .local-modal-content .modal-detail-section .el-table.apply-detail-table > .el-table__body-wrapper {
