@@ -202,6 +202,7 @@
 import { listApply, getApply, delApply, addApply, updateApply } from "@/api/department/apply";
 import { listApplyTemplate, getApplyTemplate, addApplyTemplate, updateApplyTemplate, deleteApplyTemplate } from "@/api/department/applyTemplate";
 import { listMaterialDeptSafe } from "@/api/foundation/material";
+import { listDeptApplyAvailableStock } from "@/api/warehouse/inventory";
 import { pinyin } from 'pinyin-pro';
 import { matchMaterialKeyword, normalizeMaterialSearchKeyword } from '@/utils/materialSearch';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -875,6 +876,7 @@ export default {
           qty: 1
         }))
         this.templateDetailList = (this.templateDetailList || []).concat(newEntries)
+        this.enrichTemplateDetailStock(newEntries)
         this.$message.success('已插入明细，请点击保存按钮保存模板')
         this.closeAddTemplateDialog()
         return
@@ -981,9 +983,70 @@ export default {
       getApplyTemplate(item.id).then(res => {
         const data = res.data || {};
         this.templateDetailList = data.entryList || [];
-        this.$nextTick(() => this.calcTemplateDetailTableHeight());
+        this.enrichTemplateDetailStock(this.templateDetailList).then(() => {
+          this.$nextTick(() => this.calcTemplateDetailTableHeight());
+        });
       }).catch(() => {
         this.templateDetailList = [];
+      });
+    },
+    /**
+     * 按库存明细（科室申领可用库存：耗材+仓库聚合）补全模板明细的库存数量、仓库。
+     * 同一耗材多仓时取可用数量最大的仓库。
+     */
+    enrichTemplateDetailStock(list) {
+      const entries = Array.isArray(list) ? list : [];
+      if (!entries.length) {
+        return Promise.resolve(entries);
+      }
+      const ids = [...new Set(entries.map(e => e && e.materialId).filter(id => id != null && id !== ''))];
+      if (!ids.length) {
+        return Promise.resolve(entries);
+      }
+      const toNum = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : 0;
+      };
+      return Promise.all(ids.map(materialId =>
+        listDeptApplyAvailableStock({ materialId, pageNum: 1, pageSize: 100 })
+          .then(res => {
+            const rows = (res && res.rows) ? res.rows : [];
+            return { materialId: String(materialId), rows };
+          })
+          .catch(() => ({ materialId: String(materialId), rows: [] }))
+      )).then(results => {
+        const bestByMaterial = {};
+        results.forEach(({ materialId, rows }) => {
+          let best = null;
+          (rows || []).forEach(row => {
+            if (!row) return;
+            if (!best || toNum(row.availableQty) > toNum(best.availableQty)) {
+              best = row;
+            }
+          });
+          if (best) {
+            bestByMaterial[materialId] = best;
+          }
+        });
+        entries.forEach(entry => {
+          if (!entry) return;
+          const key = entry.materialId != null ? String(entry.materialId) : '';
+          const stock = bestByMaterial[key];
+          if (stock) {
+            this.$set(entry, 'availableStockQty', stock.availableQty != null ? stock.availableQty : null);
+            this.$set(entry, 'stockWarehouseId', stock.warehouseId != null ? stock.warehouseId : null);
+            this.$set(entry, 'stockWarehouse', stock.warehouseId != null ? {
+              id: stock.warehouseId,
+              code: stock.warehouseCode,
+              name: stock.warehouseName
+            } : null);
+          } else {
+            this.$set(entry, 'availableStockQty', null);
+            this.$set(entry, 'stockWarehouseId', null);
+            this.$set(entry, 'stockWarehouse', null);
+          }
+        });
+        return entries;
       });
     },
     /** 计算引用模板右侧明细表高度（固定表头用；ref 在子弹窗子组件内） */
@@ -1038,6 +1101,11 @@ export default {
           unitPrice: unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice : null,
           price: unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice : null,
           amt: null,
+          availableStockQty: entry.availableStockQty != null ? entry.availableStockQty : null,
+          stockWarehouseId: entry.stockWarehouseId != null
+            ? entry.stockWarehouseId
+            : (entry.stockWarehouse && entry.stockWarehouse.id != null ? entry.stockWarehouse.id : null),
+          stockWarehouse: entry.stockWarehouse || null,
           remark: entry.remark != null ? entry.remark : null
         };
         this.basApplyEntryList.push(row);
@@ -1164,6 +1232,7 @@ export default {
         getApplyTemplate(this.selectedTemplate.id).then(res => {
           this.templateDetailList = (res.data && res.data.entryList) ? res.data.entryList : [];
           this.templateDetailPageNum = 1;
+          this.enrichTemplateDetailStock(this.templateDetailList);
         });
       }).catch(() => {});
     },

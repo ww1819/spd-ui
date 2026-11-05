@@ -114,9 +114,19 @@
                             {{ scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName ? scope.row.material.fdUnit.unitName : '—' }}
                           </template>
                         </el-table-column>
+                        <el-table-column label="库存数量" width="100" align="right" show-overflow-tooltip resizable>
+                          <template slot-scope="scope">
+                            {{ scope.row.availableStockQty != null && scope.row.availableStockQty !== '' ? fmtQty(scope.row.availableStockQty) : '—' }}
+                          </template>
+                        </el-table-column>
                         <el-table-column label="单价" width="100" align="center" show-overflow-tooltip resizable>
                           <template slot-scope="scope">
                             {{ scope.row.material && scope.row.material.price != null ? scope.row.material.price : '—' }}
+                          </template>
+                        </el-table-column>
+                        <el-table-column label="仓库" width="140" align="center" show-overflow-tooltip resizable>
+                          <template slot-scope="scope">
+                            {{ (scope.row.stockWarehouse && scope.row.stockWarehouse.name) ? scope.row.stockWarehouse.name : '—' }}
                           </template>
                         </el-table-column>
                         <el-table-column label="生产厂家" width="180" align="center" show-overflow-tooltip resizable>
