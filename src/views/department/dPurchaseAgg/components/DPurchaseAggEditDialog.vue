@@ -113,7 +113,9 @@
                 <div class="list-toolbar-left">
                   <span class="apply-modal-detail-title">汇总申购明细信息</span>
                   <template v-if="action">
-                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="addMaterialRow" :disabled="!form.departmentId">添加耗材</el-button>
+                    <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="addMaterialRow" :disabled="!form.departmentId">添加</el-button>
+                    <el-button type="primary" icon="el-icon-document-copy" size="small" class="spd-btn spd-btn--primary" @click="handleRefTemplate" :disabled="!form.departmentId">引用模板</el-button>
+                    <el-button type="primary" icon="el-icon-folder-checked" size="small" class="spd-btn spd-btn--primary" :disabled="!entryList || !entryList.length" @click="openSaveAsTemplateDialog">另存为模板</el-button>
                     <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteDepPurchaseApplyEntry">删除</el-button>
                     <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
                   </template>
@@ -245,6 +247,8 @@
               @closeDialog="closeDialog"
               @selectData="selectData"
             />
+            <!-- 引用模板-SG：嵌套在编辑弹窗白框内 -->
+            <DPurchaseAggTemplateDialog v-if="templateDialogVisible" />
           </div>
         </transition>
       </div>
@@ -259,7 +263,11 @@ import SelectMaterialForPurchaseAgg from '@/components/SelectModel/SelectMateria
 export default {
   name: 'DPurchaseAggEditDialog',
   mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'DPurchaseAgg')],
-  components: { SelectDepartment, SelectMaterialForPurchaseAgg },
+  components: {
+    SelectDepartment,
+    SelectMaterialForPurchaseAgg,
+    DPurchaseAggTemplateDialog: () => import('./DPurchaseAggTemplateDialog')
+  },
   dicts: ['purchase_status', 'urgency_level'],
   inheritAttrs: false
 }

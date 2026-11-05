@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page d-purchase-agg-page" :class="{ 'is-modal-open': open }">
+  <div class="app-container list-page d-purchase-agg-page" :class="{ 'is-modal-open': open || templateDialogVisible }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -212,13 +212,18 @@
     </div>
     </div>
 
-    <!-- 添加或修改汇总申购对话框（布局对齐到货验收 apply-modal） -->
+    <!-- 添加或修改汇总申购对话框（布局对齐到货验收 apply-modal；引用模板-SG 嵌套在编辑框内） -->
     <DPurchaseAggEditDialog v-if="open" />
+    <!-- 维护模板名称：最上层（盖过引用模板-SG） -->
+    <DPurchaseAggNewTemplateNameDialog v-if="newTemplateNameDialogVisible" />
   </div>
 </template>
 
 <script>
 import { listPurchaseAgg, getPurchaseAgg, delPurchaseAgg, addPurchaseAgg, updatePurchaseAgg } from "@/api/department/purchaseAgg";
+import { listApplyTemplate, getApplyTemplate, addApplyTemplate, updateApplyTemplate, deleteApplyTemplate } from "@/api/department/applyTemplate";
+import { listFixedNumberForPurchaseAgg } from "@/api/monitoring/fixedNumber";
+import { normalizeMaterialSearchKeyword } from '@/utils/materialSearch';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import { buildAggEntryPickKey, fillAggEntryFromFixedNumber, formatIsGzLabel } from '@/utils/purchaseAggEntry';
@@ -242,7 +247,8 @@ export default {
   components: {
     SelectWarehouse,
     SelectDepartment,
-    DPurchaseAggEditDialog: () => import('./components/DPurchaseAggEditDialog')
+    DPurchaseAggEditDialog: () => import('./components/DPurchaseAggEditDialog'),
+    DPurchaseAggNewTemplateNameDialog: () => import('./components/DPurchaseAggNewTemplateNameDialog')
   },
   data() {
     return {
@@ -276,6 +282,35 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      // 引用模板弹窗（申购模板 SG，与申领 SL 隔离）
+      templateDialogVisible: false,
+      templateNameSearch: '',
+      printTemplateList: [],
+      selectedTemplate: null,
+      templateDetailList: [],
+      templateDetailPageNum: 1,
+      templateDetailPageSize: 10,
+      templateDetailSelection: [],
+      templateDetailTableHeight: 280,
+      templateDetailSortProp: '',
+      templateDetailSortOrder: null,
+      /** 新增制单模板（耗材档案） */
+      addTemplateDialogVisible: false,
+      addTemplateForm: { warehouseId: null, supplierId: null, materialKeyword: '', speciSearch: '' },
+      addTemplateMaterialList: [],
+      addTemplateTotal: 0,
+      addTemplateDetailPageNum: 1,
+      addTemplateDetailPageSize: 10,
+      addTemplateTableHeight: 400,
+      /** 跨页勾选：pickKey -> row（定数监测 materialId+warehouseId） */
+      addTemplateSelectedMap: {},
+      checkedAddTemplateEntry: [],
+      addTemplateRules: {},
+      addTemplateAppendMode: false,
+      addTemplateLoading: false,
+      newTemplateNameDialogVisible: false,
+      newTemplateName: '',
+      templateNameDialogMode: 'new',
       //是否显示
       action: true,
       // 新增明细后静默自动保存
@@ -325,6 +360,37 @@ export default {
     detailTableHeight() {
       return 'max(240px, calc(100vh - 384px))';
     },
+    /** 引用模板明细默认排序 */
+    templateDetailDefaultSort() {
+      if (!this.templateDetailSortProp || !this.templateDetailSortOrder) {
+        return {};
+      }
+      return { prop: this.templateDetailSortProp, order: this.templateDetailSortOrder };
+    },
+    /** 引用模板-当前页的明细列表（先全量排序再前端分页） */
+    templateDetailPageList() {
+      if (!this.templateDetailList || this.templateDetailList.length === 0) {
+        return [];
+      }
+      let list = this.templateDetailList.slice();
+      const prop = this.templateDetailSortProp;
+      const order = this.templateDetailSortOrder;
+      if (prop && (order === 'ascending' || order === 'descending')) {
+        list.sort((a, b) => {
+          const cmp = this.sortByNested(a, b, prop);
+          return order === 'ascending' ? cmp : -cmp;
+        });
+      }
+      const start = (this.templateDetailPageNum - 1) * this.templateDetailPageSize;
+      return list.slice(start, start + this.templateDetailPageSize);
+    },
+    /** 插入明细-SG：当前页定数监测数据（服务端分页） */
+    addTemplateDetailPageList() {
+      return this.addTemplateMaterialList || [];
+    },
+    addTemplateSelectedIds() {
+      return Object.keys(this.addTemplateSelectedMap || {});
+    },
     /** 新增明细后（或弹窗打开中）锁定科室，避免跨科室混入明细 */
     isDeptWhLocked() {
       return this.DialogComponentShow || (this.entryList && this.entryList.length > 0);
@@ -370,12 +436,20 @@ export default {
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize);
     this.scheduleApplyLayoutRefresh();
+    const that = this;
+    this._templateDetailTableResize = () => {
+      if (that.templateDialogVisible) that.calcTemplateDetailTableHeight();
+    };
+    window.addEventListener('resize', this._templateDetailTableResize);
   },
   activated() {
     this.scheduleApplyLayoutRefresh();
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.onApplyWindowResize);
+    if (this._templateDetailTableResize) {
+      window.removeEventListener('resize', this._templateDetailTableResize);
+    }
   },
   watch: {
     showSearch() {
@@ -397,6 +471,33 @@ export default {
         this.layoutDetailTable();
       }
     },
+    templateDialogVisible(val) {
+      if (val) {
+        this.$nextTick(() => {
+          setTimeout(() => this.calcTemplateDetailTableHeight(), 120);
+        });
+      }
+    },
+    addTemplateDetailPageList: {
+      handler(list) {
+        if (!this.addTemplateDialogVisible || !list || !this.$refs.addTemplateEntryTable) return;
+        this.$nextTick(() => {
+          list.forEach(row => {
+            const key = this.getAddTemplateRowKey(row);
+            this.$refs.addTemplateEntryTable.toggleRowSelection(row, !!(key && this.addTemplateSelectedMap[key]));
+          });
+          this.calcAddTemplateTableHeight();
+        });
+      },
+      deep: true
+    },
+    addTemplateDialogVisible(val) {
+      if (val) {
+        this.$nextTick(() => {
+          setTimeout(() => this.calcAddTemplateTableHeight(), 120);
+        });
+      }
+    },
   },
   methods: {
     onApplyWindowResize() {
@@ -404,6 +505,554 @@ export default {
       if (this.open) {
         this.layoutDetailTable();
       }
+    },
+    /** 打开引用模板弹窗（申购 SG） */
+    handleRefTemplate() {
+      if (!this.form.departmentId) {
+        this.$modal.msgWarning('请先选择科室');
+        return;
+      }
+      this.templateDialogVisible = true;
+      this.templateNameSearch = '';
+      this.printTemplateList = [];
+      this.selectedTemplate = null;
+      this.templateDetailList = [];
+      this.loadTemplateList();
+      this.$nextTick(() => this.calcTemplateDetailTableHeight());
+    },
+    loadTemplateList(refresh) {
+      listApplyTemplate({ templateName: this.templateNameSearch, templateType: 'SG' }).then(res => {
+        // 前端再滤一层：仅保留申购(SG)，排除申领(SL)
+        const rows = res.data || [];
+        this.printTemplateList = rows.filter(t => {
+          const type = (t && t.templateType != null ? String(t.templateType) : '').trim();
+          return type === 'SG';
+        });
+        if (refresh) {
+          return;
+        }
+        if (this.printTemplateList.length > 0 && !this.selectedTemplate) {
+          this.onSelectTemplate(this.printTemplateList[0]);
+        } else if (this.printTemplateList.length === 0) {
+          this.selectedTemplate = null;
+          this.templateDetailList = [];
+        }
+      }).catch(() => {
+        this.printTemplateList = [];
+      });
+    },
+    onSelectTemplate(item) {
+      this.selectedTemplate = item;
+      this.templateDetailPageNum = 1;
+      this.templateDetailSelection = [];
+      this.templateDetailSortProp = '';
+      this.templateDetailSortOrder = null;
+      getApplyTemplate(item.id).then(res => {
+        const data = res.data || {};
+        // 申购模板明细直接取耗材档案字段，不补库存/仓库
+        this.templateDetailList = data.entryList || [];
+        this.$nextTick(() => this.calcTemplateDetailTableHeight());
+      }).catch(() => {
+        this.templateDetailList = [];
+      });
+    },
+    getTemplateDialogVm() {
+      const edit = (this.$children || []).find(c => c && c.$options && c.$options.name === 'DPurchaseAggEditDialog');
+      const fromEdit = edit && (edit.$children || []).find(c => c && c.$options && c.$options.name === 'DPurchaseAggTemplateDialog');
+      if (fromEdit) return fromEdit;
+      return (this.$children || []).find(c => c && c.$options && c.$options.name === 'DPurchaseAggTemplateDialog') || null;
+    },
+    calcTemplateDetailTableHeight() {
+      this.$nextTick(() => {
+        const dialog = this.getTemplateDialogVm();
+        const el = (dialog && dialog.$refs && dialog.$refs.templateDetailTableInner)
+          || document.querySelector('.template-dialog-content .template-detail-table-panel .table-wrapper');
+        if (el && el.clientHeight) {
+          this.templateDetailTableHeight = Math.max(el.clientHeight, 200);
+        }
+        this.$nextTick(() => {
+          const table = dialog && dialog.$refs && dialog.$refs.templateDetailTable;
+          if (table && typeof table.doLayout === 'function') {
+            table.doLayout();
+          }
+        });
+      });
+    },
+    closeTemplateDialog() {
+      this.templateDialogVisible = false;
+      this.templateNameSearch = '';
+      this.printTemplateList = [];
+      this.selectedTemplate = null;
+      this.templateDetailList = [];
+      this.templateDetailPageNum = 1;
+      this.templateDetailPageSize = 10;
+      this.templateDetailSelection = [];
+      this.closeAddTemplateDialog();
+    },
+    handleTemplateDetailPagination() {},
+    /** 确认引用：按模板明细（定数仓库+档案价）写入汇总申购 */
+    confirmRefTemplate() {
+      if (!this.selectedTemplate || !this.templateDetailList || this.templateDetailList.length === 0) {
+        this.$message.warning('请选择有明细的制单模板');
+        return;
+      }
+      const exist = new Set((this.entryList || []).map(i => buildAggEntryPickKey(i)).filter(Boolean));
+      let addedCount = 0;
+      let skip = 0;
+      this.templateDetailList.forEach(entry => {
+        if (!entry) {
+          skip++;
+          return;
+        }
+        const material = entry.material || {};
+        const rawPrice = entry.unitPrice != null ? entry.unitPrice
+          : (entry.price != null ? entry.price
+            : (material.price != null ? material.price : null));
+        const warehouseId = entry.warehouseId != null
+          ? entry.warehouseId
+          : (entry.stockWarehouseId != null ? entry.stockWarehouseId : null);
+        const warehouseName = entry.warehouseName
+          || (entry.stockWarehouse && entry.stockWarehouse.name)
+          || '';
+        const pickMaterial = {
+          ...material,
+          materialId: entry.materialId != null ? entry.materialId : material.id,
+          price: rawPrice,
+          warehouseId,
+          warehouseName,
+          isGz: material.isGz != null ? material.isGz : entry.isGz
+        };
+        const pickKey = buildAggEntryPickKey({
+          materialId: pickMaterial.materialId,
+          warehouseId: pickMaterial.warehouseId,
+          isGz: pickMaterial.isGz
+        });
+        if (!pickKey || exist.has(pickKey)) {
+          skip++;
+          return;
+        }
+        const obj = {};
+        if (entry.qty != null && entry.qty !== '') {
+          obj.qty = String(entry.qty);
+        }
+        fillAggEntryFromFixedNumber(obj, pickMaterial);
+        this.entryList.push(obj);
+        exist.add(pickKey);
+        addedCount++;
+      });
+      if (addedCount > 0) {
+        this.calculateTotalAmount();
+        this.debouncedAutoSavePurchase();
+        this.$message.success(`已应用制单模板明细${skip > 0 ? `，已过滤 ${skip} 条重复` : ''}`);
+        this.closeTemplateDialog();
+      } else {
+        this.$message.warning(skip > 0 ? '模板明细均已存在，未新增' : '请选择有明细的制单模板');
+      }
+    },
+    handleTemplateDetailSelectionChange(val) {
+      this.templateDetailSelection = val || [];
+    },
+    handleTemplateDetailSortChange({ prop, order }) {
+      this.templateDetailSortProp = order ? (prop || '') : '';
+      this.templateDetailSortOrder = order || null;
+      this.templateDetailPageNum = 1;
+    },
+    getTemplateDetailTableRef() {
+      const dialog = this.getTemplateDialogVm();
+      return (dialog && dialog.$refs && dialog.$refs.templateDetailTable) || null;
+    },
+    handleTemplateDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const table = this.getTemplateDetailTableRef();
+      if (!table || typeof table.toggleRowSelection !== 'function') return;
+      const selection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = selection.indexOf(row) !== -1;
+      table.toggleRowSelection(row, !selected);
+    },
+    clearSelectedTemplate() {
+      this.selectedTemplate = null;
+      this.templateDetailList = [];
+      this.templateDetailPageNum = 1;
+      this.templateDetailSelection = [];
+      this.templateDetailSortProp = '';
+      this.templateDetailSortOrder = null;
+      this.$nextTick(() => {
+        const table = this.getTemplateDetailTableRef();
+        if (table && typeof table.clearSelection === 'function') table.clearSelection();
+        this.calcTemplateDetailTableHeight();
+      });
+    },
+    handleRefreshTemplate() {
+      this.selectedTemplate = null;
+      this.templateDetailList = [];
+      this.templateDetailPageNum = 1;
+      this.templateDetailSelection = [];
+      this.templateDetailSortProp = '';
+      this.templateDetailSortOrder = null;
+      this.loadTemplateList(true);
+      this.$nextTick(() => {
+        const table = this.getTemplateDetailTableRef();
+        if (table && typeof table.clearSelection === 'function') table.clearSelection();
+      });
+      this.$message.success('已刷新，请重新选择模板');
+    },
+    handleDeleteTemplateItem(item) {
+      if (!item || !item.id) return;
+      this.$confirm('确定删除该制单模板吗？', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        return deleteApplyTemplate(item.id);
+      }).then(() => {
+        this.$message.success('删除成功');
+        if (this.selectedTemplate && this.selectedTemplate.id === item.id) {
+          this.selectedTemplate = null;
+          this.templateDetailList = [];
+          this.templateDetailPageNum = 1;
+        }
+        this.loadTemplateList();
+      }).catch(() => {});
+    },
+    handleDeleteTemplateDetail() {
+      if (!this.selectedTemplate) {
+        this.$message.warning('请先选择模板');
+        return;
+      }
+      const rows = this.templateDetailSelection;
+      if (!rows || rows.length === 0) {
+        this.$message.warning('请先在右侧明细中勾选要删除的行');
+        return;
+      }
+      const set = new Set(rows);
+      this.templateDetailList = this.templateDetailList.filter(entry => !set.has(entry));
+      this.templateDetailSelection = [];
+      this.$nextTick(() => {
+        const table = this.getTemplateDetailTableRef();
+        if (table && typeof table.clearSelection === 'function') table.clearSelection();
+      });
+      this.$message.success('已移除选中的明细，请点击保存按钮保存模板');
+    },
+    normalizeTemplateWarehouseId(row) {
+      if (!row) return null;
+      const raw = row.warehouseId != null ? row.warehouseId
+        : (row.stockWarehouseId != null ? row.stockWarehouseId
+          : (row.stockWarehouse && row.stockWarehouse.id != null ? row.stockWarehouse.id : null));
+      if (raw == null || raw === '') return null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : null;
+    },
+    handleSaveTemplate() {
+      if (!this.selectedTemplate || !this.selectedTemplate.id) {
+        this.$message.warning('请先选择要保存的模板');
+        return;
+      }
+      const entryList = (this.templateDetailList || []).map((e, i) => ({
+        materialId: e.materialId,
+        warehouseId: this.normalizeTemplateWarehouseId(e),
+        qty: e.qty != null ? e.qty : 1,
+        sortOrder: i + 1
+      }));
+      const missingWh = entryList.filter(e => e.materialId != null && e.warehouseId == null);
+      if (missingWh.length > 0) {
+        this.$message.warning('存在明细未关联仓库，请从定数监测重新插入后再保存');
+        return;
+      }
+      updateApplyTemplate({
+        id: this.selectedTemplate.id,
+        templateName: this.selectedTemplate.templateName,
+        templateType: 'SG',
+        warehouseId: this.selectedTemplate.warehouseId,
+        remark: this.selectedTemplate.remark,
+        entryList
+      }).then(() => {
+        this.$message.success('保存成功');
+        getApplyTemplate(this.selectedTemplate.id).then(res => {
+          this.templateDetailList = (res.data && res.data.entryList) ? res.data.entryList : [];
+          this.templateDetailPageNum = 1;
+        });
+      }).catch(() => {});
+    },
+    getAddTemplateRowKey(row) {
+      if (!row) return null;
+      if (row.pickKey) return String(row.pickKey);
+      if (row.materialId != null && row.warehouseId != null) {
+        const gz = row.isGz != null ? String(row.isGz) : '';
+        return gz ? `${row.materialId}_${row.warehouseId}_${gz}` : `${row.materialId}_${row.warehouseId}`;
+      }
+      return row.id != null ? String(row.id) : null;
+    },
+    loadAddTemplateFixedList() {
+      this.addTemplateLoading = true;
+      const kw = normalizeMaterialSearchKeyword((this.addTemplateForm.materialKeyword || '').trim());
+      const spec = normalizeMaterialSearchKeyword((this.addTemplateForm.speciSearch || '').trim());
+      const q = {
+        pageNum: this.addTemplateDetailPageNum,
+        pageSize: this.addTemplateDetailPageSize
+      };
+      if (this.addTemplateForm.warehouseId != null && this.addTemplateForm.warehouseId !== '') {
+        q.warehouseId = this.addTemplateForm.warehouseId;
+      }
+      if (this.addTemplateForm.supplierId != null && this.addTemplateForm.supplierId !== '') {
+        q.supplierId = this.addTemplateForm.supplierId;
+      }
+      if (kw) q.materialName = kw;
+      if (spec) q.materialSpeci = spec;
+      return listFixedNumberForPurchaseAgg(q).then(res => {
+        this.addTemplateMaterialList = (res && res.rows) ? res.rows : [];
+        this.addTemplateTotal = res && res.total != null ? Number(res.total) : 0;
+        this.$nextTick(() => this.calcAddTemplateTableHeight());
+      }).catch(() => {
+        this.addTemplateMaterialList = [];
+        this.addTemplateTotal = 0;
+      }).finally(() => {
+        this.addTemplateLoading = false;
+      });
+    },
+    openAddTemplateDialog() {
+      if (this.selectedTemplate) {
+        this.addTemplateAppendMode = true;
+        this.addTemplateForm = { warehouseId: null, supplierId: null, materialKeyword: '', speciSearch: '' };
+        this.addTemplateMaterialList = [];
+        this.addTemplateTotal = 0;
+        this.checkedAddTemplateEntry = [];
+        this.addTemplateDetailPageNum = 1;
+        this.addTemplateDetailPageSize = 10;
+        this.addTemplateSelectedMap = {};
+        this.addTemplateDialogVisible = true;
+        this.loadAddTemplateFixedList();
+      } else {
+        this.templateNameDialogMode = 'new';
+        this.newTemplateName = '';
+        this.newTemplateNameDialogVisible = true;
+      }
+    },
+    openSaveAsTemplateDialog() {
+      const list = this.entryList || [];
+      if (!list.length) {
+        this.$message.warning('请先添加明细后再另存为模板');
+        return;
+      }
+      this.templateNameDialogMode = 'saveAs';
+      this.newTemplateName = '';
+      this.newTemplateNameDialogVisible = true;
+    },
+    closeAddTemplateDialog() {
+      this.addTemplateDialogVisible = false;
+      this.addTemplateAppendMode = false;
+      this.addTemplateForm = { warehouseId: null, supplierId: null, materialKeyword: '', speciSearch: '' };
+      this.addTemplateMaterialList = [];
+      this.addTemplateTotal = 0;
+      this.checkedAddTemplateEntry = [];
+      this.addTemplateSelectedMap = {};
+    },
+    handleAddTemplateSearch() {
+      this.addTemplateDetailPageNum = 1;
+      this.loadAddTemplateFixedList();
+    },
+    handleAddTemplateReset() {
+      this.addTemplateForm = { warehouseId: null, supplierId: null, materialKeyword: '', speciSearch: '' };
+      this.addTemplateDetailPageNum = 1;
+      this.loadAddTemplateFixedList();
+    },
+    handleAddTemplateDetailPagination() {
+      this.loadAddTemplateFixedList();
+    },
+    calcAddTemplateTableHeight() {
+      if (!this.addTemplateDialogVisible) return;
+      const run = () => {
+        const panel = this.$refs.addTemplateTablePanel;
+        const pagWrap = this.$refs.addTemplatePaginationWrap;
+        if (!panel || !panel.getBoundingClientRect) return;
+        const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
+        if (!panelH) return;
+        const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
+        const next = Math.floor(panelH - pagH);
+        const height = Math.max(200, next);
+        if (Math.abs(this.addTemplateTableHeight - height) >= 2) {
+          this.addTemplateTableHeight = height;
+        }
+        this.$nextTick(() => {
+          const table = this.$refs.addTemplateEntryTable;
+          if (table && table.doLayout) table.doLayout();
+        });
+      };
+      this.$nextTick(run);
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+      ;[50, 120, 300].forEach(ms => setTimeout(run, ms));
+    },
+    addTemplateDetailRowClassName({ row }) {
+      const key = this.getAddTemplateRowKey(row);
+      if (key && this.addTemplateSelectedMap && this.addTemplateSelectedMap[key]) {
+        return 'apply-row-selected';
+      }
+      return '';
+    },
+    handleAddTemplateRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const table = this.$refs.addTemplateEntryTable;
+      if (!table) return;
+      const key = this.getAddTemplateRowKey(row);
+      const selected = !!(key && this.addTemplateSelectedMap[key]);
+      table.toggleRowSelection(row, !selected);
+    },
+    handleAddTemplateEntrySelectionChange(rows) {
+      this.checkedAddTemplateEntry = rows || [];
+      const pageList = this.addTemplateDetailPageList || [];
+      const pageKeys = new Set(pageList.map(r => this.getAddTemplateRowKey(r)).filter(Boolean));
+      Object.keys(this.addTemplateSelectedMap || {}).forEach(k => {
+        if (pageKeys.has(k)) {
+          this.$delete(this.addTemplateSelectedMap, k);
+        }
+      });
+      (rows || []).forEach(row => {
+        const key = this.getAddTemplateRowKey(row);
+        if (key) this.$set(this.addTemplateSelectedMap, key, row);
+      });
+    },
+    submitAddTemplate() {
+      const list = Object.values(this.addTemplateSelectedMap || {});
+      if (list.length === 0) {
+        this.$message.warning('请至少勾选一条耗材明细');
+        return;
+      }
+      if (this.addTemplateAppendMode && this.selectedTemplate) {
+        const existingKeys = new Set(
+          (this.templateDetailList || []).map(e => buildAggEntryPickKey({
+            materialId: e.materialId,
+            warehouseId: e.warehouseId,
+            isGz: e.material && e.material.isGz != null ? e.material.isGz : e.isGz
+          })).filter(Boolean)
+        );
+        const duplicates = list.filter(row => {
+          const key = buildAggEntryPickKey({
+            materialId: row.materialId != null ? row.materialId : row.id,
+            warehouseId: row.warehouseId,
+            isGz: row.isGz
+          });
+          return key && existingKeys.has(key);
+        });
+        if (duplicates.length > 0) {
+          const name = (duplicates[0].name || duplicates[0].code || '该耗材');
+          this.$message.warning('【' + name + '】该产品在该仓库已存在模板中了，请勿重复维护！');
+          return;
+        }
+        const newEntries = list.map(row => ({
+          materialId: row.materialId != null ? row.materialId : row.id,
+          warehouseId: this.normalizeTemplateWarehouseId(row),
+          warehouseName: row.warehouseName || '',
+          material: {
+            id: row.materialId != null ? row.materialId : row.id,
+            code: row.code,
+            name: row.name,
+            speci: row.speci,
+            model: row.model,
+            price: row.price,
+            isGz: row.isGz,
+            brand: row.brand,
+            registerNo: row.registerNo,
+            fdUnit: row.fdUnit || (row.unitName ? { unitName: row.unitName } : null),
+            fdFactory: row.fdFactory || (row.factoryName ? { factoryName: row.factoryName } : null),
+            supplier: row.supplier || (row.supplierName ? { name: row.supplierName } : null)
+          },
+          qty: 1
+        }));
+        if (newEntries.some(e => e.warehouseId == null)) {
+          this.$message.warning('所选明细缺少仓库信息，请从定数监测重新选择');
+          return;
+        }
+        this.templateDetailList = (this.templateDetailList || []).concat(newEntries);
+        this.$message.success('已插入明细，请点击保存按钮保存模板');
+        this.closeAddTemplateDialog();
+        return;
+      }
+      const templateName = '申购模板_' + this.parseTime(new Date(), '{y}-{m}-{d} {h}:{i}');
+      addApplyTemplate({
+        templateName,
+        templateType: 'SG',
+        warehouseId: null,
+        remark: '',
+        entryList: list.map(row => ({
+          materialId: row.materialId != null ? row.materialId : row.id,
+          warehouseId: this.normalizeTemplateWarehouseId(row),
+          qty: 1
+        }))
+      }).then(() => {
+        this.$message.success('保存成功');
+        this.closeAddTemplateDialog();
+        if (this.templateDialogVisible) this.loadTemplateList();
+      }).catch(() => {
+        this.$message.error('保存失败');
+      });
+    },
+    closeNewTemplateNameDialog() {
+      this.newTemplateNameDialogVisible = false;
+      this.newTemplateName = '';
+      this.templateNameDialogMode = 'new';
+    },
+    confirmNewTemplateName() {
+      const name = (this.newTemplateName || '').trim();
+      if (!name) {
+        this.$message.warning('请输入模板名称');
+        return;
+      }
+      if (this.templateNameDialogMode === 'saveAs') {
+        this.confirmSaveAsTemplate(name);
+        return;
+      }
+      addApplyTemplate({ templateName: name, templateType: 'SG', warehouseId: null, remark: '', entryList: [] }).then(() => {
+        this.$message.success('模板已创建，可点击新增插入明细后再保存');
+        this.closeNewTemplateNameDialog();
+        this.loadTemplateList();
+      }).catch(() => {
+        this.$message.error('创建失败');
+      });
+    },
+    confirmSaveAsTemplate(templateName) {
+      const list = this.entryList || [];
+      if (!list.length) {
+        this.$message.warning('请先添加明细后再另存为模板');
+        return;
+      }
+      const merged = new Map();
+      list.forEach(row => {
+        const materialId = row && row.materialId != null ? row.materialId : null;
+        if (materialId == null || materialId === '') return;
+        const warehouseId = row.warehouseId != null ? row.warehouseId : null;
+        const key = buildAggEntryPickKey({ materialId, warehouseId, isGz: row.isGz }) || String(materialId);
+        const qtyNum = Number(row.qty);
+        const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1;
+        if (merged.has(key)) {
+          const prev = merged.get(key);
+          prev.qty = Number(prev.qty || 0) + qty;
+        } else {
+          merged.set(key, { materialId, warehouseId, qty });
+        }
+      });
+      const entryList = [...merged.values()].map((e, i) => ({
+        materialId: e.materialId,
+        warehouseId: e.warehouseId != null ? e.warehouseId : null,
+        qty: e.qty,
+        sortOrder: i + 1
+      }));
+      if (!entryList.length) {
+        this.$message.warning('明细中没有有效的耗材，无法另存为模板');
+        return;
+      }
+      addApplyTemplate({
+        templateName,
+        templateType: 'SG',
+        warehouseId: null,
+        remark: '',
+        entryList
+      }).then(() => {
+        this.$message.success('已另存为申购模板，可在引用模板-SG中使用');
+        this.closeNewTemplateNameDialog();
+      }).catch(() => {
+        this.$message.error('另存为模板失败');
+      });
     },
     scheduleApplyLayoutRefresh() {
       const run = () => this.updateMainTableHeight();
@@ -2232,6 +2881,164 @@ html body .app-container.d-purchase-agg-page .apply-modal-root-content > .materi
   z-index: 5;
   background-color: #f1f5f9 !important;
   border-right: 1px solid #e2e8f0;
+}
+
+/* 引用模板-SG：嵌套在编辑弹窗白框内（与选耗材嵌套同级） */
+.app-container.d-purchase-agg-page .apply-modal-root-content > .local-modal-mask.template-dialog-mask.template-dialog-mask--nested {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  z-index: 3150 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.app-container.d-purchase-agg-page .apply-modal-root-content > .local-modal-mask.template-dialog-mask.template-dialog-mask--nested > .local-modal-content.template-dialog-content {
+  min-height: 0 !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding-bottom: 0 !important;
+}
+
+/* 维护模板名称：始终在最上层（盖过引用模板-SG / 插入明细） */
+.purchase-template-name-dialog {
+  z-index: 5000 !important;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content .close-btn.template-close-btn:hover,
+.app-container.d-purchase-agg-page .template-dialog-content .close-btn.template-close-btn:focus {
+  background: #f56c6c !important;
+  border-color: #f56c6c !important;
+  color: #fff !important;
+}
+
+/* 往当前模板插入明细：嵌套在引用模板-SG 白底内 */
+.app-container.d-purchase-agg-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
+  box-sizing: border-box;
+  z-index: 3200;
+  overflow: hidden;
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask .modal-header {
+  padding: 6px 8px !important;
+  background: #EBEEF5 !important;
+  min-height: 40px !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+html body .app-container.d-purchase-agg-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask > .material-filter-modal--nested {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+  padding: 8px 0 12px !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff !important;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content .apply-inbound-nested-modal .material-filter-form > .apply-modal-query-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 12px 8px !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  background: #fff !important;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.d-purchase-agg-page .template-dialog-content .apply-inbound-nested-modal .apply-main-table .el-table__body tr.apply-row-selected > td {
+  background-color: #A0CBFF !important;
 }
 </style>
 

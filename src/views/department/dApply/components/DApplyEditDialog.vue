@@ -87,7 +87,8 @@
                   >关联出库单一览</el-button>
                   <template v-if="action">
                     <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="!form.departmentId" @click="nameBtn">添加</el-button>
-                    <el-button type="success" size="small" class="spd-btn spd-btn--secondary" @click="handleRefTemplate">引用模板</el-button>
+                    <el-button type="primary" icon="el-icon-document-copy" size="small" class="spd-btn spd-btn--primary" :disabled="!form.departmentId" @click="handleRefTemplate">引用模板</el-button>
+                    <el-button type="primary" icon="el-icon-folder-checked" size="small" class="spd-btn spd-btn--primary" :disabled="!basApplyEntryList || !basApplyEntryList.length" @click="openSaveAsTemplateDialog">另存为模板</el-button>
                     <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteBasApplyEntry">删除</el-button>
                     <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
                   </template>
@@ -101,6 +102,7 @@
                 class="apply-detail-table"
                 :row-class-name="applyDetailRowClassName"
                 @selection-change="handleBasApplyEntrySelectionChange"
+                @row-dblclick="handleDetailRowDblclick"
                 ref="basApplyEntry"
                 :height="detailTableHeight"
                 border

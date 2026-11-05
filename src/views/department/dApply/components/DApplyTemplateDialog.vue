@@ -5,7 +5,7 @@
         <transition name="modal-zoom">
           <div v-if="templateDialogVisible" class="local-modal-content template-dialog-content">
             <div class="modal-header">
-              <div class="modal-title">引用模板</div>
+              <div class="modal-title">引用模板-SL</div>
               <el-button size="small" @click="closeTemplateDialog" class="close-btn template-close-btn">关闭</el-button>
             </div>
             <div class="template-dialog-body">

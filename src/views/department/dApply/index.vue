@@ -301,6 +301,8 @@ export default {
       /** 未选模板时新增：维护模板名称小窗 */
       newTemplateNameDialogVisible: false,
       newTemplateName: '',
+      /** 维护模板名称弹窗用途：new=新建空模板；saveAs=当前申领明细另存为模板 */
+      templateNameDialogMode: 'new',
       /** 新增制单模板弹窗是否为“往当前模板插入明细”模式（仅追加到 templateDetailList，不新建模板） */
       addTemplateAppendMode: false,
       /** 引用模板-右侧明细表勾选的行（用于中间删除按钮删除明细） */
@@ -741,9 +743,21 @@ export default {
           this.$nextTick(() => this.calcAddTemplateTableHeight())
         })
       } else {
+        this.templateNameDialogMode = 'new'
         this.newTemplateName = ''
         this.newTemplateNameDialogVisible = true
       }
+    },
+    /** 申领明细另存为制单模板：先维护名称 */
+    openSaveAsTemplateDialog() {
+      const list = this.basApplyEntryList || []
+      if (!list.length) {
+        this.$message.warning('请先添加明细后再另存为模板')
+        return
+      }
+      this.templateNameDialogMode = 'saveAs'
+      this.newTemplateName = ''
+      this.newTemplateNameDialogVisible = true
     },
     /** 关闭新增制单模板弹窗 */
     closeAddTemplateDialog() {
@@ -892,7 +906,7 @@ export default {
           qty: 1
         }))
       }
-      addApplyTemplate(payload).then(() => {
+      addApplyTemplate({ ...payload, templateType: 'SL' }).then(() => {
         this.$message.success('保存成功')
         this.closeAddTemplateDialog()
         if (this.templateDialogVisible) this.loadTemplateList()
@@ -926,19 +940,24 @@ export default {
       this.renameTemplateItem = null
       this.$message.success('名称已更新，请点击保存按钮保存')
     },
-    /** 关闭维护模板名称小窗（新建模板用） */
+    /** 关闭维护模板名称小窗（新建模板 / 另存为模板） */
     closeNewTemplateNameDialog() {
       this.newTemplateNameDialogVisible = false
       this.newTemplateName = ''
+      this.templateNameDialogMode = 'new'
     },
-    /** 确定维护模板名称：创建空模板并选中，随后可点新增插入明细 */
+    /** 确定维护模板名称：新建空模板，或将当前申领明细另存为模板 */
     confirmNewTemplateName() {
       const name = (this.newTemplateName || '').trim()
       if (!name) {
         this.$message.warning('请输入模板名称')
         return
       }
-      addApplyTemplate({ templateName: name, warehouseId: null, remark: '', entryList: [] }).then(() => {
+      if (this.templateNameDialogMode === 'saveAs') {
+        this.confirmSaveAsTemplate(name)
+        return
+      }
+      addApplyTemplate({ templateName: name, templateType: 'SL', warehouseId: null, remark: '', entryList: [] }).then(() => {
         this.$message.success('模板已创建，可点击新增插入明细后再保存')
         this.closeNewTemplateNameDialog()
         this.loadTemplateList()
@@ -946,8 +965,61 @@ export default {
         this.$message.error('创建失败')
       })
     },
+    /** 将当前申领明细另存为制单模板（同耗材合并数量） */
+    confirmSaveAsTemplate(templateName) {
+      const list = this.basApplyEntryList || []
+      if (!list.length) {
+        this.$message.warning('请先添加明细后再另存为模板')
+        return
+      }
+      const merged = new Map()
+      list.forEach(row => {
+        const materialId = row && row.materialId != null
+          ? row.materialId
+          : (row.material && row.material.id != null ? row.material.id : null)
+        if (materialId == null || materialId === '') return
+        const key = String(materialId)
+        const qtyNum = Number(row.qty)
+        const qty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 1
+        if (merged.has(key)) {
+          const prev = merged.get(key)
+          prev.qty = Number(prev.qty || 0) + qty
+        } else {
+          merged.set(key, {
+            materialId,
+            qty,
+            material: row.material || null
+          })
+        }
+      })
+      const entryList = [...merged.values()].map((e, i) => ({
+        materialId: e.materialId,
+        qty: e.qty,
+        sortOrder: i + 1
+      }))
+      if (!entryList.length) {
+        this.$message.warning('明细中没有有效的耗材，无法另存为模板')
+        return
+      }
+      addApplyTemplate({
+        templateName,
+        templateType: 'SL',
+        warehouseId: null,
+        remark: '',
+        entryList
+      }).then(() => {
+        this.$message.success('已另存为模板，可在引用模板中使用')
+        this.closeNewTemplateNameDialog()
+      }).catch(() => {
+        this.$message.error('另存为模板失败')
+      })
+    },
     /** 打开引用模板弹窗（制单模板） */
     handleRefTemplate() {
+      if (!this.form.departmentId) {
+        this.$modal.msgWarning('请先选择科室');
+        return;
+      }
       this.templateDialogVisible = true;
       this.templateNameSearch = '';
       this.printTemplateList = [];
@@ -958,8 +1030,13 @@ export default {
     },
     /** 按模板名称加载制单模板列表；refresh 为 true 时不自动选中第一项（用于点击刷新按钮） */
     loadTemplateList(refresh) {
-      listApplyTemplate({ templateName: this.templateNameSearch }).then(res => {
-        this.printTemplateList = res.data || [];
+      listApplyTemplate({ templateName: this.templateNameSearch, templateType: 'SL' }).then(res => {
+        // 前端再滤一层：排除申购(SG)模板
+        const rows = res.data || [];
+        this.printTemplateList = rows.filter(t => {
+          const type = (t && t.templateType != null ? String(t.templateType) : 'SL').trim();
+          return type === '' || type === 'SL';
+        });
         if (refresh) {
           return;
         }
@@ -1223,6 +1300,7 @@ export default {
       const payload = {
         id: this.selectedTemplate.id,
         templateName: this.selectedTemplate.templateName,
+        templateType: this.selectedTemplate.templateType || 'SL',
         warehouseId: this.selectedTemplate.warehouseId,
         remark: this.selectedTemplate.remark,
         entryList
@@ -1819,6 +1897,16 @@ export default {
         map[key] = true;
       });
       this.detailSelectedRowMap = map;
+    },
+    /** 明细表双击切换勾选（勾选列除外；再双击取消） */
+    handleDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const table = this.$refs.basApplyEntry;
+      if (!table || typeof table.toggleRowSelection !== 'function') return;
+      const key = row.index;
+      const selected = !!(key != null && this.detailSelectedRowMap && this.detailSelectedRowMap[key]);
+      table.toggleRowSelection(row, !selected);
     },
     /** 单据列表行：导出该单明细 */
     handleExportRowDetail(row) {
@@ -3657,22 +3745,44 @@ html body .app-container.d-apply-page .apply-modal-root-content > .material-filt
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-action-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td .cell,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-select-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.el-table-column--selection,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-action-col,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr:hover > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td {
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.hover-row > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr:hover > td.apply-action-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.hover-row > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.hover-row > td.apply-action-col {
   background-color: #D6EBFF !important;
 }
 
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-action-col,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-body-wrapper tr.apply-row-selected > td,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td {
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected > td.apply-action-col {
   background-color: #B8DAFF !important;
 }
 
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
 .app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
-.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection {
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td .cell,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td.apply-action-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected:hover > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected:hover > td.apply-action-col,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected.hover-row > td,
+.app-container.d-apply-page .local-modal-content .apply-detail-table .el-table__fixed-right .el-table__body tr.apply-row-selected.hover-row > td.apply-action-col {
   background-color: #A0CBFF !important;
 }
 

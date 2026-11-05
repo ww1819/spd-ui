@@ -1,9 +1,16 @@
 <template>
-    <!-- 未选模板时点新增：维护模板名称小窗，确定后创建空模板并选中 -->
-    <el-dialog title="维护模板名称" :visible.sync="newTemplateNameDialogVisible" width="400px" append-to-body :close-on-click-modal="false">
-      <el-form label-width="80px">
+    <!-- 维护模板名称：新建空模板 / 另存为模板 -->
+    <el-dialog :title="templateNameDialogMode === 'saveAs' ? '另存为模板' : '维护模板名称'" :visible.sync="newTemplateNameDialogVisible" width="400px" append-to-body :close-on-click-modal="false">
+      <el-form label-width="80px" @submit.native.prevent>
         <el-form-item label="模板名称">
-          <el-input v-model="newTemplateName" placeholder="请输入模板名称" clearable maxlength="100" show-word-limit />
+          <el-input
+            v-model="newTemplateName"
+            placeholder="请输入模板名称"
+            clearable
+            maxlength="100"
+            show-word-limit
+            @keyup.enter.native="confirmNewTemplateName"
+          />
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
