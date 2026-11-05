@@ -6,7 +6,7 @@
           <div v-if="templateDialogVisible" class="local-modal-content template-dialog-content">
             <div class="modal-header">
               <div class="modal-title">引用模板</div>
-              <el-button size="small" @click="closeTemplateDialog" class="close-btn">关闭</el-button>
+              <el-button size="small" @click="closeTemplateDialog" class="close-btn template-close-btn">关闭</el-button>
             </div>
             <div class="template-dialog-body">
               <div class="template-split-layout">
@@ -23,7 +23,7 @@
                       @clear="loadTemplateList"
                     />
                   </div>
-                  <div class="template-list-panel__title">模板名称</div>
+                  <div class="template-list-panel__title" title="点击取消选中" @click="clearSelectedTemplate">模板名称</div>
                   <div class="template-list-panel__inner">
                     <div
                       v-for="item in printTemplateList"
@@ -62,7 +62,10 @@
                         stripe
                         size="small"
                         show-header
+                        :default-sort="templateDetailDefaultSort"
                         @selection-change="handleTemplateDetailSelectionChange"
+                        @row-dblclick="handleTemplateDetailRowDblclick"
+                        @sort-change="handleTemplateDetailSortChange"
                       >
                         <el-table-column type="selection" width="50" align="center" resizable class-name="apply-select-col" header-cell-class-name="apply-select-col" />
                         <el-table-column label="序号" width="60" align="center" show-overflow-tooltip resizable>
@@ -70,12 +73,28 @@
                             {{ (templateDetailPageNum - 1) * templateDetailPageSize + scope.$index + 1 }}
                           </template>
                         </el-table-column>
-                        <el-table-column label="产品编码" width="130" align="center" show-overflow-tooltip resizable>
+                        <el-table-column
+                          label="产品编码"
+                          prop="material.code"
+                          width="130"
+                          align="center"
+                          show-overflow-tooltip
+                          resizable
+                          sortable="custom"
+                        >
                           <template slot-scope="scope">
                             {{ scope.row.material && scope.row.material.code ? scope.row.material.code : '—' }}
                           </template>
                         </el-table-column>
-                        <el-table-column label="产品名称" width="160" align="center" show-overflow-tooltip resizable>
+                        <el-table-column
+                          label="产品名称"
+                          prop="material.name"
+                          width="160"
+                          align="center"
+                          show-overflow-tooltip
+                          resizable
+                          sortable="custom"
+                        >
                           <template slot-scope="scope">
                             {{ scope.row.material && scope.row.material.name ? scope.row.material.name : '—' }}
                           </template>
@@ -134,7 +153,6 @@
                     </div>
                     <div class="template-detail-pagination">
                       <pagination
-                        v-show="templateDetailList.length > 0"
                         :total="templateDetailList.length"
                         :page.sync="templateDetailPageNum"
                         :limit.sync="templateDetailPageSize"
@@ -146,6 +164,7 @@
                 </div>
               </div>
             </div>
+            <DApplyAddTemplateDialog v-if="addTemplateDialogVisible" />
           </div>
         </transition>
       </div>
@@ -158,32 +177,39 @@ import { createHostProxyMixin } from '@/mixins/hostProxyMixin'
 export default {
   name: 'DApplyTemplateDialog',
   mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'DApply')],
+  components: {
+    DApplyAddTemplateDialog: () => import('./DApplyAddTemplateDialog')
+  },
   inheritAttrs: false
 }
 </script>
 
 <style scoped>
-/* 贴满主内容区：去掉 plan-modal-common 的 8px 灰边，左右盖住容器 */
+/* 与到货验收新增弹窗一致：四周 8px 灰边 + 白底圆角阴影 */
 .template-dialog-mask {
   display: flex !important;
   align-items: stretch !important;
   justify-content: stretch !important;
-  padding: 0 !important;
+  padding: 8px !important;
   box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.35) !important;
 }
 
 .template-dialog-content {
+  position: relative;
   min-height: 0 !important;
   height: 100% !important;
   max-height: 100% !important;
-  max-width: none !important;
+  max-width: 100% !important;
   width: 100% !important;
   margin: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18) !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
+  padding-bottom: 8px !important;
 }
 
 .template-dialog-body {
@@ -224,12 +250,20 @@ export default {
 
 .template-list-panel__title {
   padding: 8px 12px;
-  background: #f5f7fa;
+  background: #fff;
   font-weight: 600;
   font-size: 13px;
   color: #303133;
   border-bottom: 1px solid #ebeef5;
   flex-shrink: 0;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.template-list-panel__title:hover {
+  color: #409eff;
+  background: #f5f7fa;
 }
 
 .template-list-panel__inner {
@@ -247,6 +281,8 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  background: #fff;
+  color: #303133;
 }
 
 .template-list-item-name {
@@ -267,21 +303,22 @@ export default {
   color: #f78989;
 }
 
+.template-list-item:hover {
+  background: #f5f7fa;
+}
+
+/* 未选中空白；选中浅蓝底+蓝字（不用纯蓝底） */
+.template-list-item.active {
+  background: #ecf5ff;
+  color: #409eff;
+}
+
 .template-list-item.active .template-list-item-delete {
-  color: rgba(255, 255, 255, 0.9);
+  color: #f56c6c;
 }
 
 .template-list-item.active .template-list-item-delete:hover {
-  color: #fff;
-}
-
-.template-list-item:hover {
-  background: #ecf5ff;
-}
-
-.template-list-item.active {
-  background: #409eff;
-  color: #fff;
+  color: #f78989;
 }
 
 .template-list-empty {
@@ -368,9 +405,29 @@ export default {
 
 .template-detail-pagination {
   flex-shrink: 0;
-  padding: 6px 12px 8px;
-  min-height: 36px;
+  padding: 0 12px 12px;
+  min-height: 32px;
   border-top: 1px solid #ebeef5;
   background: #fff;
+}
+
+/* 压紧与明细横滑条的间距，表高不变 */
+.template-detail-pagination >>> .pagination-container {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 4px 0 0 !important;
+  height: auto !important;
+}
+
+.template-detail-pagination >>> .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
+}
+
+.template-close-btn:hover,
+.template-close-btn:focus {
+  background: #f56c6c !important;
+  border-color: #f56c6c !important;
+  color: #fff !important;
 }
 </style>

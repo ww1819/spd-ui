@@ -186,7 +186,6 @@
     <DApplyTemplateDialog v-if="templateDialogVisible" />
     <DApplyRenameTemplateDialog v-if="renameTemplateDialogVisible" />
     <DApplyNewTemplateNameDialog v-if="newTemplateNameDialogVisible" />
-    <DApplyAddTemplateDialog v-if="addTemplateDialogVisible" />
     <DApplyOutboundRefDialog v-if="outboundRefDialogVisible" />
 
     <SelectInventory
@@ -230,7 +229,6 @@ export default {
     DApplyTemplateDialog: () => import('./components/DApplyTemplateDialog'),
     DApplyRenameTemplateDialog: () => import('./components/DApplyRenameTemplateDialog'),
     DApplyNewTemplateNameDialog: () => import('./components/DApplyNewTemplateNameDialog'),
-    DApplyAddTemplateDialog: () => import('./components/DApplyAddTemplateDialog'),
     DApplyOutboundRefDialog: () => import('./components/DApplyOutboundRefDialog')
   },
   data() {
@@ -252,6 +250,8 @@ export default {
       /** 新增制单模板-明细分页 */
       addTemplateDetailPageNum: 1,
       addTemplateDetailPageSize: 10,
+      /** 往当前模板插入明细：明细表高度（对齐 RK-添加明细 filterTableHeight） */
+      addTemplateTableHeight: 400,
       /** 跨页勾选：已选中的耗材 id 数组（响应式） */
       addTemplateSelectedIds: [],
       addTemplateRules: {},
@@ -306,6 +306,9 @@ export default {
       templateDetailSelection: [],
       /** 引用模板-右侧明细表高度（用于固定表头，表格内部滚动） */
       templateDetailTableHeight: 280,
+      /** 引用模板-明细排序：prop + order(ascending|descending|null) */
+      templateDetailSortProp: '',
+      templateDetailSortOrder: null,
       /** 引用模板后的列配置（供打印等使用） */
       columnList: [],
       //是否显示
@@ -355,13 +358,30 @@ export default {
         ? this.$options.filters.formatCurrency(v)
         : v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     },
-    /** 引用模板-当前页的明细列表（前端分页） */
+    /** 引用模板明细默认排序（供 el-table default-sort） */
+    templateDetailDefaultSort() {
+      if (!this.templateDetailSortProp || !this.templateDetailSortOrder) {
+        return {};
+      }
+      return { prop: this.templateDetailSortProp, order: this.templateDetailSortOrder };
+    },
+    /** 引用模板-当前页的明细列表（先全量排序再前端分页） */
     templateDetailPageList() {
       if (!this.templateDetailList || this.templateDetailList.length === 0) {
         return [];
       }
+      let list = this.templateDetailList.slice();
+      const prop = this.templateDetailSortProp;
+      const order = this.templateDetailSortOrder;
+      if (prop && (order === 'ascending' || order === 'descending')) {
+        const path = prop;
+        list.sort((a, b) => {
+          const cmp = this.sortByNested(a, b, path);
+          return order === 'ascending' ? cmp : -cmp;
+        });
+      }
       const start = (this.templateDetailPageNum - 1) * this.templateDetailPageSize;
-      return this.templateDetailList.slice(start, start + this.templateDetailPageSize);
+      return list.slice(start, start + this.templateDetailPageSize);
     },
     /** 新增制单模板-耗材字典列表（按供应商/耗材名称/规格搜索过滤，支持首字母+模糊） */
     addTemplateFilteredList() {
@@ -391,9 +411,9 @@ export default {
       const start = (this.addTemplateDetailPageNum - 1) * this.addTemplateDetailPageSize;
       return list.slice(start, start + this.addTemplateDetailPageSize);
     },
-    /** 弹窗明细表固定高度：表体可滚动，合计行始终在表格区域最底部 */
+    /** 弹窗明细表固定高度：表体可滚动，合计行始终在表格区域最底部（略高于到货验收，明细框更高） */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 384px))';
+      return 'max(280px, calc(100vh - 300px))';
     },
     /** 已有明细、修改模式或正在选库存时锁定科室 */
     isDeptLocked() {
@@ -468,9 +488,17 @@ export default {
           list.forEach(row => {
             this.$refs.addTemplateEntryTable.toggleRowSelection(row, this.addTemplateSelectedIds.includes(row.id))
           })
+          this.calcAddTemplateTableHeight()
         })
       },
       deep: true
+    },
+    addTemplateDialogVisible(val) {
+      if (val) {
+        this.$nextTick(() => {
+          setTimeout(() => this.calcAddTemplateTableHeight(), 120)
+        })
+      }
     },
     showSearch() {
       this.$nextTick(() => this.updateMainTableHeight());
@@ -695,11 +723,21 @@ export default {
         this.addTemplateDetailPageSize = 10
         this.addTemplateSelectedIds = []
         this.addTemplateDialogVisible = true
-        listMaterialDeptSafe().then(res => {
+        // 耗材档案：仅在用 + 排除高值标识；明细列字段由 listDeptSafe 返回档案关联
+        listMaterialDeptSafe({ onlyEnabled: true }).then(res => {
           const rows = Array.isArray(res) ? res : (res && res.data ? res.data : [])
-          this.addTemplateMaterialList = rows
+          this.addTemplateMaterialList = (rows || []).filter(row => {
+            if (!row) return false
+            // 过滤高值耗材标识（isGz=1）
+            if (String(row.isGz) === '1') return false
+            // 双保险：过滤停用（isUse=2）；onlyEnabled 已限制启用
+            if (row.isUse != null && String(row.isUse).trim() === '2') return false
+            return true
+          })
+          this.$nextTick(() => this.calcAddTemplateTableHeight())
         }).catch(() => {
           this.addTemplateMaterialList = []
+          this.$nextTick(() => this.calcAddTemplateTableHeight())
         })
       } else {
         this.newTemplateName = ''
@@ -718,9 +756,58 @@ export default {
     /** 新增制单模板-搜索（条件已实时过滤，此处仅将分页重置为第 1 页） */
     handleAddTemplateSearch() {
       this.addTemplateDetailPageNum = 1
+      this.$nextTick(() => this.calcAddTemplateTableHeight())
+    },
+    /** 重置搜索条件（对齐 RK-添加明细） */
+    handleAddTemplateReset() {
+      this.addTemplateForm = { supplierId: null, materialKeyword: '', speciSearch: '' }
+      this.addTemplateDetailPageNum = 1
+      this.$nextTick(() => this.calcAddTemplateTableHeight())
     },
     /** 新增制单模板-明细分页变更 */
-    handleAddTemplateDetailPagination() {},
+    handleAddTemplateDetailPagination() {
+      this.$nextTick(() => this.calcAddTemplateTableHeight())
+    },
+    /** 计算插入明细表高度（对齐 RK-添加明细 updateFilterTableHeight） */
+    calcAddTemplateTableHeight() {
+      if (!this.addTemplateDialogVisible) return
+      const run = () => {
+        const panel = this.$refs.addTemplateTablePanel
+        const pagWrap = this.$refs.addTemplatePaginationWrap
+        if (!panel || !panel.getBoundingClientRect) return
+        const panelH = panel.clientHeight || panel.getBoundingClientRect().height
+        if (!panelH) return
+        const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8
+        const next = Math.floor(panelH - pagH)
+        const height = Math.max(200, next)
+        if (Math.abs(this.addTemplateTableHeight - height) >= 2) {
+          this.addTemplateTableHeight = height
+        }
+        this.$nextTick(() => {
+          const table = this.$refs.addTemplateEntryTable
+          if (table && table.doLayout) table.doLayout()
+        })
+      }
+      this.$nextTick(run)
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run)
+      ;[50, 120, 300].forEach(ms => setTimeout(run, ms))
+    },
+    /** 插入明细选中行高亮（对齐 RK apply-row-selected） */
+    addTemplateDetailRowClassName({ row }) {
+      if (row && row.id != null && this.addTemplateSelectedIds && this.addTemplateSelectedIds.includes(row.id)) {
+        return 'apply-row-selected'
+      }
+      return ''
+    },
+    /** 双击切换勾选（对齐 RK-添加明细） */
+    handleAddTemplateRowDblclick(row, column) {
+      if (!row) return
+      if (column && column.type === 'selection') return
+      const table = this.$refs.addTemplateEntryTable
+      if (!table) return
+      const selected = !!(row.id != null && this.addTemplateSelectedIds && this.addTemplateSelectedIds.includes(row.id))
+      table.toggleRowSelection(row, !selected)
+    },
     /** 首字母（用于搜索过滤） */
     _getFirstLetters(str) {
       if (!str || typeof str !== 'string') return ''
@@ -889,6 +976,8 @@ export default {
       this.selectedTemplate = item;
       this.templateDetailPageNum = 1;
       this.templateDetailSelection = [];
+      this.templateDetailSortProp = '';
+      this.templateDetailSortOrder = null;
       getApplyTemplate(item.id).then(res => {
         const data = res.data || {};
         this.templateDetailList = data.entryList || [];
@@ -935,15 +1024,26 @@ export default {
         return;
       }
       this.templateDetailList.forEach(entry => {
-        this.basApplyEntryList.push({
+        const material = entry.material || {};
+        // 单价取模板明细 / 耗材档案 price
+        const rawPrice = entry.unitPrice != null ? entry.unitPrice
+          : (entry.price != null ? entry.price
+            : (material.price != null ? material.price : null));
+        const unitPrice = rawPrice != null && rawPrice !== '' ? Number(rawPrice) : null;
+        const qty = entry.qty != null && entry.qty !== '' ? entry.qty : 1;
+        const row = {
           materialId: entry.materialId,
-          material: entry.material || {},
-          qty: entry.qty || 1,
-          unitPrice: null,
-          price: null,
+          material,
+          qty: String(qty),
+          unitPrice: unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice : null,
+          price: unitPrice != null && !Number.isNaN(unitPrice) ? unitPrice : null,
           amt: null,
-          remark: null
-        });
+          remark: entry.remark != null ? entry.remark : null
+        };
+        this.basApplyEntryList.push(row);
+        if (row.qty && row.unitPrice != null) {
+          this.qtyChange(row);
+        }
       });
       this.calculateTotals();
       this.$message.success('已应用制单模板明细');
@@ -952,6 +1052,26 @@ export default {
     /** 右侧明细表勾选变更 */
     handleTemplateDetailSelectionChange(val) {
       this.templateDetailSelection = val || [];
+    },
+    /** 引用模板明细：表头升序/降序（产品编码、产品名称） */
+    handleTemplateDetailSortChange({ prop, order }) {
+      this.templateDetailSortProp = order ? (prop || '') : '';
+      this.templateDetailSortOrder = order || null;
+      this.templateDetailPageNum = 1;
+    },
+    getTemplateDetailTableRef() {
+      const dialog = (this.$children || []).find(c => c && c.$options && c.$options.name === 'DApplyTemplateDialog');
+      return (dialog && dialog.$refs && dialog.$refs.templateDetailTable) || this.$refs.templateDetailTable || null;
+    },
+    /** 双击明细行切换勾选 */
+    handleTemplateDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const table = this.getTemplateDetailTableRef();
+      if (!table || typeof table.toggleRowSelection !== 'function') return;
+      const selection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = selection.indexOf(row) !== -1;
+      table.toggleRowSelection(row, !selected);
     },
     /** 删除当前模板中勾选的明细行（不删整模板） */
     handleDeleteTemplateDetail() {
@@ -968,9 +1088,24 @@ export default {
       this.templateDetailList = this.templateDetailList.filter(entry => !set.has(entry))
       this.templateDetailSelection = []
       this.$nextTick(() => {
-        if (this.$refs.templateDetailTable) this.$refs.templateDetailTable.clearSelection()
+        const table = this.getTemplateDetailTableRef()
+        if (table && typeof table.clearSelection === 'function') table.clearSelection()
       })
       this.$message.success('已移除选中的明细，请点击保存按钮保存模板')
+    },
+    /** 点击「模板名称」标题：取消选中所有模板并清空右侧明细 */
+    clearSelectedTemplate() {
+      this.selectedTemplate = null
+      this.templateDetailList = []
+      this.templateDetailPageNum = 1
+      this.templateDetailSelection = []
+      this.templateDetailSortProp = ''
+      this.templateDetailSortOrder = null
+      this.$nextTick(() => {
+        const table = this.getTemplateDetailTableRef()
+        if (table && typeof table.clearSelection === 'function') table.clearSelection()
+        this.calcTemplateDetailTableHeight()
+      })
     },
     /** 刷新：重新加载模板列表并取消选中，不自动选中任一模板 */
     handleRefreshTemplate() {
@@ -978,9 +1113,12 @@ export default {
       this.templateDetailList = []
       this.templateDetailPageNum = 1
       this.templateDetailSelection = []
+      this.templateDetailSortProp = ''
+      this.templateDetailSortOrder = null
       this.loadTemplateList(true)
       this.$nextTick(() => {
-        if (this.$refs.templateDetailTable) this.$refs.templateDetailTable.clearSelection()
+        const table = this.getTemplateDetailTableRef()
+        if (table && typeof table.clearSelection === 'function') table.clearSelection()
       })
       this.$message.success('已刷新，请重新选择模板')
     },
@@ -1703,6 +1841,14 @@ export default {
   background: rgba(0, 0, 0, 0.1);
 }
 
+/* 引用模板关闭按钮：悬停红色更醒目 */
+::v-deep .template-dialog-content .close-btn.template-close-btn:hover,
+::v-deep .template-dialog-content .close-btn.template-close-btn:focus {
+  background: #f56c6c !important;
+  border-color: #f56c6c !important;
+  color: #fff !important;
+}
+
 ::v-deep .modal-footer{
   padding: 16px 24px;
   text-align: right;
@@ -1845,33 +1991,31 @@ export default {
   box-sizing: border-box;
 }
 
-/* 新增制单模板/往当前模板插入明细：与主弹窗同一紧凑表单，仅保留行距微调 */
-.add-template-form .add-template-search-row {
-  margin-bottom: 0;
-}
-.add-template-form .add-template-search-row .el-form-item {
-  margin-bottom: 0;
-}
 
-/* 引用模板弹窗：贴满内容区（盖住左右容器），高度随父级 mask */
+/* 引用模板弹窗：尺寸/灰边与到货验收「新增」弹窗一致（plan-modal-common：padding 8px + 圆角阴影） */
 ::v-deep .local-modal-mask.template-dialog-mask {
-  padding: 0 !important;
+  padding: 8px !important;
   align-items: stretch !important;
   justify-content: stretch !important;
+  box-sizing: border-box !important;
+  background: rgba(0, 0, 0, 0.35) !important;
 }
 
 ::v-deep .local-modal-content.template-dialog-content{
   min-height: 0 !important;
   height: 100% !important;
-  max-width: none !important;
+  max-width: 100% !important;
   width: 100% !important;
   max-height: 100% !important;
   margin: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18) !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
+  /* 底部留白与顶部灰边一致 */
+  padding-bottom: 8px !important;
 }
 
 ::v-deep .template-dialog-body {
@@ -2019,11 +2163,23 @@ export default {
 
 .template-detail-pagination {
   flex-shrink: 0;
-  padding: 10px 0 0;
+  padding: 0 12px 12px;
   margin-bottom: 0;
-  min-height: 36px;
+  min-height: 32px;
   border-top: 1px solid #EBEEF5;
   background: #fff;
+}
+
+::v-deep .template-detail-pagination .pagination-container {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 4px 0 0 !important;
+  height: auto !important;
+}
+
+::v-deep .template-detail-pagination .pagination-container .el-pagination {
+  position: static !important;
+  right: auto !important;
 }
 
 .template-detail-inner {
@@ -2337,11 +2493,6 @@ export default {
 ::v-deep .local-modal-content .modal-detail-section .table-wrapper .el-table:not(.apply-detail-table) .cell {
   white-space: nowrap !important;
   overflow: hidden !important;
-}
-
-.add-template-pagination-wrap {
-  flex-shrink: 0;
-  padding: 8px 0 0;
 }
 
 /* 弹窗动画效果 */
@@ -2845,6 +2996,203 @@ export default {
 .app-container.d-apply-page .local-modal-content.apply-modal-root-content {
   position: relative;
   overflow: hidden;
+}
+
+/* 往当前模板插入明细：嵌套在引用模板白底内，与到货验收 RK-添加明细完全一致 */
+.app-container.d-apply-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #fff !important;
+  box-sizing: border-box;
+  z-index: 3200;
+  overflow: hidden;
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.app-container.d-apply-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask .modal-header {
+  padding: 6px 8px !important;
+  background: #EBEEF5 !important;
+  min-height: 40px !important;
+  border-bottom: 1px solid #EBEEF5 !important;
+}
+
+.app-container.d-apply-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+}
+
+html body .app-container.d-apply-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask > .local-modal-content.material-filter-modal--nested.apply-inbound-nested-modal {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.app-container.d-apply-page .template-dialog-content > .material-filter-mask.material-filter-mask--nested.add-template-mask > .material-filter-modal--nested {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal > .material-filter-form.modal-form-compact {
+  padding: 8px 0 12px !important;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff !important;
+  box-sizing: border-box !important;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .material-filter-form > .apply-modal-query-panel {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 12px 8px !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  background: #fff !important;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-modal-toolbar.list-toolbar {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  padding: 8px 14px !important;
+  background: #fff !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: 1px solid #e8ecf1 !important;
+  border-bottom: 1px solid #e8ecf1 !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .material-filter-form > .apply-table-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e8ecf1;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table {
+  margin-top: 0;
+  flex: 0 0 auto;
+  border-radius: 10px 10px 0 0;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper {
+  z-index: 2;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-track,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-track,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-track,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 3px !important;
+}
+
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb {
+  background: #a8a8a8 !important;
+  border-radius: 3px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  background-clip: border-box !important;
+  min-width: 12px !important;
+  min-height: 12px !important;
+}
+
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table > .el-table__body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar-thumb:hover,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed-right::-webkit-scrollbar-thumb:hover,
+html body .app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel > .apply-main-table .el-table__fixed::-webkit-scrollbar-thumb:hover {
+  background: #909090 !important;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel .apply-pagination-wrap {
+  flex: 0 0 auto;
+  padding: 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel .apply-pagination-wrap .pagination-container {
+  height: auto !important;
+  min-height: 52px;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 10px 14px 14px !important;
+  background: #fff;
+  border: none;
+  border-top: 1px solid #eef2f7;
+  border-radius: 0 0 10px 10px;
+  box-shadow: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: visible;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-table-panel .apply-pagination-wrap .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+}
+
+.app-container.d-apply-page .template-dialog-content .apply-inbound-nested-modal .apply-main-table .el-table__body tr.apply-row-selected > td {
+  background-color: #B8DAFF !important;
 }
 
 /* 可用库存选择嵌套层：对齐 RK-添加明细 */

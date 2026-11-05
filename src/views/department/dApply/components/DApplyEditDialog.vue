@@ -207,7 +207,14 @@
                     <el-input v-model="scope.row.remark" placeholder="备注" />
                   </template>
                 </el-table-column>
-                <el-table-column v-if="action" label="操作" align="center" width="100">
+                <el-table-column
+                  v-if="action"
+                  label="操作"
+                  align="center"
+                  width="100"
+                  fixed="right"
+                  class-name="apply-action-col small-padding fixed-width"
+                >
                   <template slot-scope="scope">
                     <el-button
                       size="small"
