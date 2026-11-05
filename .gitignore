@@ -23,3 +23,6 @@ package-lock.json
 yarn.lock
 package.json
 .gitignore
+
+dist.tar
+dist.rar

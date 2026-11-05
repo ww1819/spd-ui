@@ -1,6 +1,6 @@
 module.exports = {
   /**
-   * 侧边栏主题：theme-dark 深色 / theme-light 浅色 / theme-medical 医疗蓝 / theme-teal 青绿 / theme-sky 柔蓝
+   * 侧边栏主题：theme-dark 深色 / theme-light 浅色 / theme-medical 医疗蓝 / theme-teal 青绿 / theme-sky 柔蓝 / theme-navy 深蓝
    */
   sideTheme: 'theme-dark',
 

@@ -1,0 +1,143 @@
+.app-container.first-inventory-page {
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.first-inventory-page .pagination-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  flex: 0 0 auto !important;
+  gap: 12px !important;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
+  padding: 4px 0 6px !important;
+  min-height: 40px !important;
+  overflow: visible !important;
+}
+.first-inventory-page .pagination-wrapper .pagination-summary {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 32px;
+  color: #606266;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
+  font-weight: 700;
+}
+.first-inventory-page .pagination-wrapper .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 32px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  margin-left: auto !important;
+  padding: 0 4px !important;
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+.first-inventory-page .pagination-wrapper .pagination-container .el-pagination {
+  position: relative !important;
+  right: auto !important;
+  padding: 0 !important;
+  white-space: nowrap;
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+
+.consume-detail-query .ctk-list-toolbar .toolbar-more-search .more-search-type,
+.consume-detail-query .ctk-list-toolbar .toolbar-more-search .more-search-type.el-select,
+.consume-detail-query .ctk-list-toolbar .toolbar-more-search .el-select {
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+}
+.consume-detail-query .ctk-list-toolbar .toolbar-more-search .el-select > .el-input,
+.consume-detail-query .ctk-list-toolbar .toolbar-more-search .el-select .el-input__inner {
+  width: 160px !important;
+  max-width: 160px !important;
+}
+.consume-detail-query .ctk-list-toolbar .toolbar-more-search .el-select-dropdown {
+  min-width: 160px !important;
+}
+
+.first-inventory-page .consume-detail-main-table .el-table__header-wrapper th,
+.first-inventory-page .consume-detail-main-table .el-table__header-wrapper th.el-table__cell {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-right-color: #e2e8f0 !important;
+  border-bottom-color: #e2e8f0 !important;
+  height: 34px !important;
+}
+.first-inventory-page .consume-detail-main-table .el-table__header th.gutter {
+  background-color: #f1f5f9 !important;
+}
+
+.first-inventory-page .consume-detail-main-table .el-table__body tr:hover > td {
+  background-color: #D6EBFF !important;
+}
+.first-inventory-page .consume-detail-main-table .el-table__body tr.consume-row-selected > td {
+  background-color: #B8DAFF !important;
+}
+.first-inventory-page .consume-detail-main-table .el-table__body tr.consume-row-selected:hover > td {
+  background-color: #A0CBFF !important;
+}
+
+.first-inventory-page .consume-detail-main-table th.consume-select-col,
+.first-inventory-page .consume-detail-main-table td.consume-select-col,
+.first-inventory-page .consume-detail-main-table th.el-table-column--selection,
+.first-inventory-page .consume-detail-main-table td.el-table-column--selection {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  box-shadow: 2px 0 0 0 #e2e8f0;
+}
+.first-inventory-page .consume-detail-main-table th.consume-select-col,
+.first-inventory-page .consume-detail-main-table th.el-table-column--selection {
+  z-index: 3;
+  background-color: #f1f5f9;
+}
+.first-inventory-page .consume-detail-main-table td.consume-select-col,
+.first-inventory-page .consume-detail-main-table td.el-table-column--selection {
+  background-color: #fff;
+}
+.first-inventory-page .consume-detail-main-table .el-table__body tr.el-table__row--striped td.consume-select-col,
+.first-inventory-page .consume-detail-main-table .el-table__body tr.el-table__row--striped td.el-table-column--selection {
+  background-color: #fafafa;
+}
+.first-inventory-page .consume-detail-main-table .el-table__body tr:hover > td.consume-select-col,
+.first-inventory-page .consume-detail-main-table .el-table__body tr:hover > td.el-table-column--selection {
+  background-color: #D6EBFF;
+}
+.first-inventory-page .consume-detail-main-table .el-table__body tr.consume-row-selected > td.consume-select-col,
+.first-inventory-page .consume-detail-main-table .el-table__body tr.consume-row-selected > td.el-table-column--selection {
+  background-color: #B8DAFF;
+}
+.first-inventory-page .consume-detail-main-table .el-table__body tr.consume-row-selected:hover > td.consume-select-col,
+.first-inventory-page .consume-detail-main-table .el-table__body tr.consume-row-selected:hover > td.el-table-column--selection {
+  background-color: #A0CBFF;
+}
+.first-inventory-page .consume-detail-main-table td.consume-select-col .cell,
+.first-inventory-page .consume-detail-main-table td.el-table-column--selection .cell,
+.first-inventory-page .consume-detail-main-table th.consume-select-col .cell,
+.first-inventory-page .consume-detail-main-table th.el-table-column--selection .cell {
+  text-align: center !important;
+  justify-content: center !important;
+  background: transparent;
+}

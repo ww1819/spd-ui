@@ -3292,6 +3292,128 @@ export async function exportConsumeSummaryStyledXlsx(options) {
   });
 }
 
+/** 科室采购 — 采购明细表 */
+export async function exportPurchaseDetailStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '申购单号',
+    '仓库',
+    '科室',
+    '产品编码',
+    '产品名称',
+    '规格',
+    '型号',
+    '单位',
+    '数量',
+    '单价',
+    '金额',
+    '制单人',
+    '制单日期',
+    '审核人',
+    '审核日期',
+    '厂家',
+    '供应商',
+  ];
+  const numericCols = [10, 11, 12];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '科室采购明细',
+    titleBoldText: '科室采购明细表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      10: (row) => Number(row.qty || 0),
+      12: (row) => Number(row.amt || 0),
+    },
+    buildCells: (row) => [
+      0,
+      row.billNo || '',
+      row.warehouseName || '',
+      row.departmentName || '',
+      row.materialCode || '',
+      row.materialName || '',
+      row.materialSpeci || '',
+      row.materialModel || '',
+      row.unitName || '',
+      Number(row.qty || 0),
+      row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+      Number(row.amt || 0),
+      row.createrName || '',
+      fmtYmd(row.billDate),
+      row.auditPersonName || '',
+      fmtYmd(row.auditDate),
+      row.factoryName || '',
+      row.supplierName || '',
+    ],
+    fileName,
+  });
+}
+
+/** 科室采购 — 采购汇总表 */
+export async function exportPurchaseSummaryStyledXlsx(options) {
+  const { rows = [], beginDate = '', endDate = '', fileName } = options;
+  const headers = [
+    '序号',
+    '科室',
+    '产品编码',
+    '产品名称',
+    '规格',
+    '型号',
+    '单位',
+    '单价',
+    '数量',
+    '金额',
+    '计费',
+    '注册证号',
+    '注册证有效期',
+    '仓库',
+    '厂家',
+    '供应商',
+  ];
+  const numericCols = [8, 9, 10];
+  return exportInventoryQueryStyledXlsx({
+    sheetName: '科室采购汇总',
+    titleBoldText: '科室采购汇总表',
+    beginDate,
+    endDate,
+    headers,
+    rows,
+    numericCols1Based: numericCols,
+    sumExtractors: {
+      9: (row) => Number(row.totalQty || 0),
+      10: (row) => Number(row.totalAmt || 0),
+    },
+    buildCells: (row) => {
+      let billing = '--';
+      const ib = row.isBilling;
+      if (ib === '1' || ib === 1 || ib === 'true') billing = '是';
+      else if (ib === '0' || ib === 0 || ib === '2' || ib === 'false') billing = '否';
+      return [
+        0,
+        row.departmentName || '',
+        row.materialCode || '',
+        row.materialName || '',
+        row.materialSpeci || '',
+        row.materialModel || '',
+        row.unitName || '',
+        row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null,
+        Number(row.totalQty || 0),
+        Number(row.totalAmt || 0),
+        billing,
+        row.registerNo || '',
+        row.periodDate ? fmtYmd(row.periodDate) : '',
+        row.warehouseName || '',
+        row.factoryName || '',
+        row.supplierName || '',
+      ];
+    },
+    fileName,
+  });
+}
+
 /** 科室领用 — 出退库汇总 */
 export async function exportConsumeOutReturnSummaryStyledXlsx(options) {
   const { rows = [], beginDate = '', endDate = '', fileName } = options;

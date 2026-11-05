@@ -1,8 +1,27 @@
 import Cookies from 'js-cookie'
 
+function resolveSidebarOpened() {
+  try {
+    const raw = localStorage.getItem('layout-setting')
+    if (raw) {
+      const stored = JSON.parse(raw)
+      if (typeof stored.sidebarOpened === 'boolean') {
+        return stored.sidebarOpened
+      }
+    }
+  } catch (e) {
+    /* ignore */
+  }
+  if (Cookies.get('sidebarStatus')) {
+    return !!+Cookies.get('sidebarStatus')
+  }
+  // 默认展开侧栏（开启菜单=开）
+  return true
+}
+
 const state = {
   sidebar: {
-    opened: Cookies.get('sidebarStatus') ? !!+Cookies.get('sidebarStatus') : true,
+    opened: resolveSidebarOpened(),
     withoutAnimation: false,
     hide: false
   },
@@ -37,6 +56,17 @@ const mutations = {
     Cookies.set('sidebarStatus', 0)
     state.sidebar.opened = false
     state.sidebar.withoutAnimation = withoutAnimation
+  },
+  OPEN_SIDEBAR: (state, withoutAnimation) => {
+    Cookies.set('sidebarStatus', 1)
+    state.sidebar.opened = true
+    state.sidebar.withoutAnimation = !!withoutAnimation
+  },
+  SET_SIDEBAR_OPENED: (state, opened) => {
+    const next = !!opened
+    state.sidebar.opened = next
+    state.sidebar.withoutAnimation = false
+    Cookies.set('sidebarStatus', next ? 1 : 0)
   },
   TOGGLE_DEVICE: (state, device) => {
     state.device = device
@@ -83,6 +113,12 @@ const actions = {
   },
   closeSideBar({ commit }, { withoutAnimation }) {
     commit('CLOSE_SIDEBAR', withoutAnimation)
+  },
+  openSideBar({ commit }, { withoutAnimation } = {}) {
+    commit('OPEN_SIDEBAR', withoutAnimation)
+  },
+  setSideBarOpened({ commit }, opened) {
+    commit('SET_SIDEBAR_OPENED', opened)
   },
   toggleDevice({ commit }, device) {
     commit('TOGGLE_DEVICE', device)

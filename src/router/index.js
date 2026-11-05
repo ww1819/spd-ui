@@ -132,6 +132,8 @@ export const constantRoutes = [
     path: '',
     component: Layout,
     redirect: 'index',
+    // 首页仍可从 Logo/页签进入，但不在左侧一级菜单展示
+    hidden: true,
     children: [
       {
         path: 'index',

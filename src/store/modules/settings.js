@@ -23,7 +23,7 @@ function resolveNavPosition(storage) {
   return navPosition || 'side'
 }
 
-const SIDE_THEMES = ['theme-dark', 'theme-light', 'theme-medical', 'theme-teal', 'theme-sky']
+const SIDE_THEMES = ['theme-dark', 'theme-light', 'theme-medical', 'theme-teal', 'theme-sky', 'theme-navy']
 
 /** 默认深色侧栏；layoutStyleVer>=3 且已保存过的才沿用用户选择 */
 function resolveSideTheme(storage) {

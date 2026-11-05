@@ -36,6 +36,11 @@ $base-menu-sky-gradient-end:#B8CCF5;
 $base-menu-sky-hover:#c5d6f8;
 $base-menu-sky-active:#aebfea;
 
+/* 深蓝侧栏（用户色样 #2C569A） */
+$base-menu-navy-background:#2C569A;
+$base-menu-navy-hover:#3A6BB0;
+$base-menu-navy-active:#1E3F72;
+
 $base-sub-menu-background:#020617;
 $base-sub-menu-hover:#1e293b;
 
@@ -70,6 +75,7 @@ $base-sidebar-width: 200px;
   menuSkyGradientStart: $base-menu-sky-gradient-start;
   menuSkyGradientMid: $base-menu-sky-gradient-mid;
   menuSkyGradientEnd: $base-menu-sky-gradient-end;
+  menuNavyBackground: $base-menu-navy-background;
   subMenuBackground: $base-sub-menu-background;
   subMenuHover: $base-sub-menu-hover;
   sideBarWidth: $base-sidebar-width;

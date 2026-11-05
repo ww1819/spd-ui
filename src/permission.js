@@ -13,6 +13,47 @@ NProgress.configure({ showSpinner: false })
 
 const whiteList = ['/login', '/register', '/sso-callback']
 
+/** 浏览器整页刷新（F5/地址栏刷新），非顶部「刷新当前页」SPA 重建 */
+function isBrowserPageReload() {
+  try {
+    const nav = typeof performance !== 'undefined' && performance.getEntriesByType
+      ? performance.getEntriesByType('navigation')[0]
+      : null
+    if (nav && nav.type === 'reload') {
+      return true
+    }
+    // 旧 API 兜底：TYPE_RELOAD = 1
+    if (typeof performance !== 'undefined' && performance.navigation
+      && performance.navigation.type === 1) {
+      return true
+    }
+  } catch (e) {
+    /* ignore */
+  }
+  return false
+}
+
+function isHomePath(path) {
+  return path === '/' || path === '/index' || path === '/index/'
+}
+
+/** 整页刷新后只处理一次：强制回首页（顶部刷新按钮走 /redirect 不算整页刷新） */
+let bootReloadHomeHandled = false
+
+function shouldForceHomeAfterBrowserReload(to) {
+  if (bootReloadHomeHandled) {
+    return false
+  }
+  bootReloadHomeHandled = true
+  if (!isBrowserPageReload()) {
+    return false
+  }
+  if (!to || isHomePath(to.path) || to.path === '/login') {
+    return false
+  }
+  return true
+}
+
 router.beforeEach((to, from, next) => {
   NProgress.start()
   if (getToken()) {
@@ -33,6 +74,8 @@ router.beforeEach((to, from, next) => {
             tryAutoOpenMessageReminder(store)
             if (to.meta && to.meta.paused === true) {
               Message.warning('当前菜单功能已被暂停使用')
+              next({ path: '/', replace: true })
+            } else if (shouldForceHomeAfterBrowserReload(to)) {
               next({ path: '/', replace: true })
             } else {
               next({ ...to, replace: true }) // hack方法 确保addRoutes已完成
@@ -58,6 +101,10 @@ router.beforeEach((to, from, next) => {
           Message.warning('当前菜单功能已被暂停使用')
           NProgress.done()
           next(false)
+          return
+        }
+        if (shouldForceHomeAfterBrowserReload(to)) {
+          next({ path: '/', replace: true })
           return
         }
         next()

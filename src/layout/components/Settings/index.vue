@@ -54,7 +54,12 @@
         </div>
 
         <div class="drawer-item">
-          <span>开启 Tags-Views</span>
+          <span>开启菜单</span>
+          <el-switch v-model="sidebarOpened" class="drawer-switch" />
+        </div>
+
+        <div class="drawer-item">
+          <span>开启顶部菜单</span>
           <el-switch v-model="tagsView" class="drawer-switch" />
         </div>
 
@@ -89,6 +94,7 @@ import imgLight from '@/assets/images/light.svg'
 import imgMedical from '@/assets/images/medical.svg'
 import imgTeal from '@/assets/images/teal.svg'
 import imgSky from '@/assets/images/sky.svg'
+import imgNavy from '@/assets/images/navy.svg'
 
 export default {
   components: { ThemePicker },
@@ -101,7 +107,8 @@ export default {
         { value: 'theme-light', label: '浅色', img: imgLight },
         { value: 'theme-medical', label: '医疗蓝', img: imgMedical },
         { value: 'theme-teal', label: '青绿', img: imgTeal },
-        { value: 'theme-sky', label: '柔蓝', img: imgSky }
+        { value: 'theme-sky', label: '柔蓝', img: imgSky },
+        { value: 'theme-navy', label: '深蓝', img: imgNavy }
       ]
     };
   },
@@ -131,6 +138,15 @@ export default {
           key: 'navPosition',
           value: val
         })
+      }
+    },
+    /** 开启菜单：开=侧栏展开，关=侧栏收拢；默认开 */
+    sidebarOpened: {
+      get() {
+        return !!(this.$store.state.app.sidebar && this.$store.state.app.sidebar.opened)
+      },
+      set(val) {
+        this.$store.dispatch('app/setSideBarOpened', !!val)
       }
     },
     tagsView: {
@@ -189,6 +205,7 @@ export default {
         `{
             "navPosition":"${this.navPosition}",
             "layoutStyleVer":3,
+            "sidebarOpened":${this.sidebarOpened},
             "tagsView":${this.tagsView},
             "fixedHeader":${this.fixedHeader},
             "sidebarLogo":${this.sidebarLogo},

@@ -1,6 +1,18 @@
 <template>
   <div class="navbar">
     <hamburger v-if="navPosition === 'side'" id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
+    <el-tooltip content="刷新当前页面" effect="dark" placement="bottom">
+      <div
+        id="navbar-refresh"
+        class="navbar-refresh-container"
+        role="button"
+        tabindex="0"
+        @click="refreshCurrentPage"
+        @keyup.enter="refreshCurrentPage"
+      >
+        <i class="el-icon-refresh-right" />
+      </div>
+    </el-tooltip>
 
     <breadcrumb id="breadcrumb-container" class="breadcrumb-container" v-if="navPosition === 'side'"/>
     <top-nav id="topmenu-container" class="topmenu-container" v-if="navPosition === 'top'"/>
@@ -216,6 +228,14 @@ export default {
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
     },
+    /** 刷新当前页（与页签右键「刷新页面」同一套 keep-alive 重建逻辑） */
+    refreshCurrentPage() {
+      if (this.$tab && typeof this.$tab.refreshPage === 'function') {
+        this.$tab.refreshPage()
+        return
+      }
+      this.$router.go(0)
+    },
     /**
      * 创建 Chrome 桌面快捷方式（非下载文件）。
      * 能唤起浏览器安装提示则直接弹出；否则显示菜单引导。
@@ -318,6 +338,25 @@ export default {
 
     &:hover {
       background: rgba(0, 0, 0, .025)
+    }
+  }
+
+  .navbar-refresh-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 100%;
+    flex-shrink: 0;
+    cursor: pointer;
+    color: #5a5e66;
+    font-size: 18px;
+    transition: background .3s, color .15s;
+    -webkit-tap-highlight-color: transparent;
+
+    &:hover {
+      background: rgba(0, 0, 0, .025);
+      color: #2563eb;
     }
   }
 

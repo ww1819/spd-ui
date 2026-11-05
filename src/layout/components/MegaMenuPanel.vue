@@ -265,9 +265,18 @@ $text: #3a4350;
   padding: 7px 10px;
   margin: 0 -10px;
   border-radius: 8px;
+  transform: scale(1);
+  transform-origin: left center;
+  transition: transform 0.18s ease, font-size 0.18s ease, color 0.15s ease, background 0.15s ease;
 }
 
-.mega-group-title--link:hover,
+.mega-group-title--link:hover {
+  background: color-mix(in srgb, var(--current-color, #2563eb) 12%, #fff);
+  color: var(--current-color, #2563eb);
+  font-size: 15px;
+  transform: scale(1.06);
+}
+
 .mega-group-title--link.is-active {
   background: color-mix(in srgb, var(--current-color, #2563eb) 12%, #fff);
   color: var(--current-color, #2563eb);
@@ -292,16 +301,26 @@ $text: #3a4350;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 400;
+  transform: scale(1);
+  transform-origin: left center;
+  transition: transform 0.18s ease, font-size 0.18s ease, color 0.15s ease, background 0.15s ease;
 }
 
 .mega-link:hover {
   background: color-mix(in srgb, var(--current-color, #2563eb) 14%, #fff);
   color: var(--current-color, #2563eb);
+  font-size: 15px;
+  transform: scale(1.06);
 }
 
 .mega-link.is-active {
   background: color-mix(in srgb, var(--current-color, #2563eb) 18%, #fff);
   color: var(--current-color, #2563eb);
   font-weight: 500;
+}
+
+.mega-link.is-active:hover {
+  font-size: 15px;
+  transform: scale(1.06);
 }
 </style>
