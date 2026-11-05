@@ -1915,6 +1915,36 @@ export default {
             this.$modal.msgError("存在明细数量为空或0，请填写有效数量后再保存。");
             return;
           }
+          const missingWh = validEntries.filter(item => {
+            const wid = item.stockWarehouseId != null
+              ? item.stockWarehouseId
+              : (item.stockWarehouse && item.stockWarehouse.id != null ? item.stockWarehouse.id : null);
+            return wid == null || wid === '';
+          });
+          if (missingWh.length > 0) {
+            const m = missingWh[0].material || {};
+            const name = m.name || m.code || '该耗材';
+            this.$modal.msgError(`【${name}】未关联库存仓库，请从可用库存重新选择后再保存。`);
+            return;
+          }
+          const overStock = validEntries.filter(item => {
+            const stockNum = Number(item.availableStockQty);
+            const qtyNum = Number(item.qty);
+            if (!Number.isFinite(qtyNum) || qtyNum <= 0) return false;
+            // 无库存数或库存为 0 / 小于申领数量时拦截
+            if (!Number.isFinite(stockNum) || stockNum <= 0) return true;
+            return qtyNum > stockNum;
+          });
+          if (overStock.length > 0) {
+            const row = overStock[0];
+            const m = row.material || {};
+            const name = m.name || m.code || '该耗材';
+            const stockShow = row.availableStockQty != null && row.availableStockQty !== ''
+              ? row.availableStockQty
+              : 0;
+            this.$modal.msgError(`【${name}】仓库库存为 ${stockShow}，申领数量不能大于仓库库存，无法保存。`);
+            return;
+          }
           if (!assertMinPackageQtyOnSave(this, validEntries, '科室申领')) {
             return;
           }
