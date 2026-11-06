@@ -1,6 +1,6 @@
 <template>
   <div class="print-setting-form">
-    <div class="dialog-layout">
+    <div class="dialog-layout" :class="{ 'is-right-collapsed': rightPanelCollapsed }">
       <!-- 左侧：工具条与画布（工具条与右侧面板顶对齐） -->
       <div class="left-column">
     <!-- 顶部操作按钮行：设计工具条 + 保存等 -->
@@ -146,7 +146,25 @@
       <div class="left-panel">
         <!-- 顶行：角块 + 水平尺（固定不随上下滚） -->
         <div class="ruler-top-row">
-          <div class="ruler-corner"></div>
+          <div class="ruler-corner">
+            <el-dropdown
+              trigger="click"
+              class="canvas-zoom-dropdown"
+              @command="onCanvasZoomCommand"
+            >
+              <span class="canvas-zoom-text">
+                {{ canvasZoom }}%<i class="el-icon-arrow-down el-icon--right"></i>
+              </span>
+              <el-dropdown-menu slot="dropdown" class="canvas-zoom-menu">
+                <el-dropdown-item
+                  v-for="z in canvasZoomOptions"
+                  :key="'zoom-' + z"
+                  :command="z"
+                  :class="{ 'is-active-zoom': z === canvasZoom }"
+                >{{ z }}%</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+          </div>
           <div class="ruler-h-viewport">
             <div
               class="ruler-horizontal-main"
@@ -183,7 +201,11 @@
             </div>
           </div>
           <!-- 仅画布区域滚动 -->
-          <div class="left-panel-body ruler-panel" @scroll="onCanvasScroll">
+          <div
+            class="left-panel-body ruler-panel"
+            :style="rulerPanelGridStyle"
+            @scroll="onCanvasScroll"
+          >
             <div
               class="template-preview"
               :style="{ minHeight: previewAreaMinHeight + 'px', minWidth: previewAreaMinWidth + 'px' }"
@@ -367,8 +389,9 @@
         </div>
       </div>
       </div>
-      <!-- 右侧内容框：与工具条顶对齐，增高占满 -->
-      <div class="right-panel">
+      <!-- 右侧内容框：抽屉把手挂在面板左缘（靠近画布一侧顶部） -->
+      <div class="right-panel-wrap" :class="{ 'is-collapsed': rightPanelCollapsed }">
+        <div v-show="!rightPanelCollapsed" class="right-panel">
         <el-form ref="form" :model="form" :rules="rules" label-width="120px" class="right-panel-form">
           <div class="right-panel-top">
           <el-tabs v-model="activeTab" class="right-config-tabs">
@@ -636,30 +659,74 @@
                 </el-row>
               </el-collapse-item>
               <el-collapse-item title="其他设置" name="other">
-                <el-row :gutter="20">
+                <el-form-item prop="printHeaderMode">
+                  <span slot="label">
+                    打印表头
+                    <el-tooltip placement="top" popper-class="print-setting-tip">
+                      <div slot="content">默认只打印首页。若设置每页都打印则表头字段会打印在每一张纸的表头。</div>
+                      <i class="el-icon-question print-setting-help-icon" />
+                    </el-tooltip>
+                  </span>
+                  <el-radio-group v-model="form.printHeaderMode" class="print-mode-buttons">
+                    <el-radio-button label="first">只打印首页</el-radio-button>
+                    <el-radio-button label="every">每页都打印</el-radio-button>
+                  </el-radio-group>
+                </el-form-item>
+                <el-form-item prop="printFooterMode">
+                  <span slot="label">
+                    打印表尾
+                    <el-tooltip placement="top" popper-class="print-setting-tip">
+                      <div slot="content">默认只打印尾页。若设置每页都打印则表尾字段会打印在每一张纸的表尾。</div>
+                      <i class="el-icon-question print-setting-help-icon" />
+                    </el-tooltip>
+                  </span>
+                  <el-radio-group v-model="form.printFooterMode" class="print-mode-buttons">
+                    <el-radio-button label="last">只打印末页</el-radio-button>
+                    <el-radio-button label="every">每页都打印</el-radio-button>
+                  </el-radio-group>
+                </el-form-item>
+                <div class="other-print-options">
+                  <div class="other-print-option-item">
+                    <el-checkbox v-model="form.hideTrailingZero">隐藏小数末位0</el-checkbox>
+                    <el-tooltip placement="top" popper-class="print-setting-tip">
+                      <div slot="content">参数开启，表示不打印小数点后面的尾0，如100.20，打印显示100.2，参数关闭则打印显示100.20。</div>
+                      <i class="el-icon-question print-setting-help-icon" />
+                    </el-tooltip>
+                  </div>
+                  <div class="other-print-option-item">
+                    <el-checkbox v-model="form.printZeroAsEmpty">数额为0时打印为空</el-checkbox>
+                    <el-tooltip placement="top" popper-class="print-setting-tip">
+                      <div slot="content">参数开启，如金额为0时，打印显示为空，参数关闭，则打印显示为0。</div>
+                      <i class="el-icon-question print-setting-help-icon" />
+                    </el-tooltip>
+                  </div>
+                  <div class="other-print-option-item">
+                    <el-checkbox v-model="form.fixedRowCount">固定行数</el-checkbox>
+                    <el-tooltip placement="top" popper-class="print-setting-tip">
+                      <div slot="content">开启固定行数后，展示单张行数的选项，默认是5，允许用户修改，需要控制大于等于1的正整数。</div>
+                      <i class="el-icon-question print-setting-help-icon" />
+                    </el-tooltip>
+                  </div>
+                  <div class="other-print-option-item">
+                    <el-checkbox v-model="form.pageJoinPrint">分页拼接打印</el-checkbox>
+                    <el-tooltip placement="top" popper-class="print-setting-tip">
+                      <div slot="content">当存在多页内容时，每页内容动态输出，第一页内容输出完后需紧跟第二页的内容。</div>
+                      <i class="el-icon-question print-setting-help-icon" />
+                    </el-tooltip>
+                  </div>
+                </div>
+                <el-row v-if="form.fixedRowCount" :gutter="20" class="fixed-rows-row">
                   <el-col :span="12">
-                    <el-form-item label="打印表头" prop="printHeaderMode">
-                      <el-select v-model="form.printHeaderMode" placeholder="请选择" style="width: 100%">
-                        <el-option label="只打印首页" value="first" />
-                        <el-option label="每页都打印" value="every" />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="打印表尾" prop="printFooterMode">
-                      <el-select v-model="form.printFooterMode" placeholder="请选择" style="width: 100%">
-                        <el-option label="只打印末页" value="last" />
-                        <el-option label="每页都打印" value="every" />
-                      </el-select>
+                    <el-form-item label="单张行数" prop="fixedRowsPerPage">
+                      <el-input
+                        v-model.number="form.fixedRowsPerPage"
+                        placeholder="请输入单张行数"
+                        @change="normalizeFixedRowsPerPage"
+                        @blur="normalizeFixedRowsPerPage"
+                      />
                     </el-form-item>
                   </el-col>
                 </el-row>
-                <div class="other-print-options">
-                  <el-checkbox v-model="form.hideTrailingZero">隐藏小数末位0</el-checkbox>
-                  <el-checkbox v-model="form.printZeroAsEmpty">数额为0时打印为空</el-checkbox>
-                  <el-checkbox v-model="form.fixedRowCount">固定行数</el-checkbox>
-                  <el-checkbox v-model="form.pageJoinPrint">分页拼接打印</el-checkbox>
-                </div>
               </el-collapse-item>
             </el-collapse>
           </el-tab-pane>
@@ -844,6 +911,16 @@
           </div>
         </el-form>
       </div>
+        <el-tooltip :content="rightPanelCollapsed ? '展开右侧配置' : '收拢右侧配置'" placement="left">
+          <button
+            type="button"
+            class="right-panel-drawer-handle"
+            @click="toggleRightPanel"
+          >
+            <i :class="rightPanelCollapsed ? 'el-icon-d-arrow-left' : 'el-icon-d-arrow-right'"></i>
+          </button>
+        </el-tooltip>
+      </div>
     </div>
 
     <PrintSettingRefBillDialog v-if="refBillDialogVisible" />
@@ -951,6 +1028,14 @@ export default {
       /** 画布滚动，用于固定刻度尺同步位移 */
       canvasScrollLeft: 0,
       canvasScrollTop: 0,
+      /** 画布缩放比（%），默认 100 */
+      canvasZoom: 100,
+      canvasZoomOptions: [80, 100, 150, 200, 300],
+      /** 右侧配置面板是否收拢 */
+      rightPanelCollapsed: false,
+      /** 画布可视区域尺寸（用于刻度尺铺满） */
+      canvasViewportWidthPx: 0,
+      canvasViewportHeightPx: 0,
       /** 设计工具条：撤销/重做/格式刷 */
       designHistory: [],
       designHistoryIndex: -1,
@@ -982,11 +1067,13 @@ export default {
         marginLeft: 0,
         marginRight: 0,
         /** 其他设置：表头/表尾打印方式及数值显示 */
-        printHeaderMode: 'every',
+        printHeaderMode: 'first',
         printFooterMode: 'last',
         hideTrailingZero: false,
         printZeroAsEmpty: false,
         fixedRowCount: false,
+        /** 固定行数开启后的单张行数，默认 5，须为 >=1 的正整数 */
+        fixedRowsPerPage: 5,
         pageJoinPrint: false,
         fontSize: 14,
         tableFontSize: 12,
@@ -1157,15 +1244,41 @@ export default {
         }
       }).catch(() => {});
     }
-    this.$nextTick(() => this.pushDesignHistory());
+    this.$nextTick(() => {
+      this.pushDesignHistory();
+      this.bindCanvasViewportObserver();
+      this.updateCanvasViewportSize();
+    });
+  },
+  beforeDestroy() {
+    this.unbindCanvasViewportObserver();
+  },
+  watch: {
+    canvasZoom() {
+      this.$nextTick(() => this.updateCanvasViewportSize());
+    },
+    rightPanelCollapsed() {
+      this.$nextTick(() => this.updateCanvasViewportSize());
+    }
   },
   computed: {
+    /** 1mm 对应像素（含画布缩放） */
+    mmToPx() {
+      const zoom = Number(this.canvasZoom) || 100;
+      return 3.78 * (zoom / 100);
+    },
+    /** 画布网格背景随缩放变化（10mm 一格） */
+    rulerPanelGridStyle() {
+      const size = this.mmToPx * 10;
+      return {
+        backgroundSize: `${size}px ${size}px`
+      };
+    },
     previewStyle() {
       const width = this.form.pageWidth || 241;
       const height = this.form.pageHeight || 140;
-      // 使用与尺子标记相同的比例：1mm = 3.78px (96 DPI)
-      // 这样预览模板的尺寸就会与尺子标记完全对应
-      const mmToPx = 3.78;
+      // 与尺子标记相同比例，并跟随画布缩放
+      const mmToPx = this.mmToPx;
       let previewWidth = width * mmToPx;
       let previewHeight = height * mmToPx;
 
@@ -1197,25 +1310,33 @@ export default {
       }
       return { width: w, height: h };
     },
-    /** 上尺默认 310mm，纸张更宽时按 10mm 向上取整自动加长 */
+    /** 上尺：至少覆盖纸张/默认 310mm，并按画布可视宽度铺满 */
     rulerHorizontalMaxMm() {
       const paperW = Number(this.paperSizeMm.width) || 0;
       const base = 310;
-      if (paperW <= base) return base;
-      return Math.ceil(paperW / 10) * 10;
+      const paperMax = paperW > 0 ? Math.ceil(paperW / 10) * 10 : base;
+      let viewportMax = 0;
+      if (this.canvasViewportWidthPx > 0 && this.mmToPx > 0) {
+        viewportMax = Math.ceil(this.canvasViewportWidthPx / this.mmToPx / 10) * 10;
+      }
+      return Math.max(base, paperMax, viewportMax);
     },
-    /** 左尺默认 160mm，仅模板更高时才自动加长 */
+    /** 左尺：至少覆盖纸张/默认 160mm，并按画布可视高度铺满 */
     rulerVerticalMaxMm() {
       const paperH = Number(this.paperSizeMm.height) || 0;
       const base = 160;
-      if (paperH <= base) return base;
-      return Math.ceil(paperH / 10) * 10;
+      const paperMax = paperH > 0 ? Math.ceil(paperH / 10) * 10 : base;
+      let viewportMax = 0;
+      if (this.canvasViewportHeightPx > 0 && this.mmToPx > 0) {
+        viewportMax = Math.ceil(this.canvasViewportHeightPx / this.mmToPx / 10) * 10;
+      }
+      return Math.max(base, paperMax, viewportMax);
     },
     rulerHorizontalWidthPx() {
-      return Math.ceil(this.rulerHorizontalMaxMm * 3.78);
+      return Math.ceil(this.rulerHorizontalMaxMm * this.mmToPx);
     },
     rulerVerticalHeightPx() {
-      return Math.ceil(this.rulerVerticalMaxMm * 3.78);
+      return Math.ceil(this.rulerVerticalMaxMm * this.mmToPx);
     },
     previewAreaMinWidth() {
       return this.rulerHorizontalWidthPx + 24;
@@ -1617,6 +1738,8 @@ export default {
               if (config.hideTrailingZero !== undefined) this.form.hideTrailingZero = !!config.hideTrailingZero;
               if (config.printZeroAsEmpty !== undefined) this.form.printZeroAsEmpty = !!config.printZeroAsEmpty;
               if (config.fixedRowCount !== undefined) this.form.fixedRowCount = !!config.fixedRowCount;
+              if (config.fixedRowsPerPage !== undefined) this.form.fixedRowsPerPage = config.fixedRowsPerPage;
+              this.normalizeFixedRowsPerPage();
               if (config.pageJoinPrint !== undefined) this.form.pageJoinPrint = !!config.pageJoinPrint;
               // 底部信息配置
               for (let i = 1; i <= 5; i++) {
@@ -2018,7 +2141,7 @@ export default {
       const onTop = offsetY <= edge;
       const onBottom = rect.height - offsetY <= edge;
 
-      const mmToPx = 3.78;
+      const mmToPx = this.mmToPx;
 
       this.dragState = {
         mode: (onLeft || onRight || onTop || onBottom) ? 'resize' : 'move',
@@ -2219,6 +2342,8 @@ export default {
             if (config.hideTrailingZero !== undefined) this.form.hideTrailingZero = !!config.hideTrailingZero;
             if (config.printZeroAsEmpty !== undefined) this.form.printZeroAsEmpty = !!config.printZeroAsEmpty;
             if (config.fixedRowCount !== undefined) this.form.fixedRowCount = !!config.fixedRowCount;
+            if (config.fixedRowsPerPage !== undefined) this.form.fixedRowsPerPage = config.fixedRowsPerPage;
+            this.normalizeFixedRowsPerPage();
             if (config.pageJoinPrint !== undefined) this.form.pageJoinPrint = !!config.pageJoinPrint;
             this.syncPaperSizeFromDimensions();
             this.headerSelectedCols = [];
@@ -2288,11 +2413,12 @@ export default {
         marginBottom: 0,
         marginLeft: 0,
         marginRight: 0,
-        printHeaderMode: 'every',
+        printHeaderMode: 'first',
         printFooterMode: 'last',
         hideTrailingZero: false,
         printZeroAsEmpty: false,
         fixedRowCount: false,
+        fixedRowsPerPage: 5,
         pageJoinPrint: false,
         fontSize: 14,
         tableFontSize: 12,
@@ -2484,6 +2610,11 @@ export default {
         return Math.abs(item.width - w) < 0.05 && Math.abs(item.height - h) < 0.05;
       });
       this.form.paperSize = matched ? matched.value : 'custom';
+    },
+    /** 单张行数：强制为 >=1 的正整数，非法时回退默认 5 */
+    normalizeFixedRowsPerPage() {
+      const n = parseInt(this.form.fixedRowsPerPage, 10);
+      this.form.fixedRowsPerPage = Number.isFinite(n) && n >= 1 ? n : 5;
     },
     handleSelectComponent(item) {
       if (!item || !item.key) return;
@@ -2947,11 +3078,12 @@ export default {
             verticalAlign: this.form.verticalAlign || 'middle',
             tableBorder: this.form.tableBorder || 'all',
             paperSize: this.form.paperSize || 'custom',
-            printHeaderMode: this.form.printHeaderMode || 'every',
+            printHeaderMode: this.form.printHeaderMode || 'first',
             printFooterMode: this.form.printFooterMode || 'last',
             hideTrailingZero: !!this.form.hideTrailingZero,
             printZeroAsEmpty: !!this.form.printZeroAsEmpty,
             fixedRowCount: !!this.form.fixedRowCount,
+            fixedRowsPerPage: Math.max(1, parseInt(this.form.fixedRowsPerPage, 10) || 5),
             pageJoinPrint: !!this.form.pageJoinPrint,
             bottom1Type: this.form.bottom1Type,
             bottom1Width: this.form.bottom1Width,
@@ -3067,12 +3199,50 @@ export default {
       this.resetForm();
     },
     getHorizontalPosition(value) {
-      // 将mm值转换为px位置，1mm = 3.78px (96 DPI)
-      return value * 3.78;
+      return value * this.mmToPx;
     },
     getVerticalPosition(value) {
-      // 将mm值转换为px位置，1mm = 3.78px (96 DPI)
-      return value * 3.78;
+      return value * this.mmToPx;
+    },
+    /** 展开/收拢右侧配置面板，收拢后画布占满 */
+    toggleRightPanel() {
+      this.rightPanelCollapsed = !this.rightPanelCollapsed;
+    },
+    onCanvasZoomCommand(z) {
+      const n = Number(z);
+      if (!Number.isFinite(n)) return;
+      this.canvasZoom = n;
+    },
+    bindCanvasViewportObserver() {
+      const el = this.$el && this.$el.querySelector('.left-panel-body');
+      if (!el || typeof ResizeObserver === 'undefined') {
+        this._onWindowResizeForRuler = () => this.updateCanvasViewportSize();
+        window.addEventListener('resize', this._onWindowResizeForRuler);
+        return;
+      }
+      this._canvasViewportObserver = new ResizeObserver(() => {
+        this.updateCanvasViewportSize();
+      });
+      this._canvasViewportObserver.observe(el);
+    },
+    unbindCanvasViewportObserver() {
+      if (this._canvasViewportObserver) {
+        this._canvasViewportObserver.disconnect();
+        this._canvasViewportObserver = null;
+      }
+      if (this._onWindowResizeForRuler) {
+        window.removeEventListener('resize', this._onWindowResizeForRuler);
+        this._onWindowResizeForRuler = null;
+      }
+    },
+    /** 根据画布可视区域更新刻度尺覆盖范围 */
+    updateCanvasViewportSize() {
+      const el = this.$el && this.$el.querySelector('.left-panel-body');
+      if (!el) return;
+      const w = el.clientWidth || 0;
+      const h = el.clientHeight || 0;
+      if (w !== this.canvasViewportWidthPx) this.canvasViewportWidthPx = w;
+      if (h !== this.canvasViewportHeightPx) this.canvasViewportHeightPx = h;
     }
   }
 };
@@ -3096,16 +3266,79 @@ export default {
   padding: 0;
   margin: 0;
   align-items: stretch;
+  overflow: visible;
+}
+
+.dialog-layout.is-right-collapsed .left-column {
+  flex: 1;
+  margin-right: 0;
+}
+
+.right-panel-wrap {
+  position: relative;
+  flex: 2;
+  min-width: 0;
+  display: flex;
+  align-self: stretch;
+  overflow: visible;
+}
+
+/* 收拢后不占白条，画布铺满；把手挂在画布右缘对齐 */
+.right-panel-wrap.is-collapsed {
+  flex: 0 0 0;
+  width: 0;
+  min-width: 0;
+  overflow: visible;
+}
+
+.right-panel-drawer-handle {
+  position: absolute;
+  left: 0;
+  top: 2px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 38px;
+  padding: 0;
+  margin: 0;
+  transform: translateX(-50%);
+  border: 1px solid #dcdfe6;
+  border-radius: 3px 0 0 3px;
+  background: #fff;
+  box-shadow: -1px 0 4px rgba(0, 0, 0, 0.06);
+  color: #606266;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.right-panel-drawer-handle:hover {
+  color: #409eff;
+  border-color: #409eff;
+  background: #ecf5ff;
+}
+
+.right-panel-drawer-handle i {
+  font-size: 10px;
+}
+
+.right-panel-wrap.is-collapsed .right-panel-drawer-handle {
+  left: 0;
+  transform: translateX(-100%);
+  width: 12px;
+  border-radius: 3px 0 0 3px;
 }
 
 .left-column {
-  flex: 4;
+  flex: 5;
   min-width: 0;
   min-height: 0;
-  margin-right: 8px;
+  margin-right: 2px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: flex 0.2s ease, margin-right 0.2s ease;
 }
 
 .left-panel {
@@ -3143,6 +3376,33 @@ export default {
   border-right: 2px solid #409eff;
   box-sizing: border-box;
   z-index: 7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.canvas-zoom-dropdown {
+  line-height: 1;
+}
+
+.canvas-zoom-text {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: #606266;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.canvas-zoom-text:hover {
+  color: #409eff;
+}
+
+.canvas-zoom-text .el-icon-arrow-down {
+  margin-left: 2px;
+  font-size: 10px;
 }
 
 .ruler-h-viewport {
@@ -3429,6 +3689,15 @@ export default {
   text-align: center;
 }
 
+.print-mode-buttons {
+  display: inline-flex;
+}
+
+.print-mode-buttons >>> .el-radio-button__inner {
+  padding: 8px 12px;
+  text-align: center;
+}
+
 .paper-size-row .el-form-item {
   margin-bottom: 12px;
 }
@@ -3638,7 +3907,8 @@ export default {
 }
 
 .right-panel {
-  flex: 2;
+  flex: 1;
+  width: 100%;
   min-width: 0;
   background: #fff;
   border-radius: 4px;
@@ -3766,8 +4036,26 @@ export default {
   padding: 0 4px 4px;
 }
 
+.other-print-option-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .other-print-options .el-checkbox {
   margin-right: 0;
+}
+
+.print-setting-help-icon {
+  margin-left: 2px;
+  font-size: 14px;
+  color: #f56c6c;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.fixed-rows-row {
+  margin-top: 8px;
 }
 
 .component-palette {
@@ -4150,5 +4438,17 @@ export default {
 
 .title1-form-item .el-form-item__content {
   margin-left: 0 !important;
+}
+</style>
+
+<style>
+.print-setting-tip {
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+.canvas-zoom-menu .el-dropdown-menu__item.is-active-zoom {
+  color: #409eff;
+  background-color: #ecf5ff;
 }
 </style>
