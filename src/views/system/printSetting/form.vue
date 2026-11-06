@@ -374,14 +374,8 @@
           <el-tabs v-model="activeTab" class="right-config-tabs">
           <!-- 基本信息 -->
           <el-tab-pane label="模板信息" name="basic">
-          <el-form-item label="组织机构">
-            <el-input v-model="orgName" disabled />
-          </el-form-item>
           <el-form-item label="模板名称" prop="templateName">
             <el-input v-model="form.templateName" placeholder="模板名称" />
-          </el-form-item>
-          <el-form-item label="适用组织机构ID" prop="tenantId">
-            <el-input v-model="form.tenantId" clearable placeholder="留空：全库默认；耗材端留空则默认当前登录客户" />
           </el-form-item>
           <el-form-item label="单据类型" prop="billType">
             <el-select v-model="form.billType" placeholder="请选择单据类型" clearable style="width: 100%">
@@ -567,57 +561,105 @@
           <el-tab-pane label="打印设置" name="page">
             <el-collapse v-model="printCollapseActive" class="print-collapse">
               <el-collapse-item title="纸张设置" name="paper">
-                <el-form-item label="页面方向" prop="orientation">
-                  <el-radio-group v-model="form.orientation">
-                    <el-radio label="portrait">纵向</el-radio>
-                    <el-radio label="landscape">横向</el-radio>
-                  </el-radio-group>
-                </el-form-item>
-                <el-form-item label="单号码" prop="codeDisplay">
-                  <el-radio-group v-model="form.codeDisplay" class="code-display-buttons">
-                    <el-radio-button label="">不显示</el-radio-button>
-                    <el-radio-button label="barcode">一维码</el-radio-button>
-                    <el-radio-button label="qr">二维码</el-radio-button>
-                  </el-radio-group>
-                </el-form-item>
-              </el-collapse-item>
-              <el-collapse-item title="页边距" name="margin">
-                <el-row :gutter="20">
-                  <el-col :span="12">
-                    <el-form-item label="页面宽度(mm)" prop="pageWidth">
-                      <el-input-number v-model="form.pageWidth" :min="50" :max="1000" :precision="2" style="width: 100%" />
+                <el-row :gutter="12" class="paper-size-row">
+                  <el-col :span="14">
+                    <el-form-item label="纸张方向" prop="orientation">
+                      <el-radio-group v-model="form.orientation" class="paper-orientation-buttons">
+                        <el-radio-button label="portrait">纵向</el-radio-button>
+                        <el-radio-button label="landscape">横向</el-radio-button>
+                      </el-radio-group>
                     </el-form-item>
                   </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="页面高度(mm)" prop="pageHeight">
-                      <el-input-number v-model="form.pageHeight" :min="50" :max="1000" :precision="2" style="width: 100%" />
+                  <el-col :span="10">
+                    <el-form-item label="纸张大小" prop="paperSize" label-width="80px">
+                      <el-select
+                        v-model="form.paperSize"
+                        placeholder="请选择纸张大小"
+                        style="width: 100%"
+                        @change="applyPaperSize"
+                      >
+                        <el-option
+                          v-for="item in paperSizeOptions"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value"
+                        />
+                      </el-select>
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
+                    <el-form-item label="页面宽度(mm)" prop="pageWidth">
+                      <el-input
+                        v-model.number="form.pageWidth"
+                        placeholder="宽度"
+                        @change="onPageSizeManualChange"
+                      />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="页面高度(mm)" prop="pageHeight">
+                      <el-input
+                        v-model.number="form.pageHeight"
+                        placeholder="高度"
+                        @change="onPageSizeManualChange"
+                      />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-collapse-item>
+              <el-collapse-item title="页边距" name="margin">
+                <el-row :gutter="20">
+                  <el-col :span="12">
                     <el-form-item label="上边距(mm)" prop="marginTop">
-                      <el-input-number v-model="form.marginTop" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input v-model.number="form.marginTop" placeholder="上边距" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="下边距(mm)" prop="marginBottom">
-                      <el-input-number v-model="form.marginBottom" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input v-model.number="form.marginBottom" placeholder="下边距" />
                     </el-form-item>
                   </el-col>
                 </el-row>
                 <el-row :gutter="20">
                   <el-col :span="12">
                     <el-form-item label="左边距(mm)" prop="marginLeft">
-                      <el-input-number v-model="form.marginLeft" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input v-model.number="form.marginLeft" placeholder="左边距" />
                     </el-form-item>
                   </el-col>
                   <el-col :span="12">
                     <el-form-item label="右边距(mm)" prop="marginRight">
-                      <el-input-number v-model="form.marginRight" :min="0" :max="100" :precision="2" style="width: 100%" />
+                      <el-input v-model.number="form.marginRight" placeholder="右边距" />
                     </el-form-item>
                   </el-col>
                 </el-row>
+              </el-collapse-item>
+              <el-collapse-item title="其他设置" name="other">
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item label="打印表头" prop="printHeaderMode">
+                      <el-select v-model="form.printHeaderMode" placeholder="请选择" style="width: 100%">
+                        <el-option label="只打印首页" value="first" />
+                        <el-option label="每页都打印" value="every" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="打印表尾" prop="printFooterMode">
+                      <el-select v-model="form.printFooterMode" placeholder="请选择" style="width: 100%">
+                        <el-option label="只打印末页" value="last" />
+                        <el-option label="每页都打印" value="every" />
+                      </el-select>
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <div class="other-print-options">
+                  <el-checkbox v-model="form.hideTrailingZero">隐藏小数末位0</el-checkbox>
+                  <el-checkbox v-model="form.printZeroAsEmpty">数额为0时打印为空</el-checkbox>
+                  <el-checkbox v-model="form.fixedRowCount">固定行数</el-checkbox>
+                  <el-checkbox v-model="form.pageJoinPrint">分页拼接打印</el-checkbox>
+                </div>
               </el-collapse-item>
             </el-collapse>
           </el-tab-pane>
@@ -831,7 +873,29 @@ export default {
       /** 右侧下方：打印设置 / 字段属性 */
       activeBottomTab: "page",
       /** 打印设置折叠面板：默认全部展开 */
-      printCollapseActive: ['paper', 'margin'],
+      printCollapseActive: ['paper', 'margin', 'other'],
+      /** 纸张大小选项（宽高为纵向 mm） */
+      paperSizeOptions: [
+        { value: 'Letter', label: 'Letter', width: 215.9, height: 279.4 },
+        { value: '11x17', label: '11x17', width: 279.4, height: 431.8 },
+        { value: 'Legal', label: 'Legal', width: 215.9, height: 355.6 },
+        { value: 'Statement', label: 'Statement', width: 139.7, height: 215.9 },
+        { value: 'Executive', label: 'Executive', width: 184.2, height: 266.7 },
+        { value: 'A5', label: 'A5', width: 148, height: 210 },
+        { value: 'B5', label: 'B5', width: 176, height: 250 },
+        { value: 'A4', label: 'A4', width: 210, height: 297 },
+        { value: 'B4', label: 'B4', width: 250, height: 353 },
+        { value: 'A3', label: 'A3', width: 297, height: 420 },
+        { value: 'Monarch', label: '信封 Monarch', width: 98.4, height: 190.5 },
+        { value: 'COM10', label: '信封 No.10 (COM10)', width: 104.8, height: 241.3 },
+        { value: 'DL', label: '信封 DL', width: 110, height: 220 },
+        { value: 'C5', label: '信封 C5', width: 162, height: 229 },
+        { value: 'EnvB5', label: '信封 B5', width: 176, height: 250 },
+        { value: 'Foolscap', label: 'Foolscap', width: 215.9, height: 330.2 },
+        { value: 'IndexCard', label: '索引卡片', width: 76.2, height: 127 },
+        { value: '16K', label: '16K', width: 184, height: 260 },
+        { value: 'custom', label: '自定义 [固定名称]', width: null, height: null }
+      ],
       /** 组件设置选中项 */
       selectedComponent: '',
       componentPalette: [
@@ -900,10 +964,12 @@ export default {
         templateName: '',
         tenantId: '',
         billType: null,
-        pageWidth: 241,
-        pageHeight: 140,
+        pageWidth: 210,
+        pageHeight: 297,
         orientation: 'portrait',
-        /** 单号码显示：'' 不显示 | 'barcode' 一维码 | 'qr' 二维码，三选一 */
+        /** 纸张大小预设，默认自定义 */
+        paperSize: 'custom',
+        /** 单号码显示：'' 不显示 | 'barcode' 一维码 | 'qr' 二维码（组件设置仍可切换） */
         codeDisplay: '',
         /** 二维码在画布上的位置(px)、尺寸(px) */
         qrPosition: { x: 0, y: 0 },
@@ -915,6 +981,13 @@ export default {
         marginBottom: 0,
         marginLeft: 0,
         marginRight: 0,
+        /** 其他设置：表头/表尾打印方式及数值显示 */
+        printHeaderMode: 'every',
+        printFooterMode: 'last',
+        hideTrailingZero: false,
+        printZeroAsEmpty: false,
+        fixedRowCount: false,
+        pageJoinPrint: false,
         fontSize: 14,
         tableFontSize: 12,
         columnSpacing: 0,
@@ -1538,6 +1611,13 @@ export default {
               if (config.fillColor !== undefined) this.form.fillColor = config.fillColor;
               if (config.verticalAlign !== undefined) this.form.verticalAlign = config.verticalAlign;
               if (config.tableBorder !== undefined) this.form.tableBorder = config.tableBorder;
+              if (config.paperSize !== undefined) this.form.paperSize = config.paperSize;
+              if (config.printHeaderMode !== undefined) this.form.printHeaderMode = config.printHeaderMode;
+              if (config.printFooterMode !== undefined) this.form.printFooterMode = config.printFooterMode;
+              if (config.hideTrailingZero !== undefined) this.form.hideTrailingZero = !!config.hideTrailingZero;
+              if (config.printZeroAsEmpty !== undefined) this.form.printZeroAsEmpty = !!config.printZeroAsEmpty;
+              if (config.fixedRowCount !== undefined) this.form.fixedRowCount = !!config.fixedRowCount;
+              if (config.pageJoinPrint !== undefined) this.form.pageJoinPrint = !!config.pageJoinPrint;
               // 底部信息配置
               for (let i = 1; i <= 5; i++) {
                 const idx = String(i);
@@ -1554,6 +1634,7 @@ export default {
                 if (config[fixedKey] !== undefined) this.form[fixedKey] = !!config[fixedKey];
                 if (config[fixedTextKey] !== undefined) this.form[fixedTextKey] = config[fixedTextKey];
               }
+              this.syncPaperSizeFromDimensions();
               this.headerSelectedCols = [];
               this.bodySelectedCells = [];
               this.editingBodyCell = null;
@@ -1619,6 +1700,7 @@ export default {
             this.editingBodyCell = null;
           }
           this.ensureTableHeaderFieldsLength();
+          this.syncPaperSizeFromDimensions();
         }
       },
       immediate: true,
@@ -2131,6 +2213,14 @@ export default {
             if (config.fillColor !== undefined) this.form.fillColor = config.fillColor;
             if (config.verticalAlign !== undefined) this.form.verticalAlign = config.verticalAlign;
             if (config.tableBorder !== undefined) this.form.tableBorder = config.tableBorder;
+            if (config.paperSize !== undefined) this.form.paperSize = config.paperSize;
+            if (config.printHeaderMode !== undefined) this.form.printHeaderMode = config.printHeaderMode;
+            if (config.printFooterMode !== undefined) this.form.printFooterMode = config.printFooterMode;
+            if (config.hideTrailingZero !== undefined) this.form.hideTrailingZero = !!config.hideTrailingZero;
+            if (config.printZeroAsEmpty !== undefined) this.form.printZeroAsEmpty = !!config.printZeroAsEmpty;
+            if (config.fixedRowCount !== undefined) this.form.fixedRowCount = !!config.fixedRowCount;
+            if (config.pageJoinPrint !== undefined) this.form.pageJoinPrint = !!config.pageJoinPrint;
+            this.syncPaperSizeFromDimensions();
             this.headerSelectedCols = [];
             this.bodySelectedCells = [];
             this.editingBodyCell = null;
@@ -2185,21 +2275,25 @@ export default {
         templateName: '',
         tenantId: '',
         billType: null,
-        pageWidth: 241,
-        pageHeight: 140,
+        pageWidth: 210,
+        pageHeight: 297,
         orientation: 'portrait',
-        /** 单号码显示：'' 不显示 | 'barcode' 一维码 | 'qr' 二维码，三选一 */
+        paperSize: 'custom',
         codeDisplay: '',
-        /** 二维码在画布上的位置(px)、尺寸(px) */
         qrPosition: { x: 0, y: 0 },
         qrSize: { width: 64, height: 64 },
-        /** 一维码在画布上的位置(px)、尺寸(px) */
         barcodePosition: { x: 0, y: 0 },
         barcodeSize: { width: 120, height: 28 },
         marginTop: 0,
         marginBottom: 0,
         marginLeft: 0,
         marginRight: 0,
+        printHeaderMode: 'every',
+        printFooterMode: 'last',
+        hideTrailingZero: false,
+        printZeroAsEmpty: false,
+        fixedRowCount: false,
+        pageJoinPrint: false,
         fontSize: 14,
         tableFontSize: 12,
         columnSpacing: 0,
@@ -2362,6 +2456,34 @@ export default {
       if (!el) return;
       this.canvasScrollLeft = el.scrollLeft || 0;
       this.canvasScrollTop = el.scrollTop || 0;
+    },
+    applyPaperSize(value) {
+      const key = value || this.form.paperSize;
+      if (!key || key === 'custom') return;
+      const opt = (this.paperSizeOptions || []).find(item => item.value === key);
+      if (!opt || opt.width == null || opt.height == null) return;
+      this.form.pageWidth = opt.width;
+      this.form.pageHeight = opt.height;
+      this.pushDesignHistory();
+    },
+    onPageSizeManualChange() {
+      const w = Number(this.form.pageWidth);
+      const h = Number(this.form.pageHeight);
+      const matched = (this.paperSizeOptions || []).find(item => {
+        if (item.value === 'custom' || item.width == null) return false;
+        return Math.abs(item.width - w) < 0.05 && Math.abs(item.height - h) < 0.05;
+      });
+      this.form.paperSize = matched ? matched.value : 'custom';
+      this.pushDesignHistory();
+    },
+    syncPaperSizeFromDimensions() {
+      const w = Number(this.form.pageWidth);
+      const h = Number(this.form.pageHeight);
+      const matched = (this.paperSizeOptions || []).find(item => {
+        if (item.value === 'custom' || item.width == null) return false;
+        return Math.abs(item.width - w) < 0.05 && Math.abs(item.height - h) < 0.05;
+      });
+      this.form.paperSize = matched ? matched.value : 'custom';
     },
     handleSelectComponent(item) {
       if (!item || !item.key) return;
@@ -2824,6 +2946,13 @@ export default {
             fillColor: this.form.fillColor || 'transparent',
             verticalAlign: this.form.verticalAlign || 'middle',
             tableBorder: this.form.tableBorder || 'all',
+            paperSize: this.form.paperSize || 'custom',
+            printHeaderMode: this.form.printHeaderMode || 'every',
+            printFooterMode: this.form.printFooterMode || 'last',
+            hideTrailingZero: !!this.form.hideTrailingZero,
+            printZeroAsEmpty: !!this.form.printZeroAsEmpty,
+            fixedRowCount: !!this.form.fixedRowCount,
+            pageJoinPrint: !!this.form.pageJoinPrint,
             bottom1Type: this.form.bottom1Type,
             bottom1Width: this.form.bottom1Width,
             bottom1Height: this.form.bottom1Height,
@@ -3290,6 +3419,20 @@ export default {
   padding: 8px 15px;
 }
 
+.paper-orientation-buttons {
+  display: inline-flex;
+}
+
+.paper-orientation-buttons >>> .el-radio-button__inner {
+  min-width: 56px;
+  padding: 8px 14px;
+  text-align: center;
+}
+
+.paper-size-row .el-form-item {
+  margin-bottom: 12px;
+}
+
 .template-title {
   font-size: 14px;
   color: #606266;
@@ -3613,6 +3756,17 @@ export default {
 }
 
 .print-collapse >>> .el-collapse-item__arrow {
+  margin-right: 0;
+}
+
+.other-print-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 0 4px 4px;
+}
+
+.other-print-options .el-checkbox {
   margin-right: 0;
 }
 
