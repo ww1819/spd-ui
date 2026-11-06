@@ -1,7 +1,137 @@
 <template>
   <div class="print-setting-form">
-    <!-- 顶部操作按钮行：在左右两个框外面，单独一行 -->
+    <div class="dialog-layout">
+      <!-- 左侧：工具条与画布（工具条与右侧面板顶对齐） -->
+      <div class="left-column">
+    <!-- 顶部操作按钮行：设计工具条 + 保存等 -->
     <div class="form-toolbar">
+      <div class="design-toolbar">
+        <el-tooltip content="撤销" placement="bottom">
+          <button type="button" class="dt-btn" :disabled="!canUndo" @click="handleDesignUndo">
+            <i class="el-icon-refresh-left"></i>
+          </button>
+        </el-tooltip>
+        <el-tooltip content="重做" placement="bottom">
+          <button type="button" class="dt-btn" :disabled="!canRedo" @click="handleDesignRedo">
+            <i class="el-icon-refresh-right"></i>
+          </button>
+        </el-tooltip>
+        <span class="dt-sep"></span>
+        <el-tooltip content="复制" placement="bottom">
+          <button type="button" class="dt-btn" @click="handleDesignCopy">
+            <i class="el-icon-document-copy"></i>
+          </button>
+        </el-tooltip>
+        <el-tooltip content="格式刷" placement="bottom">
+          <button type="button" class="dt-btn" :class="{ active: formatPainterActive }" @click="toggleFormatPainter">
+            <i class="el-icon-brush"></i>
+          </button>
+        </el-tooltip>
+        <el-tooltip content="删除" placement="bottom">
+          <button type="button" class="dt-btn" @click="handleDesignDelete">
+            <i class="el-icon-delete"></i>
+          </button>
+        </el-tooltip>
+        <span class="dt-sep"></span>
+        <el-select
+          v-model="form.fontSize"
+          size="mini"
+          class="dt-font-size"
+          placeholder="字号"
+          @change="pushDesignHistory"
+        >
+          <el-option v-for="s in designFontSizes" :key="'fs-' + s" :label="String(s)" :value="s" />
+        </el-select>
+        <el-tooltip content="加粗" placement="bottom">
+          <button type="button" class="dt-btn dt-text" :class="{ active: !!form.fontBold }" @click="toggleFontBold">B</button>
+        </el-tooltip>
+        <el-tooltip content="斜体" placement="bottom">
+          <button type="button" class="dt-btn dt-text dt-italic" :class="{ active: !!form.fontItalic }" @click="toggleFontItalic">I</button>
+        </el-tooltip>
+        <el-tooltip content="下划线" placement="bottom">
+          <button type="button" class="dt-btn dt-text dt-underline" :class="{ active: !!form.fontUnderline }" @click="toggleFontUnderline">U</button>
+        </el-tooltip>
+        <el-dropdown trigger="click" @command="handleFontColorCommand">
+          <button type="button" class="dt-btn dt-color-btn">
+            <span class="dt-color-letter">A</span>
+            <span class="dt-color-bar" :style="{ background: form.fontColor || '#000' }"></span>
+            <i class="el-icon-arrow-down dt-caret"></i>
+          </button>
+          <el-dropdown-menu slot="dropdown" class="dt-color-menu">
+            <div class="dt-color-picker-wrap" @click.stop>
+              <el-color-picker v-model="form.fontColor" size="mini" @change="pushDesignHistory" />
+            </div>
+            <el-dropdown-item command="#000000">黑色</el-dropdown-item>
+            <el-dropdown-item command="#F56C6C">红色</el-dropdown-item>
+            <el-dropdown-item command="#409EFF">蓝色</el-dropdown-item>
+            <el-dropdown-item command="#67C23A">绿色</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+        <el-dropdown trigger="click" @command="handleFillColorCommand">
+          <button type="button" class="dt-btn dt-color-btn">
+            <i class="el-icon-s-open"></i>
+            <span class="dt-color-bar" :style="{ background: form.fillColor || '#67C23A' }"></span>
+            <i class="el-icon-arrow-down dt-caret"></i>
+          </button>
+          <el-dropdown-menu slot="dropdown" class="dt-color-menu">
+            <div class="dt-color-picker-wrap" @click.stop>
+              <el-color-picker v-model="form.fillColor" size="mini" show-alpha @change="pushDesignHistory" />
+            </div>
+            <el-dropdown-item command="transparent">无填充</el-dropdown-item>
+            <el-dropdown-item command="#FFFF00">黄色</el-dropdown-item>
+            <el-dropdown-item command="#67C23A">绿色</el-dropdown-item>
+            <el-dropdown-item command="#E6A23C">橙色</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+        <el-dropdown trigger="click" @command="handleTextAlignCommand">
+          <button type="button" class="dt-btn">
+            <i class="el-icon-s-operation"></i>
+            <i class="el-icon-arrow-down dt-caret"></i>
+          </button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="left">左对齐</el-dropdown-item>
+            <el-dropdown-item command="center">居中</el-dropdown-item>
+            <el-dropdown-item command="right">右对齐</el-dropdown-item>
+            <el-dropdown-item command="justify">两端对齐</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+        <el-dropdown trigger="click" @command="handleVerticalAlignCommand">
+          <button type="button" class="dt-btn">
+            <i class="el-icon-d-caret"></i>
+            <i class="el-icon-arrow-down dt-caret"></i>
+          </button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="top">顶端对齐</el-dropdown-item>
+            <el-dropdown-item command="middle">垂直居中</el-dropdown-item>
+            <el-dropdown-item command="bottom">底端对齐</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+        <el-dropdown trigger="click" @command="handleBorderCommand">
+          <button type="button" class="dt-btn">
+            <i class="el-icon-menu"></i>
+            <i class="el-icon-arrow-down dt-caret"></i>
+          </button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="all">全边框</el-dropdown-item>
+            <el-dropdown-item command="outer">外边框</el-dropdown-item>
+            <el-dropdown-item command="none">无边框</el-dropdown-item>
+            <el-dropdown-item command="merge">合并单元格</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+        <el-dropdown trigger="click" @command="handlePlaceholderCommand">
+          <button type="button" class="dt-btn dt-placeholder-btn">
+            <span>请</span>
+            <i class="el-icon-arrow-down dt-caret"></i>
+          </button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="warehouse">仓库</el-dropdown-item>
+            <el-dropdown-item command="department">科室</el-dropdown-item>
+            <el-dropdown-item command="supplier">供应商</el-dropdown-item>
+            <el-dropdown-item command="billNo">单号</el-dropdown-item>
+            <el-dropdown-item command="remark">备注</el-dropdown-item>
+          </el-dropdown-menu>
+        </el-dropdown>
+      </div>
       <el-button type="primary" size="medium" @click="submitForm">保 存</el-button>
       <el-button size="medium" @click="refresh">刷 新</el-button>
       <el-button size="medium" @click="handlePreview">预 览</el-button>
@@ -12,37 +142,56 @@
         <el-button size="mini" :disabled="refBillPage >= refBillTotalPages" @click="refBillPage = Math.min(refBillTotalPages, refBillPage + 1)">下一页</el-button>
       </span>
     </div>
-    <div class="dialog-layout">
-      <!-- 左侧空白框，可后续扩展预览等信息 -->
-      <div class="left-panel ruler-panel">
-        <!-- 模板大小预览（标题隐藏） -->
-        <div class="template-preview">
-          <!-- 顶部水平尺子 -->
-          <div class="ruler-horizontal-main">
+      <!-- 左侧画布 -->
+      <div class="left-panel">
+        <!-- 顶行：角块 + 水平尺（固定不随上下滚） -->
+        <div class="ruler-top-row">
+          <div class="ruler-corner"></div>
+          <div class="ruler-h-viewport">
             <div
-              v-for="i in horizontalRuler"
-              :key="'h-' + i"
-              :class="['ruler-mark-horizontal', i % 10 === 0 ? 'major' : 'minor']"
-              :style="{ left: getHorizontalPosition(i) + 'px' }"
+              class="ruler-horizontal-main"
+              :style="{ width: rulerHorizontalWidthPx + 'px', transform: 'translateX(' + (-canvasScrollLeft) + 'px)' }"
             >
-              <span v-if="i % 10 === 0" class="ruler-number ruler-number-top">{{ i }}</span>
-              <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
+              <div
+                v-for="i in horizontalRuler"
+                :key="'h-' + i"
+                :class="['ruler-mark-horizontal', i % 10 === 0 ? 'major' : 'minor']"
+                :style="{ left: getHorizontalPosition(i) + 'px' }"
+              >
+                <span v-if="i % 10 === 0" class="ruler-number ruler-number-top">{{ i }}</span>
+                <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
+              </div>
             </div>
           </div>
-          <!-- 左侧垂直尺子 -->
-          <div class="ruler-vertical-main">
+        </div>
+        <div class="ruler-main-row">
+          <!-- 左侧垂直尺（固定不随左右滚） -->
+          <div class="ruler-v-viewport">
             <div
-              v-for="i in verticalRuler"
-              :key="'v-' + i"
-              :class="['ruler-mark-vertical', i % 10 === 0 ? 'major' : 'minor']"
-              :style="{ top: getVerticalPosition(i) + 'px' }"
+              class="ruler-vertical-main"
+              :style="{ height: rulerVerticalHeightPx + 'px', transform: 'translateY(' + (-canvasScrollTop) + 'px)' }"
             >
-              <span v-if="i % 10 === 0" class="ruler-number ruler-number-left">{{ i }}</span>
-              <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
+              <div
+                v-for="i in verticalRuler"
+                :key="'v-' + i"
+                :class="['ruler-mark-vertical', i % 10 === 0 ? 'major' : 'minor']"
+                :style="{ top: getVerticalPosition(i) + 'px' }"
+              >
+                <span v-if="i % 10 === 0" class="ruler-number ruler-number-left">{{ i }}</span>
+                <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
+              </div>
             </div>
           </div>
-          <!-- 预览内容区域 -->
-          <div class="preview-container">
+          <!-- 仅画布区域滚动 -->
+          <div class="left-panel-body ruler-panel" @scroll="onCanvasScroll">
+            <div
+              class="template-preview"
+              :style="{ minHeight: previewAreaMinHeight + 'px', minWidth: previewAreaMinWidth + 'px' }"
+            >
+              <div
+                class="preview-container"
+                :style="{ minHeight: rulerVerticalHeightPx + 'px', minWidth: rulerHorizontalWidthPx + 'px' }"
+              >
           <div
             ref="previewPaper"
             class="preview-paper"
@@ -202,15 +351,29 @@
               </div>
             </div>
           </div>
+              </div>
+            </div>
           </div>
         </div>
+        <!-- 底部分页页签：分页1 / 分页2 / + -->
+        <div class="design-page-tabs">
+          <div
+            v-for="p in designPages"
+            :key="'design-page-' + p.key"
+            :class="['design-page-tab', { active: activeDesignPageKey === p.key }]"
+            @click="switchDesignPage(p.key)"
+          >{{ p.label }}</div>
+          <div class="design-page-add" title="新增分页" @click="addDesignPage">+</div>
+        </div>
       </div>
-      <!-- 右侧内容框：放置所有表单字段 -->
+      </div>
+      <!-- 右侧内容框：与工具条顶对齐，增高占满 -->
       <div class="right-panel">
-        <el-form ref="form" :model="form" :rules="rules" label-width="120px">
+        <el-form ref="form" :model="form" :rules="rules" label-width="120px" class="right-panel-form">
+          <div class="right-panel-top">
+          <el-tabs v-model="activeTab" class="right-config-tabs">
           <!-- 基本信息 -->
-          <div class="section">
-            <div class="section-title">基本信息</div>
+          <el-tab-pane label="模板信息" name="basic">
           <el-form-item label="组织机构">
             <el-input v-model="orgName" disabled />
           </el-form-item>
@@ -235,11 +398,12 @@
               <el-option label="备货条码" :value="402" />
             </el-select>
           </el-form-item>
-          <el-form-item label="是否默认">
-            <el-radio-group v-model="form.isDefault">
-              <el-radio :label="1">是</el-radio>
-              <el-radio :label="0">否</el-radio>
-            </el-radio-group>
+          <el-form-item label="默认模板" prop="isDefault" required>
+            <el-switch
+              v-model="form.isDefault"
+              :active-value="1"
+              :inactive-value="0"
+            />
           </el-form-item>
           <el-form-item label="状态" prop="status">
             <el-radio-group v-model="form.status">
@@ -247,187 +411,218 @@
               <el-radio label="1">停用</el-radio>
             </el-radio-group>
           </el-form-item>
-          </div>
+          <el-form-item label="备注" prop="remark">
+            <el-input v-model="form.remark" type="textarea" placeholder="备注" />
+          </el-form-item>
+          </el-tab-pane>
 
-          <!-- 页面设置 -->
-          <div class="section">
-            <div class="section-title">页面设置</div>
-          <el-form-item label="页面方向" prop="orientation">
-            <el-radio-group v-model="form.orientation">
-              <el-radio label="portrait">纵向</el-radio>
-              <el-radio label="landscape">横向</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item label="单号码" prop="codeDisplay">
-            <el-radio-group v-model="form.codeDisplay" class="code-display-buttons">
-              <el-radio-button label="">不显示</el-radio-button>
-              <el-radio-button label="barcode">一维码</el-radio-button>
-              <el-radio-button label="qr">二维码</el-radio-button>
-            </el-radio-group>
-          </el-form-item>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="页面宽度(mm)" prop="pageWidth">
-                <el-input-number v-model="form.pageWidth" :min="50" :max="1000" :precision="2" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="页面高度(mm)" prop="pageHeight">
-                <el-input-number v-model="form.pageHeight" :min="50" :max="1000" :precision="2" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="上边距(mm)" prop="marginTop">
-                <el-input-number v-model="form.marginTop" :min="0" :max="100" :precision="2" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="下边距(mm)" prop="marginBottom">
-                <el-input-number v-model="form.marginBottom" :min="0" :max="100" :precision="2" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="左边距(mm)" prop="marginLeft">
-                <el-input-number v-model="form.marginLeft" :min="0" :max="100" :precision="2" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="右边距(mm)" prop="marginRight">
-                <el-input-number v-model="form.marginRight" :min="0" :max="100" :precision="2" style="width: 100%" />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          </div>
-
-          <!-- 字体设置 -->
-          <div class="section">
-            <div class="section-title">字体设置</div>
-          <el-row :gutter="20" class="font-inline-row">
-            <el-col :span="8">
-              <el-form-item label="字体大小" prop="fontSize">
-                <el-input
-                  v-model.number="form.fontSize"
-                  placeholder="标题字号"
-                  class="font-inline-input"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="字体加粗" prop="fontBold">
-                <el-switch
-                  v-model="form.fontBold"
-                  active-text=""
-                  inactive-text=""
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="列间距(mm)" prop="columnSpacing">
-                <el-input
-                  v-model.number="form.columnSpacing"
-                  placeholder="列间距"
-                  class="font-inline-input"
-                />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item label="字体格式">
-            <el-select v-model="form.fontFamily" placeholder="请选择字体">
-              <el-option label="系统默认" value="" />
-              <el-option label="微软雅黑" value="Microsoft YaHei" />
-              <el-option label="宋体" value="SimSun" />
-              <el-option label="黑体" value="SimHei" />
-              <el-option label="Arial" value="Arial" />
-              <el-option label="Times New Roman" value="Times New Roman" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="字体颜色">
-            <el-color-picker v-model="form.fontColor" show-alpha />
-          </el-form-item>
-          <!-- 表格设置：类似 Word 插入表格，选择行数、列数 -->
-          <div class="section-title" style="margin-top: 12px;">表格设置</div>
-          <el-row :gutter="10" class="font-inline-row table-settings-row">
-            <el-col :span="8">
-              <el-form-item label="表格行数" prop="tableRows" label-width="90px">
-                <el-input
-                  v-model="form.tableRows"
-                  placeholder="行数"
-                  class="table-config-input"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="表格列数" prop="tableColumns">
-                <el-input
-                  v-model="form.tableColumns"
-                  placeholder="列数"
-                  class="table-config-input"
-                />
-              </el-form-item>
-            </el-col>
-            <el-col :span="8">
-              <el-form-item label="行高(px)" prop="lineHeight" label-width="90px">
-                <el-input
-                  v-model="form.lineHeight"
-                  placeholder="行高"
-                  class="table-config-input"
-                />
-              </el-form-item>
-            </el-col>
-          </el-row>
-          <el-form-item label="对齐方式：" label-width="90px">
-            <div class="align-merge-row">
-              <div class="text-align-toolbar">
-                <el-tooltip content="左对齐" placement="top">
-                  <span
-                    class="align-icon align-left"
-                    :class="{ active: form.textAlign === 'left' }"
-                    @click="form.textAlign = 'left'"
-                  ></span>
-                </el-tooltip>
-                <el-tooltip content="居中对齐" placement="top">
-                  <span
-                    class="align-icon align-center"
-                    :class="{ active: form.textAlign === 'center' }"
-                    @click="form.textAlign = 'center'"
-                  ></span>
-                </el-tooltip>
-                <el-tooltip content="右对齐" placement="top">
-                  <span
-                    class="align-icon align-right"
-                    :class="{ active: form.textAlign === 'right' }"
-                    @click="form.textAlign = 'right'"
-                  ></span>
-                </el-tooltip>
-                <el-tooltip content="两端对齐" placement="top">
-                  <span
-                    class="align-icon align-justify"
-                    :class="{ active: form.textAlign === 'justify' }"
-                    @click="form.textAlign = 'justify'"
-                  ></span>
-                </el-tooltip>
-                <el-tooltip content="分散对齐" placement="top">
-                  <span
-                    class="align-icon align-distribute"
-                    :class="{ active: form.textAlign === 'distribute' }"
-                    @click="form.textAlign = 'distribute'"
-                  ></span>
-                </el-tooltip>
+          <!-- 组件设置：可插入组件卡片 -->
+          <el-tab-pane label="组件设置" name="font">
+            <div class="component-palette">
+              <div
+                v-for="item in componentPalette"
+                :key="item.key"
+                class="component-card"
+                :class="{ active: selectedComponent === item.key }"
+                @click="handleSelectComponent(item)"
+              >
+                <div class="component-card-icon" v-html="item.icon"></div>
+                <div class="component-card-label">{{ item.label }}</div>
               </div>
-              <el-button size="mini" type="primary" class="merge-cell-button" @click="handleMergeCells">合并</el-button>
-              <el-button size="mini" :type="form.showPageSubtotal ? 'primary' : 'default'" class="merge-cell-button" @click="form.showPageSubtotal = !form.showPageSubtotal">小计</el-button>
-              <el-button size="mini" :type="form.showGrandTotal ? 'primary' : 'default'" class="merge-cell-button" @click="form.showGrandTotal = !form.showGrandTotal">总计</el-button>
             </div>
-          </el-form-item>
-          </div>
+          </el-tab-pane>
 
+          <!-- 列配置 -->
+          <el-tab-pane label="其他配置" name="column">
+          <el-table :data="columnList" border class="column-config-table" style="width: 100%">
+            <el-table-column label="列名" prop="label" width="120" />
+            <el-table-column label="字段" prop="field" width="120" />
+            <el-table-column label="宽度(px)" width="100">
+              <template slot-scope="scope">
+                <el-input v-model="scope.row.width" placeholder="宽度" size="small" class="column-config-input" />
+              </template>
+            </el-table-column>
+            <el-table-column label="是否显示" width="90">
+              <template slot-scope="scope">
+                <el-switch v-model="scope.row.visible" />
+              </template>
+            </el-table-column>
+            <el-table-column label="排序" width="80">
+              <template slot-scope="scope">
+                <el-input
+                  :key="scope.row.field + '-' + scope.$index"
+                  :value="scope.$index + 1"
+                  size="small"
+                  class="column-config-input"
+                  @blur="updateColumnOrder(scope.$index, $event.target.value)"
+                />
+              </template>
+            </el-table-column>
+          </el-table>
+          </el-tab-pane>
+
+          <!-- 底部信息（与标题配置风格一致） -->
+          <el-tab-pane label="底部信息" name="bottom">
+            <!-- 底部行1 -->
+            <el-form-item label-width="0" class="bottom-info-item">
+              <div class="title-config-row">
+                <el-select v-model="form.bottom1Type" placeholder="请选择" style="width: 100px;" size="small">
+                  <el-option label="采购人" value="purchaser" />
+                  <el-option label="制单人" value="creator" />
+                  <el-option label="配送人" value="dispatcher" />
+                  <el-option label="验收人" value="receiver" />
+                  <el-option label="复核人" value="auditor" />
+                </el-select>
+                <span class="row-label">宽度</span>
+                <el-input v-model="form.bottom1Width" placeholder="宽度" style="width: 70px;" size="small" />
+                <span class="row-label">高度</span>
+                <el-input v-model="form.bottom1Height" placeholder="高度" style="width: 70px;" size="small" />
+                <el-checkbox v-model="form.bottom1Visible">显示</el-checkbox>
+                <el-checkbox v-model="form.bottom1FixedValue">固定值</el-checkbox>
+                <el-input v-if="form.bottom1FixedValue" v-model="form.bottom1FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
+              </div>
+            </el-form-item>
+            <!-- 底部行2 -->
+            <el-form-item label-width="0" class="bottom-info-item">
+              <div class="title-config-row">
+                <el-select v-model="form.bottom2Type" placeholder="请选择" style="width: 100px;" size="small">
+                  <el-option label="采购人" value="purchaser" />
+                  <el-option label="制单人" value="creator" />
+                  <el-option label="配送人" value="dispatcher" />
+                  <el-option label="验收人" value="receiver" />
+                  <el-option label="复核人" value="auditor" />
+                </el-select>
+                <span class="row-label">宽度</span>
+                <el-input v-model="form.bottom2Width" placeholder="宽度" style="width: 70px;" size="small" />
+                <span class="row-label">高度</span>
+                <el-input v-model="form.bottom2Height" placeholder="高度" style="width: 70px;" size="small" />
+                <el-checkbox v-model="form.bottom2Visible">显示</el-checkbox>
+                <el-checkbox v-model="form.bottom2FixedValue">固定值</el-checkbox>
+                <el-input v-if="form.bottom2FixedValue" v-model="form.bottom2FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
+              </div>
+            </el-form-item>
+            <!-- 底部行3 -->
+            <el-form-item label-width="0" class="bottom-info-item">
+              <div class="title-config-row">
+                <el-select v-model="form.bottom3Type" placeholder="请选择" style="width: 100px;" size="small">
+                  <el-option label="采购人" value="purchaser" />
+                  <el-option label="制单人" value="creator" />
+                  <el-option label="配送人" value="dispatcher" />
+                  <el-option label="验收人" value="receiver" />
+                  <el-option label="复核人" value="auditor" />
+                </el-select>
+                <span class="row-label">宽度</span>
+                <el-input v-model="form.bottom3Width" placeholder="宽度" style="width: 70px;" size="small" />
+                <span class="row-label">高度</span>
+                <el-input v-model="form.bottom3Height" placeholder="高度" style="width: 70px;" size="small" />
+                <el-checkbox v-model="form.bottom3Visible">显示</el-checkbox>
+                <el-checkbox v-model="form.bottom3FixedValue">固定值</el-checkbox>
+                <el-input v-if="form.bottom3FixedValue" v-model="form.bottom3FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
+              </div>
+            </el-form-item>
+            <!-- 底部行4 -->
+            <el-form-item label-width="0" class="bottom-info-item">
+              <div class="title-config-row">
+                <el-select v-model="form.bottom4Type" placeholder="请选择" style="width: 100px;" size="small">
+                  <el-option label="采购人" value="purchaser" />
+                  <el-option label="制单人" value="creator" />
+                  <el-option label="配送人" value="dispatcher" />
+                  <el-option label="验收人" value="receiver" />
+                  <el-option label="复核人" value="auditor" />
+                </el-select>
+                <span class="row-label">宽度</span>
+                <el-input v-model="form.bottom4Width" placeholder="宽度" style="width: 70px;" size="small" />
+                <span class="row-label">高度</span>
+                <el-input v-model="form.bottom4Height" placeholder="高度" style="width: 70px;" size="small" />
+                <el-checkbox v-model="form.bottom4Visible">显示</el-checkbox>
+                <el-checkbox v-model="form.bottom4FixedValue">固定值</el-checkbox>
+                <el-input v-if="form.bottom4FixedValue" v-model="form.bottom4FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
+              </div>
+            </el-form-item>
+            <!-- 底部行5 -->
+            <el-form-item label-width="0" class="bottom-info-item">
+              <div class="title-config-row">
+                <el-select v-model="form.bottom5Type" placeholder="请选择" style="width: 100px;" size="small">
+                  <el-option label="采购人" value="purchaser" />
+                  <el-option label="制单人" value="creator" />
+                  <el-option label="配送人" value="dispatcher" />
+                  <el-option label="验收人" value="receiver" />
+                  <el-option label="复核人" value="auditor" />
+                </el-select>
+                <span class="row-label">宽度</span>
+                <el-input v-model="form.bottom5Width" placeholder="宽度" style="width: 70px;" size="small" />
+                <span class="row-label">高度</span>
+                <el-input v-model="form.bottom5Height" placeholder="高度" style="width: 70px;" size="small" />
+                <el-checkbox v-model="form.bottom5Visible">显示</el-checkbox>
+                <el-checkbox v-model="form.bottom5FixedValue">固定值</el-checkbox>
+                <el-input v-if="form.bottom5FixedValue" v-model="form.bottom5FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
+              </div>
+            </el-form-item>
+          </el-tab-pane>
+          </el-tabs>
+          </div>
+          <div class="right-panel-bottom">
+            <el-tabs v-model="activeBottomTab" class="right-bottom-tabs">
+          <!-- 页面设置：折叠面板 纸张设置 / 页边距（默认展开，点击收起） -->
+          <el-tab-pane label="打印设置" name="page">
+            <el-collapse v-model="printCollapseActive" class="print-collapse">
+              <el-collapse-item title="纸张设置" name="paper">
+                <el-form-item label="页面方向" prop="orientation">
+                  <el-radio-group v-model="form.orientation">
+                    <el-radio label="portrait">纵向</el-radio>
+                    <el-radio label="landscape">横向</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+                <el-form-item label="单号码" prop="codeDisplay">
+                  <el-radio-group v-model="form.codeDisplay" class="code-display-buttons">
+                    <el-radio-button label="">不显示</el-radio-button>
+                    <el-radio-button label="barcode">一维码</el-radio-button>
+                    <el-radio-button label="qr">二维码</el-radio-button>
+                  </el-radio-group>
+                </el-form-item>
+              </el-collapse-item>
+              <el-collapse-item title="页边距" name="margin">
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item label="页面宽度(mm)" prop="pageWidth">
+                      <el-input-number v-model="form.pageWidth" :min="50" :max="1000" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="页面高度(mm)" prop="pageHeight">
+                      <el-input-number v-model="form.pageHeight" :min="50" :max="1000" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item label="上边距(mm)" prop="marginTop">
+                      <el-input-number v-model="form.marginTop" :min="0" :max="100" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="下边距(mm)" prop="marginBottom">
+                      <el-input-number v-model="form.marginBottom" :min="0" :max="100" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="20">
+                  <el-col :span="12">
+                    <el-form-item label="左边距(mm)" prop="marginLeft">
+                      <el-input-number v-model="form.marginLeft" :min="0" :max="100" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="右边距(mm)" prop="marginRight">
+                      <el-input-number v-model="form.marginRight" :min="0" :max="100" :precision="2" style="width: 100%" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-collapse-item>
+            </el-collapse>
+          </el-tab-pane>
           <!-- 标题配置 -->
-          <div class="section">
-            <div class="section-title">标题配置</div>
+          <el-tab-pane label="字段属性" name="title">
             <el-form-item label-width="0" label="" class="title1-form-item">
               <div class="title-config-row">
                 <el-select v-model="form.title1Type" placeholder="请选择" style="width: 100px;" size="small">
@@ -602,141 +797,9 @@
                 <el-input v-if="form.title6FixedValue" v-model="form.title6FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
               </div>
             </el-form-item>
+          </el-tab-pane>
+            </el-tabs>
           </div>
-
-          <!-- 列配置 -->
-          <div class="section">
-            <div class="section-title">列配置</div>
-          <el-table :data="columnList" border class="column-config-table" style="width: 100%">
-            <el-table-column label="列名" prop="label" width="120" />
-            <el-table-column label="字段" prop="field" width="120" />
-            <el-table-column label="宽度(px)" width="100">
-              <template slot-scope="scope">
-                <el-input v-model="scope.row.width" placeholder="宽度" size="small" class="column-config-input" />
-              </template>
-            </el-table-column>
-            <el-table-column label="是否显示" width="90">
-              <template slot-scope="scope">
-                <el-switch v-model="scope.row.visible" />
-              </template>
-            </el-table-column>
-            <el-table-column label="排序" width="80">
-              <template slot-scope="scope">
-                <el-input
-                  :key="scope.row.field + '-' + scope.$index"
-                  :value="scope.$index + 1"
-                  size="small"
-                  class="column-config-input"
-                  @blur="updateColumnOrder(scope.$index, $event.target.value)"
-                />
-              </template>
-            </el-table-column>
-          </el-table>
-          </div>
-
-          <!-- 底部信息（与标题配置风格一致） -->
-          <div class="section">
-            <div class="section-title">底部信息</div>
-            <!-- 底部行1 -->
-            <el-form-item label-width="0" class="bottom-info-item">
-              <div class="title-config-row">
-                <el-select v-model="form.bottom1Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="采购人" value="purchaser" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="配送人" value="dispatcher" />
-                  <el-option label="验收人" value="receiver" />
-                  <el-option label="复核人" value="auditor" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.bottom1Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.bottom1Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.bottom1Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.bottom1FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.bottom1FixedValue" v-model="form.bottom1FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <!-- 底部行2 -->
-            <el-form-item label-width="0" class="bottom-info-item">
-              <div class="title-config-row">
-                <el-select v-model="form.bottom2Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="采购人" value="purchaser" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="配送人" value="dispatcher" />
-                  <el-option label="验收人" value="receiver" />
-                  <el-option label="复核人" value="auditor" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.bottom2Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.bottom2Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.bottom2Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.bottom2FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.bottom2FixedValue" v-model="form.bottom2FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <!-- 底部行3 -->
-            <el-form-item label-width="0" class="bottom-info-item">
-              <div class="title-config-row">
-                <el-select v-model="form.bottom3Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="采购人" value="purchaser" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="配送人" value="dispatcher" />
-                  <el-option label="验收人" value="receiver" />
-                  <el-option label="复核人" value="auditor" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.bottom3Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.bottom3Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.bottom3Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.bottom3FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.bottom3FixedValue" v-model="form.bottom3FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <!-- 底部行4 -->
-            <el-form-item label-width="0" class="bottom-info-item">
-              <div class="title-config-row">
-                <el-select v-model="form.bottom4Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="采购人" value="purchaser" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="配送人" value="dispatcher" />
-                  <el-option label="验收人" value="receiver" />
-                  <el-option label="复核人" value="auditor" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.bottom4Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.bottom4Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.bottom4Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.bottom4FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.bottom4FixedValue" v-model="form.bottom4FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <!-- 底部行5 -->
-            <el-form-item label-width="0" class="bottom-info-item">
-              <div class="title-config-row">
-                <el-select v-model="form.bottom5Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="采购人" value="purchaser" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="配送人" value="dispatcher" />
-                  <el-option label="验收人" value="receiver" />
-                  <el-option label="复核人" value="auditor" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.bottom5Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.bottom5Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.bottom5Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.bottom5FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.bottom5FixedValue" v-model="form.bottom5FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-          </div>
-
-      <el-form-item label="备注" prop="remark">
-        <el-input v-model="form.remark" type="textarea" placeholder="备注" />
-      </el-form-item>
         </el-form>
       </div>
     </div>
@@ -765,6 +828,72 @@ export default {
   data() {
     return {
       activeTab: "basic",
+      /** 右侧下方：打印设置 / 字段属性 */
+      activeBottomTab: "page",
+      /** 打印设置折叠面板：默认全部展开 */
+      printCollapseActive: ['paper', 'margin'],
+      /** 组件设置选中项 */
+      selectedComponent: '',
+      componentPalette: [
+        {
+          key: 'text',
+          label: '文本',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><rect x="10" y="12" width="28" height="24" rx="2"/><path d="M18 20h12M24 20v14"/><circle cx="10" cy="12" r="1.5" fill="#303133"/><circle cx="38" cy="12" r="1.5" fill="#303133"/><circle cx="10" cy="36" r="1.5" fill="#303133"/><circle cx="38" cy="36" r="1.5" fill="#303133"/></svg>'
+        },
+        {
+          key: 'image',
+          label: '图片',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><rect x="8" y="12" width="32" height="24" rx="2"/><circle cx="17" cy="20" r="3"/><path d="M8 32l9-8 7 6 5-4 11 10"/></svg>'
+        },
+        {
+          key: 'qr',
+          label: '二维码',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="#303133"><path d="M10 10h12v12H10zm3 3h6v6h-6zm13-3h12v12H26zm3 3h6v6h-6zM10 26h12v12H10zm3 3h6v6h-6zm16 0h3v3h-3zm7-3h2v2h-2zm-4 4h3v3h-3zm4 4h5v5h-5zm-7 3h3v3h-3z"/></svg>'
+        },
+        {
+          key: 'barcode',
+          label: '条形码',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><path d="M12 10v28M16 12v24M20 10v28M24 14v20M28 10v28M32 12v24M36 10v28"/><path d="M8 8h4v4H8zm28 0h4v4h-4zM8 36h4v4H8zm28 0h4v4h-4z"/></svg>'
+        },
+        {
+          key: 'dataTable',
+          label: '数据表格',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><rect x="8" y="12" width="32" height="24" rx="1"/><path d="M8 20h32M8 28h32M19 12v24M29 12v24"/><rect x="8" y="12" width="32" height="8" fill="#dcdfe6" stroke="none"/></svg>'
+        },
+        {
+          key: 'entryTable',
+          label: '分录表格',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><rect x="8" y="12" width="32" height="24" rx="1"/><path d="M8 20h32M8 28h32M19 12v24M29 12v24"/></svg>'
+        },
+        {
+          key: 'layoutGrid',
+          label: '布局网格',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><rect x="8" y="10" width="14" height="12" rx="1"/><rect x="26" y="10" width="14" height="12" rx="1"/><rect x="8" y="26" width="14" height="12" rx="1"/><rect x="26" y="26" width="14" height="12" rx="1"/></svg>'
+        },
+        {
+          key: 'header',
+          label: '页眉',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><rect x="12" y="8" width="24" height="32" rx="2"/><path stroke-dasharray="3 2" d="M16 14h16"/><path d="M16 22h16M16 28h12"/></svg>'
+        },
+        {
+          key: 'footer',
+          label: '页脚',
+          icon: '<svg viewBox="0 0 48 48" width="36" height="36" fill="none" stroke="#303133" stroke-width="2"><rect x="12" y="8" width="24" height="32" rx="2"/><path d="M16 16h16M16 22h12"/><path stroke-dasharray="3 2" d="M16 34h16"/></svg>'
+        }
+      ],
+      /** 左侧预览底部分页页签 */
+      designPages: [{ key: 1, label: '分页1' }],
+      activeDesignPageKey: 1,
+      /** 画布滚动，用于固定刻度尺同步位移 */
+      canvasScrollLeft: 0,
+      canvasScrollTop: 0,
+      /** 设计工具条：撤销/重做/格式刷 */
+      designHistory: [],
+      designHistoryIndex: -1,
+      designHistoryLock: false,
+      formatPainterActive: false,
+      designClipboard: null,
+      designFontSizes: [9, 10, 11, 12, 13, 14, 16, 18, 20, 22, 24, 28, 32],
       dragState: null,
       orgName: '',
       form: {
@@ -792,6 +921,11 @@ export default {
         fontFamily: '',
         fontColor: '#000000',
         fontBold: false,
+        fontItalic: false,
+        fontUnderline: false,
+        fillColor: 'transparent',
+        verticalAlign: 'middle',
+        tableBorder: 'all',
         tableRows: 7,
         tableColumns: 10,
         showPageSubtotal: false,
@@ -950,6 +1084,7 @@ export default {
         }
       }).catch(() => {});
     }
+    this.$nextTick(() => this.pushDesignHistory());
   },
   computed: {
     previewStyle() {
@@ -968,8 +1103,9 @@ export default {
 
       const marginTop = this.form.marginTop || 0;
       const marginLeft = this.form.marginLeft || 0;
-      const topPx = 50 + marginTop * mmToPx;
-      const leftPx = 50 + marginLeft * mmToPx;
+      // preview-container 已相对刻度尺区域定位，纸张只需加边距
+      const topPx = marginTop * mmToPx;
+      const leftPx = marginLeft * mmToPx;
 
       return {
         width: `${previewWidth}px`,
@@ -979,18 +1115,53 @@ export default {
         transform: 'none'
       };
     },
+    /** 当前纸张宽/高（mm，已按方向交换） */
+    paperSizeMm() {
+      let w = Number(this.form.pageWidth) || 210;
+      let h = Number(this.form.pageHeight) || 297;
+      if (this.form.orientation === 'landscape') {
+        return { width: h, height: w };
+      }
+      return { width: w, height: h };
+    },
+    /** 上尺默认 310mm，纸张更宽时按 10mm 向上取整自动加长 */
+    rulerHorizontalMaxMm() {
+      const paperW = Number(this.paperSizeMm.width) || 0;
+      const base = 310;
+      if (paperW <= base) return base;
+      return Math.ceil(paperW / 10) * 10;
+    },
+    /** 左尺默认 160mm，仅模板更高时才自动加长 */
+    rulerVerticalMaxMm() {
+      const paperH = Number(this.paperSizeMm.height) || 0;
+      const base = 160;
+      if (paperH <= base) return base;
+      return Math.ceil(paperH / 10) * 10;
+    },
+    rulerHorizontalWidthPx() {
+      return Math.ceil(this.rulerHorizontalMaxMm * 3.78);
+    },
+    rulerVerticalHeightPx() {
+      return Math.ceil(this.rulerVerticalMaxMm * 3.78);
+    },
+    previewAreaMinWidth() {
+      return this.rulerHorizontalWidthPx + 24;
+    },
+    previewAreaMinHeight() {
+      return this.rulerVerticalHeightPx + 24;
+    },
     horizontalRuler() {
-      // 生成整个面板宽度的尺子标记：1mm 一个小刻度，10mm 一个大刻度
+      const maxMm = this.rulerHorizontalMaxMm;
       const marks = [];
-      for (let i = 0; i <= 400; i += 1) {
+      for (let i = 0; i <= maxMm; i += 1) {
         marks.push(i);
       }
       return marks;
     },
     verticalRuler() {
-      // 生成整个面板高度的尺子标记：1mm 一个小刻度，10mm 一个大刻度
+      const maxMm = this.rulerVerticalMaxMm;
       const marks = [];
-      for (let i = 0; i <= 600; i += 1) {
+      for (let i = 0; i <= maxMm; i += 1) {
         marks.push(i);
       }
       return marks;
@@ -1043,8 +1214,19 @@ export default {
         fontSize: (this.form.fontSize || 14) + 'px',
         fontFamily: this.form.fontFamily || 'inherit',
         color: this.form.fontColor || '#000000',
-        fontWeight: this.form.fontBold ? 'bold' : 'normal'
+        fontWeight: this.form.fontBold ? 'bold' : 'normal',
+        fontStyle: this.form.fontItalic ? 'italic' : 'normal',
+        textDecoration: this.form.fontUnderline ? 'underline' : 'none',
+        textAlign: this.form.textAlign || 'left',
+        verticalAlign: this.form.verticalAlign || 'middle',
+        backgroundColor: (!this.form.fillColor || this.form.fillColor === 'transparent') ? 'transparent' : this.form.fillColor
       };
+    },
+    canUndo() {
+      return this.designHistoryIndex > 0;
+    },
+    canRedo() {
+      return this.designHistoryIndex >= 0 && this.designHistoryIndex < this.designHistory.length - 1;
     },
     titlePreviewItems() {
       const typeLabelMap = {
@@ -1269,19 +1451,41 @@ export default {
     /** 画布表格内联样式：宽度 + 行高（行高影响表格每行高度） */
     previewTableInlineStyle() {
       const rowHeight = Math.max(16, Math.min(120, Number(this.form.lineHeight) || 30));
-      return {
+      const border = this.form.tableBorder || 'all';
+      const style = {
         tableLayout: 'fixed',
         width: this.tableTotalWidth + 'px',
         '--table-row-height': rowHeight + 'px'
       };
+      if (border === 'none') {
+        style.border = 'none';
+        style.borderCollapse = 'collapse';
+      } else if (border === 'outer') {
+        style.border = '1px solid #000';
+        style.borderCollapse = 'collapse';
+      } else {
+        style.borderCollapse = 'collapse';
+      }
+      return style;
     }
   },
   watch: {
+    refBillTotalPages(n) {
+      this.ensureDesignPages(Math.max(1, Number(n) || 1));
+    },
+    refBillPage(p) {
+      const page = Math.max(1, Number(p) || 1);
+      this.ensureDesignPages(page);
+      if (this.activeDesignPageKey !== page) {
+        this.activeDesignPageKey = page;
+      }
+    },
     formData: {
       handler(newVal) {
         if (newVal) {
           this.refBillData = null;
           this.refBillPage = 1;
+          this.resetDesignPages();
           this.form = { ...this.form, ...newVal };
           // 转换显示字段为布尔值
           if (this.form.showPurchaser !== undefined) {
@@ -1329,6 +1533,11 @@ export default {
               }
               this.form.showPageSubtotal = !!config.showPageSubtotal;
               this.form.showGrandTotal = !!config.showGrandTotal;
+              if (config.fontItalic !== undefined) this.form.fontItalic = !!config.fontItalic;
+              if (config.fontUnderline !== undefined) this.form.fontUnderline = !!config.fontUnderline;
+              if (config.fillColor !== undefined) this.form.fillColor = config.fillColor;
+              if (config.verticalAlign !== undefined) this.form.verticalAlign = config.verticalAlign;
+              if (config.tableBorder !== undefined) this.form.tableBorder = config.tableBorder;
               // 底部信息配置
               for (let i = 1; i <= 5; i++) {
                 const idx = String(i);
@@ -1575,6 +1784,20 @@ export default {
     },
     /** 点击数据行单元格：只高亮当前格子，不再联动列头 */
     onBodyCellClick(rowIndex, colIndex) {
+      if (this.formatPainterActive && this.designClipboard) {
+        const s = this.designClipboard;
+        if (s.fontSize != null) this.form.fontSize = s.fontSize;
+        if (s.fontBold != null) this.form.fontBold = s.fontBold;
+        if (s.fontItalic != null) this.form.fontItalic = s.fontItalic;
+        if (s.fontUnderline != null) this.form.fontUnderline = s.fontUnderline;
+        if (s.fontColor != null) this.form.fontColor = s.fontColor;
+        if (s.fillColor != null) this.form.fillColor = s.fillColor;
+        if (s.textAlign != null) this.form.textAlign = s.textAlign;
+        if (s.verticalAlign != null) this.form.verticalAlign = s.verticalAlign;
+        this.formatPainterActive = false;
+        this.pushDesignHistory();
+        return;
+      }
       // 切换当前单元格的选中状态
       const idx = this.bodySelectedCells.findIndex(c => c.row === rowIndex && c.col === colIndex);
       if (idx !== -1) {
@@ -1903,6 +2126,11 @@ export default {
             }
             this.form.showPageSubtotal = !!config.showPageSubtotal;
             this.form.showGrandTotal = !!config.showGrandTotal;
+            if (config.fontItalic !== undefined) this.form.fontItalic = !!config.fontItalic;
+            if (config.fontUnderline !== undefined) this.form.fontUnderline = !!config.fontUnderline;
+            if (config.fillColor !== undefined) this.form.fillColor = config.fillColor;
+            if (config.verticalAlign !== undefined) this.form.verticalAlign = config.verticalAlign;
+            if (config.tableBorder !== undefined) this.form.tableBorder = config.tableBorder;
             this.headerSelectedCols = [];
             this.bodySelectedCells = [];
             this.editingBodyCell = null;
@@ -1975,6 +2203,15 @@ export default {
         fontSize: 14,
         tableFontSize: 12,
         columnSpacing: 0,
+        fontFamily: '',
+        fontColor: '#000000',
+        fontBold: false,
+        fontItalic: false,
+        fontUnderline: false,
+        fillColor: 'transparent',
+        verticalAlign: 'middle',
+        tableBorder: 'all',
+        textAlign: 'left',
         tableRows: 7,
         tableColumns: 10,
         lineHeight: 30,
@@ -2086,6 +2323,254 @@ export default {
       this.refBillData = null;
       this.refBillPage = 1;
       this.activeTab = "basic";
+      this.activeBottomTab = "page";
+      this.printCollapseActive = ['paper', 'margin'];
+      this.canvasScrollLeft = 0;
+      this.canvasScrollTop = 0;
+      this.formatPainterActive = false;
+      this.designClipboard = null;
+      this.designHistory = [];
+      this.designHistoryIndex = -1;
+      this.resetDesignPages();
+      this.$nextTick(() => this.pushDesignHistory());
+    },
+    resetDesignPages() {
+      this.designPages = [{ key: 1, label: '分页1' }];
+      this.activeDesignPageKey = 1;
+    },
+    ensureDesignPages(minCount) {
+      const n = Math.max(1, Number(minCount) || 1);
+      while (this.designPages.length < n) {
+        const key = this.designPages.length + 1;
+        this.designPages.push({ key, label: `分页${key}` });
+      }
+    },
+    switchDesignPage(key) {
+      const page = Math.max(1, Number(key) || 1);
+      this.ensureDesignPages(page);
+      this.activeDesignPageKey = page;
+      this.refBillPage = page;
+    },
+    addDesignPage() {
+      const key = this.designPages.length + 1;
+      this.designPages.push({ key, label: `分页${key}` });
+      this.activeDesignPageKey = key;
+      this.refBillPage = key;
+    },
+    onCanvasScroll(e) {
+      const el = e && e.target;
+      if (!el) return;
+      this.canvasScrollLeft = el.scrollLeft || 0;
+      this.canvasScrollTop = el.scrollTop || 0;
+    },
+    handleSelectComponent(item) {
+      if (!item || !item.key) return;
+      this.selectedComponent = item.key;
+      switch (item.key) {
+        case 'qr':
+          this.form.codeDisplay = 'qr';
+          this.activeBottomTab = 'page';
+          this.pushDesignHistory();
+          break;
+        case 'barcode':
+          this.form.codeDisplay = 'barcode';
+          this.activeBottomTab = 'page';
+          this.pushDesignHistory();
+          break;
+        case 'text':
+          this.activeBottomTab = 'title';
+          break;
+        case 'dataTable':
+        case 'entryTable':
+          this.activeTab = 'column';
+          break;
+        case 'header':
+          this.activeBottomTab = 'title';
+          for (let i = 1; i <= 3; i++) {
+            if (this.form['title' + i + 'Visible'] === false) {
+              this.form['title' + i + 'Visible'] = true;
+            }
+          }
+          this.pushDesignHistory();
+          break;
+        case 'footer':
+          this.activeTab = 'bottom';
+          for (let i = 1; i <= 3; i++) {
+            if (this.form['bottom' + i + 'Visible'] === false) {
+              this.form['bottom' + i + 'Visible'] = true;
+            }
+          }
+          this.pushDesignHistory();
+          break;
+        case 'image':
+        case 'layoutGrid':
+          this.$message && this.$message.info(item.label + '组件已选中，可在画布中继续配置');
+          break;
+        default:
+          break;
+      }
+    },
+    snapshotDesignState() {
+      return JSON.stringify({
+        form: this.form,
+        columnList: this.columnList,
+        tableHeaderFields: this.tableHeaderFields,
+        headerMerges: this.headerMerges,
+        bodyMerges: this.bodyMerges,
+        bodyCellTexts: this.bodyCellTexts,
+        canvasColumnWidths: this.canvasColumnWidths
+      });
+    },
+    applyDesignSnapshot(raw) {
+      if (!raw) return;
+      try {
+        const snap = JSON.parse(raw);
+        this.designHistoryLock = true;
+        if (snap.form) this.form = { ...this.form, ...snap.form };
+        if (Array.isArray(snap.columnList)) this.columnList = snap.columnList;
+        if (Array.isArray(snap.tableHeaderFields)) this.tableHeaderFields = snap.tableHeaderFields;
+        if (Array.isArray(snap.headerMerges)) this.headerMerges = snap.headerMerges;
+        if (Array.isArray(snap.bodyMerges)) this.bodyMerges = snap.bodyMerges;
+        if (snap.bodyCellTexts) this.bodyCellTexts = snap.bodyCellTexts;
+        if (Array.isArray(snap.canvasColumnWidths)) this.canvasColumnWidths = snap.canvasColumnWidths;
+      } finally {
+        this.$nextTick(() => { this.designHistoryLock = false; });
+      }
+    },
+    pushDesignHistory() {
+      if (this.designHistoryLock) return;
+      const snap = this.snapshotDesignState();
+      if (this.designHistoryIndex >= 0 && this.designHistory[this.designHistoryIndex] === snap) return;
+      if (this.designHistoryIndex < this.designHistory.length - 1) {
+        this.designHistory = this.designHistory.slice(0, this.designHistoryIndex + 1);
+      }
+      this.designHistory.push(snap);
+      if (this.designHistory.length > 40) {
+        this.designHistory.shift();
+      }
+      this.designHistoryIndex = this.designHistory.length - 1;
+    },
+    handleDesignUndo() {
+      if (!this.canUndo) return;
+      this.designHistoryIndex -= 1;
+      this.applyDesignSnapshot(this.designHistory[this.designHistoryIndex]);
+    },
+    handleDesignRedo() {
+      if (!this.canRedo) return;
+      this.designHistoryIndex += 1;
+      this.applyDesignSnapshot(this.designHistory[this.designHistoryIndex]);
+    },
+    toggleFontBold() {
+      this.form.fontBold = !this.form.fontBold;
+      this.pushDesignHistory();
+    },
+    toggleFontItalic() {
+      this.form.fontItalic = !this.form.fontItalic;
+      this.pushDesignHistory();
+    },
+    toggleFontUnderline() {
+      this.form.fontUnderline = !this.form.fontUnderline;
+      this.pushDesignHistory();
+    },
+    handleFontColorCommand(color) {
+      this.form.fontColor = color;
+      this.pushDesignHistory();
+    },
+    handleFillColorCommand(color) {
+      this.form.fillColor = color;
+      this.pushDesignHistory();
+    },
+    handleTextAlignCommand(align) {
+      this.form.textAlign = align;
+      this.pushDesignHistory();
+    },
+    handleVerticalAlignCommand(align) {
+      this.form.verticalAlign = align;
+      this.pushDesignHistory();
+    },
+    handleBorderCommand(cmd) {
+      if (cmd === 'merge') {
+        this.handleMergeCells();
+        this.pushDesignHistory();
+        return;
+      }
+      this.form.tableBorder = cmd;
+      this.pushDesignHistory();
+    },
+    handlePlaceholderCommand(type) {
+      const labelMap = {
+        warehouse: '仓库',
+        department: '科室',
+        supplier: '供应商',
+        billNo: '单号',
+        remark: '备注'
+      };
+      const text = '{{' + (labelMap[type] || type) + '}}';
+      if (this.bodySelectedCells && this.bodySelectedCells.length) {
+        this.bodySelectedCells.forEach(cell => {
+          const key = cell.row + '_' + cell.col;
+          this.$set(this.bodyCellTexts, key, text);
+        });
+        this.pushDesignHistory();
+        return;
+      }
+      this.$message && this.$message.info('请先在画布表格中选中单元格，再插入占位符');
+    },
+    toggleFormatPainter() {
+      this.formatPainterActive = !this.formatPainterActive;
+      if (this.formatPainterActive) {
+        this.designClipboard = {
+          fontSize: this.form.fontSize,
+          fontBold: this.form.fontBold,
+          fontItalic: this.form.fontItalic,
+          fontUnderline: this.form.fontUnderline,
+          fontColor: this.form.fontColor,
+          fillColor: this.form.fillColor,
+          textAlign: this.form.textAlign,
+          verticalAlign: this.form.verticalAlign
+        };
+        this.$message && this.$message.success('格式刷已开启，再次点击关闭');
+      }
+    },
+    handleDesignCopy() {
+      if (this.bodySelectedCells && this.bodySelectedCells.length) {
+        const texts = this.bodySelectedCells.map(c => this.bodyCellTexts[c.row + '_' + c.col] || '');
+        this.designClipboard = { type: 'cells', cells: this.bodySelectedCells.map(c => ({ ...c })), texts };
+        this.$message && this.$message.success('已复制选中单元格');
+        return;
+      }
+      this.designClipboard = {
+        type: 'style',
+        fontSize: this.form.fontSize,
+        fontBold: this.form.fontBold,
+        fontItalic: this.form.fontItalic,
+        fontUnderline: this.form.fontUnderline,
+        fontColor: this.form.fontColor,
+        fillColor: this.form.fillColor,
+        textAlign: this.form.textAlign,
+        verticalAlign: this.form.verticalAlign
+      };
+      this.$message && this.$message.success('已复制当前样式');
+    },
+    handleDesignDelete() {
+      if (this.bodySelectedCells && this.bodySelectedCells.length) {
+        this.bodySelectedCells.forEach(cell => {
+          const key = cell.row + '_' + cell.col;
+          this.$set(this.bodyCellTexts, key, '');
+        });
+        this.bodySelectedCells = [];
+        this.pushDesignHistory();
+        return;
+      }
+      if (this.headerSelectedCols && this.headerSelectedCols.length) {
+        this.headerSelectedCols.forEach(col => {
+          this.$set(this.tableHeaderFields, col, '');
+        });
+        this.headerSelectedCols = [];
+        this.pushDesignHistory();
+        return;
+      }
+      this.$message && this.$message.info('请先选中要删除的单元格或表头');
     },
     /** 保证 tableHeaderFields 长度不少于当前表格列数 */
     ensureTableHeaderFieldsLength() {
@@ -2334,6 +2819,11 @@ export default {
             barcodeSize: this.form.barcodeSize ? { ...this.form.barcodeSize } : { width: 120, height: 28 },
             showPageSubtotal: this.form.showPageSubtotal,
             showGrandTotal: this.form.showGrandTotal,
+            fontItalic: !!this.form.fontItalic,
+            fontUnderline: !!this.form.fontUnderline,
+            fillColor: this.form.fillColor || 'transparent',
+            verticalAlign: this.form.verticalAlign || 'middle',
+            tableBorder: this.form.tableBorder || 'all',
             bottom1Type: this.form.bottom1Type,
             bottom1Width: this.form.bottom1Width,
             bottom1Height: this.form.bottom1Height,
@@ -2461,23 +2951,39 @@ export default {
 
 <style scoped>
 .print-setting-form {
-  padding: 0 0 20px 0;
+  padding: 0;
   height: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .dialog-layout {
   display: flex;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   box-sizing: border-box;
-  padding-left: 0;
-  margin-left: -12px;
-  margin-right: -14px;
+  padding: 0;
+  margin: 0;
+  align-items: stretch;
+}
+
+.left-column {
+  flex: 4;
+  min-width: 0;
+  min-height: 0;
+  margin-right: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .left-panel {
-  flex: 4;
-  margin-right: 8px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  margin-right: 0;
   background: #fff;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
@@ -2486,6 +2992,62 @@ export default {
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶行固定：角块 + 水平尺轨道 */
+.ruler-top-row {
+  flex-shrink: 0;
+  display: flex;
+  height: 50px;
+  background: #f5f7fa;
+  border-bottom: 2px solid #409eff;
+  z-index: 6;
+}
+
+.ruler-corner {
+  flex: 0 0 70px;
+  width: 70px;
+  height: 50px;
+  background: #f5f7fa;
+  border-right: 2px solid #409eff;
+  box-sizing: border-box;
+  z-index: 7;
+}
+
+.ruler-h-viewport {
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ruler-main-row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.ruler-v-viewport {
+  flex: 0 0 70px;
+  width: 70px;
+  overflow: hidden;
+  position: relative;
+  background: #f5f7fa;
+  border-right: 2px solid #409eff;
+  z-index: 6;
+  box-sizing: border-box;
+}
+
+.left-panel-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
 }
 
 .ruler-panel {
@@ -2493,14 +3055,16 @@ export default {
     linear-gradient(to right, #e0e0e0 1px, transparent 1px),
     linear-gradient(to bottom, #e0e0e0 1px, transparent 1px);
   background-size: 37.8px 37.8px; /* 10mm = 37.8px */
-  background-position: 50px 50px;
+  background-position: 0 0;
 }
 
 .template-preview {
-  width: 100%;
-  height: 100%;
+  width: max-content;
+  min-width: 100%;
+  min-height: 100%;
+  height: auto;
   position: relative;
-  padding: 50px 50px 20px 50px;
+  padding: 0 12px 8px 0;
   box-sizing: border-box;
 }
 
@@ -2520,10 +3084,9 @@ export default {
 
 .preview-container {
   position: relative;
-  width: 100%;
-  height: calc(100% - 50px);
-  padding-left: 50px;
-  padding-top: 50px;
+  width: auto;
+  height: auto;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -2534,16 +3097,13 @@ export default {
   transform-origin: top left;
 }
 
-/* 顶部水平尺子 */
+/* 顶部水平尺子：轨道固定，刻度随左右滚动同步平移 */
 .ruler-horizontal-main {
-  position: absolute;
-  top: 0;
-  left: 50px;
-  right: 0;
+  position: relative;
   height: 50px;
   background: #f5f7fa;
-  border-bottom: 2px solid #409eff;
-  z-index: 5;
+  box-sizing: border-box;
+  will-change: transform;
 }
 
 .ruler-mark-horizontal {
@@ -2585,57 +3145,67 @@ export default {
   margin-bottom: 4px;
 }
 
-/* 左侧垂直尺子 */
+/* 左侧垂直尺子：轨道固定，刻度随上下滚动同步平移 */
 .ruler-vertical-main {
-  position: absolute;
-  left: 0;
-  top: 50px;
-  bottom: 0;
-  width: 50px;
+  position: relative;
+  width: 70px;
   background: #f5f7fa;
-  border-right: 2px solid #409eff;
-  z-index: 5;
+  box-sizing: border-box;
+  overflow: visible;
+  will-change: transform;
 }
 
 .ruler-mark-vertical {
   position: absolute;
+  left: 0;
   right: 0;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
+  height: 18px;
+  box-sizing: border-box;
   transform: translateY(-50%);
 }
 
 .ruler-mark-vertical .ruler-tick {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   background: #409eff;
 }
 
+/* 与上方 major 24px / minor 10px 对应：贴右边向左伸出 */
 .ruler-mark-vertical .ruler-tick.major {
-  width: 25px;
-  height: 3px;
-  margin-right: 0;
+  width: 24px;
+  height: 2px;
 }
 
 .ruler-mark-vertical .ruler-tick.minor {
-  width: 12px;
+  width: 10px;
   height: 2px;
+}
+
+.ruler-number-left {
   margin-right: 0;
 }
 
-/* 垂直尺子读数显示在刻度左侧（外侧） */
-.ruler-number-left {
-  margin-right: 4px;
-}
-
 .ruler-mark-vertical .ruler-number {
-  font-size: 14px;
+  position: absolute;
+  left: 2px;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
   font-weight: 700;
   color: #303133;
-  writing-mode: vertical-lr;
+  writing-mode: horizontal-tb;
   text-orientation: mixed;
+  white-space: nowrap;
+  overflow: visible;
+  text-align: right;
   background: #fff;
-  padding: 4px 2px;
+  padding: 1px 2px;
   border-radius: 2px;
+  line-height: 1.1;
+  box-sizing: border-box;
 }
 
 .paper-content {
@@ -2926,33 +3496,368 @@ export default {
 
 .right-panel {
   flex: 2;
+  min-width: 0;
   background: #fff;
   border-radius: 4px;
   border: 1px solid #EBEEF5;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  padding: 16px 20px 10px 20px;
+  padding: 8px 16px 10px 16px;
   box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-panel > .el-form,
+.right-panel-form {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* 同一容器内上下两组 Tab，中间横线分隔 */
+.right-panel-top {
+  flex: 1 1 52%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 4px;
+}
+
+.right-panel-bottom {
+  flex: 1 1 48%;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 8px 0 0;
+  border: none;
+  border-top: 1px solid #dcdfe6;
+  border-radius: 0;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.right-config-tabs,
+.right-bottom-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.right-config-tabs >>> .el-tabs__header,
+.right-bottom-tabs >>> .el-tabs__header {
+  margin: 0 0 8px;
+  flex-shrink: 0;
+}
+
+.right-config-tabs >>> .el-tabs__nav-wrap::after,
+.right-bottom-tabs >>> .el-tabs__nav-wrap::after {
+  height: 1px;
+}
+
+.right-config-tabs >>> .el-tabs__item,
+.right-bottom-tabs >>> .el-tabs__item {
+  padding: 0 12px;
+  height: 36px;
+  line-height: 36px;
+  font-size: 13px;
+}
+
+.right-config-tabs >>> .el-tabs__content,
+.right-bottom-tabs >>> .el-tabs__content {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  padding-right: 4px;
+}
+
+.right-config-tabs >>> .el-tab-pane,
+.right-bottom-tabs >>> .el-tab-pane {
+  padding-bottom: 8px;
+}
+
+.print-collapse {
+  border: none;
+}
+
+.print-collapse >>> .el-collapse-item__header {
+  height: 36px;
+  line-height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #303133;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 0 12px;
+  margin-bottom: 0;
+}
+
+.print-collapse >>> .el-collapse-item + .el-collapse-item {
+  margin-top: 8px;
+}
+
+.print-collapse >>> .el-collapse-item__wrap {
+  border: none;
+  background: transparent;
+}
+
+.print-collapse >>> .el-collapse-item__content {
+  padding: 10px 4px 4px;
+}
+
+.print-collapse >>> .el-collapse-item__arrow {
+  margin-right: 0;
+}
+
+.component-palette {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 4px 2px 8px;
+}
+
+.component-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  padding: 12px 8px 10px;
+  background: #f4f7f9;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.component-card:hover {
+  background: #eef3f8;
+  border-color: #c6e2ff;
+}
+
+.component-card.active {
+  background: #ecf5ff;
+  border-color: #409eff;
+  box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.2);
+}
+
+.component-card-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+  color: #303133;
+}
+
+.component-card-icon >>> svg {
+  display: block;
+}
+
+.component-card-label {
+  font-size: 13px;
+  color: #303133;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.design-page-tabs {
+  flex-shrink: 0;
+  height: 28px;
+  display: flex;
+  align-items: stretch;
+  background: #f0f2f5;
+  border-top: 1px solid #dcdfe6;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.design-page-tab {
+  flex: 0 0 auto;
+  min-width: 64px;
+  padding: 0 14px;
+  font-size: 12px;
+  color: #606266;
+  background: #fff;
+  border-right: 1px solid #dcdfe6;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.design-page-tab.active {
+  color: #409eff;
+  font-weight: 500;
+}
+
+.design-page-tab:hover {
+  color: #409eff;
+}
+
+.design-page-add {
+  flex: 0 0 auto;
+  width: 32px;
+  font-size: 16px;
+  line-height: 1;
+  color: #606266;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+.design-page-add:hover {
+  color: #409eff;
 }
 
 .form-toolbar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   text-align: left;
-  padding: 6px 0 6px 4px !important;
-  margin-left: 0 !important;
-  margin-top: 0 !important;
+  padding: 4px 0 6px 4px !important;
+  margin: 0 !important;
   background: #ffffff;
-  border-bottom: 1px solid #EBEEF5;
+  border-bottom: none;
+  flex-shrink: 0;
+  min-height: 40px;
+  box-sizing: border-box;
 }
 
-.form-toolbar .el-button {
-  margin-right: 8px;
-}
-
-.form-toolbar .el-button:last-child {
+.form-toolbar > .el-button {
   margin-right: 0;
+}
+
+.design-toolbar {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px 6px;
+  margin-right: 4px;
+  background: #f5f7fa;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  min-height: 32px;
+}
+
+.dt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: #303133;
+  cursor: pointer;
+  border-radius: 3px;
+  line-height: 1;
+  font-size: 14px;
+}
+
+.dt-btn:hover:not(:disabled) {
+  background: #e6ebf5;
+  color: #409eff;
+}
+
+.dt-btn:disabled {
+  color: #c0c4cc;
+  cursor: not-allowed;
+}
+
+.dt-btn.active {
+  background: #d9ecff;
+  color: #409eff;
+}
+
+.dt-text {
+  font-weight: 700;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.dt-italic {
+  font-style: italic;
+}
+
+.dt-underline {
+  text-decoration: underline;
+}
+
+.dt-sep {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: #dcdfe6;
+  flex-shrink: 0;
+}
+
+.dt-font-size {
+  width: 58px;
+  margin: 0 2px;
+}
+
+.dt-font-size >>> .el-input__inner {
+  height: 26px;
+  line-height: 26px;
+  padding: 0 22px 0 8px;
+  text-align: center;
+}
+
+.dt-color-btn {
+  flex-direction: column;
+  padding: 2px 4px 1px;
+  gap: 1px;
+}
+
+.dt-color-letter {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.dt-color-bar {
+  display: block;
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+  background: #67c23a;
+}
+
+.dt-caret {
+  margin-left: 2px;
+  font-size: 10px;
+  color: #909399;
+}
+
+.dt-placeholder-btn span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dt-color-menu {
+  min-width: 120px;
+}
+
+.dt-color-picker-wrap {
+  padding: 6px 12px 2px;
 }
 
 .section {
