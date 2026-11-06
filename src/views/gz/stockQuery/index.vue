@@ -163,6 +163,12 @@ import InboundRefundTable from "./components/InboundRefundTable.vue";
 import OutboundRefundTable from "./components/OutboundRefundTable.vue";
 import FollowTable from "./components/FollowTable.vue";
 import { parseTime } from "@/utils/ruoyi";
+import {
+  mapInboundExportRows,
+  mapOutboundExportRows,
+  mapFollowExportRows,
+  exportStockQueryRows
+} from "./stockQueryExport";
 
 function createDefaultBeginDate() {
   const date = new Date();
@@ -383,15 +389,28 @@ export default {
       });
     },
     handleExport() {
-      const exportUrl = this.activeName === 'inbound' ? 'gzOrder/export'
-        : this.activeName === 'outbound' ? 'gzShipment/export'
-          : 'gzFollow/export';
-      const params = { ...this.queryParams };
-      this.applyMoreSearchToQueryParams(params);
-      this.download(exportUrl, {
-        ...params,
-        orderType: this.activeName === 'inbound' ? 101 : this.activeName === 'outbound' ? 102 : null
-      }, `备货查询_${this.activeName === 'inbound' ? '入退货表' : this.activeName === 'outbound' ? '出退库表' : '跟台表'}_${new Date().getTime()}.xlsx`);
+      const ref = this.activeTableRef();
+      const rows = (ref && ref.allDetailRows) || [];
+      if (!rows.length) {
+        this.$modal.msgWarning('暂无数据可导出，请先查询');
+        return;
+      }
+      const dictOptions = (this.dict && this.dict.type && this.dict.type.biz_status) || [];
+      const tabLabel = this.activeName === 'inbound' ? '入退货表'
+        : this.activeName === 'outbound' ? '出退库表' : '跟台表';
+      const previewRows = this.activeName === 'inbound'
+        ? mapInboundExportRows(rows, dictOptions)
+        : this.activeName === 'outbound'
+          ? mapOutboundExportRows(rows, dictOptions)
+          : mapFollowExportRows(rows);
+      const ok = exportStockQueryRows(
+        previewRows,
+        `备货查询_${tabLabel}_${new Date().getTime()}.xlsx`,
+        tabLabel
+      );
+      if (ok) {
+        this.$modal.msgSuccess(`导出成功，共 ${previewRows.length} 条`);
+      }
     }
   }
 };

@@ -25,4 +25,6 @@ package.json
 .gitignore
 
 dist.tar
+dist*.tar
+dist *.tar
 dist.rar
