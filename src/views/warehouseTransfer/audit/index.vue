@@ -185,6 +185,7 @@
 
 <script>
 import { listWarehouseTransfer, getWarehouseTransfer, auditWarehouseTransfer } from '@/api/warehouse/warehouseTransfer';
+import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import TransferOrderPrint from './transferOrderPrint';
 import RMBConverter from '@/utils/tools';
@@ -660,6 +661,9 @@ export default {
     handleUpdate(row) {
       const id = row.id || this.ids
       getWarehouseTransfer(id).then(response => {
+        if (!assertBillEditableBeforeEdit(response.data, this, { docLabel: '该调拨单' })) {
+          return
+        }
         this.form = response.data;
         this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
         this.open = true;

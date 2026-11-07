@@ -246,6 +246,7 @@ import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import { getWarehouse } from '@/api/foundation/warehouse';
+import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
 import {
   assertBillHasEntries,
   assertBillHasActiveEntriesForAudit,
@@ -1350,9 +1351,14 @@ export default {
       this.reset();
       const id = row.id || this.ids
       getInWarehouse(id).then(response => {
+        if (!assertBillEditableBeforeEdit(response.data, this, { docLabel: '该入库单' })) {
+          return
+        }
         this.form = response.data;
-        this.form.billStatus = '1';
-        this.form.billType = '101';
+        if (this.form.billStatus == null || this.form.billStatus === '') {
+          this.form.billStatus = '1'
+        }
+        this.form.billType = this.form.billType != null ? this.form.billType : '101';
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.initDetailLongTermFlags();
         this.open = true;

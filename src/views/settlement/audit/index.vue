@@ -236,6 +236,7 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectMaterialFilter from "@/components/SelectModel/SelectMaterialFilter";
 import RMBConverter from "@/utils/tools";
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
+import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
 
 export default {
   name: "SettlementAudit",
@@ -828,9 +829,14 @@ export default {
       this.reset();
       const id = row.id || this.ids
       getSettlement(id).then(response => {
+        if (!assertBillEditableBeforeEdit(response.data, this, { docLabel: '该结算单' })) {
+          return
+        }
         this.form = response.data;
-        this.form.billStatus = '1';
-        this.form.billType = '501';
+        if (this.form.billStatus == null || this.form.billStatus === '') {
+          this.form.billStatus = '1'
+        }
+        this.form.billType = this.form.billType != null ? this.form.billType : '501';
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = true;

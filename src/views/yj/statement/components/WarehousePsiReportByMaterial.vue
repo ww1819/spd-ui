@@ -220,64 +220,74 @@
             <span>{{ scope.row.qc_amt | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="期初导入数量" align="center" prop="qc_import_qty" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="期初导入数量(+)" align="center" prop="qc_import_qty" width="130" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.qc_import_qty | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="期初导入金额" align="center" prop="qc_import_amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="期初导入金额(+)" align="center" prop="qc_import_amt" width="130" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.qc_import_amt | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="入库数量" align="center" prop="rk_qty" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="入库数量(+)" align="center" prop="rk_qty" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.rk_qty | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="入库金额" align="center" prop="rk_amt" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="入库金额(+)" align="center" prop="rk_amt" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.rk_amt | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="出库数量" align="center" prop="ck_qty" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="出库数量(-)" align="center" prop="ck_qty" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.ck_qty | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="出库金额" align="center" prop="ck_amt" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="出库金额(-)" align="center" prop="ck_amt" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.ck_amt | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="调入数量" align="center" prop="dbr_qty" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="调入数量(+)" align="center" prop="dbr_qty" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.dbr_qty | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="调入金额" align="center" prop="dbr_amt" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="调入金额(+)" align="center" prop="dbr_amt" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.dbr_amt | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="调出数量" align="center" prop="dbc_qty" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="调出数量(-)" align="center" prop="dbc_qty" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.dbc_qty | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="调出金额" align="center" prop="dbc_amt" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="调出金额(-)" align="center" prop="dbc_amt" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.dbc_amt | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="盘点数量" align="center" prop="pd_qty" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="盘点数量(+)" align="center" prop="pd_qty" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.pd_qty | formatCurrency }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="盘点金额" align="center" prop="pd_amt" width="110" show-overflow-tooltip resizable>
+        <el-table-column label="盘点金额(+)" align="center" prop="pd_amt" width="110" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span>{{ scope.row.pd_amt | formatCurrency }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="报损数量(-)" align="center" prop="bs_qty" width="110" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.bs_qty | formatCurrency }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="报损金额(-)" align="center" prop="bs_amt" width="110" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span>{{ scope.row.bs_amt | formatCurrency }}</span>
           </template>
         </el-table-column>
         <el-table-column label="结存数量" align="center" prop="jc_qty" width="110" show-overflow-tooltip resizable>
@@ -320,7 +330,7 @@ const PSI_SUM_FIELDS = [
   'qc_qty', 'qc_amt', 'qc_import_qty', 'qc_import_amt',
   'rk_qty', 'rk_amt', 'ck_qty', 'ck_amt',
   'dbr_qty', 'dbr_amt', 'dbc_qty', 'dbc_amt',
-  'pd_qty', 'pd_amt', 'jc_qty', 'jc_amt'
+  'pd_qty', 'pd_amt', 'bs_qty', 'bs_amt', 'jc_qty', 'jc_amt'
 ]
 
 export default {

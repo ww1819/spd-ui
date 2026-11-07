@@ -383,16 +383,14 @@
                         <span>{{ formatAmount(scope.row.amount) }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="批号" align="center" prop="batchNo" min-width="110" show-overflow-tooltip resizable>
+                    <el-table-column label="批号" align="center" prop="batchNumber" min-width="110" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
-                        <el-input
-                          v-if="!formReadonly"
-                          v-model="scope.row.batchNo"
-                          size="small"
-                          class="detail-input-compact"
-                          placeholder="批号"
-                        />
-                        <span v-else>{{ scope.row.batchNo || '--' }}</span>
+                        <span>{{ scope.row.batchNumber || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="批次号" align="center" prop="batchNo" min-width="160" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.batchNo || '--' }}</span>
                       </template>
                     </el-table-column>
                     <el-table-column label="生产日期" align="center" prop="produceDate" min-width="120" resizable>
@@ -809,6 +807,7 @@ export default {
         price: e.price,
         amount: e.amount,
         batchNo: e.batchNo || "",
+        batchNumber: e.batchNumber || "",
         produceDate: e.produceDate || "",
         expiryDate: e.expiryDate || "",
         manufacturer: e.manufacturer || "",

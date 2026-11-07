@@ -232,6 +232,7 @@ import { listThInventory, getThInventory, delThInventory, addThInventory, update
 import { listEntryChangeLog } from "@/api/warehouse/warehouse";
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
 import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
+import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -942,9 +943,14 @@ export default {
       this.reset();
       const id = row.id || this.ids
       getThInventory(id).then(response => {
+        if (!assertBillEditableBeforeEdit(response.data, this, { docLabel: '该退货单' })) {
+          return
+        }
         this.form = response.data;
-        this.form.billStatus = '1';
-        this.form.billType = '301';
+        if (this.form.billStatus == null || this.form.billStatus === '') {
+          this.form.billStatus = '1'
+        }
+        this.form.billType = this.form.billType != null ? this.form.billType : '301';
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = true;

@@ -270,6 +270,7 @@ import { listTkInventory, getTkInventory, delTkInventory, addTkInventory, update
 import { listEntryChangeLog } from "@/api/warehouse/outWarehouse";
 import { collectTkScopeErrors } from '@/utils/auditBillScopeValidate';
 import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
+import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -1101,7 +1102,14 @@ export default {
       this.reset();
       const id = row.id || this.ids
       getTkInventory(id).then(response => {
-        const data = { ...response.data, billStatus: '1', billType: '401' }
+        if (!assertBillEditableBeforeEdit(response.data, this, { docLabel: '该退库单' })) {
+          return
+        }
+        const data = {
+          ...response.data,
+          billStatus: (response.data.billStatus != null && response.data.billStatus !== '') ? response.data.billStatus : '1',
+          billType: response.data.billType != null ? response.data.billType : '401'
+        }
         this.applyBillDetail(data, { action: true, title: '修改退库' })
       });
     },

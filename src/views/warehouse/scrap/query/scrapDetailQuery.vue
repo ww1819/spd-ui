@@ -143,7 +143,8 @@
         <el-table-column label="金额" prop="amount" min-width="100" align="right" sortable>
           <template slot-scope="scope">{{ formatAmount(scope.row.amount) }}</template>
         </el-table-column>
-        <el-table-column label="批号" prop="batchNo" min-width="100" show-overflow-tooltip />
+        <el-table-column label="批号" prop="batchNumber" min-width="100" show-overflow-tooltip />
+        <el-table-column label="批次号" prop="batchNo" min-width="150" show-overflow-tooltip />
         <el-table-column label="生产日期" prop="produceDate" min-width="110" show-overflow-tooltip />
         <el-table-column label="有效期" prop="expiryDate" min-width="110" show-overflow-tooltip />
         <el-table-column label="报损原因" prop="scrapReason" min-width="120" show-overflow-tooltip />
@@ -186,7 +187,8 @@ const MORE_SEARCH_OPTIONS = [
   { value: "materialCode", label: "产品编码" },
   { value: "materialName", label: "产品名称" },
   { value: "speci", label: "规格" },
-  { value: "batchNo", label: "批号" },
+  { value: "batchNumber", label: "批号" },
+  { value: "batchNo", label: "批次号" },
   { value: "manufacturer", label: "生产厂家" }
 ];
 

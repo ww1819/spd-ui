@@ -1263,9 +1263,17 @@ export default {
       const id = row.id || this.ids
       getOutWarehouse(id).then(response => {
         this.form = response.data;
+        // 已审/已有审核时间不可再改（与后端 WH-X-003 保护一致）
+        if (response.data && (response.data.billStatus == 2 || response.data.auditDate)) {
+          this.$modal.msgWarning('该单据已审核，不能修改；请刷新后查看。如需调整请走退库/退货流程')
+          return
+        }
         this.$set(this.form, 'docRefList', Array.isArray(response.data.docRefList) ? response.data.docRefList : []);
-        this.form.billStatus = '1';
-        this.form.billType = '201';
+        // 勿强制写死 billStatus=1：保存时后端也会忽略审核态字段，避免竞态把已审打回待审
+        if (this.form.billStatus == null || this.form.billStatus === '') {
+          this.form.billStatus = '1'
+        }
+        this.form.billType = this.form.billType != null ? this.form.billType : '201';
         this.stkIoBillEntryList = response.data.stkIoBillEntryList;
         this.open = true;
         this.action = true;

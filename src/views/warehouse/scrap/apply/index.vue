@@ -404,16 +404,21 @@
                         <span>{{ formatAmount(scope.row.amount) }}</span>
                       </template>
                     </el-table-column>
-                    <el-table-column label="批号" align="center" prop="batchNo" min-width="110" show-overflow-tooltip resizable>
+                    <el-table-column label="批号" align="center" prop="batchNumber" min-width="110" show-overflow-tooltip resizable>
                       <template slot-scope="scope">
                         <el-input
                           v-if="!formReadonly"
-                          v-model="scope.row.batchNo"
+                          v-model="scope.row.batchNumber"
                           size="small"
                           class="detail-input-compact"
                           placeholder="批号"
                         />
-                        <span v-else>{{ scope.row.batchNo || '--' }}</span>
+                        <span v-else>{{ scope.row.batchNumber || '--' }}</span>
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="批次号" align="center" prop="batchNo" min-width="160" show-overflow-tooltip resizable>
+                      <template slot-scope="scope">
+                        <span>{{ scope.row.batchNo || '--' }}</span>
                       </template>
                     </el-table-column>
                     <el-table-column label="生产日期" align="center" prop="produceDate" min-width="120" resizable>
@@ -834,6 +839,7 @@ export default {
         price: e.price,
         amount: e.amount,
         batchNo: e.batchNo || "",
+        batchNumber: e.batchNumber || "",
         produceDate: e.produceDate || "",
         expiryDate: e.expiryDate || "",
         manufacturer: e.manufacturer || "",
@@ -899,8 +905,9 @@ export default {
           price,
           amount,
           batchNo: item.batchNo || item.batchCode || "",
-          produceDate: item.produceDate || item.beginDate || "",
-          expiryDate: item.expiryDate || item.periodDate || "",
+          batchNumber: item.batchNumber || "",
+          produceDate: this.normalizeYmd(item.produceDate || item.beginDate || item.beginTime),
+          expiryDate: this.normalizeYmd(item.expiryDate || item.periodDate || item.endTime),
           manufacturer:
             (material.fdFactory && material.fdFactory.factoryName) ||
             material.factoryName ||
@@ -913,6 +920,11 @@ export default {
       });
       this.recalcTotalAmount();
       this.dialogMaterialShow = false;
+    },
+    normalizeYmd(val) {
+      if (val == null || val === "") return "";
+      const s = String(val);
+      return s.length >= 10 ? s.substring(0, 10) : s;
     },
     handleDeleteDetail() {
       if (!this.detailSelection.length) {
@@ -982,6 +994,7 @@ export default {
         price: row.price,
         amount: row.amount,
         batchNo: row.batchNo,
+        batchNumber: row.batchNumber,
         produceDate: row.produceDate || null,
         expiryDate: row.expiryDate || null,
         manufacturer: row.manufacturer,

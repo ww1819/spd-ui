@@ -129,75 +129,87 @@
             <span v-else>0.00</span>
           </template>
         </el-table-column>
-        <el-table-column label="期初导入数量" align="center" prop="qc_import_qty" width="130" show-overflow-tooltip resizable>
+        <el-table-column label="期初导入数量(+)" align="center" prop="qc_import_qty" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.qc_import_qty">{{ scope.row.qc_import_qty | formatCurrency}}</span>
             <span v-else>0.0</span>
           </template>
         </el-table-column>
-        <el-table-column label="期初导入金额" align="center" prop="qc_import_amt" width="130" show-overflow-tooltip resizable>
+        <el-table-column label="期初导入金额(+)" align="center" prop="qc_import_amt" width="140" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.qc_import_amt">{{ scope.row.qc_import_amt | formatCurrency}}</span>
             <span v-else>0.00</span>
           </template>
         </el-table-column>
-        <el-table-column label="入库数量" align="center" prop="rk_qty" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="入库数量(+)" align="center" prop="rk_qty" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.rk_qty">{{ scope.row.rk_qty | formatCurrency}}</span>
             <span v-else>0.0</span>
           </template>
         </el-table-column>
-        <el-table-column label="入库金额" align="center" prop="rk_amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="入库金额(+)" align="center" prop="rk_amt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.rk_amt">{{ scope.row.rk_amt | formatCurrency}}</span>
             <span v-else>0.00</span>
           </template>
         </el-table-column>
-        <el-table-column label="出库数量" align="center" prop="ck_qty" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="出库数量(-)" align="center" prop="ck_qty" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.ck_qty">{{ scope.row.ck_qty | formatCurrency}}</span>
             <span v-else>0.0</span>
           </template>
         </el-table-column>
-        <el-table-column label="出库金额" align="center" prop="ck_amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="出库金额(-)" align="center" prop="ck_amt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.ck_amt">{{ scope.row.ck_amt | formatCurrency}}</span>
             <span v-else>0.00</span>
           </template>
         </el-table-column>
-        <el-table-column label="调入数量" align="center" prop="dbr_qty" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="调入数量(+)" align="center" prop="dbr_qty" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.dbr_qty">{{ scope.row.dbr_qty | formatCurrency}}</span>
             <span v-else>0.0</span>
           </template>
         </el-table-column>
-        <el-table-column label="调入金额" align="center" prop="dbr_amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="调入金额(+)" align="center" prop="dbr_amt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.dbr_amt">{{ scope.row.dbr_amt | formatCurrency}}</span>
             <span v-else>0.00</span>
           </template>
         </el-table-column>
-        <el-table-column label="调出数量" align="center" prop="dbc_qty" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="调出数量(-)" align="center" prop="dbc_qty" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.dbc_qty">{{ scope.row.dbc_qty | formatCurrency}}</span>
             <span v-else>0.0</span>
           </template>
         </el-table-column>
-        <el-table-column label="调出金额" align="center" prop="dbc_amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="调出金额(-)" align="center" prop="dbc_amt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.dbc_amt">{{ scope.row.dbc_amt | formatCurrency}}</span>
             <span v-else>0.00</span>
           </template>
         </el-table-column>
-        <el-table-column label="盘点数量" align="center" prop="pd_qty" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="盘点数量(+)" align="center" prop="pd_qty" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.pd_qty">{{ scope.row.pd_qty | formatCurrency}}</span>
             <span v-else>0.0</span>
           </template>
         </el-table-column>
-        <el-table-column label="盘点金额" align="center" prop="pd_amt" width="120" show-overflow-tooltip resizable>
+        <el-table-column label="盘点金额(+)" align="center" prop="pd_amt" width="120" show-overflow-tooltip resizable>
           <template slot-scope="scope">
             <span v-if="scope.row.pd_amt">{{ scope.row.pd_amt | formatCurrency}}</span>
+            <span v-else>0.00</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="报损数量(-)" align="center" prop="bs_qty" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.bs_qty">{{ scope.row.bs_qty | formatCurrency}}</span>
+            <span v-else>0.0</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="报损金额(-)" align="center" prop="bs_amt" width="120" show-overflow-tooltip resizable>
+          <template slot-scope="scope">
+            <span v-if="scope.row.bs_amt">{{ scope.row.bs_amt | formatCurrency}}</span>
             <span v-else>0.00</span>
           </template>
         </el-table-column>
