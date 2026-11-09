@@ -71,9 +71,12 @@
                          multiple collapse-tags clearable class="query-select-bill-type">
                 <el-option label="入库单" value="101"/>
                 <el-option label="出库单" value="201"/>
-                <el-option label="退库单" value="401"/>
                 <el-option label="退货单" value="301"/>
+                <el-option label="退库单" value="401"/>
                 <el-option label="调拨单" value="501"/>
+                <el-option label="盘点单" value="502"/>
+                <el-option label="期初导入" value="701"/>
+                <el-option label="报损单" value="801"/>
               </el-select>
             </el-form-item>
             <div class="ctk-query-actions query-actions">
