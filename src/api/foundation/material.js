@@ -91,7 +91,7 @@ export function exportHisChargeItem(query) {
   })
 }
 
-// 维护 HIS 收费项目高低值属性（1高值 2低值）
+// 维护 HIS 收费项目高低值属性（1高值 2低值 0未设置）
 export function updateHisChargeItemValueLevel(data) {
   return request({
     url: '/foundation/material/hisChargeItem/valueLevel',
@@ -108,6 +108,15 @@ export function batchUpdateHisChargeItemValueLevel(data) {
     // 大批量跨页勾选时，给后端分批更新留足时间
     timeout: 120000,
     data
+  })
+}
+
+// 按收费项标志重算待核销费用明细高低值（已核销冻结）
+export function recalcPendingChargeValueLevels() {
+  return request({
+    url: '/foundation/material/hisChargeItem/valueLevel/recalcPending',
+    method: 'post',
+    timeout: 120000
   })
 }
 

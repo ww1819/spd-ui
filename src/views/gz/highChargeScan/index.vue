@@ -604,12 +604,12 @@ export default {
     },
     valueLevelText(v) {
       if (v === '1' || v === 1) return '高值'
-      if (v === '2' || v === 2 || v === '0' || v === 0) return '低值'
-      return v ? String(v) : '低值'
+      if (v === '2' || v === 2) return '低值'
+      return '未设置'
     },
     isLowValueLevel(row) {
       const v = row && row.valueLevel
-      return v !== '1' && v !== 1
+      return v === '2' || v === 2
     },
     canScanHigh(row) {
       if (!row || (row.valueLevel !== '1' && row.valueLevel !== 1)) {
@@ -622,7 +622,11 @@ export default {
     },
     openHighDialog(row) {
       if (this.isLowValueLevel(row)) {
-        this.$modal.msgWarning('该行为低值收费项（未维护高低值视同低值），请至患者收费查询进行低值核销')
+        this.$modal.msgWarning('该行为低值收费项，请至患者收费查询进行低值核销')
+        return
+      }
+      if (!(row && (row.valueLevel === '1' || row.valueLevel === 1))) {
+        this.$modal.msgWarning('收费项目未维护高低值标识，请先在「HIS收费项目」维护后再核销')
         return
       }
       if (row.processStatus === 'CONSUMED') {

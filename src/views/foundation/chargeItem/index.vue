@@ -75,6 +75,13 @@
         <el-button
           size="small"
           class="spd-btn spd-btn--secondary"
+          :loading="recalcPendingLoading"
+          v-hasPermi="['foundation:chargeItem:edit','foundation:material:edit']"
+          @click="handleRecalcPending"
+        >重算待核销高低值</el-button>
+        <el-button
+          size="small"
+          class="spd-btn spd-btn--secondary"
           :loading="fetching"
           v-hasPermi="['foundation:chargeItem:fetch','foundation:material:query']"
           @click="handleFetch"
@@ -143,6 +150,7 @@
 <script>
 import {
   listHisChargeItem,
+  recalcPendingChargeValueLevels,
   fetchHisChargeItemMirror,
   exportHisChargeItem,
   updateHisChargeItemValueLevel,
@@ -168,6 +176,7 @@ export default {
       fetching: false,
       exporting: false,
       batchSaving: false,
+      recalcPendingLoading: false,
       total: 0,
       chargeItemList: [],
       selectedRowMap: {},
@@ -191,7 +200,8 @@ export default {
       },
       valueLevelOptions: [
         { label: '高值', value: '1' },
-        { label: '低值', value: '2' }
+        { label: '低值', value: '2' },
+        { label: '未设置', value: '0' }
       ]
     }
   },
@@ -270,7 +280,7 @@ export default {
         const rows = (res && Array.isArray(res.rows)) ? res.rows : []
         this.chargeItemList = rows.map(item => ({
           ...item,
-          valueLevel: item && item.valueLevel ? String(item.valueLevel) : '2',
+          valueLevel: this.normalizeValueLevel(item && item.valueLevel),
           _saving: false
         }))
         this.total = res != null && res.total != null ? Number(res.total) : 0
@@ -350,15 +360,22 @@ export default {
         this.exporting = false
       }
     },
+    normalizeValueLevel(v) {
+      const s = v == null ? '' : String(v).trim()
+      if (s === '1' || s === '2') return s
+      return '0'
+    },
     saveValueLevel(row) {
-      if (!row || !row.chargeItemId || !row.valueLevel) {
-        this.$modal.msgWarning('收费项ID或高低值属性不能为空')
+      if (!row || !row.chargeItemId) {
+        this.$modal.msgWarning('收费项ID不能为空')
         return
       }
+      const level = this.normalizeValueLevel(row.valueLevel)
+      row.valueLevel = level
       row._saving = true
       updateHisChargeItemValueLevel({
         chargeItemId: row.chargeItemId,
-        valueLevel: row.valueLevel
+        valueLevel: level
       }).then(res => {
         this.$modal.msgSuccess((res && res.msg) || '保存成功')
       }).finally(() => {
@@ -371,12 +388,12 @@ export default {
         this.$modal.msgWarning('请先勾选要批量设置的收费项目')
         return
       }
-      if (!this.batchValueLevel) {
+      if (this.batchValueLevel !== '0' && this.batchValueLevel !== '1' && this.batchValueLevel !== '2') {
         this.$modal.msgWarning('请选择要批量设置的高低值属性')
         return
       }
       const levelLabel = this.valueLevelOptions.find(o => o.value === this.batchValueLevel)?.label || ''
-      this.$modal.confirm(`确认将已选 ${chargeItemIds.length} 条收费项目（含跨页）批量设置为「${levelLabel}」？`).then(() => {
+      this.$modal.confirm(`确认将已选 ${chargeItemIds.length} 条收费项目（含跨页）批量设置为「${levelLabel}」？仅重算待核销费用明细，已核销不变。`).then(() => {
         this.batchSaving = true
         return batchUpdateHisChargeItemValueLevel({
           chargeItemIds,
@@ -389,6 +406,16 @@ export default {
         this.getList()
       }).catch(() => {}).finally(() => {
         this.batchSaving = false
+      })
+    },
+    handleRecalcPending() {
+      this.$modal.confirm('按当前收费项高低值标志重算全部待核销费用明细？已核销/已退费不会改写。').then(() => {
+        this.recalcPendingLoading = true
+        return recalcPendingChargeValueLevels()
+      }).then(res => {
+        this.$modal.msgSuccess((res && res.msg) || '重算完成')
+      }).catch(() => {}).finally(() => {
+        this.recalcPendingLoading = false
       })
     }
   }
