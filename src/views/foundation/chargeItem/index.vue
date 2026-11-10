@@ -1,5 +1,7 @@
 <template>
   <div class="app-container list-page">
+    <el-tabs v-model="mainTab" class="charge-item-main-tabs">
+      <el-tab-pane label="收费项目维护" name="maintain">
     <div class="query-container">
       <div class="form-fields-container list-query-panel">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
@@ -18,7 +20,7 @@
               v-for="t in moreSearchTypes"
               :key="t"
               class="more-search-dynamic-field"
-              :class="t === 'valueLevel' ? 'more-search-field--short' : 'more-search-field--text'"
+              :class="(t === 'valueLevel' || t === 'materialBound') ? 'more-search-field--short' : 'more-search-field--text'"
             >
               <el-select
                 v-if="t === 'valueLevel'"
@@ -28,6 +30,16 @@
                 class="more-search-short-select"
               >
                 <el-option v-for="opt in valueLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+              <el-select
+                v-else-if="t === 'materialBound'"
+                v-model="queryParams.materialBound"
+                placeholder="是否对照"
+                clearable
+                class="more-search-short-select"
+              >
+                <el-option label="是" value="Y" />
+                <el-option label="否" value="N" />
               </el-select>
               <el-input
                 v-else
@@ -114,6 +126,16 @@
       <el-table-column label="规格型号" prop="chargeSpeci" min-width="140" show-overflow-tooltip />
       <el-table-column label="单价" prop="chargePrice" width="90" show-overflow-tooltip />
       <el-table-column label="拼音简码" prop="referredCode" min-width="160" show-overflow-tooltip />
+      <el-table-column label="是否对照" prop="materialBound" width="90" align="center">
+        <template slot-scope="scope">
+          <span>{{ materialBoundText(scope.row.materialBound) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="对照" width="80" align="center">
+        <template slot-scope="scope">
+          <el-button type="text" size="mini" @click="openBindInfoForRow(scope.row)">查看</el-button>
+        </template>
+      </el-table-column>
       <el-table-column label="高低值属性" width="200">
         <template slot-scope="scope">
           <div class="value-level-cell">
@@ -144,6 +166,15 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
+      </el-tab-pane>
+      <el-tab-pane label="对照信息" name="bindInfo" lazy>
+        <material-his-charge-bind-panel
+          v-if="mainTab === 'bindInfo'"
+          :fixed-charge-item-id="bindChargeItemId"
+          default-scope="all"
+        />
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
@@ -156,9 +187,11 @@ import {
   updateHisChargeItemValueLevel,
   batchUpdateHisChargeItemValueLevel
 } from '@/api/foundation/material'
+import MaterialHisChargeBindPanel from '@/views/foundation/components/MaterialHisChargeBindPanel.vue'
 
 export default {
   name: 'ChargeItemMaintain',
+  components: { MaterialHisChargeBindPanel },
   computed: {
     crossPageSelectedCount() {
       return Object.keys(this.selectedRowMap || {}).length
@@ -167,11 +200,13 @@ export default {
       return 'spd.foundation.chargeItem.moreSearchTypes'
     },
     builtInMoreSearchDefaults() {
-      return ['chargeItemId', 'itemCode', 'name', 'speci', 'valueLevel']
+      return ['chargeItemId', 'itemCode', 'name', 'speci', 'valueLevel', 'materialBound']
     }
   },
   data() {
     return {
+      mainTab: 'maintain',
+      bindChargeItemId: undefined,
       loading: false,
       fetching: false,
       exporting: false,
@@ -187,7 +222,8 @@ export default {
         { value: 'itemCode', label: '收费编码' },
         { value: 'name', label: '收费名称' },
         { value: 'speci', label: '规格' },
-        { value: 'valueLevel', label: '高低值' }
+        { value: 'valueLevel', label: '高低值' },
+        { value: 'materialBound', label: '是否对照' }
       ],
       queryParams: {
         pageNum: 1,
@@ -196,7 +232,8 @@ export default {
         itemCode: undefined,
         name: undefined,
         speci: undefined,
-        valueLevel: undefined
+        valueLevel: undefined,
+        materialBound: undefined
       },
       valueLevelOptions: [
         { label: '高值', value: '1' },
@@ -240,7 +277,7 @@ export default {
     },
     applyMoreSearchToQueryParams(target) {
       const set = new Set(this.moreSearchTypes || [])
-      ;['chargeItemId', 'itemCode', 'name', 'speci', 'valueLevel'].forEach((k) => {
+      ;['chargeItemId', 'itemCode', 'name', 'speci', 'valueLevel', 'materialBound'].forEach((k) => {
         if (!set.has(k)) target[k] = undefined
       })
     },
@@ -320,7 +357,8 @@ export default {
         itemCode: undefined,
         name: undefined,
         speci: undefined,
-        valueLevel: undefined
+        valueLevel: undefined,
+        materialBound: undefined
       }
       this.batchValueLevel = undefined
       this.onMoreSearchTypesChange()
@@ -364,6 +402,15 @@ export default {
       const s = v == null ? '' : String(v).trim()
       if (s === '1' || s === '2') return s
       return '0'
+    },
+    materialBoundText(v) {
+      if (v === 'Y' || v === 'y' || v === true || v === 1 || v === '1') return '是'
+      if (v === 'N' || v === 'n' || v === false || v === 0 || v === '0') return '否'
+      return '否'
+    },
+    openBindInfoForRow(row) {
+      this.bindChargeItemId = row && row.chargeItemId ? String(row.chargeItemId) : undefined
+      this.mainTab = 'bindInfo'
     },
     saveValueLevel(row) {
       if (!row || !row.chargeItemId) {

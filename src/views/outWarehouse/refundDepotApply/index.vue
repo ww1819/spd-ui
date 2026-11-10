@@ -223,20 +223,20 @@
       <div class="pagination-summary">
         <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
-      <pagination
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
-    </div>
-    </div>
+    <pagination
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    />
+        </div>
+        </div>
 
     <!-- 添加或修改退库对话框 -->
     <RefundDepotApplyEditDialog v-if="open" />
     <RefundDepotApplyChangeLogDialog v-if="entryChangeLogDialog.visible" />
     <RefundDepotApplyJsonDialog v-if="jsonViewer.visible" />
-  </div>
+          </div>
 </template>
 
 <script>

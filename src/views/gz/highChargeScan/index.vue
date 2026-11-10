@@ -100,6 +100,17 @@
                 <el-option label="未处理" value="N" />
               </el-select>
             </el-form-item>
+            <el-form-item label="是否对照" class="hc-query-item">
+              <el-select
+                v-model="detailQuery.materialBound"
+                placeholder="全部"
+                clearable
+                class="hc-query-control"
+              >
+                <el-option label="是" value="Y" />
+                <el-option label="否" value="N" />
+              </el-select>
+            </el-form-item>
             <el-form-item label="项目名称" class="hc-query-item">
               <el-input
                 v-model="detailQuery.itemName"
@@ -167,6 +178,11 @@
       </template>
       <el-table-column label="患者姓名" prop="patientName" width="110" show-overflow-tooltip sortable="custom" :sort-orders="['ascending', 'descending']" />
       <el-table-column label="收费编码" prop="chargeItemId" width="130" sortable="custom" :sort-orders="['ascending', 'descending']" />
+      <el-table-column label="是否对照" prop="materialBound" width="90" align="center">
+        <template slot-scope="scope">
+          <span>{{ materialBoundText(scope.row.materialBound) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="费用明细主键" prop="hisChargeId" width="180" show-overflow-tooltip>
         <template slot-scope="scope">
           <span>{{ scope.row.hisChargeId || scope.row.hisInpatientChargeId || scope.row.hisOutpatientChargeId || '' }}</span>
@@ -339,6 +355,7 @@ export default {
         departmentId: undefined,
         itemName: undefined,
         processed: undefined,
+        materialBound: undefined,
         sortField: undefined,
         sortOrder: undefined,
         ...buildDefaultChargeDateRange()
@@ -606,6 +623,11 @@ export default {
       if (v === '1' || v === 1) return '高值'
       if (v === '2' || v === 2) return '低值'
       return '未设置'
+    },
+    materialBoundText(v) {
+      if (v === 'Y' || v === 'y' || v === true || v === 1 || v === '1') return '是'
+      if (v === 'N' || v === 'n' || v === false || v === 0 || v === '0') return '否'
+      return '否'
     },
     isLowValueLevel(row) {
       const v = row && row.valueLevel
@@ -901,6 +923,7 @@ export default {
         departmentId: undefined,
         itemName: undefined,
         processed: undefined,
+        materialBound: undefined,
         sortField: undefined,
         sortOrder: undefined,
         ...buildDefaultChargeDateRange()

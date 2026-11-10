@@ -924,6 +924,28 @@
             </div>
             </div>
           </el-tab-pane>
+          <el-tab-pane v-if="form.id" name="bindInfo" lazy>
+            <span slot="label">
+              <el-tooltip content="HIS收费项当前生效与历史对照" placement="top" :open-delay="300">
+                <span class="material-tab-label">对照信息</span>
+              </el-tooltip>
+            </span>
+            <div class="material-tab-pane-body">
+              <div class="material-detail-card">
+                <div class="material-detail-card__header">
+                  <i class="el-icon-connection" />
+                  <span>对照信息</span>
+                </div>
+                <div class="material-detail-card__body">
+                  <MaterialHisChargeBindPanel
+                    v-if="activeTab === 'bindInfo'"
+                    :fixed-material-id="form.id"
+                    default-scope="all"
+                  />
+                </div>
+              </div>
+            </div>
+          </el-tab-pane>
         </el-tabs>
         <div class="material-modal-footer">
           <template v-if="!isViewMode">
@@ -947,12 +969,13 @@ import SelectUnit from '@/components/SelectModel/SelectUnit'
 import SelectLocation from '@/components/SelectModel/SelectLocation'
 import SelectJcType from '@/components/SelectModel/SelectJcType'
 import MaterialInboundRecords from '@/views/foundation/material/components/MaterialInboundRecords'
+import MaterialHisChargeBindPanel from '@/views/foundation/components/MaterialHisChargeBindPanel.vue'
 
 export default {
   name: 'MaterialEditDialog',
   mixins: [hostProxyMixin],
   dicts: ['is_use_status', 'is_yes_no', 'way_status', 'material_level_status', 'register_level_status', 'risk_level_status', 'firstaid_level_status', 'doctor_level_status'],
-  components: { SelectSupplier, SelectFactory, SelectFinanceCategory, SelectMaterialCategory, SelectWarehouseCategory, SelectUnit, SelectLocation, SelectJcType, MaterialInboundRecords },
+  components: { SelectSupplier, SelectFactory, SelectFinanceCategory, SelectMaterialCategory, SelectWarehouseCategory, SelectUnit, SelectLocation, SelectJcType, MaterialInboundRecords, MaterialHisChargeBindPanel },
   inheritAttrs: false
 }
 </script>

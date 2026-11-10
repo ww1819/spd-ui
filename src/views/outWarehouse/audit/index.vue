@@ -246,14 +246,14 @@
       <div class="pagination-summary">
         <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
-      <pagination
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
-    </div>
-    </div>
+    <pagination
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    />
+        </div>
+        </div>
 
     <OutWarehouseAuditEditDialog v-if="open" />
     <MsunHisEntryView

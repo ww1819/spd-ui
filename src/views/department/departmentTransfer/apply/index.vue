@@ -13,7 +13,7 @@
             />
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectDepartment v-model="queryParams.outDepartmentId" field-placeholder="调出科室" />
-            </div>
+          </div>
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectDepartment v-model="queryParams.inDepartmentId" field-placeholder="调入科室" />
             </div>
@@ -172,14 +172,14 @@
       <div class="pagination-summary">
         <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
-      <pagination
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
-    </div>
-    </div>
+    <pagination
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    />
+            </div>
+              </div>
 
     <!-- 添加或修改转科申请对话框（布局对齐到货验收 apply-modal） -->
     <DepartmentTransferEditDialog v-if="open" />

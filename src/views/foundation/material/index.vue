@@ -1,5 +1,7 @@
 <template>
   <div class="app-container list-page material-page-container">
+    <el-tabs v-model="materialMainTab" class="material-main-tabs">
+      <el-tab-pane label="耗材产品维护" name="maintain">
     <div class="query-container">
       <div class="form-fields-container list-query-panel">
         <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" v-show="showSearch" class="query-form">
@@ -862,6 +864,14 @@
     />
     </div>
       </div>
+      </el-tab-pane>
+      <el-tab-pane label="对照信息" name="bindInfo" lazy>
+        <MaterialHisChargeBindPanel
+          v-if="materialMainTab === 'bindInfo'"
+          default-scope="all"
+        />
+      </el-tab-pane>
+    </el-tabs>
 
     <MaterialEditDialog v-if="open" />
     <MaterialImagePreviewDialog v-if="imagePreviewVisible" />
@@ -957,7 +967,8 @@ export default {
     MaterialImportPreviewDialog: () => import('./components/MaterialImportPreviewDialog'),
     MaterialMissingFactoryDialog: () => import('./components/MaterialMissingFactoryDialog'),
     MaterialBatchUpdateDialog: () => import('./components/MaterialBatchUpdateDialog'),
-    MaterialChargeItemDialog: () => import('./components/MaterialChargeItemDialog')
+    MaterialChargeItemDialog: () => import('./components/MaterialChargeItemDialog'),
+    MaterialHisChargeBindPanel: () => import('@/views/foundation/components/MaterialHisChargeBindPanel.vue')
   },
   computed: {
     ...mapGetters(['customerId']),
@@ -1247,6 +1258,7 @@ export default {
       /** 日期框输入原文（失焦前缓存，避免组件先清空非法格式） */
       periodDateTypedRaw: '',
       // 当前激活的标签页：'form' 表单视图，'image' 图片视图
+      materialMainTab: 'maintain',
       activeTab: 'form',
       /** 主列表表格高度（按可视区动态计算，保证翻页完整显示） */
       mainTableHeight: 420,

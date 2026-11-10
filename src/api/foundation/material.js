@@ -120,6 +120,15 @@ export function recalcPendingChargeValueLevels() {
   })
 }
 
+/** 耗材-HIS收费项对照履历（currentOnly: true当前 false历史 不传全部） */
+export function listMaterialHisChargeBinds(query) {
+  return request({
+    url: '/foundation/material/hisChargeItem/bindList',
+    method: 'get',
+    params: query
+  })
+}
+
 // 将产品档案 is_gz 同步到已对照 HIS 收费项目的 value_level
 export function syncMaterialValueLevelToHisChargeItem(data) {
   return request({

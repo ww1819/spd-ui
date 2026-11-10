@@ -13,7 +13,7 @@
             />
             <div class="query-select-wrapper more-search-select-wrap apply-query-field">
               <SelectDepartment v-model="queryParams.departmentId" field-placeholder="科室" />
-            </div>
+          </div>
             <div class="query-actions">
               <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
               <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
@@ -194,14 +194,14 @@
       <div class="pagination-summary">
         <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
-      <pagination
-        :total="total"
-        :page.sync="queryParams.pageNum"
-        :limit.sync="queryParams.pageSize"
-        @pagination="getList"
-      />
-    </div>
-    </div>
+    <pagination
+      :total="total"
+      :page.sync="queryParams.pageNum"
+      :limit.sync="queryParams.pageSize"
+      @pagination="getList"
+    />
+            </div>
+              </div>
 
     <DeptStocktakingEditDialog v-if="open" />
 
