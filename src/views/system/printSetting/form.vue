@@ -34,32 +34,31 @@
         </el-tooltip>
         <span class="dt-sep"></span>
         <el-select
-          v-model="form.fontSize"
+          v-model="toolbarFontSize"
           size="mini"
           class="dt-font-size"
           placeholder="字号"
-          @change="pushDesignHistory"
         >
           <el-option v-for="s in designFontSizes" :key="'fs-' + s" :label="String(s)" :value="s" />
         </el-select>
         <el-tooltip content="加粗" placement="bottom">
-          <button type="button" class="dt-btn dt-text" :class="{ active: !!form.fontBold }" @click="toggleFontBold">B</button>
+          <button type="button" class="dt-btn dt-text" :class="{ active: !!toolbarFontBold }" @click="toggleFontBold">B</button>
         </el-tooltip>
         <el-tooltip content="斜体" placement="bottom">
-          <button type="button" class="dt-btn dt-text dt-italic" :class="{ active: !!form.fontItalic }" @click="toggleFontItalic">I</button>
+          <button type="button" class="dt-btn dt-text dt-italic" :class="{ active: !!toolbarFontItalic }" @click="toggleFontItalic">I</button>
         </el-tooltip>
         <el-tooltip content="下划线" placement="bottom">
-          <button type="button" class="dt-btn dt-text dt-underline" :class="{ active: !!form.fontUnderline }" @click="toggleFontUnderline">U</button>
+          <button type="button" class="dt-btn dt-text dt-underline" :class="{ active: !!toolbarFontUnderline }" @click="toggleFontUnderline">U</button>
         </el-tooltip>
         <el-dropdown trigger="click" @command="handleFontColorCommand">
           <button type="button" class="dt-btn dt-color-btn">
             <span class="dt-color-letter">A</span>
-            <span class="dt-color-bar" :style="{ background: form.fontColor || '#000' }"></span>
+            <span class="dt-color-bar" :style="{ background: toolbarFontColor || '#000' }"></span>
             <i class="el-icon-arrow-down dt-caret"></i>
           </button>
           <el-dropdown-menu slot="dropdown" class="dt-color-menu">
             <div class="dt-color-picker-wrap" @click.stop>
-              <el-color-picker v-model="form.fontColor" size="mini" @change="pushDesignHistory" />
+              <el-color-picker v-model="toolbarFontColor" size="mini" />
             </div>
             <el-dropdown-item command="#000000">黑色</el-dropdown-item>
             <el-dropdown-item command="#F56C6C">红色</el-dropdown-item>
@@ -70,12 +69,12 @@
         <el-dropdown trigger="click" @command="handleFillColorCommand">
           <button type="button" class="dt-btn dt-color-btn">
             <i class="el-icon-s-open"></i>
-            <span class="dt-color-bar" :style="{ background: form.fillColor || '#67C23A' }"></span>
+            <span class="dt-color-bar" :style="{ background: toolbarFillColor || '#67C23A' }"></span>
             <i class="el-icon-arrow-down dt-caret"></i>
           </button>
           <el-dropdown-menu slot="dropdown" class="dt-color-menu">
             <div class="dt-color-picker-wrap" @click.stop>
-              <el-color-picker v-model="form.fillColor" size="mini" show-alpha @change="pushDesignHistory" />
+              <el-color-picker v-model="toolbarFillColor" size="mini" show-alpha />
             </div>
             <el-dropdown-item command="transparent">无填充</el-dropdown-item>
             <el-dropdown-item command="#FFFF00">黄色</el-dropdown-item>
@@ -376,7 +375,7 @@
                 </div>
                 <!-- 标题配置：表头与表格之间显示各标题行（名称 + 固定值），两行三列布局 -->
                 <template v-if="hasAnyTitleVisible">
-                  <div class="template-title-container" :style="previewTableStyle">
+                  <div class="template-title-container">
                     <div
                       v-for="(row, rowIndex) in titlePreviewRows"
                       :key="'title-row-' + rowIndex"
@@ -534,7 +533,7 @@
                 </div>
                 <!-- 底部信息：表格下方，一行最多显示四个参数 -->
                 <template v-if="hasAnyBottomVisible">
-                  <div class="template-bottom-container" :style="previewTableStyle">
+                  <div class="template-bottom-container">
                     <div
                       v-for="(row, rowIndex) in bottomPreviewRows"
                       :key="'bottom-row-' + rowIndex"
@@ -1195,6 +1194,8 @@ export default {
       /** 画布组件悬停 / 双击选中 */
       canvasHoverKey: '',
       canvasSelectedKey: '',
+      /** 各标签/文本独立样式：key 同 canvasSelectedKey（如 title:t-1、text:text-1） */
+      elementStyles: {},
       canvasHandleDirs: ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'],
       /** 边框下拉菜单 */
       borderMenuVisible: false,
@@ -1634,6 +1635,60 @@ export default {
         verticalAlign: this.form.verticalAlign || 'middle',
         backgroundColor: (!this.form.fillColor || this.form.fillColor === 'transparent') ? 'transparent' : this.form.fillColor
       };
+    },
+    /** 当前是否选中了可独立调字体的标签/文本/底部项 */
+    selectedTextWidgetKey() {
+      const key = this.canvasSelectedKey || '';
+      if (key.indexOf('title:') === 0 || key.indexOf('bottom:') === 0 || key.indexOf('text:') === 0) return key;
+      return '';
+    },
+    toolbarFontSize: {
+      get() {
+        return this.getToolbarStyleValue('fontSize', this.form.fontSize || 14);
+      },
+      set(v) {
+        this.setToolbarStyleValue('fontSize', v);
+      }
+    },
+    toolbarFontBold: {
+      get() {
+        return !!this.getToolbarStyleValue('fontBold', !!this.form.fontBold);
+      },
+      set(v) {
+        this.setToolbarStyleValue('fontBold', !!v);
+      }
+    },
+    toolbarFontItalic: {
+      get() {
+        return !!this.getToolbarStyleValue('fontItalic', !!this.form.fontItalic);
+      },
+      set(v) {
+        this.setToolbarStyleValue('fontItalic', !!v);
+      }
+    },
+    toolbarFontUnderline: {
+      get() {
+        return !!this.getToolbarStyleValue('fontUnderline', !!this.form.fontUnderline);
+      },
+      set(v) {
+        this.setToolbarStyleValue('fontUnderline', !!v);
+      }
+    },
+    toolbarFontColor: {
+      get() {
+        return this.getToolbarStyleValue('fontColor', this.form.fontColor || '#000000');
+      },
+      set(v) {
+        this.setToolbarStyleValue('fontColor', v || '#000000');
+      }
+    },
+    toolbarFillColor: {
+      get() {
+        return this.getToolbarStyleValue('fillColor', this.form.fillColor || 'transparent');
+      },
+      set(v) {
+        this.setToolbarStyleValue('fillColor', v == null ? 'transparent' : v);
+      }
     },
     canUndo() {
       return this.designHistoryIndex > 0;
@@ -2181,6 +2236,7 @@ export default {
               this.bodyMerges = Array.isArray(config.bodyMerges) ? config.bodyMerges : [];
               this.bodyCellTexts = config.bodyCellTexts || {};
               this.loadCanvasTextsFromConfig(config);
+              this.elementStyles = (config.elementStyles && typeof config.elementStyles === 'object') ? { ...config.elementStyles } : {};
               this.applyCanvasVisibilityFromConfig(config, newVal);
               if (config.codeDisplay !== undefined && config.codeDisplay !== null) {
                 this.form.codeDisplay = config.codeDisplay === 'qr' || config.codeDisplay === 'barcode' ? config.codeDisplay : '';
@@ -2374,6 +2430,13 @@ export default {
     selectCanvasWidget(key) {
       this.canvasSelectedKey = key || '';
       this.canvasHoverKey = key || '';
+      if (this.formatPainterActive && this.designClipboard && key) {
+        const isTextWidget = key.indexOf('title:') === 0 || key.indexOf('bottom:') === 0 || key.indexOf('text:') === 0;
+        if (isTextWidget) {
+          this.applyCapturedTextStyle(this.designClipboard);
+          this.formatPainterActive = false;
+        }
+      }
     },
     clearCanvasWidgetSelection() {
       this.canvasSelectedKey = '';
@@ -2637,13 +2700,59 @@ export default {
       }
       return base;
     },
-    /** 标题预览项样式：宽高 + 可选绝对坐标（X/Y） */
+    /** 工具栏读写：有选中标签时只改该标签样式，否则改全局 form */
+    getToolbarStyleValue(prop, fallback) {
+      const key = this.selectedTextWidgetKey;
+      if (key) {
+        const s = this.elementStyles && this.elementStyles[key];
+        if (s && s[prop] != null) return s[prop];
+      }
+      return fallback;
+    },
+    setToolbarStyleValue(prop, value) {
+      const key = this.selectedTextWidgetKey;
+      if (key) {
+        const prev = (this.elementStyles && this.elementStyles[key]) || {};
+        this.$set(this.elementStyles, key, { ...prev, [prop]: value });
+        this.pushDesignHistory();
+        return;
+      }
+      this.form[prop] = value;
+      this.pushDesignHistory();
+    },
+    /** 解析某画布标签的文字样式（未单独设置时回退全局） */
+    resolveElementTextStyle(key) {
+      const s = (this.elementStyles && key && this.elementStyles[key]) || {};
+      const fontSize = s.fontSize != null ? s.fontSize : (this.form.fontSize || 14);
+      const fontBold = s.fontBold != null ? !!s.fontBold : !!this.form.fontBold;
+      const fontItalic = s.fontItalic != null ? !!s.fontItalic : !!this.form.fontItalic;
+      const fontUnderline = s.fontUnderline != null ? !!s.fontUnderline : !!this.form.fontUnderline;
+      const fontColor = s.fontColor != null ? s.fontColor : (this.form.fontColor || '#000000');
+      const fillColor = s.fillColor != null ? s.fillColor : (this.form.fillColor || 'transparent');
+      const textAlign = s.textAlign != null ? s.textAlign : (this.form.textAlign || 'left');
+      const verticalAlign = s.verticalAlign != null ? s.verticalAlign : (this.form.verticalAlign || 'middle');
+      return {
+        fontSize: fontSize + 'px',
+        fontFamily: this.form.fontFamily || 'inherit',
+        color: fontColor,
+        fontWeight: fontBold ? 'bold' : 'normal',
+        fontStyle: fontItalic ? 'italic' : 'normal',
+        textDecoration: fontUnderline ? 'underline' : 'none',
+        textAlign,
+        verticalAlign,
+        backgroundColor: (!fillColor || fillColor === 'transparent') ? 'transparent' : fillColor
+      };
+    },
+    /** 标题预览项样式：宽高 + 可选绝对坐标（X/Y）+ 独立字体 */
     getTitleItemStyle(item) {
       const w = Number(item && item.width);
       const h = Number(item && item.height);
       const x = item && item.x;
       const y = item && item.y;
-      const style = { display: 'inline-block' };
+      const style = {
+        display: 'inline-block',
+        ...this.resolveElementTextStyle(item && item.key ? ('title:' + item.key) : '')
+      };
       if (Number.isFinite(w) && w > 0) style.width = w + 'px';
       if (Number.isFinite(h) && h > 0 && h <= 120) {
         style.minHeight = h + 'px';
@@ -2659,11 +2768,14 @@ export default {
       }
       return style;
     },
-    /** 底部信息项样式：根据配置宽度与高度 */
+    /** 底部信息项样式：根据配置宽度与高度 + 独立字体 */
     getBottomItemStyle(item) {
       const w = Number(item && item.width);
       const h = Number(item && item.height);
-      const style = { display: 'inline-block' };
+      const style = {
+        display: 'inline-block',
+        ...this.resolveElementTextStyle(item && item.key ? ('bottom:' + item.key) : '')
+      };
       if (Number.isFinite(w) && w > 0) style.width = w + 'px';
       if (Number.isFinite(h) && h > 0) {
         style.minHeight = h + 'px';
@@ -2888,6 +3000,7 @@ export default {
             this.bodyMerges = Array.isArray(config.bodyMerges) ? config.bodyMerges : [];
             this.bodyCellTexts = config.bodyCellTexts || {};
             this.loadCanvasTextsFromConfig(config);
+            this.elementStyles = (config.elementStyles && typeof config.elementStyles === 'object') ? { ...config.elementStyles } : {};
             this.applyCanvasVisibilityFromConfig(config, data);
             if (config.codeDisplay !== undefined && config.codeDisplay !== null) {
               this.form.codeDisplay = config.codeDisplay === 'qr' || config.codeDisplay === 'barcode' ? config.codeDisplay : '';
@@ -3270,6 +3383,7 @@ export default {
       this.form.codeDisplay = '';
       this.canvasTexts = [];
       this.canvasTextSeq = 1;
+      this.elementStyles = {};
       for (let i = 1; i <= 6; i++) this.form['title' + i + 'Visible'] = false;
       for (let i = 1; i <= 5; i++) this.form['bottom' + i + 'Visible'] = false;
     },
@@ -3325,13 +3439,15 @@ export default {
     },
     getCanvasTextStyle(item) {
       if (!item || item.visible === false) return { display: 'none' };
+      const textStyle = this.resolveElementTextStyle(item.id ? ('text:' + item.id) : '');
       return {
         position: 'absolute',
         left: (Number(item.x) || 0) + 'px',
         top: (Number(item.y) || 0) + 'px',
         width: Math.max(40, Number(item.width) || 160) + 'px',
         height: Math.max(18, Number(item.height) || 28) + 'px',
-        zIndex: this.canvasSelectedKey === ('text:' + item.id) ? 12 : 8
+        zIndex: this.canvasSelectedKey === ('text:' + item.id) ? 12 : 8,
+        ...textStyle
       };
     },
     getCanvasTextDisplay(item) {
@@ -3563,7 +3679,9 @@ export default {
         headerMerges: this.headerMerges,
         bodyMerges: this.bodyMerges,
         bodyCellTexts: this.bodyCellTexts,
-        canvasColumnWidths: this.canvasColumnWidths
+        canvasColumnWidths: this.canvasColumnWidths,
+        canvasTexts: this.canvasTexts,
+        elementStyles: this.elementStyles
       });
     },
     applyDesignSnapshot(raw) {
@@ -3578,6 +3696,10 @@ export default {
         if (Array.isArray(snap.bodyMerges)) this.bodyMerges = snap.bodyMerges;
         if (snap.bodyCellTexts) this.bodyCellTexts = snap.bodyCellTexts;
         if (Array.isArray(snap.canvasColumnWidths)) this.canvasColumnWidths = snap.canvasColumnWidths;
+        if (Array.isArray(snap.canvasTexts)) this.canvasTexts = snap.canvasTexts;
+        if (snap.elementStyles && typeof snap.elementStyles === 'object') {
+          this.elementStyles = { ...snap.elementStyles };
+        }
       } finally {
         this.$nextTick(() => { this.designHistoryLock = false; });
       }
@@ -3606,32 +3728,25 @@ export default {
       this.applyDesignSnapshot(this.designHistory[this.designHistoryIndex]);
     },
     toggleFontBold() {
-      this.form.fontBold = !this.form.fontBold;
-      this.pushDesignHistory();
+      this.toolbarFontBold = !this.toolbarFontBold;
     },
     toggleFontItalic() {
-      this.form.fontItalic = !this.form.fontItalic;
-      this.pushDesignHistory();
+      this.toolbarFontItalic = !this.toolbarFontItalic;
     },
     toggleFontUnderline() {
-      this.form.fontUnderline = !this.form.fontUnderline;
-      this.pushDesignHistory();
+      this.toolbarFontUnderline = !this.toolbarFontUnderline;
     },
     handleFontColorCommand(color) {
-      this.form.fontColor = color;
-      this.pushDesignHistory();
+      this.toolbarFontColor = color;
     },
     handleFillColorCommand(color) {
-      this.form.fillColor = color;
-      this.pushDesignHistory();
+      this.toolbarFillColor = color;
     },
     handleTextAlignCommand(align) {
-      this.form.textAlign = align;
-      this.pushDesignHistory();
+      this.setToolbarStyleValue('textAlign', align || 'left');
     },
     handleVerticalAlignCommand(align) {
-      this.form.verticalAlign = align;
-      this.pushDesignHistory();
+      this.setToolbarStyleValue('verticalAlign', align || 'middle');
     },
     onBorderMenuVisible(visible) {
       this.borderMenuVisible = !!visible;
@@ -3679,19 +3794,45 @@ export default {
       }
       this.$message && this.$message.info('请先在画布表格中选中单元格，再插入占位符');
     },
+    captureCurrentTextStyle() {
+      return {
+        fontSize: this.toolbarFontSize,
+        fontBold: this.toolbarFontBold,
+        fontItalic: this.toolbarFontItalic,
+        fontUnderline: this.toolbarFontUnderline,
+        fontColor: this.toolbarFontColor,
+        fillColor: this.toolbarFillColor,
+        textAlign: this.getToolbarStyleValue('textAlign', this.form.textAlign || 'left'),
+        verticalAlign: this.getToolbarStyleValue('verticalAlign', this.form.verticalAlign || 'middle')
+      };
+    },
+    applyCapturedTextStyle(s) {
+      if (!s) return;
+      const key = this.selectedTextWidgetKey;
+      if (key) {
+        const prev = (this.elementStyles && this.elementStyles[key]) || {};
+        const next = { ...prev };
+        ['fontSize', 'fontBold', 'fontItalic', 'fontUnderline', 'fontColor', 'fillColor', 'textAlign', 'verticalAlign'].forEach((p) => {
+          if (s[p] != null) next[p] = s[p];
+        });
+        this.$set(this.elementStyles, key, next);
+        this.pushDesignHistory();
+        return;
+      }
+      if (s.fontSize != null) this.form.fontSize = s.fontSize;
+      if (s.fontBold != null) this.form.fontBold = s.fontBold;
+      if (s.fontItalic != null) this.form.fontItalic = s.fontItalic;
+      if (s.fontUnderline != null) this.form.fontUnderline = s.fontUnderline;
+      if (s.fontColor != null) this.form.fontColor = s.fontColor;
+      if (s.fillColor != null) this.form.fillColor = s.fillColor;
+      if (s.textAlign != null) this.form.textAlign = s.textAlign;
+      if (s.verticalAlign != null) this.form.verticalAlign = s.verticalAlign;
+      this.pushDesignHistory();
+    },
     toggleFormatPainter() {
       this.formatPainterActive = !this.formatPainterActive;
       if (this.formatPainterActive) {
-        this.designClipboard = {
-          fontSize: this.form.fontSize,
-          fontBold: this.form.fontBold,
-          fontItalic: this.form.fontItalic,
-          fontUnderline: this.form.fontUnderline,
-          fontColor: this.form.fontColor,
-          fillColor: this.form.fillColor,
-          textAlign: this.form.textAlign,
-          verticalAlign: this.form.verticalAlign
-        };
+        this.designClipboard = this.captureCurrentTextStyle();
         this.$message && this.$message.success('格式刷已开启，再次点击关闭');
       }
     },
@@ -3702,17 +3843,7 @@ export default {
         this.$message && this.$message.success('已复制选中单元格');
         return;
       }
-      this.designClipboard = {
-        type: 'style',
-        fontSize: this.form.fontSize,
-        fontBold: this.form.fontBold,
-        fontItalic: this.form.fontItalic,
-        fontUnderline: this.form.fontUnderline,
-        fontColor: this.form.fontColor,
-        fillColor: this.form.fillColor,
-        textAlign: this.form.textAlign,
-        verticalAlign: this.form.verticalAlign
-      };
+      this.designClipboard = { type: 'style', ...this.captureCurrentTextStyle() };
       this.$message && this.$message.success('已复制当前样式');
     },
     handleDesignDelete() {
@@ -3977,6 +4108,7 @@ export default {
             bodyCellTexts: this.bodyCellTexts,
             canvasTexts: (this.canvasTexts || []).map(t => ({ ...t })),
             canvasTextSeq: this.canvasTextSeq || 1,
+            elementStyles: this.elementStyles && typeof this.elementStyles === 'object' ? { ...this.elementStyles } : {},
             canvasTableVisible: this.canvasTableVisible !== false,
             canvasHeaderVisible: this.canvasHeaderVisible !== false,
             codeDisplay: this.form.codeDisplay || '',
@@ -4676,8 +4808,9 @@ export default {
   outline: none;
   background: transparent !important;
   box-sizing: border-box;
-  font-size: 13px;
-  color: #303133;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
   cursor: text;
 }
 
