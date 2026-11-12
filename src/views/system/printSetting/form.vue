@@ -245,7 +245,7 @@
               <div
                 v-if="rulerGuideRange"
                 class="ruler-guide-h"
-                :class="{ dragging: !!textDragState || !!codeDragState }"
+                :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState }"
                 :style="{ left: rulerGuideRange.left + 'px', width: rulerGuideRange.width + 'px' }"
               />
               <div
@@ -270,7 +270,7 @@
               <div
                 v-if="rulerGuideRange"
                 class="ruler-guide-v"
-                :class="{ dragging: !!textDragState || !!codeDragState }"
+                :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState }"
                 :style="{ top: rulerGuideRange.top + 'px', height: rulerGuideRange.height + 'px' }"
               />
               <div
@@ -319,20 +319,24 @@
                 v-for="item in canvasTexts"
                 :key="item.id"
                 class="canvas-text-widget canvas-widget"
-                :class="canvasWidgetClass('text:' + item.id)"
+                :class="[canvasWidgetClass('text:' + item.id), { 'is-editing': editingCanvasTextId === item.id }]"
                 :style="getCanvasTextStyle(item)"
                 @mouseenter="setCanvasHover('text:' + item.id)"
                 @mouseleave="clearCanvasHover('text:' + item.id)"
                 @mousedown.stop="onCanvasTextMouseDown($event, item)"
                 @click.stop="selectCanvasText(item)"
+                @dblclick.stop="onCanvasTextDblClick($event, item)"
               >
                 <input
                   class="canvas-text-input"
+                  :ref="'canvasTextInput-' + item.id"
                   :value="getCanvasTextDisplay(item)"
                   :placeholder="item.type ? fieldTypeLabel(item.type) : '文本'"
-                  :readonly="!!item.type && !item.fixedValue"
+                  :readonly="editingCanvasTextId !== item.id"
                   @input="onCanvasTextInput(item, $event)"
+                  @mousedown.stop="onCanvasTextInputMouseDown($event, item)"
                   @focus="selectCanvasText(item)"
+                  @blur="onCanvasTextBlur(item)"
                 />
                 <div v-if="canvasSelectedKey === ('text:' + item.id)" class="canvas-select-handles">
                   <i v-for="h in canvasHandleDirs" :key="'txh-' + item.id + '-' + h" :class="['canvas-handle', h]" />
@@ -390,7 +394,9 @@
                         :style="getTitleItemStyle(item)"
                         @mouseenter="setCanvasHover('title:' + item.key)"
                         @mouseleave="clearCanvasHover('title:' + item.key)"
-                        @dblclick.stop="selectCanvasWidget('title:' + item.key)"
+                        @mousedown.stop="onTitleItemMouseDown($event, item)"
+                        @click.stop="selectCanvasWidget('title:' + item.key)"
+                        @dblclick.stop="onTitleItemDblClick(item)"
                       >
                         {{ item.label }}<span v-if="item.value !== ''">: {{ item.value }}</span>
                         <div v-if="canvasSelectedKey === ('title:' + item.key)" class="canvas-select-handles">
@@ -548,7 +554,9 @@
                         :style="getBottomItemStyle(item)"
                         @mouseenter="setCanvasHover('bottom:' + item.key)"
                         @mouseleave="clearCanvasHover('bottom:' + item.key)"
-                        @dblclick.stop="selectCanvasWidget('bottom:' + item.key)"
+                        @mousedown.stop="onBottomItemMouseDown($event, item)"
+                        @click.stop="selectCanvasWidget('bottom:' + item.key)"
+                        @dblclick.stop="onBottomItemDblClick(item)"
                       >
                         {{ item.label }}<span v-if="item.value !== ''">: {{ item.value }}</span>
                         <div v-if="canvasSelectedKey === ('bottom:' + item.key)" class="canvas-select-handles">
@@ -1119,6 +1127,10 @@ export default {
       canvasTexts: [],
       canvasTextSeq: 1,
       textDragState: null,
+      /** 双击进入编辑的画布文本 id；仅编辑态可改字，单击拖动 */
+      editingCanvasTextId: null,
+      /** 标题/底部标签拖拽状态 */
+      labelDragState: null,
       /** 分录表格网格设置弹窗 */
       gridDialogVisible: false,
       gridDraftRows: 5,
@@ -1293,30 +1305,40 @@ export default {
         bottom1Type: '',
         bottom1Width: 300,
         bottom1Height: 22,
+        bottom1X: null,
+        bottom1Y: null,
         bottom1Visible: false,
         bottom1FixedValue: false,
         bottom1FixedValueText: '',
         bottom2Type: '',
         bottom2Width: 300,
         bottom2Height: 22,
+        bottom2X: null,
+        bottom2Y: null,
         bottom2Visible: false,
         bottom2FixedValue: false,
         bottom2FixedValueText: '',
         bottom3Type: '',
         bottom3Width: 300,
         bottom3Height: 22,
+        bottom3X: null,
+        bottom3Y: null,
         bottom3Visible: false,
         bottom3FixedValue: false,
         bottom3FixedValueText: '',
         bottom4Type: '',
         bottom4Width: 300,
         bottom4Height: 22,
+        bottom4X: null,
+        bottom4Y: null,
         bottom4Visible: false,
         bottom4FixedValue: false,
         bottom4FixedValueText: '',
         bottom5Type: '',
         bottom5Width: 300,
         bottom5Height: 22,
+        bottom5X: null,
+        bottom5Y: null,
         bottom5Visible: false,
         bottom5FixedValue: false,
         bottom5FixedValueText: '',
@@ -1732,6 +1754,7 @@ export default {
         const yRaw = this.form[`title${i}Y`];
         items.push({
           key: `t-${i}`,
+          index: i,
           label,
           value,
           width: Number.isFinite(width) && width > 0 ? width : null,
@@ -1873,12 +1896,17 @@ export default {
         const value = fixed ? fixedText : (this.refBillData && this.refBillData.bill && type ? this.getBillBottomValue(this.refBillData.bill, type) : '');
         const width = Number(this.form[`bottom${i}Width`]);
         const height = Number(this.form[`bottom${i}Height`]);
+        const xRaw = this.form[`bottom${i}X`];
+        const yRaw = this.form[`bottom${i}Y`];
         items.push({
           key: `b-${i}`,
+          index: i,
           label,
           value,
           width: Number.isFinite(width) && width > 0 ? width : null,
-          height: Number.isFinite(height) && height > 0 ? height : null
+          height: Number.isFinite(height) && height > 0 ? height : null,
+          x: xRaw == null || xRaw === '' ? null : Number(xRaw),
+          y: yRaw == null || yRaw === '' ? null : Number(yRaw)
         });
       }
       return items;
@@ -2285,6 +2313,8 @@ export default {
                 if (config[typeKey] !== undefined) this.form[typeKey] = config[typeKey];
                 if (config[widthKey] !== undefined) this.form[widthKey] = config[widthKey];
                 if (config[heightKey] !== undefined) this.form[heightKey] = config[heightKey];
+                if (config['bottom' + idx + 'X'] !== undefined) this.form['bottom' + idx + 'X'] = config['bottom' + idx + 'X'];
+                if (config['bottom' + idx + 'Y'] !== undefined) this.form['bottom' + idx + 'Y'] = config['bottom' + idx + 'Y'];
                 if (config[visibleKey] !== undefined) this.form[visibleKey] = !!config[visibleKey];
                 if (config[fixedKey] !== undefined) this.form[fixedKey] = !!config[fixedKey];
                 if (config[fixedTextKey] !== undefined) this.form[fixedTextKey] = config[fixedTextKey];
@@ -2325,6 +2355,8 @@ export default {
                 this.form['bottom' + idx + 'Type'] = '';
                 this.form['bottom' + idx + 'Width'] = 300;
                 this.form['bottom' + idx + 'Height'] = 22;
+                this.form['bottom' + idx + 'X'] = null;
+                this.form['bottom' + idx + 'Y'] = null;
                 this.form['bottom' + idx + 'Visible'] = false;
                 this.form['bottom' + idx + 'FixedValue'] = false;
                 this.form['bottom' + idx + 'FixedValueText'] = '';
@@ -2441,6 +2473,7 @@ export default {
     clearCanvasWidgetSelection() {
       this.canvasSelectedKey = '';
       this.canvasHoverKey = '';
+      this.editingCanvasTextId = null;
       this.bodySelectedCells = [];
       this.headerSelectedCols = [];
     },
@@ -2751,6 +2784,7 @@ export default {
       const y = item && item.y;
       const style = {
         display: 'inline-block',
+        cursor: 'move',
         ...this.resolveElementTextStyle(item && item.key ? ('title:' + item.key) : '')
       };
       if (Number.isFinite(w) && w > 0) style.width = w + 'px';
@@ -2768,18 +2802,29 @@ export default {
       }
       return style;
     },
-    /** 底部信息项样式：根据配置宽度与高度 + 独立字体 */
+    /** 底部信息项样式：根据配置宽度与高度 + 独立字体 + 可选绝对坐标 */
     getBottomItemStyle(item) {
       const w = Number(item && item.width);
       const h = Number(item && item.height);
+      const x = item && item.x;
+      const y = item && item.y;
       const style = {
         display: 'inline-block',
+        cursor: 'move',
         ...this.resolveElementTextStyle(item && item.key ? ('bottom:' + item.key) : '')
       };
       if (Number.isFinite(w) && w > 0) style.width = w + 'px';
       if (Number.isFinite(h) && h > 0) {
         style.minHeight = h + 'px';
         style.height = h + 'px';
+      }
+      const hasX = x != null && x !== '' && Number.isFinite(Number(x));
+      const hasY = y != null && y !== '' && Number.isFinite(Number(y));
+      if (hasX || hasY) {
+        style.position = 'absolute';
+        style.left = (hasX ? Number(x) : 0) + 'px';
+        style.top = (hasY ? Number(y) : 0) + 'px';
+        style.zIndex = 2;
       }
       return style;
     },
@@ -3041,6 +3086,17 @@ export default {
             this.headerSelectedCols = [];
             this.bodySelectedCells = [];
             this.editingBodyCell = null;
+            for (let i = 1; i <= 5; i++) {
+              const p = 'bottom' + i;
+              if (config[p + 'Type'] !== undefined) this.form[p + 'Type'] = config[p + 'Type'];
+              if (config[p + 'Width'] !== undefined) this.form[p + 'Width'] = config[p + 'Width'];
+              if (config[p + 'Height'] !== undefined) this.form[p + 'Height'] = config[p + 'Height'];
+              if (config[p + 'X'] !== undefined) this.form[p + 'X'] = config[p + 'X'];
+              if (config[p + 'Y'] !== undefined) this.form[p + 'Y'] = config[p + 'Y'];
+              if (config[p + 'Visible'] !== undefined) this.form[p + 'Visible'] = !!config[p + 'Visible'];
+              if (config[p + 'FixedValue'] !== undefined) this.form[p + 'FixedValue'] = !!config[p + 'FixedValue'];
+              if (config[p + 'FixedValueText'] !== undefined) this.form[p + 'FixedValueText'] = config[p + 'FixedValueText'];
+            }
             for (let i = 1; i <= 6; i++) {
               const p = 'title' + i;
               if (config[p + 'Type'] !== undefined) this.form[p + 'Type'] = config[p + 'Type'];
@@ -3150,30 +3206,40 @@ export default {
         bottom1Type: '',
         bottom1Width: 300,
         bottom1Height: 22,
+        bottom1X: null,
+        bottom1Y: null,
         bottom1Visible: false,
         bottom1FixedValue: false,
         bottom1FixedValueText: '',
         bottom2Type: '',
         bottom2Width: 300,
         bottom2Height: 22,
+        bottom2X: null,
+        bottom2Y: null,
         bottom2Visible: false,
         bottom2FixedValue: false,
         bottom2FixedValueText: '',
         bottom3Type: '',
         bottom3Width: 300,
         bottom3Height: 22,
+        bottom3X: null,
+        bottom3Y: null,
         bottom3Visible: false,
         bottom3FixedValue: false,
         bottom3FixedValueText: '',
         bottom4Type: '',
         bottom4Width: 300,
         bottom4Height: 22,
+        bottom4X: null,
+        bottom4Y: null,
         bottom4Visible: false,
         bottom4FixedValue: false,
         bottom4FixedValueText: '',
         bottom5Type: '',
         bottom5Width: 300,
         bottom5Height: 22,
+        bottom5X: null,
+        bottom5Y: null,
         bottom5Visible: false,
         bottom5FixedValue: false,
         bottom5FixedValueText: '',
@@ -3440,6 +3506,7 @@ export default {
     getCanvasTextStyle(item) {
       if (!item || item.visible === false) return { display: 'none' };
       const textStyle = this.resolveElementTextStyle(item.id ? ('text:' + item.id) : '');
+      const editing = this.editingCanvasTextId === item.id;
       return {
         position: 'absolute',
         left: (Number(item.x) || 0) + 'px',
@@ -3447,6 +3514,7 @@ export default {
         width: Math.max(40, Number(item.width) || 160) + 'px',
         height: Math.max(18, Number(item.height) || 28) + 'px',
         zIndex: this.canvasSelectedKey === ('text:' + item.id) ? 12 : 8,
+        cursor: editing ? 'text' : 'move',
         ...textStyle
       };
     },
@@ -3465,33 +3533,63 @@ export default {
     },
     onCanvasTextInput(item, event) {
       if (!item) return;
+      if (this.editingCanvasTextId !== item.id) return;
       const val = event && event.target ? event.target.value : '';
-      if (item.fixedValue || !item.type) {
-        this.$set(item, 'fixedValue', true);
-        this.$set(item, 'fixedValueText', val);
-        this.$set(item, 'text', val);
+      this.$set(item, 'fixedValue', true);
+      this.$set(item, 'fixedValueText', val);
+      this.$set(item, 'text', val);
+    },
+    onCanvasTextInputMouseDown(event, item) {
+      // 编辑态：输入框内点选改字；非编辑态：交给父级拖拽
+      if (this.editingCanvasTextId === item.id) return;
+      event.preventDefault();
+      this.onCanvasTextMouseDown(event, item);
+    },
+    onCanvasTextDblClick(event, item) {
+      if (!item) return;
+      this.selectCanvasText(item);
+      this.editingCanvasTextId = item.id;
+      this.$nextTick(() => {
+        const ref = this.$refs['canvasTextInput-' + item.id];
+        const el = Array.isArray(ref) ? ref[0] : ref;
+        if (el && el.focus) {
+          el.focus();
+          if (el.select) el.select();
+        }
+      });
+    },
+    onCanvasTextBlur(item) {
+      if (item && this.editingCanvasTextId === item.id) {
+        this.editingCanvasTextId = null;
+        this.pushDesignHistory();
       }
+    },
+    getPaperContentRect() {
+      if (!this.$refs.previewPaper) return null;
+      const contentEl = this.$refs.previewPaper.querySelector('.paper-content');
+      return contentEl ? contentEl.getBoundingClientRect() : this.$refs.previewPaper.getBoundingClientRect();
     },
     onCanvasTextMouseDown(event, item) {
       if (!item) return;
       this.selectCanvasText(item);
-      if (event.target && event.target.classList && event.target.classList.contains('canvas-text-input')) {
-        // 输入框内点击不拖拽，便于编辑
-        return;
-      }
-      if (!this.$refs.previewPaper) return;
-      const contentEl = this.$refs.previewPaper.querySelector('.paper-content');
-      const contentRect = contentEl ? contentEl.getBoundingClientRect() : this.$refs.previewPaper.getBoundingClientRect();
+      if (this.editingCanvasTextId === item.id) return;
+      const contentRect = this.getPaperContentRect();
+      if (!contentRect) return;
+      const startX = Number(item.x) || 0;
+      const startY = Number(item.y) || 0;
+      const width = Number(item.width) || 160;
+      const height = Number(item.height) || 28;
       this.textDragState = {
         id: item.id,
         startClientX: event.clientX,
         startClientY: event.clientY,
-        startX: Number(item.x) || 0,
-        startY: Number(item.y) || 0,
+        startX,
+        startY,
         contentWidth: contentRect.width,
         contentHeight: contentRect.height,
-        width: Number(item.width) || 160,
-        height: Number(item.height) || 28
+        width,
+        height,
+        moved: false
       };
       this._onTextMouseMove = (e) => {
         if (!this.textDragState) return;
@@ -3499,6 +3597,7 @@ export default {
         if (!target) return;
         const dx = e.clientX - this.textDragState.startClientX;
         const dy = e.clientY - this.textDragState.startClientY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) this.textDragState.moved = true;
         let newX = this.textDragState.startX + dx;
         let newY = this.textDragState.startY + dy;
         newX = Math.max(0, Math.min(this.textDragState.contentWidth - this.textDragState.width, newX));
@@ -3507,12 +3606,108 @@ export default {
         this.$set(target, 'y', Math.round(newY));
       };
       this._onTextMouseUp = () => {
+        const moved = !!(this.textDragState && this.textDragState.moved);
         this.textDragState = null;
         window.removeEventListener('mousemove', this._onTextMouseMove);
         window.removeEventListener('mouseup', this._onTextMouseUp);
+        if (moved) this.pushDesignHistory();
       };
       window.addEventListener('mousemove', this._onTextMouseMove);
       window.addEventListener('mouseup', this._onTextMouseUp);
+    },
+    /** 标题标签：单击选中并可拖动；双击切到字段属性便于编辑 */
+    onTitleItemMouseDown(event, item) {
+      if (!item) return;
+      this.selectCanvasWidget('title:' + item.key);
+      this.startLabelDrag(event, {
+        kind: 'title',
+        index: item.index,
+        key: item.key,
+        width: Number(item.width) || 300,
+        height: Number(item.height) || 22,
+        el: event.currentTarget
+      });
+    },
+    onTitleItemDblClick(item) {
+      if (!item) return;
+      this.selectCanvasWidget('title:' + item.key);
+      this.activeBottomTab = 'title';
+      this.fieldCollapseActive = ['dataSource', 'common'];
+    },
+    onBottomItemMouseDown(event, item) {
+      if (!item) return;
+      this.selectCanvasWidget('bottom:' + item.key);
+      this.startLabelDrag(event, {
+        kind: 'bottom',
+        index: item.index,
+        key: item.key,
+        width: Number(item.width) || 300,
+        height: Number(item.height) || 22,
+        el: event.currentTarget
+      });
+    },
+    onBottomItemDblClick(item) {
+      if (!item) return;
+      this.selectCanvasWidget('bottom:' + item.key);
+      this.activeBottomTab = 'bottom';
+    },
+    startLabelDrag(event, meta) {
+      const contentRect = this.getPaperContentRect();
+      if (!contentRect || !meta) return;
+      const el = meta.el;
+      const elRect = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+      const prefix = meta.kind === 'bottom' ? 'bottom' : 'title';
+      let startX = this.form[prefix + meta.index + 'X'];
+      let startY = this.form[prefix + meta.index + 'Y'];
+      if (startX == null || startX === '' || !Number.isFinite(Number(startX)) ||
+          startY == null || startY === '' || !Number.isFinite(Number(startY))) {
+        // 首次拖动：按当前相对纸面位置转为绝对坐标
+        startX = elRect ? Math.round(elRect.left - contentRect.left) : 0;
+        startY = elRect ? Math.round(elRect.top - contentRect.top) : 0;
+        this.$set(this.form, prefix + meta.index + 'X', startX);
+        this.$set(this.form, prefix + meta.index + 'Y', startY);
+      } else {
+        startX = Number(startX);
+        startY = Number(startY);
+      }
+      const width = Math.max(20, Number(meta.width) || 100);
+      const height = Math.max(16, Number(meta.height) || 22);
+      this.labelDragState = {
+        kind: meta.kind,
+        index: meta.index,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startX,
+        startY,
+        contentWidth: contentRect.width,
+        contentHeight: contentRect.height,
+        width,
+        height,
+        moved: false
+      };
+      this._onLabelMouseMove = (e) => {
+        if (!this.labelDragState) return;
+        const st = this.labelDragState;
+        const dx = e.clientX - st.startClientX;
+        const dy = e.clientY - st.startClientY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) st.moved = true;
+        let newX = st.startX + dx;
+        let newY = st.startY + dy;
+        newX = Math.max(0, Math.min(st.contentWidth - st.width, newX));
+        newY = Math.max(0, Math.min(st.contentHeight - st.height, newY));
+        const p = st.kind === 'bottom' ? 'bottom' : 'title';
+        this.$set(this.form, p + st.index + 'X', Math.round(newX));
+        this.$set(this.form, p + st.index + 'Y', Math.round(newY));
+      };
+      this._onLabelMouseUp = () => {
+        const moved = !!(this.labelDragState && this.labelDragState.moved);
+        this.labelDragState = null;
+        window.removeEventListener('mousemove', this._onLabelMouseMove);
+        window.removeEventListener('mouseup', this._onLabelMouseUp);
+        if (moved) this.pushDesignHistory();
+      };
+      window.addEventListener('mousemove', this._onLabelMouseMove);
+      window.addEventListener('mouseup', this._onLabelMouseUp);
     },
     openGridSettingDialog() {
       const rows = Math.max(1, Math.min(this.gridMaxRows, Number(this.form.tableRows) || 5));
@@ -3581,6 +3776,16 @@ export default {
           };
         }
       }
+      if (this.labelDragState && this.labelDragState.index) {
+        const p = this.labelDragState.kind === 'bottom' ? 'bottom' : 'title';
+        const idx = this.labelDragState.index;
+        return {
+          x: Number(this.form[p + idx + 'X']) || 0,
+          y: Number(this.form[p + idx + 'Y']) || 0,
+          w: Number(this.labelDragState.width) || 100,
+          h: Number(this.labelDragState.height) || 22
+        };
+      }
       if (this.codeDragState || this.canvasSelectedKey === 'code') {
         const pos = this.currentCodePosition || { x: 0, y: 0 };
         const size = this.currentCodeSize || { width: 64, height: 64 };
@@ -3601,6 +3806,34 @@ export default {
             y: Number(t.y) || 0,
             w: Number(t.width) || 160,
             h: Number(t.height) || 28
+          };
+        }
+      }
+      const titleMatch = /^title:t-(\d+)$/.exec(key);
+      if (titleMatch) {
+        const idx = Number(titleMatch[1]);
+        const x = this.form['title' + idx + 'X'];
+        const y = this.form['title' + idx + 'Y'];
+        if (x != null && x !== '' && y != null && y !== '') {
+          return {
+            x: Number(x) || 0,
+            y: Number(y) || 0,
+            w: Number(this.form['title' + idx + 'Width']) || 300,
+            h: Number(this.form['title' + idx + 'Height']) || 22
+          };
+        }
+      }
+      const bottomMatch = /^bottom:b-(\d+)$/.exec(key);
+      if (bottomMatch) {
+        const idx = Number(bottomMatch[1]);
+        const x = this.form['bottom' + idx + 'X'];
+        const y = this.form['bottom' + idx + 'Y'];
+        if (x != null && x !== '' && y != null && y !== '') {
+          return {
+            x: Number(x) || 0,
+            y: Number(y) || 0,
+            w: Number(this.form['bottom' + idx + 'Width']) || 300,
+            h: Number(this.form['bottom' + idx + 'Height']) || 22
           };
         }
       }
@@ -4136,30 +4369,40 @@ export default {
             bottom1Type: this.form.bottom1Type,
             bottom1Width: this.form.bottom1Width,
             bottom1Height: this.form.bottom1Height,
+            bottom1X: this.form.bottom1X,
+            bottom1Y: this.form.bottom1Y,
             bottom1Visible: this.form.bottom1Visible,
             bottom1FixedValue: this.form.bottom1FixedValue,
             bottom1FixedValueText: this.form.bottom1FixedValueText,
             bottom2Type: this.form.bottom2Type,
             bottom2Width: this.form.bottom2Width,
             bottom2Height: this.form.bottom2Height,
+            bottom2X: this.form.bottom2X,
+            bottom2Y: this.form.bottom2Y,
             bottom2Visible: this.form.bottom2Visible,
             bottom2FixedValue: this.form.bottom2FixedValue,
             bottom2FixedValueText: this.form.bottom2FixedValueText,
             bottom3Type: this.form.bottom3Type,
             bottom3Width: this.form.bottom3Width,
             bottom3Height: this.form.bottom3Height,
+            bottom3X: this.form.bottom3X,
+            bottom3Y: this.form.bottom3Y,
             bottom3Visible: this.form.bottom3Visible,
             bottom3FixedValue: this.form.bottom3FixedValue,
             bottom3FixedValueText: this.form.bottom3FixedValueText,
             bottom4Type: this.form.bottom4Type,
             bottom4Width: this.form.bottom4Width,
             bottom4Height: this.form.bottom4Height,
+            bottom4X: this.form.bottom4X,
+            bottom4Y: this.form.bottom4Y,
             bottom4Visible: this.form.bottom4Visible,
             bottom4FixedValue: this.form.bottom4FixedValue,
             bottom4FixedValueText: this.form.bottom4FixedValueText,
             bottom5Type: this.form.bottom5Type,
             bottom5Width: this.form.bottom5Width,
             bottom5Height: this.form.bottom5Height,
+            bottom5X: this.form.bottom5X,
+            bottom5Y: this.form.bottom5Y,
             bottom5Visible: this.form.bottom5Visible,
             bottom5FixedValue: this.form.bottom5FixedValue,
             bottom5FixedValueText: this.form.bottom5FixedValueText,
@@ -4811,7 +5054,13 @@ export default {
   font: inherit;
   color: inherit;
   text-align: inherit;
+  cursor: move;
+  user-select: none;
+}
+
+.canvas-text-widget.is-editing .canvas-text-input {
   cursor: text;
+  user-select: text;
 }
 
 .template-preview-content {
@@ -4913,9 +5162,8 @@ export default {
   line-height: 1.6;
 }
 
-/* 标题配置行：表头与表格之间，两行一行三列布局 */
+/* 标题配置行：表头与表格之间；不设 relative，便于标签绝对定位拖到整张纸任意位置 */
 .template-title-container {
-  position: relative;
   margin-top: 2px;
   margin-bottom: 2px;
 }
@@ -4942,6 +5190,8 @@ export default {
 
 .template-title-item {
   white-space: nowrap;
+  cursor: move;
+  user-select: none;
 }
 
 /* 底部信息：表格下方，一行最多四个参数 */
@@ -4960,6 +5210,11 @@ export default {
 
 .template-bottom-row + .template-bottom-row {
   margin-top: 4px;
+}
+
+.template-bottom-item {
+  cursor: move;
+  user-select: none;
 }
 
 .template-bottom-item {
