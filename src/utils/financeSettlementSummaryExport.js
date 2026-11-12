@@ -259,7 +259,7 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
   if (rows.length === 0) {
     ws.mergeCells(`A${r}:I${r}`);
     const emptyCell = ws.getCell(r, 1);
-    emptyCell.value = '当前条件下暂无统计数据（已审核科室出退库按产品档案库房分类 id 汇总）';
+    emptyCell.value = '当前条件下暂无统计数据（已审核科室出退库按产品档案财务分类名称汇总）';
     emptyCell.font = FONT_BODY;
     emptyCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
     setCellBorder(emptyCell);
