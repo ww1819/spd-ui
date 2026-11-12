@@ -177,6 +177,11 @@
                 {{ formatAmt(scope.row.highValueConsumablesAmt) }}
               </template>
             </el-table-column>
+            <el-table-column prop="reagentAmt" label="试剂" align="right" width="110">
+              <template slot-scope="scope">
+                {{ formatAmt(scope.row.reagentAmt) }}
+              </template>
+            </el-table-column>
             <el-table-column label="西药" align="center">
               <el-table-column prop="_blankWestern" label="西药金额" align="right" min-width="100">
                 <template slot-scope="scope">
@@ -202,11 +207,6 @@
                   <span>{{ scope.row._blankTcmRetail }}</span>
                 </template>
               </el-table-column>
-            </el-table-column>
-            <el-table-column prop="reagentAmt" label="试剂" align="right" width="110">
-              <template slot-scope="scope">
-                {{ formatAmt(scope.row.reagentAmt) }}
-              </template>
             </el-table-column>
           </el-table>
           <p class="hint-text">

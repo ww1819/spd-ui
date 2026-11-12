@@ -206,19 +206,18 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
   setHeader('C2', '普通耗材');
   ws.mergeCells('D2:D3');
   setHeader('D2', '高值耗材');
+  ws.mergeCells('E2:E3');
+  setHeader('E2', '试剂');
 
-  setHeader('E2', '西药');
-  setHeader('E3', '西药金额');
-  setHeader('F2', '中成药');
-  setHeader('F3', '零售金额');
+  setHeader('F2', '西药');
+  setHeader('F3', '西药金额');
+  setHeader('G2', '中成药');
+  setHeader('G3', '零售金额');
 
-  ws.mergeCells('G2:H2');
-  setHeader('G2', '中草药');
-  setHeader('G3', '中药进价');
-  setHeader('H3', '零售金额');
-
-  ws.mergeCells('I2:I3');
-  setHeader('I2', '试剂');
+  ws.mergeCells('H2:I2');
+  setHeader('H2', '中草药');
+  setHeader('H3', '中药进价');
+  setHeader('I3', '零售金额');
 
   let sumPlain = 0;
   let sumHigh = 0;
@@ -238,11 +237,11 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
       { c: 2, v: row.departmentName || '', align: 'left' },
       { c: 3, v: plain, num: true },
       { c: 4, v: high, num: true },
-      { c: 5, v: '', align: 'center' },
+      { c: 5, v: reag, num: true },
       { c: 6, v: '', align: 'center' },
       { c: 7, v: '', align: 'center' },
       { c: 8, v: '', align: 'center' },
-      { c: 9, v: reag, num: true },
+      { c: 9, v: '', align: 'center' },
     ];
     cells.forEach(({ c, v, num, align }) => {
       const cell = ws.getCell(r, c);
@@ -278,11 +277,11 @@ export async function exportFinanceDeptConsumablePickupXlsx(options) {
     ;[
       [3, sumPlain],
       [4, sumHigh],
-      [5, ''],
+      [5, sumReag],
       [6, ''],
       [7, ''],
       [8, ''],
-      [9, sumReag],
+      [9, ''],
     ].forEach(([c, v]) => {
       const cell = ws.getCell(r, c);
       cell.value = typeof v === 'number' ? v : '';
