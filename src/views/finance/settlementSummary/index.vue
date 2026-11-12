@@ -1,6 +1,6 @@
 <template>
   <div class="app-container list-page finance-settlement-summary">
-    <div class="form-fields-container list-query-panel" v-show="showSearch">
+    <div class="form-fields-container list-query-panel">
       <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
         <div class="ctk-query-top-fields">
           <div class="more-search-dynamic-field more-search-field--text">
@@ -53,48 +53,40 @@
           </div>
         </div>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="审核日期" class="query-item-inline query-item-date-range">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="起始"
-                clearable
-                class="query-date-picker query-date-start"
-              />
-              <span class="query-date-sep">至</span>
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="date"
-                value-format="yyyy-MM-dd"
-                placeholder="截止"
-                clearable
-                class="query-date-picker query-date-end"
-              />
-            </el-form-item>
-            <el-form-item prop="materialIsProcure" class="query-item-inline">
-              <el-select v-model="queryParams.materialIsProcure" clearable placeholder="是否集采" class="more-search-short-select">
-                <el-option label="是" value="1" />
-                <el-option label="否" value="2" />
-              </el-select>
-            </el-form-item>
-            <div class="ctk-query-actions query-actions">
-              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
-            </div>
-          </el-col>
-        </el-row>
+        <div class="query-row-second-inner finance-summary-query-second">
+          <div class="query-item-inline query-item-date-range">
+            <span class="query-inline-label">审核日期</span>
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="起始"
+              clearable
+              class="query-date-picker query-date-start"
+            />
+            <span class="query-date-sep">至</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="截止"
+              clearable
+              class="query-date-picker query-date-end"
+            />
+          </div>
+          <div class="query-item-inline">
+            <el-select v-model="queryParams.materialIsProcure" clearable placeholder="是否集采" class="more-search-short-select">
+              <el-option label="是" value="1" />
+              <el-option label="否" value="2" />
+            </el-select>
+          </div>
+          <div class="ctk-query-actions query-actions">
+            <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+            <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+          </div>
+        </div>
       </el-form>
     </div>
-
-    <el-row :gutter="0" class="mb8 list-toolbar">
-      <div class="list-toolbar-left"></div>
-      <div class="list-toolbar-right">
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="loadData" />
-      </div>
-    </el-row>
 
     <el-tabs v-model="activeSheet" type="border-card" class="report-sheet-tabs">
       <el-tab-pane label="表一" name="table1">
@@ -279,7 +271,6 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse'
 import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 import SelectSupplier from '@/components/SelectModel/SelectSupplier'
 import SelectFinanceCategoryLow from '@/components/SelectModel/SelectFinanceCategoryLow'
-import RightToolbar from '@/components/RightToolbar'
 
 function pad2(n) {
   return n < 10 ? '0' + n : String(n)
@@ -304,12 +295,12 @@ function dateOnly(s) {
 }
 
 export default {
-  name: 'FinanceSettlementSummary',
-  components: { SelectWarehouse, SelectDepartment, SelectSupplier, SelectFinanceCategoryLow, RightToolbar },
+  // 须与菜单 path「settlementSummary」→ 路由 name「SettlementSummary」一致，keep-alive 才能保留查询条件
+  name: 'SettlementSummary',
+  components: { SelectWarehouse, SelectDepartment, SelectSupplier, SelectFinanceCategoryLow },
   data() {
     return {
       loading: false,
-      showSearch: true,
       queryParams: {
         ...getDefaultFinanceAuditDateRange(),
         billNo: null,
@@ -395,6 +386,9 @@ export default {
   },
   created() {
     this.loadData()
+  },
+  activated() {
+    // keep-alive 切回：不重新拉数，保留查询条件与当前结果
   },
   methods: {
     formatAmt(v) {
@@ -632,6 +626,37 @@ export default {
   align-items: center;
   gap: 8px 12px;
   margin-bottom: 8px;
+}
+.finance-summary-query-second {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-height: 32px;
+}
+.finance-summary-query-second .query-item-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-height: 32px;
+}
+.finance-summary-query-second .query-inline-label {
+  color: #606266;
+  font-size: 14px;
+  line-height: 32px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.finance-summary-query-second .query-date-picker {
+  width: 140px;
+}
+.finance-summary-query-second .query-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-height: 32px;
 }
 .report-sheet-tabs {
   margin-top: 4px;
