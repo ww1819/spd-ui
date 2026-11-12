@@ -2,33 +2,33 @@
   <div class="print-setting-form">
     <div class="dialog-layout" :class="{ 'is-right-collapsed': rightPanelCollapsed }">
       <!-- 左侧：工具条与画布（工具条与右侧面板顶对齐） -->
-      <div class="left-column">
+      <div class="left-column" :class="{ 'is-canvas-locked': !canOperateCanvas }">
     <!-- 顶部操作按钮行：设计工具条 + 保存等 -->
     <div class="form-toolbar">
-      <div class="design-toolbar">
+      <div class="design-toolbar" @click.capture="onDesignToolbarCapture">
         <el-tooltip content="撤销" placement="bottom">
-          <button type="button" class="dt-btn" :disabled="!canUndo" @click="handleDesignUndo">
+          <button type="button" class="dt-btn" :disabled="!canOperateCanvas || !canUndo" @click="handleDesignUndo">
             <i class="el-icon-refresh-left"></i>
           </button>
         </el-tooltip>
         <el-tooltip content="重做" placement="bottom">
-          <button type="button" class="dt-btn" :disabled="!canRedo" @click="handleDesignRedo">
+          <button type="button" class="dt-btn" :disabled="!canOperateCanvas || !canRedo" @click="handleDesignRedo">
             <i class="el-icon-refresh-right"></i>
           </button>
         </el-tooltip>
         <span class="dt-sep"></span>
         <el-tooltip content="复制" placement="bottom">
-          <button type="button" class="dt-btn" @click="handleDesignCopy">
+          <button type="button" class="dt-btn" :disabled="!canOperateCanvas" @click="handleDesignCopy">
             <i class="el-icon-document-copy"></i>
           </button>
         </el-tooltip>
         <el-tooltip content="格式刷" placement="bottom">
-          <button type="button" class="dt-btn" :class="{ active: formatPainterActive }" @click="toggleFormatPainter">
+          <button type="button" class="dt-btn" :disabled="!canOperateCanvas" :class="{ active: formatPainterActive }" @click="toggleFormatPainter">
             <i class="el-icon-brush"></i>
           </button>
         </el-tooltip>
         <el-tooltip content="删除" placement="bottom">
-          <button type="button" class="dt-btn" @click="handleDesignDelete">
+          <button type="button" class="dt-btn" :disabled="!canOperateCanvas" @click="handleDesignDelete">
             <i class="el-icon-delete"></i>
           </button>
         </el-tooltip>
@@ -106,16 +106,89 @@
             <el-dropdown-item command="bottom">底端对齐</el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
-        <el-dropdown trigger="click" @command="handleBorderCommand">
-          <button type="button" class="dt-btn">
-            <i class="el-icon-menu"></i>
+        <el-dropdown
+          trigger="click"
+          placement="bottom-start"
+          :hide-on-click="false"
+          @visible-change="onBorderMenuVisible"
+        >
+          <button type="button" class="dt-btn" :class="{ active: borderMenuVisible }">
+            <span class="dt-border-trigger-icon" v-html="borderMenuIcons.grid"></span>
             <i class="el-icon-arrow-down dt-caret"></i>
           </button>
-          <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item command="all">全边框</el-dropdown-item>
-            <el-dropdown-item command="outer">外边框</el-dropdown-item>
-            <el-dropdown-item command="none">无边框</el-dropdown-item>
-            <el-dropdown-item command="merge">合并单元格</el-dropdown-item>
+          <el-dropdown-menu slot="dropdown" class="dt-border-panel" @click.native.stop>
+            <div
+              v-for="item in borderMenuItems"
+              :key="item.cmd"
+              class="dt-border-item"
+              :class="{ active: form.tableBorder === item.cmd }"
+              @click="handleBorderCommand(item.cmd)"
+            >
+              <span class="dt-border-ico" v-html="item.icon"></span>
+              <span class="dt-border-label">{{ item.label }}</span>
+            </div>
+            <div class="dt-border-divider"></div>
+            <div
+              class="dt-border-item has-sub"
+              :class="{ active: borderSubMenu === 'style' }"
+              @click.stop="toggleBorderSubMenu('style')"
+            >
+              <span class="dt-border-ico" v-html="borderMenuIcons.lineStyle"></span>
+              <span class="dt-border-label">线条</span>
+              <i class="el-icon-arrow-right dt-border-arrow"></i>
+              <div
+                v-show="borderSubMenu === 'style'"
+                class="dt-border-submenu"
+                @click.stop
+              >
+                <div
+                  v-for="ls in borderLineStyles"
+                  :key="ls.value"
+                  class="dt-border-line-item"
+                  :class="{ active: form.tableBorderStyle === ls.value }"
+                  @click="handleBorderLineStyle(ls.value)"
+                >
+                  <span class="dt-border-line-preview" :style="ls.preview"></span>
+                </div>
+              </div>
+            </div>
+            <div
+              class="dt-border-item has-sub"
+              :class="{ active: borderSubMenu === 'color' }"
+              @click.stop="toggleBorderSubMenu('color')"
+            >
+              <span class="dt-border-ico" v-html="borderMenuIcons.lineColor"></span>
+              <span class="dt-border-label">线条颜色</span>
+              <i class="el-icon-arrow-right dt-border-arrow"></i>
+              <div
+                v-show="borderSubMenu === 'color'"
+                class="dt-border-submenu dt-border-color-submenu"
+                @click.stop
+              >
+                <el-color-picker
+                  v-model="form.tableBorderColor"
+                  size="mini"
+                  show-alpha
+                  @change="handleBorderColorChange"
+                />
+                <div class="dt-border-color-presets">
+                  <button
+                    v-for="c in borderColorPresets"
+                    :key="c"
+                    type="button"
+                    class="dt-border-color-swatch"
+                    :style="{ background: c }"
+                    :class="{ active: form.tableBorderColor === c }"
+                    @click="handleBorderColorChange(c)"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="dt-border-divider"></div>
+            <div class="dt-border-item" @click="handleBorderCommand('merge')">
+              <span class="dt-border-ico" v-html="borderMenuIcons.merge"></span>
+              <span class="dt-border-label">合并单元格</span>
+            </div>
           </el-dropdown-menu>
         </el-dropdown>
         <el-dropdown trigger="click" @command="handlePlaceholderCommand">
@@ -134,7 +207,7 @@
       </div>
       <el-button type="primary" size="medium" @click="submitForm">保 存</el-button>
       <el-button size="medium" @click="refresh">刷 新</el-button>
-      <el-button size="medium" @click="handlePreview">预 览</el-button>
+      <el-button size="medium" :disabled="!canOperateCanvas" @click="handlePreview">预 览</el-button>
       <el-button size="medium" :disabled="!form.billType" @click="openRefBillDialog">引用单据</el-button>
       <span v-if="refBillData && refBillTotalPages > 1" class="ref-bill-pager">
         <el-button size="mini" :disabled="refBillPage <= 1" @click="refBillPage = Math.max(1, refBillPage - 1)">上一页</el-button>
@@ -171,6 +244,12 @@
               :style="{ width: rulerHorizontalWidthPx + 'px', transform: 'translateX(' + (-canvasScrollLeft) + 'px)' }"
             >
               <div
+                v-if="rulerGuideRange"
+                class="ruler-guide-h"
+                :class="{ dragging: !!textDragState || !!codeDragState }"
+                :style="{ left: rulerGuideRange.left + 'px', width: rulerGuideRange.width + 'px' }"
+              />
+              <div
                 v-for="i in horizontalRuler"
                 :key="'h-' + i"
                 :class="['ruler-mark-horizontal', i % 10 === 0 ? 'major' : 'minor']"
@@ -190,6 +269,12 @@
               :style="{ height: rulerVerticalHeightPx + 'px', transform: 'translateY(' + (-canvasScrollTop) + 'px)' }"
             >
               <div
+                v-if="rulerGuideRange"
+                class="ruler-guide-v"
+                :class="{ dragging: !!textDragState || !!codeDragState }"
+                :style="{ top: rulerGuideRange.top + 'px', height: rulerGuideRange.height + 'px' }"
+              />
+              <div
                 v-for="i in verticalRuler"
                 :key="'v-' + i"
                 :class="['ruler-mark-vertical', i % 10 === 0 ? 'major' : 'minor']"
@@ -205,7 +290,16 @@
             class="left-panel-body ruler-panel"
             :style="rulerPanelGridStyle"
             @scroll="onCanvasScroll"
+            @mousedown.capture="onCanvasAreaCapture"
           >
+            <div
+              v-if="!canOperateCanvas"
+              class="canvas-billtype-mask"
+              @mousedown.stop.prevent="ensureBillTypeReady"
+              @click.stop.prevent="ensureBillTypeReady"
+            >
+              <div class="canvas-billtype-mask-tip">请先选择单据类型后再进行画布操作</div>
+            </div>
             <div
               class="template-preview"
               :style="{ minHeight: previewAreaMinHeight + 'px', minWidth: previewAreaMinWidth + 'px' }"
@@ -221,14 +315,54 @@
             @mousedown.stop="onPreviewMouseDown"
           >
             <div class="paper-content">
-              <div class="template-preview-content">
-                <div v-if="headerDisplayText" class="template-header">{{ headerDisplayText }}</div>
+              <!-- 自由文本组件：绝对定位于画布 -->
+              <div
+                v-for="item in canvasTexts"
+                :key="item.id"
+                class="canvas-text-widget canvas-widget"
+                :class="canvasWidgetClass('text:' + item.id)"
+                :style="getCanvasTextStyle(item)"
+                @mouseenter="setCanvasHover('text:' + item.id)"
+                @mouseleave="clearCanvasHover('text:' + item.id)"
+                @mousedown.stop="onCanvasTextMouseDown($event, item)"
+                @click.stop="selectCanvasText(item)"
+              >
+                <input
+                  class="canvas-text-input"
+                  :value="getCanvasTextDisplay(item)"
+                  :placeholder="item.type ? fieldTypeLabel(item.type) : '文本'"
+                  :readonly="!!item.type && !item.fixedValue"
+                  @input="onCanvasTextInput(item, $event)"
+                  @focus="selectCanvasText(item)"
+                />
+                <div v-if="canvasSelectedKey === ('text:' + item.id)" class="canvas-select-handles">
+                  <i v-for="h in canvasHandleDirs" :key="'txh-' + item.id + '-' + h" :class="['canvas-handle', h]" />
+                </div>
+              </div>
+              <div class="template-preview-content" @mousedown.self="clearCanvasWidgetSelection">
+                <div
+                  v-if="canvasHeaderVisible && headerDisplayText"
+                  class="template-header canvas-widget"
+                  :class="canvasWidgetClass('header')"
+                  @mouseenter="setCanvasHover('header')"
+                  @mouseleave="clearCanvasHover('header')"
+                  @dblclick.stop="selectCanvasWidget('header')"
+                >
+                  {{ headerDisplayText }}
+                  <div v-if="canvasSelectedKey === 'header'" class="canvas-select-handles">
+                    <i v-for="h in canvasHandleDirs" :key="'hh-' + h" :class="['canvas-handle', h]" />
+                  </div>
+                </div>
                 <!-- 单号码：可拖拽移动、右下角拉拽缩放 -->
                 <div
                   v-if="form.codeDisplay"
                   ref="codeWrapRef"
-                  class="template-code-wrap template-code-wrap-draggable"
+                  class="template-code-wrap template-code-wrap-draggable canvas-widget"
+                  :class="canvasWidgetClass('code')"
                   :style="codeWrapStyle"
+                  @mouseenter="setCanvasHover('code')"
+                  @mouseleave="clearCanvasHover('code')"
+                  @dblclick.stop="selectCanvasWidget('code')"
                   @mousedown.stop="onCodeWrapMouseDown"
                 >
                   <img v-if="form.codeDisplay === 'qr'" :src="qrCodeImageUrl" alt="二维码(单号)" class="template-qrcode-img" :style="currentCodeImgStyle" />
@@ -236,6 +370,9 @@
                     <img :src="barcodeImageUrl" alt="一维码(单号)" class="template-barcode-img" />
                   </div>
                   <div class="code-resize-handle" @mousedown.stop.prevent="onCodeResizeStart" title="拖拽拉宽拉高"></div>
+                  <div v-if="canvasSelectedKey === 'code'" class="canvas-select-handles">
+                    <i v-for="h in canvasHandleDirs" :key="'ch-' + h" :class="['canvas-handle', h]" />
+                  </div>
                 </div>
                 <!-- 标题配置：表头与表格之间显示各标题行（名称 + 固定值），两行三列布局 -->
                 <template v-if="hasAnyTitleVisible">
@@ -249,17 +386,35 @@
                       <span
                         v-for="item in row"
                         :key="item.key"
-                        class="template-title-item"
+                        class="template-title-item canvas-widget"
+                        :class="canvasWidgetClass('title:' + item.key)"
                         :style="getTitleItemStyle(item)"
+                        @mouseenter="setCanvasHover('title:' + item.key)"
+                        @mouseleave="clearCanvasHover('title:' + item.key)"
+                        @dblclick.stop="selectCanvasWidget('title:' + item.key)"
                       >
                         {{ item.label }}<span v-if="item.value !== ''">: {{ item.value }}</span>
+                        <div v-if="canvasSelectedKey === ('title:' + item.key)" class="canvas-select-handles">
+                          <i v-for="h in canvasHandleDirs" :key="'th-' + item.key + '-' + h" :class="['canvas-handle', h]" />
+                        </div>
                       </span>
                     </div>
                   </div>
                 </template>
                 <!-- 表格设置预览：第一行为列名，可下拉选择列配置；列与列之间可拖动调整宽度并同步到列配置 -->
-                <div class="preview-table-wrap" :style="previewTableStyle">
-                  <table class="preview-table" :style="previewTableInlineStyle">
+                <div
+                  v-if="canvasTableVisible"
+                  class="preview-table-wrap canvas-widget"
+                  :class="canvasWidgetClass('table')"
+                  :style="previewTableStyle"
+                  @mouseenter="setCanvasHover('table')"
+                  @mouseleave="clearCanvasHover('table')"
+                  @dblclick.self.stop="selectCanvasWidget('table')"
+                >
+                  <div v-if="canvasSelectedKey === 'table'" class="canvas-select-handles">
+                    <i v-for="h in canvasHandleDirs" :key="'tbh-' + h" :class="['canvas-handle', h]" />
+                  </div>
+                  <table class="preview-table" :class="previewTableBorderClass" :style="previewTableInlineStyle" @dblclick.stop="selectCanvasWidget('table')">
                     <colgroup>
                       <col v-for="c in tablePreviewCols" :key="'col-' + c" :style="{ width: (canvasColumnWidths[c - 1] || 80) + 'px' }" />
                     </colgroup>
@@ -269,10 +424,16 @@
                           v-for="c in tablePreviewCols"
                           v-if="isHeaderCellVisible(c - 1)"
                           :key="'h-' + (c - 1)"
-                          class="preview-table-header-cell"
-                          :class="{ 'is-selected': isHeaderCellSelected(c - 1) }"
+                          class="preview-table-header-cell canvas-widget"
+                          :class="[
+                            { 'is-selected': isHeaderCellSelected(c - 1) },
+                            canvasWidgetClass('header-cell:' + (c - 1))
+                          ]"
                           :colspan="getHeaderCellColspan(c - 1)"
-                          @click.stop="onHeaderCellClick(c - 1)"
+                          @mouseenter="setCanvasHover('header-cell:' + (c - 1))"
+                          @mouseleave="clearCanvasHover('header-cell:' + (c - 1))"
+                          @click.stop="onHeaderCellClick(c - 1, $event)"
+                          @dblclick.stop="selectCanvasWidget('header-cell:' + (c - 1))"
                         >
                           <el-select
                             :value="tableHeaderFields[c - 1]"
@@ -293,6 +454,12 @@
                             class="col-resize-handle"
                             @mousedown.prevent.stop="startColResize($event, c - 1)"
                           ></span>
+                          <div
+                            v-if="canvasSelectedKey === ('header-cell:' + (c - 1)) || isHeaderCellSelected(c - 1)"
+                            class="canvas-select-handles"
+                          >
+                            <i v-for="h in canvasHandleDirs" :key="'hch-' + (c - 1) + '-' + h" :class="['canvas-handle', h]" />
+                          </div>
                         </th>
                       </tr>
                     </thead>
@@ -302,14 +469,19 @@
                           v-for="cIndex in tablePreviewCols"
                           v-if="isBodyCellVisible(rIndex - 1, cIndex - 1)"
                           :key="'c-' + (cIndex - 1)"
-                          class="preview-table-body-cell"
-                          :class="{ 'is-selected': isBodyCellSelected(rIndex - 1, cIndex - 1) }"
+                          class="preview-table-body-cell canvas-widget"
+                          :class="[
+                            { 'is-selected': isBodyCellSelected(rIndex - 1, cIndex - 1) },
+                            canvasWidgetClass('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1))
+                          ]"
                           :colspan="getBodyCellColspan(rIndex - 1, cIndex - 1)"
-                          @click.stop="onBodyCellClick(rIndex - 1, cIndex - 1)"
+                          @mouseenter="setCanvasHover('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1))"
+                          @mouseleave="clearCanvasHover('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1))"
+                          @click.stop="onBodyCellClick(rIndex - 1, cIndex - 1, $event)"
                         >
                           <div
                             class="preview-table-cell-inner"
-                            @dblclick.stop="startEditBodyCell(rIndex - 1, cIndex - 1)"
+                            @dblclick.stop="onBodyCellDblClick(rIndex - 1, cIndex - 1)"
                           >
                             <el-input
                               v-if="isEditingBodyCell(rIndex - 1, cIndex - 1)"
@@ -331,6 +503,16 @@
                             class="col-resize-handle"
                             @mousedown.prevent.stop="startColResize($event, cIndex - 1)"
                           ></span>
+                          <div
+                            v-if="canvasSelectedKey === ('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1)) || isBodyCellSelected(rIndex - 1, cIndex - 1)"
+                            class="canvas-select-handles"
+                          >
+                            <i
+                              v-for="h in canvasHandleDirs"
+                              :key="'bch-' + (rIndex - 1) + '-' + (cIndex - 1) + '-' + h"
+                              :class="['canvas-handle', h]"
+                            />
+                          </div>
                         </td>
                       </tr>
                     </tbody>
@@ -362,10 +544,17 @@
                       <span
                         v-for="item in row"
                         :key="item.key"
-                        class="template-bottom-item"
+                        class="template-bottom-item canvas-widget"
+                        :class="canvasWidgetClass('bottom:' + item.key)"
                         :style="getBottomItemStyle(item)"
+                        @mouseenter="setCanvasHover('bottom:' + item.key)"
+                        @mouseleave="clearCanvasHover('bottom:' + item.key)"
+                        @dblclick.stop="selectCanvasWidget('bottom:' + item.key)"
                       >
                         {{ item.label }}<span v-if="item.value !== ''">: {{ item.value }}</span>
+                        <div v-if="canvasSelectedKey === ('bottom:' + item.key)" class="canvas-select-handles">
+                          <i v-for="h in canvasHandleDirs" :key="'bh-' + item.key + '-' + h" :class="['canvas-handle', h]" />
+                        </div>
                       </span>
                     </div>
                   </div>
@@ -390,31 +579,40 @@
       </div>
       </div>
       <!-- 右侧内容框：抽屉把手挂在面板左缘（靠近画布一侧顶部） -->
-      <div class="right-panel-wrap" :class="{ 'is-collapsed': rightPanelCollapsed }">
-        <div v-show="!rightPanelCollapsed" class="right-panel">
+      <div
+        class="right-panel-wrap"
+        :class="{ 'is-collapsed': rightPanelCollapsed, 'is-animating': rightPanelAnimating }"
+      >
+        <div class="right-panel">
         <el-form ref="form" :model="form" :rules="rules" label-width="120px" class="right-panel-form">
           <div class="right-panel-top">
           <el-tabs v-model="activeTab" class="right-config-tabs">
           <!-- 基本信息 -->
           <el-tab-pane label="模板信息" name="basic">
-          <el-form-item label="模板名称" prop="templateName">
-            <el-input v-model="form.templateName" placeholder="模板名称" />
-          </el-form-item>
-          <el-form-item label="单据类型" prop="billType">
-            <el-select v-model="form.billType" placeholder="请选择单据类型" clearable style="width: 100%">
-              <el-option label="入库单" :value="101" />
-              <el-option label="退货单" :value="102" />
-              <el-option label="出库单" :value="201" />
-              <el-option label="退库单" :value="202" />
-              <el-option label="盘点单" :value="301" />
-              <el-option label="入库单(高值)" :value="111" />
-              <el-option label="退货单(高值)" :value="112" />
-              <el-option label="出库单(高值)" :value="211" />
-              <el-option label="退库单(高值)" :value="212" />
-              <el-option label="跟台条码" :value="401" />
-              <el-option label="备货条码" :value="402" />
-            </el-select>
-          </el-form-item>
+          <el-row :gutter="8" class="template-basic-row">
+            <el-col :span="12">
+              <el-form-item label="模板名称" prop="templateName" label-width="80px">
+                <el-input v-model="form.templateName" placeholder="模板名称" />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="单据类型" prop="billType" label-width="80px">
+                <el-select v-model="form.billType" placeholder="请选择单据类型" clearable style="width: 100%">
+                  <el-option label="入库单" :value="101" />
+                  <el-option label="退货单" :value="102" />
+                  <el-option label="出库单" :value="201" />
+                  <el-option label="退库单" :value="202" />
+                  <el-option label="盘点单" :value="301" />
+                  <el-option label="入库单(高值)" :value="111" />
+                  <el-option label="退货单(高值)" :value="112" />
+                  <el-option label="出库单(高值)" :value="211" />
+                  <el-option label="退库单(高值)" :value="212" />
+                  <el-option label="跟台条码" :value="401" />
+                  <el-option label="备货条码" :value="402" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
           <el-form-item label="默认模板" prop="isDefault" required>
             <el-switch
               v-model="form.isDefault"
@@ -435,7 +633,7 @@
 
           <!-- 组件设置：可插入组件卡片 -->
           <el-tab-pane label="组件设置" name="font">
-            <div class="component-palette">
+            <div class="component-palette" :class="{ 'is-locked': !canOperateCanvas }">
               <div
                 v-for="item in componentPalette"
                 :key="item.key"
@@ -580,6 +778,70 @@
           </div>
           <div class="right-panel-bottom">
             <el-tabs v-model="activeBottomTab" class="right-bottom-tabs">
+          <!-- 标题配置 -->
+          <el-tab-pane label="字段属性" name="title">
+            <el-collapse v-model="fieldCollapseActive" class="print-collapse">
+              <el-collapse-item title="数据源" name="dataSource">
+                <el-form-item label-width="0" label="" class="title1-form-item">
+                  <div class="title-config-row">
+                    <el-select v-model="activeFieldType" placeholder="请选择" style="width: 120px;" size="small" clearable>
+                      <el-option label="仓库" value="warehouse" />
+                      <el-option label="科室" value="department" />
+                      <el-option label="供应商" value="supplier" />
+                      <el-option label="单号" value="billNo" />
+                      <el-option label="金额" value="amount" />
+                      <el-option label="发票号" value="invoiceNo" />
+                      <el-option label="制单人" value="creator" />
+                      <el-option label="制单日期" value="createDate" />
+                      <el-option label="审核人" value="auditor" />
+                      <el-option label="审核日期" value="auditDate" />
+                      <el-option label="打印人" value="printer" />
+                      <el-option label="打印日期" value="printDate" />
+                      <el-option label="领用人" value="receiver" />
+                      <el-option label="退库人" value="returner" />
+                      <el-option label="采购员" value="purchaser" />
+                      <el-option label="备注" value="remark" />
+                    </el-select>
+                    <el-checkbox v-model="activeFieldVisible">显示</el-checkbox>
+                    <el-checkbox v-model="activeFieldFixedValue">固定值</el-checkbox>
+                    <el-input
+                      v-if="activeFieldFixedValue"
+                      v-model="activeFieldFixedValueText"
+                      placeholder="固定值"
+                      style="width: 100px;"
+                      size="small"
+                    />
+                  </div>
+                </el-form-item>
+              </el-collapse-item>
+              <el-collapse-item title="通用" name="common">
+                <el-row :gutter="12" class="field-common-row">
+                  <el-col :span="12">
+                    <el-form-item label="宽" label-width="36px">
+                      <el-input v-model.number="commonGeoWidth" placeholder="宽" size="small" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="高" label-width="36px">
+                      <el-input v-model.number="commonGeoHeight" placeholder="高" size="small" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+                <el-row :gutter="12" class="field-common-row">
+                  <el-col :span="12">
+                    <el-form-item label="X" label-width="36px">
+                      <el-input v-model.number="commonGeoX" placeholder="X" size="small" />
+                    </el-form-item>
+                  </el-col>
+                  <el-col :span="12">
+                    <el-form-item label="Y" label-width="36px">
+                      <el-input v-model.number="commonGeoY" placeholder="Y" size="small" />
+                    </el-form-item>
+                  </el-col>
+                </el-row>
+              </el-collapse-item>
+            </el-collapse>
+          </el-tab-pane>
           <!-- 页面设置：折叠面板 纸张设置 / 页边距（默认展开，点击收起） -->
           <el-tab-pane label="打印设置" name="page">
             <el-collapse v-model="printCollapseActive" class="print-collapse">
@@ -730,183 +992,6 @@
               </el-collapse-item>
             </el-collapse>
           </el-tab-pane>
-          <!-- 标题配置 -->
-          <el-tab-pane label="字段属性" name="title">
-            <el-form-item label-width="0" label="" class="title1-form-item">
-              <div class="title-config-row">
-                <el-select v-model="form.title1Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="仓库" value="warehouse" />
-                  <el-option label="科室" value="department" />
-                  <el-option label="供应商" value="supplier" />
-                  <el-option label="单号" value="billNo" />
-                  <el-option label="金额" value="amount" />
-                  <el-option label="发票号" value="invoiceNo" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="制单日期" value="createDate" />
-                  <el-option label="审核人" value="auditor" />
-                  <el-option label="审核日期" value="auditDate" />
-                  <el-option label="打印人" value="printer" />
-                  <el-option label="打印日期" value="printDate" />
-                  <el-option label="领用人" value="receiver" />
-                  <el-option label="退库人" value="returner" />
-                  <el-option label="采购员" value="purchaser" />
-                  <el-option label="备注" value="remark" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.title1Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.title1Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.title1Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.title1FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.title1FixedValue" v-model="form.title1FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <el-form-item label-width="0" label="" class="title1-form-item">
-              <div class="title-config-row">
-                <el-select v-model="form.title2Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="仓库" value="warehouse" />
-                  <el-option label="科室" value="department" />
-                  <el-option label="供应商" value="supplier" />
-                  <el-option label="单号" value="billNo" />
-                  <el-option label="金额" value="amount" />
-                  <el-option label="发票号" value="invoiceNo" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="制单日期" value="createDate" />
-                  <el-option label="审核人" value="auditor" />
-                  <el-option label="审核日期" value="auditDate" />
-                  <el-option label="打印人" value="printer" />
-                  <el-option label="打印日期" value="printDate" />
-                  <el-option label="领用人" value="receiver" />
-                  <el-option label="退库人" value="returner" />
-                  <el-option label="采购员" value="purchaser" />
-                  <el-option label="备注" value="remark" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.title2Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.title2Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.title2Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.title2FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.title2FixedValue" v-model="form.title2FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <el-form-item label-width="0" label="" class="title1-form-item">
-              <div class="title-config-row">
-                <el-select v-model="form.title3Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="仓库" value="warehouse" />
-                  <el-option label="科室" value="department" />
-                  <el-option label="供应商" value="supplier" />
-                  <el-option label="单号" value="billNo" />
-                  <el-option label="金额" value="amount" />
-                  <el-option label="发票号" value="invoiceNo" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="制单日期" value="createDate" />
-                  <el-option label="审核人" value="auditor" />
-                  <el-option label="审核日期" value="auditDate" />
-                  <el-option label="打印人" value="printer" />
-                  <el-option label="打印日期" value="printDate" />
-                  <el-option label="领用人" value="receiver" />
-                  <el-option label="退库人" value="returner" />
-                  <el-option label="采购员" value="purchaser" />
-                  <el-option label="备注" value="remark" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.title3Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.title3Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.title3Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.title3FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.title3FixedValue" v-model="form.title3FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <el-form-item label-width="0" label="" class="title1-form-item">
-              <div class="title-config-row">
-                <el-select v-model="form.title4Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="仓库" value="warehouse" />
-                  <el-option label="科室" value="department" />
-                  <el-option label="供应商" value="supplier" />
-                  <el-option label="单号" value="billNo" />
-                  <el-option label="金额" value="amount" />
-                  <el-option label="发票号" value="invoiceNo" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="制单日期" value="createDate" />
-                  <el-option label="审核人" value="auditor" />
-                  <el-option label="审核日期" value="auditDate" />
-                  <el-option label="打印人" value="printer" />
-                  <el-option label="打印日期" value="printDate" />
-                  <el-option label="领用人" value="receiver" />
-                  <el-option label="退库人" value="returner" />
-                  <el-option label="采购员" value="purchaser" />
-                  <el-option label="备注" value="remark" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.title4Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.title4Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.title4Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.title4FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.title4FixedValue" v-model="form.title4FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <el-form-item label-width="0" label="" class="title1-form-item">
-              <div class="title-config-row">
-                <el-select v-model="form.title5Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="仓库" value="warehouse" />
-                  <el-option label="科室" value="department" />
-                  <el-option label="供应商" value="supplier" />
-                  <el-option label="单号" value="billNo" />
-                  <el-option label="金额" value="amount" />
-                  <el-option label="发票号" value="invoiceNo" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="制单日期" value="createDate" />
-                  <el-option label="审核人" value="auditor" />
-                  <el-option label="审核日期" value="auditDate" />
-                  <el-option label="打印人" value="printer" />
-                  <el-option label="打印日期" value="printDate" />
-                  <el-option label="领用人" value="receiver" />
-                  <el-option label="退库人" value="returner" />
-                  <el-option label="采购员" value="purchaser" />
-                  <el-option label="备注" value="remark" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.title5Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.title5Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.title5Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.title5FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.title5FixedValue" v-model="form.title5FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-            <el-form-item label-width="0" label="" class="title1-form-item">
-              <div class="title-config-row">
-                <el-select v-model="form.title6Type" placeholder="请选择" style="width: 100px;" size="small">
-                  <el-option label="仓库" value="warehouse" />
-                  <el-option label="科室" value="department" />
-                  <el-option label="供应商" value="supplier" />
-                  <el-option label="单号" value="billNo" />
-                  <el-option label="金额" value="amount" />
-                  <el-option label="发票号" value="invoiceNo" />
-                  <el-option label="制单人" value="creator" />
-                  <el-option label="制单日期" value="createDate" />
-                  <el-option label="审核人" value="auditor" />
-                  <el-option label="审核日期" value="auditDate" />
-                  <el-option label="打印人" value="printer" />
-                  <el-option label="打印日期" value="printDate" />
-                  <el-option label="领用人" value="receiver" />
-                  <el-option label="退库人" value="returner" />
-                  <el-option label="采购员" value="purchaser" />
-                  <el-option label="备注" value="remark" />
-                </el-select>
-                <span class="row-label">宽度</span>
-                <el-input v-model="form.title6Width" placeholder="宽度" style="width: 70px;" size="small" />
-                <span class="row-label">高度</span>
-                <el-input v-model="form.title6Height" placeholder="高度" style="width: 70px;" size="small" />
-                <el-checkbox v-model="form.title6Visible">显示</el-checkbox>
-                <el-checkbox v-model="form.title6FixedValue">固定值</el-checkbox>
-                <el-input v-if="form.title6FixedValue" v-model="form.title6FixedValueText" placeholder="固定值" style="width: 100px;" size="small" />
-              </div>
-            </el-form-item>
-          </el-tab-pane>
             </el-tabs>
           </div>
         </el-form>
@@ -924,6 +1009,60 @@
     </div>
 
     <PrintSettingRefBillDialog v-if="refBillDialogVisible" />
+
+    <!-- 分录表格：网格设置 -->
+    <el-dialog
+      title="网格设置"
+      :visible.sync="gridDialogVisible"
+      width="420px"
+      append-to-body
+      custom-class="grid-setting-dialog"
+      @closed="onGridDialogClosed"
+    >
+      <div class="grid-setting-body">
+        <div class="grid-setting-inputs">
+          <div class="grid-setting-field">
+            <span class="grid-setting-label">行数</span>
+            <el-input
+              v-model.number="gridDraftRows"
+              size="small"
+              @change="normalizeGridDraft"
+            />
+          </div>
+          <div class="grid-setting-field">
+            <span class="grid-setting-label">列数</span>
+            <el-input
+              v-model.number="gridDraftCols"
+              size="small"
+              @change="normalizeGridDraft"
+            />
+          </div>
+        </div>
+        <div
+          class="grid-setting-picker"
+          @mouseleave="gridHoverRows = 0; gridHoverCols = 0"
+        >
+          <div
+            v-for="r in gridMaxRows"
+            :key="'grid-r-' + r"
+            class="grid-setting-picker-row"
+          >
+            <div
+              v-for="c in gridMaxCols"
+              :key="'grid-c-' + r + '-' + c"
+              class="grid-setting-cell"
+              :class="{ active: isGridCellActive(r, c) }"
+              @mouseenter="onGridCellHover(r, c)"
+              @click="onGridCellClick(r, c)"
+            />
+          </div>
+        </div>
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button size="small" @click="gridDialogVisible = false">取消</el-button>
+        <el-button type="primary" size="small" @click="confirmGridSetting">确定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -947,10 +1086,12 @@ export default {
   data() {
     return {
       activeTab: "basic",
-      /** 右侧下方：打印设置 / 字段属性 */
-      activeBottomTab: "page",
+      /** 右侧下方：字段属性 / 打印设置 */
+      activeBottomTab: "title",
       /** 打印设置折叠面板：默认全部展开 */
       printCollapseActive: ['paper', 'margin', 'other'],
+      /** 字段属性：数据源 / 通用 */
+      fieldCollapseActive: ['dataSource', 'common'],
       /** 纸张大小选项（宽高为纵向 mm） */
       paperSizeOptions: [
         { value: 'Letter', label: 'Letter', width: 215.9, height: 279.4 },
@@ -975,6 +1116,22 @@ export default {
       ],
       /** 组件设置选中项 */
       selectedComponent: '',
+      /** 画布自由文本组件列表 */
+      canvasTexts: [],
+      canvasTextSeq: 1,
+      textDragState: null,
+      /** 分录表格网格设置弹窗 */
+      gridDialogVisible: false,
+      gridDraftRows: 5,
+      gridDraftCols: 7,
+      gridHoverRows: 0,
+      gridHoverCols: 0,
+      gridMaxRows: 8,
+      gridMaxCols: 10,
+      /** 画布是否显示分录/数据表格（新增默认不显示） */
+      canvasTableVisible: false,
+      /** 画布是否显示页眉标题（新增默认不显示） */
+      canvasHeaderVisible: false,
       componentPalette: [
         {
           key: 'text',
@@ -1033,6 +1190,37 @@ export default {
       canvasZoomOptions: [80, 100, 150, 200, 300],
       /** 右侧配置面板是否收拢 */
       rightPanelCollapsed: false,
+      /** 右侧面板收放动画中（期间冻结刻度尺重算，避免抖动） */
+      rightPanelAnimating: false,
+      /** 画布组件悬停 / 双击选中 */
+      canvasHoverKey: '',
+      canvasSelectedKey: '',
+      canvasHandleDirs: ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'],
+      /** 边框下拉菜单 */
+      borderMenuVisible: false,
+      borderSubMenu: '',
+      borderColorPresets: ['#000000', '#FFFFFF', '#F56C6C', '#E6A23C', '#67C23A', '#409EFF', '#909399', '#303133'],
+      borderLineStyles: [
+        { value: 'thin', preview: { borderTop: '1px solid #303133' } },
+        { value: 'medium', preview: { borderTop: '2px solid #303133' } },
+        { value: 'thick', preview: { borderTop: '3px solid #303133' } },
+        { value: 'dotted', preview: { borderTop: '2px dotted #303133' } },
+        { value: 'dashed', preview: { borderTop: '2px dashed #303133' } }
+      ],
+      borderMenuIcons: {
+        grid: '<svg viewBox="0 0 16 16" width="14" height="14"><path fill="currentColor" d="M2 2h5v5H2zm7 0h5v5H9zM2 9h5v5H2zm7 0h5v5H9z"/></svg>',
+        left: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#c0c4cc"/><path d="M3 2.5v11" stroke="#303133" stroke-width="1.6"/></svg>',
+        right: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#c0c4cc"/><path d="M13 2.5v11" stroke="#303133" stroke-width="1.6"/></svg>',
+        top: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#c0c4cc"/><path d="M2.5 3h11" stroke="#303133" stroke-width="1.6"/></svg>',
+        bottom: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#c0c4cc"/><path d="M2.5 13h11" stroke="#303133" stroke-width="1.6"/></svg>',
+        outer: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#303133" stroke-width="1.6"/></svg>',
+        inner: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#c0c4cc" stroke-dasharray="2 1"/><path d="M8 3v10M3 8h10" stroke="#303133" stroke-width="1.4"/></svg>',
+        all: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#409eff" stroke-width="1.4"/><path d="M8 3v10M3 8h10" stroke="#409eff" stroke-width="1.4"/></svg>',
+        none: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#c0c4cc" stroke-dasharray="2 1"/><path d="M8 3v10M3 8h10" stroke="#c0c4cc" stroke-dasharray="2 1"/></svg>',
+        lineStyle: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="3" y="2" width="10" height="12" rx="1" fill="none" stroke="#303133"/><path d="M5 5h6M5 8h6M5 11h4" stroke="#303133" stroke-width="1.2"/></svg>',
+        lineColor: '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 13l7.2-7.2 1.8 1.8L4.8 14.8H3z" fill="#303133"/><path d="M10.5 4.3l1.2-1.2a1 1 0 011.4 0l1 1a1 1 0 010 1.4l-1.2 1.2z" fill="#409eff"/></svg>',
+        merge: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2" y="3" width="12" height="10" fill="none" stroke="#303133"/><path d="M8 3v10M2 8h12" stroke="#c0c4cc"/><path d="M4 8h8" stroke="#409eff" stroke-width="1.6"/></svg>'
+      },
       /** 画布可视区域尺寸（用于刻度尺铺满） */
       canvasViewportWidthPx: 0,
       canvasViewportHeightPx: 0,
@@ -1086,6 +1274,8 @@ export default {
         fillColor: 'transparent',
         verticalAlign: 'middle',
         tableBorder: 'all',
+        tableBorderStyle: 'thin',
+        tableBorderColor: '#000000',
         tableRows: 7,
         tableColumns: 10,
         showPageSubtotal: false,
@@ -1102,31 +1292,31 @@ export default {
         bottom1Type: '',
         bottom1Width: 300,
         bottom1Height: 22,
-        bottom1Visible: true,
+        bottom1Visible: false,
         bottom1FixedValue: false,
         bottom1FixedValueText: '',
         bottom2Type: '',
         bottom2Width: 300,
         bottom2Height: 22,
-        bottom2Visible: true,
+        bottom2Visible: false,
         bottom2FixedValue: false,
         bottom2FixedValueText: '',
         bottom3Type: '',
         bottom3Width: 300,
         bottom3Height: 22,
-        bottom3Visible: true,
+        bottom3Visible: false,
         bottom3FixedValue: false,
         bottom3FixedValueText: '',
         bottom4Type: '',
         bottom4Width: 300,
         bottom4Height: 22,
-        bottom4Visible: true,
+        bottom4Visible: false,
         bottom4FixedValue: false,
         bottom4FixedValueText: '',
         bottom5Type: '',
         bottom5Width: 300,
         bottom5Height: 22,
-        bottom5Visible: true,
+        bottom5Visible: false,
         bottom5FixedValue: false,
         bottom5FixedValueText: '',
         headerTitle: '',
@@ -1135,7 +1325,9 @@ export default {
         title1Name: '',
         title1Width: 300,
         title1Height: 22,
-        title1Visible: true,
+        title1X: null,
+        title1Y: null,
+        title1Visible: false,
         title1FixedValue: false,
         title1FixedValueText: '',
         title2: '',
@@ -1143,7 +1335,9 @@ export default {
         title2Name: '',
         title2Width: 300,
         title2Height: 22,
-        title2Visible: true,
+        title2X: null,
+        title2Y: null,
+        title2Visible: false,
         title2FixedValue: false,
         title2FixedValueText: '',
         title3: '',
@@ -1151,7 +1345,9 @@ export default {
         title3Name: '',
         title3Width: 300,
         title3Height: 22,
-        title3Visible: true,
+        title3X: null,
+        title3Y: null,
+        title3Visible: false,
         title3FixedValue: false,
         title3FixedValueText: '',
         title4: '',
@@ -1159,7 +1355,9 @@ export default {
         title4Name: '',
         title4Width: 300,
         title4Height: 22,
-        title4Visible: true,
+        title4X: null,
+        title4Y: null,
+        title4Visible: false,
         title4FixedValue: false,
         title4FixedValueText: '',
         title5: '',
@@ -1167,7 +1365,9 @@ export default {
         title5Name: '',
         title5Width: 300,
         title5Height: 22,
-        title5Visible: true,
+        title5X: null,
+        title5Y: null,
+        title5Visible: false,
         title5FixedValue: false,
         title5FixedValueText: '',
         title6: '',
@@ -1175,7 +1375,9 @@ export default {
         title6Name: '',
         title6Width: 300,
         title6Height: 22,
-        title6Visible: true,
+        title6X: null,
+        title6Y: null,
+        title6Visible: false,
         title6FixedValue: false,
         title6FixedValueText: '',
         isDefault: 0,
@@ -1229,6 +1431,9 @@ export default {
       rules: {
         templateName: [
           { required: true, message: "模板名称不能为空", trigger: "blur" }
+        ],
+        billType: [
+          { required: true, message: "单据类型不能为空", trigger: "change" }
         ]
       }
     };
@@ -1257,9 +1462,6 @@ export default {
     canvasZoom() {
       this.$nextTick(() => this.updateCanvasViewportSize());
     },
-    rightPanelCollapsed() {
-      this.$nextTick(() => this.updateCanvasViewportSize());
-    }
   },
   computed: {
     /** 1mm 对应像素（含画布缩放） */
@@ -1368,6 +1570,23 @@ export default {
       const n = Math.max(1, Math.min(20, Number(this.form.tableColumns) || 1));
       return n;
     },
+    /** 已选单据类型后才允许画布/组件操作 */
+    canOperateCanvas() {
+      return this.form.billType != null && this.form.billType !== '';
+    },
+    /** 当前选中/拖动组件在刻度尺上的高亮区间（相对预览容器像素） */
+    rulerGuideRange() {
+      const box = this.resolveActiveWidgetBox();
+      if (!box) return null;
+      const mmToPx = this.mmToPx || 1;
+      const originX = (Number(this.form.marginLeft) || 0) * mmToPx + 1 + 15;
+      const originY = (Number(this.form.marginTop) || 0) * mmToPx + 1 + 15;
+      const left = originX + (Number(box.x) || 0);
+      const top = originY + (Number(box.y) || 0);
+      const width = Math.max(2, Number(box.w) || 0);
+      const height = Math.max(2, Number(box.h) || 0);
+      return { left, top, width, height };
+    },
     /** 数据行数：固定为表格设置的行数（如8行），不受引用单据条数影响 */
     tablePreviewDataRows() {
       return Math.max(0, this.tablePreviewRows - 1);
@@ -1454,12 +1673,16 @@ export default {
         const value = fixed ? fixedText : (this.refBillData && this.refBillData.bill && type ? this.getBillTitleValue(this.refBillData.bill, type) : '');
         const width = Number(this.form[`title${i}Width`]);
         const height = Number(this.form[`title${i}Height`]);
+        const xRaw = this.form[`title${i}X`];
+        const yRaw = this.form[`title${i}Y`];
         items.push({
           key: `t-${i}`,
           label,
           value,
           width: Number.isFinite(width) && width > 0 ? width : null,
-          height: Number.isFinite(height) && height > 0 && height <= 120 ? height : null
+          height: Number.isFinite(height) && height > 0 && height <= 120 ? height : null,
+          x: xRaw == null || xRaw === '' ? null : Number(xRaw),
+          y: yRaw == null || yRaw === '' ? null : Number(yRaw)
         });
       }
       return items;
@@ -1642,25 +1865,274 @@ export default {
       }
       return Math.max(sum, 200);
     },
-    /** 画布表格内联样式：宽度 + 行高（行高影响表格每行高度） */
+    /** 边框菜单项（带图标） */
+    borderMenuItems() {
+      const ico = this.borderMenuIcons || {};
+      return [
+        { cmd: 'left', label: '左边框', icon: ico.left },
+        { cmd: 'right', label: '右边框', icon: ico.right },
+        { cmd: 'top', label: '上边框', icon: ico.top },
+        { cmd: 'bottom', label: '下边框', icon: ico.bottom },
+        { cmd: 'outer', label: '外边框', icon: ico.outer },
+        { cmd: 'inner', label: '内边框', icon: ico.inner },
+        { cmd: 'all', label: '所有边框', icon: ico.all },
+        { cmd: 'none', label: '无边框', icon: ico.none }
+      ];
+    },
+    /** 边框 CSS 线段 */
+    tableBorderLineCss() {
+      const color = this.form.tableBorderColor || '#000000';
+      const styleMap = {
+        thin: '1px solid',
+        medium: '2px solid',
+        thick: '3px solid',
+        dotted: '2px dotted',
+        dashed: '2px dashed'
+      };
+      const prefix = styleMap[this.form.tableBorderStyle] || '1px solid';
+      return `${prefix} ${color}`;
+    },
+    /** 画布表格内联样式：宽度 + 行高 + 边框模式 */
     previewTableInlineStyle() {
       const rowHeight = Math.max(16, Math.min(120, Number(this.form.lineHeight) || 30));
       const border = this.form.tableBorder || 'all';
+      const line = this.tableBorderLineCss;
       const style = {
         tableLayout: 'fixed',
         width: this.tableTotalWidth + 'px',
-        '--table-row-height': rowHeight + 'px'
+        '--table-row-height': rowHeight + 'px',
+        '--table-border-line': line,
+        borderCollapse: 'collapse'
       };
       if (border === 'none') {
         style.border = 'none';
-        style.borderCollapse = 'collapse';
-      } else if (border === 'outer') {
-        style.border = '1px solid #000';
-        style.borderCollapse = 'collapse';
-      } else {
-        style.borderCollapse = 'collapse';
+      } else if (border === 'outer' || border === 'left' || border === 'right' || border === 'top' || border === 'bottom') {
+        style.border = 'none';
+        if (border === 'outer') style.border = line;
+        if (border === 'left') style.borderLeft = line;
+        if (border === 'right') style.borderRight = line;
+        if (border === 'top') style.borderTop = line;
+        if (border === 'bottom') style.borderBottom = line;
       }
       return style;
+    },
+    previewTableBorderClass() {
+      return 'preview-table--' + (this.form.tableBorder || 'all');
+    },
+    /** 当前字段属性绑定目标：选中的文本组件优先，否则 title1 */
+    activeFieldTarget() {
+      const key = this.canvasSelectedKey || '';
+      if (key.indexOf('text:') === 0) {
+        const id = key.slice(5);
+        const item = (this.canvasTexts || []).find(t => t.id === id);
+        if (item) return { kind: 'text', item };
+      }
+      const titleMatch = /^title:t-(\d+)$/.exec(key);
+      if (titleMatch) return { kind: 'title', index: Number(titleMatch[1]) };
+      if (this.canvasTexts && this.canvasTexts.length) {
+        return { kind: 'text', item: this.canvasTexts[this.canvasTexts.length - 1] };
+      }
+      return { kind: 'title', index: 1 };
+    },
+    activeFieldType: {
+      get() {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') return t.item.type || '';
+        return this.form['title' + t.index + 'Type'] || '';
+      },
+      set(v) {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') {
+          this.$set(t.item, 'type', v || '');
+          return;
+        }
+        this.form['title' + t.index + 'Type'] = v || '';
+      }
+    },
+    activeFieldVisible: {
+      get() {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') return t.item.visible !== false;
+        return !!this.form['title' + t.index + 'Visible'];
+      },
+      set(v) {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') {
+          this.$set(t.item, 'visible', !!v);
+          return;
+        }
+        this.form['title' + t.index + 'Visible'] = !!v;
+      }
+    },
+    activeFieldFixedValue: {
+      get() {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') return !!t.item.fixedValue;
+        return !!this.form['title' + t.index + 'FixedValue'];
+      },
+      set(v) {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') {
+          this.$set(t.item, 'fixedValue', !!v);
+          return;
+        }
+        this.form['title' + t.index + 'FixedValue'] = !!v;
+      }
+    },
+    activeFieldFixedValueText: {
+      get() {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') return t.item.fixedValueText || '';
+        return this.form['title' + t.index + 'FixedValueText'] || '';
+      },
+      set(v) {
+        const t = this.activeFieldTarget;
+        if (t.kind === 'text') {
+          this.$set(t.item, 'fixedValueText', v || '');
+          return;
+        }
+        this.form['title' + t.index + 'FixedValueText'] = v || '';
+      }
+    },
+    /** 通用面板：当前编辑目标（选中组件或默认 title1） */
+    commonGeoTarget() {
+      const key = this.canvasSelectedKey || '';
+      if (key.indexOf('text:') === 0) {
+        const id = key.slice(5);
+        const item = (this.canvasTexts || []).find(t => t.id === id);
+        if (item) return { type: 'text', item };
+      }
+      if (key === 'code' && this.form.codeDisplay) {
+        return { type: 'code' };
+      }
+      const titleMatch = /^title:t-(\d+)$/.exec(key);
+      if (titleMatch) {
+        return { type: 'title', index: Number(titleMatch[1]) };
+      }
+      const bottomMatch = /^bottom:b-(\d+)$/.exec(key) || /^bottom:(\d+)$/.exec(key);
+      if (bottomMatch) {
+        return { type: 'bottom', index: Number(bottomMatch[1]) };
+      }
+      if (this.canvasTexts && this.canvasTexts.length) {
+        return { type: 'text', item: this.canvasTexts[this.canvasTexts.length - 1] };
+      }
+      return { type: 'title', index: 1 };
+    },
+    commonGeoWidth: {
+      get() {
+        const t = this.commonGeoTarget;
+        if (t.type === 'text') return Number(t.item.width) || 0;
+        if (t.type === 'code') return Number(this.currentCodeSize.width) || 0;
+        if (t.type === 'bottom') return Number(this.form['bottom' + t.index + 'Width']) || 0;
+        return Number(this.form['title' + t.index + 'Width']) || 0;
+      },
+      set(v) {
+        const n = Number(v);
+        const t = this.commonGeoTarget;
+        if (t.type === 'text') {
+          this.$set(t.item, 'width', Number.isFinite(n) ? Math.max(20, n) : 120);
+          return;
+        }
+        if (t.type === 'code') {
+          const size = this.form.codeDisplay === 'qr' ? this.form.qrSize : this.form.barcodeSize;
+          if (size) this.$set(size, 'width', Number.isFinite(n) ? Math.max(1, n) : 64);
+          return;
+        }
+        if (t.type === 'bottom') {
+          this.form['bottom' + t.index + 'Width'] = Number.isFinite(n) ? n : 300;
+          return;
+        }
+        this.form['title' + t.index + 'Width'] = Number.isFinite(n) ? n : 300;
+      }
+    },
+    commonGeoHeight: {
+      get() {
+        const t = this.commonGeoTarget;
+        if (t.type === 'text') return Number(t.item.height) || 0;
+        if (t.type === 'code') return Number(this.currentCodeSize.height) || 0;
+        if (t.type === 'bottom') return Number(this.form['bottom' + t.index + 'Height']) || 0;
+        return Number(this.form['title' + t.index + 'Height']) || 0;
+      },
+      set(v) {
+        const n = Number(v);
+        const t = this.commonGeoTarget;
+        if (t.type === 'text') {
+          this.$set(t.item, 'height', Number.isFinite(n) ? Math.max(16, n) : 28);
+          return;
+        }
+        if (t.type === 'code') {
+          const size = this.form.codeDisplay === 'qr' ? this.form.qrSize : this.form.barcodeSize;
+          if (size) this.$set(size, 'height', Number.isFinite(n) ? Math.max(1, n) : 64);
+          return;
+        }
+        if (t.type === 'bottom') {
+          this.form['bottom' + t.index + 'Height'] = Number.isFinite(n) ? n : 22;
+          return;
+        }
+        this.form['title' + t.index + 'Height'] = Number.isFinite(n) ? n : 22;
+      }
+    },
+    commonGeoX: {
+      get() {
+        const t = this.commonGeoTarget;
+        if (t.type === 'text') return Number(t.item.x) || 0;
+        if (t.type === 'code') return Number(this.currentCodePosition.x) || 0;
+        if (t.type === 'bottom') {
+          const v = this.form['bottom' + t.index + 'X'];
+          return v == null || v === '' ? null : Number(v);
+        }
+        const v = this.form['title' + t.index + 'X'];
+        return v == null || v === '' ? null : Number(v);
+      },
+      set(v) {
+        const t = this.commonGeoTarget;
+        const raw = v === '' || v == null ? null : Number(v);
+        if (t.type === 'text') {
+          this.$set(t.item, 'x', Number.isFinite(raw) ? raw : 0);
+          return;
+        }
+        if (t.type === 'code') {
+          const pos = this.form.codeDisplay === 'qr' ? this.form.qrPosition : this.form.barcodePosition;
+          if (pos) this.$set(pos, 'x', Number.isFinite(raw) ? raw : 0);
+          return;
+        }
+        if (t.type === 'bottom') {
+          this.$set(this.form, 'bottom' + t.index + 'X', Number.isFinite(raw) ? raw : null);
+          return;
+        }
+        this.$set(this.form, 'title' + t.index + 'X', Number.isFinite(raw) ? raw : null);
+      }
+    },
+    commonGeoY: {
+      get() {
+        const t = this.commonGeoTarget;
+        if (t.type === 'text') return Number(t.item.y) || 0;
+        if (t.type === 'code') return Number(this.currentCodePosition.y) || 0;
+        if (t.type === 'bottom') {
+          const v = this.form['bottom' + t.index + 'Y'];
+          return v == null || v === '' ? null : Number(v);
+        }
+        const v = this.form['title' + t.index + 'Y'];
+        return v == null || v === '' ? null : Number(v);
+      },
+      set(v) {
+        const t = this.commonGeoTarget;
+        const raw = v === '' || v == null ? null : Number(v);
+        if (t.type === 'text') {
+          this.$set(t.item, 'y', Number.isFinite(raw) ? raw : 0);
+          return;
+        }
+        if (t.type === 'code') {
+          const pos = this.form.codeDisplay === 'qr' ? this.form.qrPosition : this.form.barcodePosition;
+          if (pos) this.$set(pos, 'y', Number.isFinite(raw) ? raw : 0);
+          return;
+        }
+        if (t.type === 'bottom') {
+          this.$set(this.form, 'bottom' + t.index + 'Y', Number.isFinite(raw) ? raw : null);
+          return;
+        }
+        this.$set(this.form, 'title' + t.index + 'Y', Number.isFinite(raw) ? raw : null);
+      }
     }
   },
   watch: {
@@ -1708,6 +2180,8 @@ export default {
               this.headerMerges = Array.isArray(config.headerMerges) ? config.headerMerges : [];
               this.bodyMerges = Array.isArray(config.bodyMerges) ? config.bodyMerges : [];
               this.bodyCellTexts = config.bodyCellTexts || {};
+              this.loadCanvasTextsFromConfig(config);
+              this.applyCanvasVisibilityFromConfig(config, newVal);
               if (config.codeDisplay !== undefined && config.codeDisplay !== null) {
                 this.form.codeDisplay = config.codeDisplay === 'qr' || config.codeDisplay === 'barcode' ? config.codeDisplay : '';
               } else {
@@ -1732,6 +2206,8 @@ export default {
               if (config.fillColor !== undefined) this.form.fillColor = config.fillColor;
               if (config.verticalAlign !== undefined) this.form.verticalAlign = config.verticalAlign;
               if (config.tableBorder !== undefined) this.form.tableBorder = config.tableBorder;
+              if (config.tableBorderStyle !== undefined) this.form.tableBorderStyle = config.tableBorderStyle;
+              if (config.tableBorderColor !== undefined) this.form.tableBorderColor = config.tableBorderColor;
               if (config.paperSize !== undefined) this.form.paperSize = config.paperSize;
               if (config.printHeaderMode !== undefined) this.form.printHeaderMode = config.printHeaderMode;
               if (config.printFooterMode !== undefined) this.form.printFooterMode = config.printFooterMode;
@@ -1770,6 +2246,8 @@ export default {
                 if (config[p + 'FixedValueText'] !== undefined) this.form[p + 'FixedValueText'] = config[p + 'FixedValueText'];
                 if (config[p + 'Width'] != null) this.form[p + 'Width'] = config[p + 'Width'];
                 if (config[p + 'Height'] != null) this.form[p + 'Height'] = config[p + 'Height'];
+                if (config[p + 'X'] !== undefined) this.form[p + 'X'] = config[p + 'X'];
+                if (config[p + 'Y'] !== undefined) this.form[p + 'Y'] = config[p + 'Y'];
               }
               this.ensureTableHeaderFieldsLength();
             } catch (e) {
@@ -1777,6 +2255,8 @@ export default {
               this.headerMerges = [];
               this.bodyMerges = [];
               this.bodyCellTexts = {};
+              this.canvasTexts = [];
+              this.canvasTextSeq = 1;
               this.form.codeDisplay = '';
               this.form.qrPosition = { x: 0, y: 0 };
               this.form.qrSize = { width: 64, height: 64 };
@@ -1789,19 +2269,22 @@ export default {
                 this.form['bottom' + idx + 'Type'] = '';
                 this.form['bottom' + idx + 'Width'] = 300;
                 this.form['bottom' + idx + 'Height'] = 22;
-                this.form['bottom' + idx + 'Visible'] = true;
+                this.form['bottom' + idx + 'Visible'] = false;
                 this.form['bottom' + idx + 'FixedValue'] = false;
                 this.form['bottom' + idx + 'FixedValueText'] = '';
               }
               this.headerSelectedCols = [];
               this.bodySelectedCells = [];
               this.editingBodyCell = null;
+              this.applyEmptyCanvasDefaults(newVal);
             }
           } else {
             this.columnList = [...this.defaultColumns];
             this.headerMerges = [];
             this.bodyMerges = [];
             this.bodyCellTexts = {};
+            this.canvasTexts = [];
+            this.canvasTextSeq = 1;
             this.form.codeDisplay = '';
             this.form.qrPosition = { x: 0, y: 0 };
             this.form.qrSize = { width: 64, height: 64 };
@@ -1814,13 +2297,17 @@ export default {
               this.form['bottom' + idx + 'Type'] = '';
               this.form['bottom' + idx + 'Width'] = 300;
               this.form['bottom' + idx + 'Height'] = 22;
-              this.form['bottom' + idx + 'Visible'] = true;
+              this.form['bottom' + idx + 'Visible'] = false;
               this.form['bottom' + idx + 'FixedValue'] = false;
               this.form['bottom' + idx + 'FixedValueText'] = '';
+            }
+            for (let i = 1; i <= 6; i++) {
+              this.form['title' + i + 'Visible'] = false;
             }
             this.headerSelectedCols = [];
             this.bodySelectedCells = [];
             this.editingBodyCell = null;
+            this.applyEmptyCanvasDefaults(newVal);
           }
           this.ensureTableHeaderFieldsLength();
           this.syncPaperSizeFromDimensions();
@@ -1872,16 +2359,64 @@ export default {
     isHeaderCellSelected(baseColIndex) {
       return this.headerSelectedCols.indexOf(baseColIndex) !== -1;
     },
-    /** 点击表头单元格，切换该基础列的选中状态 */
-    onHeaderCellClick(baseColIndex) {
-      if (baseColIndex < 0) return;
-      const idx = this.headerSelectedCols.indexOf(baseColIndex);
-      if (idx !== -1) {
-        this.headerSelectedCols.splice(idx, 1);
-      } else {
-        this.headerSelectedCols.push(baseColIndex);
-        this.headerSelectedCols.sort((a, b) => a - b);
+    canvasWidgetClass(key) {
+      return {
+        'is-hovered': this.canvasHoverKey === key && this.canvasSelectedKey !== key,
+        'is-canvas-selected': this.canvasSelectedKey === key
+      };
+    },
+    setCanvasHover(key) {
+      this.canvasHoverKey = key || '';
+    },
+    clearCanvasHover(key) {
+      if (!key || this.canvasHoverKey === key) this.canvasHoverKey = '';
+    },
+    selectCanvasWidget(key) {
+      this.canvasSelectedKey = key || '';
+      this.canvasHoverKey = key || '';
+    },
+    clearCanvasWidgetSelection() {
+      this.canvasSelectedKey = '';
+      this.canvasHoverKey = '';
+      this.bodySelectedCells = [];
+      this.headerSelectedCols = [];
+    },
+    /** 双击表体单元格：首次选中（蓝框手柄），再次双击进入编辑 */
+    onBodyCellDblClick(rowIndex, colIndex) {
+      const key = 'body-cell:' + rowIndex + ':' + colIndex;
+      if (this.canvasSelectedKey === key) {
+        this.startEditBodyCell(rowIndex, colIndex);
+        return;
       }
+      this.selectCanvasWidget(key);
+      this.bodySelectedCells = [{ row: rowIndex, col: colIndex }];
+      this.headerSelectedCols = [];
+    },
+    /** 点击表头单元格：默认单选；按住 Ctrl/Cmd 可多选 */
+    onHeaderCellClick(baseColIndex, event) {
+      if (baseColIndex < 0) return;
+      const multi = !!(event && (event.ctrlKey || event.metaKey));
+      if (!multi) this.bodySelectedCells = [];
+      const idx = this.headerSelectedCols.indexOf(baseColIndex);
+      if (multi) {
+        if (idx !== -1) {
+          this.headerSelectedCols.splice(idx, 1);
+          if (!this.headerSelectedCols.length) this.canvasSelectedKey = '';
+          else this.selectCanvasWidget('header-cell:' + this.headerSelectedCols[this.headerSelectedCols.length - 1]);
+        } else {
+          this.headerSelectedCols.push(baseColIndex);
+          this.headerSelectedCols.sort((a, b) => a - b);
+          this.selectCanvasWidget('header-cell:' + baseColIndex);
+        }
+        return;
+      }
+      if (this.headerSelectedCols.length === 1 && this.headerSelectedCols[0] === baseColIndex) {
+        this.headerSelectedCols = [];
+        this.canvasSelectedKey = '';
+        return;
+      }
+      this.headerSelectedCols = [baseColIndex];
+      this.selectCanvasWidget('header-cell:' + baseColIndex);
     },
     /** 判断当前基础列右侧是否需要显示列宽拖拽手柄（合并后的内部边界不显示） */
     shouldShowResizeHandle(baseColIndex) {
@@ -1987,8 +2522,8 @@ export default {
     isBodyCellSelected(rowIndex, colIndex) {
       return this.bodySelectedCells.some(c => c.row === rowIndex && c.col === colIndex);
     },
-    /** 点击数据行单元格：只高亮当前格子，不再联动列头 */
-    onBodyCellClick(rowIndex, colIndex) {
+    /** 点击数据行单元格：默认单选；按住 Ctrl/Cmd 可多选 */
+    onBodyCellClick(rowIndex, colIndex, event) {
       if (this.formatPainterActive && this.designClipboard) {
         const s = this.designClipboard;
         if (s.fontSize != null) this.form.fontSize = s.fontSize;
@@ -2003,13 +2538,34 @@ export default {
         this.pushDesignHistory();
         return;
       }
-      // 切换当前单元格的选中状态
+      const key = 'body-cell:' + rowIndex + ':' + colIndex;
+      const multi = !!(event && (event.ctrlKey || event.metaKey));
+      if (!multi) this.headerSelectedCols = [];
       const idx = this.bodySelectedCells.findIndex(c => c.row === rowIndex && c.col === colIndex);
-      if (idx !== -1) {
-        this.bodySelectedCells.splice(idx, 1);
-      } else {
-        this.bodySelectedCells.push({ row: rowIndex, col: colIndex });
+      if (multi) {
+        if (idx !== -1) {
+          this.bodySelectedCells.splice(idx, 1);
+          if (!this.bodySelectedCells.length) {
+            if (this.canvasSelectedKey === key) this.canvasSelectedKey = '';
+          } else {
+            const last = this.bodySelectedCells[this.bodySelectedCells.length - 1];
+            this.selectCanvasWidget('body-cell:' + last.row + ':' + last.col);
+          }
+        } else {
+          this.bodySelectedCells.push({ row: rowIndex, col: colIndex });
+          this.selectCanvasWidget(key);
+        }
+        return;
       }
+      if (this.bodySelectedCells.length === 1 &&
+          this.bodySelectedCells[0].row === rowIndex &&
+          this.bodySelectedCells[0].col === colIndex) {
+        this.bodySelectedCells = [];
+        if (this.canvasSelectedKey === key) this.canvasSelectedKey = '';
+        return;
+      }
+      this.bodySelectedCells = [{ row: rowIndex, col: colIndex }];
+      this.selectCanvasWidget(key);
     },
     /** 获取某个单元格当前文本 */
     getBodyCellText(rowIndex, colIndex) {
@@ -2081,15 +2637,25 @@ export default {
       }
       return base;
     },
-    /** 标题预览项样式：根据配置宽度与高度控制在画布上的占位 */
+    /** 标题预览项样式：宽高 + 可选绝对坐标（X/Y） */
     getTitleItemStyle(item) {
       const w = Number(item && item.width);
       const h = Number(item && item.height);
+      const x = item && item.x;
+      const y = item && item.y;
       const style = { display: 'inline-block' };
       if (Number.isFinite(w) && w > 0) style.width = w + 'px';
       if (Number.isFinite(h) && h > 0 && h <= 120) {
         style.minHeight = h + 'px';
         style.height = h + 'px';
+      }
+      const hasX = x != null && x !== '' && Number.isFinite(Number(x));
+      const hasY = y != null && y !== '' && Number.isFinite(Number(y));
+      if (hasX || hasY) {
+        style.position = 'absolute';
+        style.left = (hasX ? Number(x) : 0) + 'px';
+        style.top = (hasY ? Number(y) : 0) + 'px';
+        style.zIndex = 2;
       }
       return style;
     },
@@ -2127,6 +2693,7 @@ export default {
       return { minHeight: h + 'px', height: h + 'px' };
     },
     onPreviewMouseDown(event) {
+      if (!this.ensureBillTypeReady()) return;
       if (!this.$refs.previewPaper) return;
       // 正在拖拽列宽时不再响应画布移动/缩放，避免整页跟着动
       if (this.colResizeState) return;
@@ -2140,6 +2707,14 @@ export default {
       const onRight = rect.width - offsetX <= edge;
       const onTop = offsetY <= edge;
       const onBottom = rect.height - offsetY <= edge;
+
+      // 点在纸张空白处：取消组件选中
+      if (!onLeft && !onRight && !onTop && !onBottom) {
+        const t = event.target;
+        if (t === this.$refs.previewPaper || (t && t.classList && t.classList.contains('paper-content'))) {
+          this.clearCanvasWidgetSelection();
+        }
+      }
 
       const mmToPx = this.mmToPx;
 
@@ -2312,6 +2887,8 @@ export default {
             this.headerMerges = Array.isArray(config.headerMerges) ? config.headerMerges : [];
             this.bodyMerges = Array.isArray(config.bodyMerges) ? config.bodyMerges : [];
             this.bodyCellTexts = config.bodyCellTexts || {};
+            this.loadCanvasTextsFromConfig(config);
+            this.applyCanvasVisibilityFromConfig(config, data);
             if (config.codeDisplay !== undefined && config.codeDisplay !== null) {
               this.form.codeDisplay = config.codeDisplay === 'qr' || config.codeDisplay === 'barcode' ? config.codeDisplay : '';
             } else {
@@ -2336,6 +2913,8 @@ export default {
             if (config.fillColor !== undefined) this.form.fillColor = config.fillColor;
             if (config.verticalAlign !== undefined) this.form.verticalAlign = config.verticalAlign;
             if (config.tableBorder !== undefined) this.form.tableBorder = config.tableBorder;
+            if (config.tableBorderStyle !== undefined) this.form.tableBorderStyle = config.tableBorderStyle;
+            if (config.tableBorderColor !== undefined) this.form.tableBorderColor = config.tableBorderColor;
             if (config.paperSize !== undefined) this.form.paperSize = config.paperSize;
             if (config.printHeaderMode !== undefined) this.form.printHeaderMode = config.printHeaderMode;
             if (config.printFooterMode !== undefined) this.form.printFooterMode = config.printFooterMode;
@@ -2358,6 +2937,8 @@ export default {
               if (config[p + 'FixedValueText'] !== undefined) this.form[p + 'FixedValueText'] = config[p + 'FixedValueText'];
               if (config[p + 'Width'] != null) this.form[p + 'Width'] = config[p + 'Width'];
               if (config[p + 'Height'] != null) this.form[p + 'Height'] = config[p + 'Height'];
+              if (config[p + 'X'] !== undefined) this.form[p + 'X'] = config[p + 'X'];
+              if (config[p + 'Y'] !== undefined) this.form[p + 'Y'] = config[p + 'Y'];
             }
             this.ensureTableHeaderFieldsLength();
           } catch (e) {
@@ -2365,6 +2946,9 @@ export default {
             this.headerMerges = [];
             this.bodyMerges = [];
             this.bodyCellTexts = {};
+            this.canvasTexts = [];
+            this.canvasTextSeq = 1;
+            this.applyEmptyCanvasDefaults(data);
             this.form.codeDisplay = '';
             this.form.qrPosition = { x: 0, y: 0 };
             this.form.qrSize = { width: 64, height: 64 };
@@ -2381,6 +2965,9 @@ export default {
           this.headerMerges = [];
           this.bodyMerges = [];
           this.bodyCellTexts = {};
+          this.canvasTexts = [];
+          this.canvasTextSeq = 1;
+          this.applyEmptyCanvasDefaults(data);
           this.form.codeDisplay = '';
           this.form.qrPosition = { x: 0, y: 0 };
           this.form.qrSize = { width: 64, height: 64 };
@@ -2431,6 +3018,8 @@ export default {
         fillColor: 'transparent',
         verticalAlign: 'middle',
         tableBorder: 'all',
+        tableBorderStyle: 'thin',
+        tableBorderColor: '#000000',
         textAlign: 'left',
         tableRows: 7,
         tableColumns: 10,
@@ -2448,31 +3037,31 @@ export default {
         bottom1Type: '',
         bottom1Width: 300,
         bottom1Height: 22,
-        bottom1Visible: true,
+        bottom1Visible: false,
         bottom1FixedValue: false,
         bottom1FixedValueText: '',
         bottom2Type: '',
         bottom2Width: 300,
         bottom2Height: 22,
-        bottom2Visible: true,
+        bottom2Visible: false,
         bottom2FixedValue: false,
         bottom2FixedValueText: '',
         bottom3Type: '',
         bottom3Width: 300,
         bottom3Height: 22,
-        bottom3Visible: true,
+        bottom3Visible: false,
         bottom3FixedValue: false,
         bottom3FixedValueText: '',
         bottom4Type: '',
         bottom4Width: 300,
         bottom4Height: 22,
-        bottom4Visible: true,
+        bottom4Visible: false,
         bottom4FixedValue: false,
         bottom4FixedValueText: '',
         bottom5Type: '',
         bottom5Width: 300,
         bottom5Height: 22,
-        bottom5Visible: true,
+        bottom5Visible: false,
         bottom5FixedValue: false,
         bottom5FixedValueText: '',
         headerTitle: '',
@@ -2481,7 +3070,9 @@ export default {
         title1Name: '',
         title1Width: 300,
         title1Height: 22,
-        title1Visible: true,
+        title1X: null,
+        title1Y: null,
+        title1Visible: false,
         title1FixedValue: false,
         title1FixedValueText: '',
         title2: '',
@@ -2489,7 +3080,9 @@ export default {
         title2Name: '',
         title2Width: 300,
         title2Height: 22,
-        title2Visible: true,
+        title2X: null,
+        title2Y: null,
+        title2Visible: false,
         title2FixedValue: false,
         title2FixedValueText: '',
         title3: '',
@@ -2497,7 +3090,9 @@ export default {
         title3Name: '',
         title3Width: 300,
         title3Height: 22,
-        title3Visible: true,
+        title3X: null,
+        title3Y: null,
+        title3Visible: false,
         title3FixedValue: false,
         title3FixedValueText: '',
         title4: '',
@@ -2505,7 +3100,9 @@ export default {
         title4Name: '',
         title4Width: 300,
         title4Height: 22,
-        title4Visible: true,
+        title4X: null,
+        title4Y: null,
+        title4Visible: false,
         title4FixedValue: false,
         title4FixedValueText: '',
         title5: '',
@@ -2513,7 +3110,9 @@ export default {
         title5Name: '',
         title5Width: 300,
         title5Height: 22,
-        title5Visible: true,
+        title5X: null,
+        title5Y: null,
+        title5Visible: false,
         title5FixedValue: false,
         title5FixedValueText: '',
         title6: '',
@@ -2521,7 +3120,9 @@ export default {
         title6Name: '',
         title6Width: 300,
         title6Height: 22,
-        title6Visible: true,
+        title6X: null,
+        title6Y: null,
+        title6Visible: false,
         title6FixedValue: false,
         title6FixedValueText: '',
         isDefault: 0,
@@ -2540,11 +3141,17 @@ export default {
       this.bodySelectedCells = [];
       this.bodyCellTexts = {};
       this.editingBodyCell = null;
+      this.canvasTexts = [];
+      this.canvasTextSeq = 1;
+      this.canvasTableVisible = false;
+      this.canvasHeaderVisible = false;
+      this.clearCanvasWidgetSelection();
       this.refBillData = null;
       this.refBillPage = 1;
       this.activeTab = "basic";
       this.activeBottomTab = "page";
       this.printCollapseActive = ['paper', 'margin'];
+      this.fieldCollapseActive = ['dataSource', 'common'];
       this.canvasScrollLeft = 0;
       this.canvasScrollTop = 0;
       this.formatPainterActive = false;
@@ -2616,8 +3223,296 @@ export default {
       const n = parseInt(this.form.fixedRowsPerPage, 10);
       this.form.fixedRowsPerPage = Number.isFinite(n) && n >= 1 ? n : 5;
     },
+    fieldTypeLabel(type) {
+      const map = {
+        warehouse: '仓库',
+        department: '科室',
+        supplier: '供应商',
+        billNo: '单号',
+        amount: '金额',
+        invoiceNo: '发票号',
+        creator: '制单人',
+        createDate: '制单日期',
+        auditor: '审核人',
+        auditDate: '审核日期',
+        printer: '打印人',
+        printDate: '打印日期',
+        receiver: '领用人',
+        returner: '退库人',
+        purchaser: '采购员',
+        remark: '备注'
+      };
+      return map[type] || type || '文本';
+    },
+    /** 编辑态恢复画布显隐；新增或无配置时保持空白 */
+    applyCanvasVisibilityFromConfig(config, record) {
+      const isEdit = record && record.id != null;
+      if (!config) {
+        this.applyEmptyCanvasDefaults(record);
+        return;
+      }
+      if (config.canvasTableVisible !== undefined) {
+        this.canvasTableVisible = !!config.canvasTableVisible;
+      } else {
+        this.canvasTableVisible = !!isEdit;
+      }
+      if (config.canvasHeaderVisible !== undefined) {
+        this.canvasHeaderVisible = !!config.canvasHeaderVisible;
+      } else {
+        this.canvasHeaderVisible = !!isEdit;
+      }
+    },
+    applyEmptyCanvasDefaults(record) {
+      const isEdit = record && record.id != null;
+      if (isEdit) return;
+      this.canvasTableVisible = false;
+      this.canvasHeaderVisible = false;
+      this.form.codeDisplay = '';
+      this.canvasTexts = [];
+      this.canvasTextSeq = 1;
+      for (let i = 1; i <= 6; i++) this.form['title' + i + 'Visible'] = false;
+      for (let i = 1; i <= 5; i++) this.form['bottom' + i + 'Visible'] = false;
+    },
+    loadCanvasTextsFromConfig(config) {
+      const list = config && Array.isArray(config.canvasTexts) ? config.canvasTexts : [];
+      this.canvasTexts = list.map((t, i) => ({
+        id: t.id || ('text-' + (i + 1)),
+        type: t.type || '',
+        text: t.text || '',
+        fixedValue: !!t.fixedValue,
+        fixedValueText: t.fixedValueText || '',
+        visible: t.visible !== false,
+        width: Math.max(40, Number(t.width) || 160),
+        height: Math.max(18, Number(t.height) || 28),
+        x: Number(t.x) || 0,
+        y: Number(t.y) || 0
+      }));
+      const seq = Number(config && config.canvasTextSeq);
+      const maxId = this.canvasTexts.reduce((m, t) => {
+        const n = Number(String(t.id || '').replace(/\D/g, ''));
+        return Number.isFinite(n) ? Math.max(m, n) : m;
+      }, 0);
+      this.canvasTextSeq = Math.max(1, Number.isFinite(seq) ? seq : 1, maxId + 1);
+    },
+    /** 点击「文本」组件：在画布新增一个可编辑文本框并选中 */
+    addCanvasText() {
+      const offset = (this.canvasTexts.length % 6) * 24;
+      const id = 'text-' + (this.canvasTextSeq++);
+      const item = {
+        id,
+        type: '',
+        text: '',
+        fixedValue: false,
+        fixedValueText: '',
+        visible: true,
+        width: 160,
+        height: 28,
+        x: 40 + offset,
+        y: 60 + offset
+      };
+      this.canvasTexts.push(item);
+      this.selectCanvasText(item);
+      this.activeBottomTab = 'title';
+      this.fieldCollapseActive = ['dataSource', 'common'];
+      this.pushDesignHistory();
+    },
+    selectCanvasText(item) {
+      if (!item || !item.id) return;
+      this.bodySelectedCells = [];
+      this.headerSelectedCols = [];
+      this.selectCanvasWidget('text:' + item.id);
+      this.activeBottomTab = 'title';
+    },
+    getCanvasTextStyle(item) {
+      if (!item || item.visible === false) return { display: 'none' };
+      return {
+        position: 'absolute',
+        left: (Number(item.x) || 0) + 'px',
+        top: (Number(item.y) || 0) + 'px',
+        width: Math.max(40, Number(item.width) || 160) + 'px',
+        height: Math.max(18, Number(item.height) || 28) + 'px',
+        zIndex: this.canvasSelectedKey === ('text:' + item.id) ? 12 : 8
+      };
+    },
+    getCanvasTextDisplay(item) {
+      if (!item) return '';
+      if (item.fixedValue) return item.fixedValueText || '';
+      if (item.type) {
+        const label = this.fieldTypeLabel(item.type);
+        if (this.refBillData && this.refBillData.bill) {
+          const val = this.getBillTitleValue(this.refBillData.bill, item.type);
+          return val !== '' && val != null ? String(val) : label;
+        }
+        return label;
+      }
+      return item.text || '';
+    },
+    onCanvasTextInput(item, event) {
+      if (!item) return;
+      const val = event && event.target ? event.target.value : '';
+      if (item.fixedValue || !item.type) {
+        this.$set(item, 'fixedValue', true);
+        this.$set(item, 'fixedValueText', val);
+        this.$set(item, 'text', val);
+      }
+    },
+    onCanvasTextMouseDown(event, item) {
+      if (!item) return;
+      this.selectCanvasText(item);
+      if (event.target && event.target.classList && event.target.classList.contains('canvas-text-input')) {
+        // 输入框内点击不拖拽，便于编辑
+        return;
+      }
+      if (!this.$refs.previewPaper) return;
+      const contentEl = this.$refs.previewPaper.querySelector('.paper-content');
+      const contentRect = contentEl ? contentEl.getBoundingClientRect() : this.$refs.previewPaper.getBoundingClientRect();
+      this.textDragState = {
+        id: item.id,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startX: Number(item.x) || 0,
+        startY: Number(item.y) || 0,
+        contentWidth: contentRect.width,
+        contentHeight: contentRect.height,
+        width: Number(item.width) || 160,
+        height: Number(item.height) || 28
+      };
+      this._onTextMouseMove = (e) => {
+        if (!this.textDragState) return;
+        const target = (this.canvasTexts || []).find(t => t.id === this.textDragState.id);
+        if (!target) return;
+        const dx = e.clientX - this.textDragState.startClientX;
+        const dy = e.clientY - this.textDragState.startClientY;
+        let newX = this.textDragState.startX + dx;
+        let newY = this.textDragState.startY + dy;
+        newX = Math.max(0, Math.min(this.textDragState.contentWidth - this.textDragState.width, newX));
+        newY = Math.max(0, Math.min(this.textDragState.contentHeight - this.textDragState.height, newY));
+        this.$set(target, 'x', Math.round(newX));
+        this.$set(target, 'y', Math.round(newY));
+      };
+      this._onTextMouseUp = () => {
+        this.textDragState = null;
+        window.removeEventListener('mousemove', this._onTextMouseMove);
+        window.removeEventListener('mouseup', this._onTextMouseUp);
+      };
+      window.addEventListener('mousemove', this._onTextMouseMove);
+      window.addEventListener('mouseup', this._onTextMouseUp);
+    },
+    openGridSettingDialog() {
+      const rows = Math.max(1, Math.min(this.gridMaxRows, Number(this.form.tableRows) || 5));
+      const cols = Math.max(1, Math.min(this.gridMaxCols, Number(this.form.tableColumns) || 7));
+      this.gridDraftRows = rows;
+      this.gridDraftCols = cols;
+      this.gridHoverRows = 0;
+      this.gridHoverCols = 0;
+      this.gridDialogVisible = true;
+    },
+    normalizeGridDraft() {
+      let rows = parseInt(this.gridDraftRows, 10);
+      let cols = parseInt(this.gridDraftCols, 10);
+      if (!Number.isFinite(rows) || rows < 1) rows = 1;
+      if (!Number.isFinite(cols) || cols < 1) cols = 1;
+      this.gridDraftRows = Math.min(this.gridMaxRows, rows);
+      this.gridDraftCols = Math.min(this.gridMaxCols, cols);
+    },
+    isGridCellActive(r, c) {
+      const rows = this.gridHoverRows > 0 ? this.gridHoverRows : this.gridDraftRows;
+      const cols = this.gridHoverCols > 0 ? this.gridHoverCols : this.gridDraftCols;
+      return r <= rows && c <= cols;
+    },
+    onGridCellHover(r, c) {
+      this.gridHoverRows = r;
+      this.gridHoverCols = c;
+    },
+    onGridCellClick(r, c) {
+      this.gridDraftRows = r;
+      this.gridDraftCols = c;
+      this.gridHoverRows = 0;
+      this.gridHoverCols = 0;
+    },
+    onGridDialogClosed() {
+      this.gridHoverRows = 0;
+      this.gridHoverCols = 0;
+    },
+    confirmGridSetting() {
+      this.normalizeGridDraft();
+      this.form.tableRows = this.gridDraftRows;
+      this.form.tableColumns = this.gridDraftCols;
+      this.canvasTableVisible = true;
+      this.ensureTableHeaderFieldsLength();
+      this.gridDialogVisible = false;
+      this.selectCanvasWidget('table');
+      this.bodySelectedCells = [];
+      this.headerSelectedCols = [];
+      this.pushDesignHistory();
+      this.$nextTick(() => {
+        const wrap = this.$el && this.$el.querySelector('.preview-table-wrap');
+        if (wrap && wrap.scrollIntoView) {
+          wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    },
+    /** 解析当前应在刻度尺上高亮的组件包围盒（画布坐标系） */
+    resolveActiveWidgetBox() {
+      if (this.textDragState && this.textDragState.id) {
+        const t = (this.canvasTexts || []).find(item => item.id === this.textDragState.id);
+        if (t) {
+          return {
+            x: Number(t.x) || 0,
+            y: Number(t.y) || 0,
+            w: Number(t.width) || 160,
+            h: Number(t.height) || 28
+          };
+        }
+      }
+      if (this.codeDragState || this.canvasSelectedKey === 'code') {
+        const pos = this.currentCodePosition || { x: 0, y: 0 };
+        const size = this.currentCodeSize || { width: 64, height: 64 };
+        return {
+          x: Number(pos.x) || 0,
+          y: Number(pos.y) || 0,
+          w: Number(size.width) || 64,
+          h: Number(size.height) || 64
+        };
+      }
+      const key = this.canvasSelectedKey || '';
+      if (key.indexOf('text:') === 0) {
+        const id = key.slice(5);
+        const t = (this.canvasTexts || []).find(item => item.id === id);
+        if (t) {
+          return {
+            x: Number(t.x) || 0,
+            y: Number(t.y) || 0,
+            w: Number(t.width) || 160,
+            h: Number(t.height) || 28
+          };
+        }
+      }
+      return null;
+    },
+    ensureBillTypeReady() {
+      if (this.canOperateCanvas) return true;
+      this.activeTab = 'basic';
+      this.$message && this.$message.warning('请先选择单据类型');
+      return false;
+    },
+    onDesignToolbarCapture(event) {
+      if (this.canOperateCanvas) return;
+      const tag = event.target && event.target.closest ? event.target.closest('button, .el-input, .el-select, .el-dropdown') : null;
+      if (!tag) return;
+      event.stopPropagation();
+      event.preventDefault();
+      this.ensureBillTypeReady();
+    },
+    onCanvasAreaCapture(event) {
+      if (this.canOperateCanvas) return;
+      event.stopPropagation();
+      event.preventDefault();
+      this.ensureBillTypeReady();
+    },
     handleSelectComponent(item) {
       if (!item || !item.key) return;
+      if (!this.ensureBillTypeReady()) return;
       this.selectedComponent = item.key;
       switch (item.key) {
         case 'qr':
@@ -2631,19 +3526,16 @@ export default {
           this.pushDesignHistory();
           break;
         case 'text':
-          this.activeBottomTab = 'title';
+          this.addCanvasText();
           break;
         case 'dataTable':
         case 'entryTable':
-          this.activeTab = 'column';
+          this.openGridSettingDialog();
           break;
         case 'header':
+          this.canvasHeaderVisible = true;
           this.activeBottomTab = 'title';
-          for (let i = 1; i <= 3; i++) {
-            if (this.form['title' + i + 'Visible'] === false) {
-              this.form['title' + i + 'Visible'] = true;
-            }
-          }
+          this.selectCanvasWidget('header');
           this.pushDesignHistory();
           break;
         case 'footer':
@@ -2741,13 +3633,31 @@ export default {
       this.form.verticalAlign = align;
       this.pushDesignHistory();
     },
+    onBorderMenuVisible(visible) {
+      this.borderMenuVisible = !!visible;
+      this.borderSubMenu = '';
+    },
+    toggleBorderSubMenu(key) {
+      this.borderSubMenu = this.borderSubMenu === key ? '' : key;
+    },
     handleBorderCommand(cmd) {
+      this.borderSubMenu = '';
       if (cmd === 'merge') {
         this.handleMergeCells();
         this.pushDesignHistory();
         return;
       }
       this.form.tableBorder = cmd;
+      this.pushDesignHistory();
+    },
+    handleBorderLineStyle(style) {
+      this.form.tableBorderStyle = style || 'thin';
+      this.borderSubMenu = '';
+      this.pushDesignHistory();
+    },
+    handleBorderColorChange(color) {
+      const next = color || this.form.tableBorderColor || '#000000';
+      this.form.tableBorderColor = next;
       this.pushDesignHistory();
     },
     handlePlaceholderCommand(type) {
@@ -3065,6 +3975,10 @@ export default {
             headerMerges: this.headerMerges,
             bodyMerges: this.bodyMerges,
             bodyCellTexts: this.bodyCellTexts,
+            canvasTexts: (this.canvasTexts || []).map(t => ({ ...t })),
+            canvasTextSeq: this.canvasTextSeq || 1,
+            canvasTableVisible: this.canvasTableVisible !== false,
+            canvasHeaderVisible: this.canvasHeaderVisible !== false,
             codeDisplay: this.form.codeDisplay || '',
             qrPosition: this.form.qrPosition ? { ...this.form.qrPosition } : { x: 0, y: 0 },
             qrSize: this.form.qrSize ? { ...this.form.qrSize } : { width: 64, height: 64 },
@@ -3077,6 +3991,8 @@ export default {
             fillColor: this.form.fillColor || 'transparent',
             verticalAlign: this.form.verticalAlign || 'middle',
             tableBorder: this.form.tableBorder || 'all',
+            tableBorderStyle: this.form.tableBorderStyle || 'thin',
+            tableBorderColor: this.form.tableBorderColor || '#000000',
             paperSize: this.form.paperSize || 'custom',
             printHeaderMode: this.form.printHeaderMode || 'first',
             printFooterMode: this.form.printFooterMode || 'last',
@@ -3122,6 +4038,8 @@ export default {
             title1FixedValueText: this.form.title1FixedValueText,
             title1Width: this.form.title1Width,
             title1Height: this.form.title1Height,
+            title1X: this.form.title1X,
+            title1Y: this.form.title1Y,
             title2Type: this.form.title2Type,
             title2Name: this.form.title2Name,
             title2Visible: this.form.title2Visible,
@@ -3129,6 +4047,8 @@ export default {
             title2FixedValueText: this.form.title2FixedValueText,
             title2Width: this.form.title2Width,
             title2Height: this.form.title2Height,
+            title2X: this.form.title2X,
+            title2Y: this.form.title2Y,
             title3Type: this.form.title3Type,
             title3Name: this.form.title3Name,
             title3Visible: this.form.title3Visible,
@@ -3136,6 +4056,8 @@ export default {
             title3FixedValueText: this.form.title3FixedValueText,
             title3Width: this.form.title3Width,
             title3Height: this.form.title3Height,
+            title3X: this.form.title3X,
+            title3Y: this.form.title3Y,
             title4Type: this.form.title4Type,
             title4Name: this.form.title4Name,
             title4Visible: this.form.title4Visible,
@@ -3143,6 +4065,8 @@ export default {
             title4FixedValueText: this.form.title4FixedValueText,
             title4Width: this.form.title4Width,
             title4Height: this.form.title4Height,
+            title4X: this.form.title4X,
+            title4Y: this.form.title4Y,
             title5Type: this.form.title5Type,
             title5Name: this.form.title5Name,
             title5Visible: this.form.title5Visible,
@@ -3150,13 +4074,17 @@ export default {
             title5FixedValueText: this.form.title5FixedValueText,
             title5Width: this.form.title5Width,
             title5Height: this.form.title5Height,
+            title5X: this.form.title5X,
+            title5Y: this.form.title5Y,
             title6Type: this.form.title6Type,
             title6Name: this.form.title6Name,
             title6Visible: this.form.title6Visible,
             title6FixedValue: this.form.title6FixedValue,
             title6FixedValueText: this.form.title6FixedValueText,
             title6Width: this.form.title6Width,
-            title6Height: this.form.title6Height
+            title6Height: this.form.title6Height,
+            title6X: this.form.title6X,
+            title6Y: this.form.title6Y
           });
           // 转换显示字段为整数
           formData.showPurchaser = formData.showPurchaser ? 1 : 0;
@@ -3204,9 +4132,33 @@ export default {
     getVerticalPosition(value) {
       return value * this.mmToPx;
     },
-    /** 展开/收拢右侧配置面板，收拢后画布占满 */
+    /** 展开/收拢右侧配置面板：宽度动画 + 结束后再刷新刻度尺 */
     toggleRightPanel() {
+      if (this.rightPanelAnimating) return;
+      this.rightPanelAnimating = true;
       this.rightPanelCollapsed = !this.rightPanelCollapsed;
+      const wrap = this.$el && this.$el.querySelector('.right-panel-wrap');
+      const finish = () => {
+        if (!this.rightPanelAnimating) return;
+        this.rightPanelAnimating = false;
+        if (wrap && this._onRightPanelTransitionEnd) {
+          wrap.removeEventListener('transitionend', this._onRightPanelTransitionEnd);
+          this._onRightPanelTransitionEnd = null;
+        }
+        if (this._rightPanelAnimTimer) {
+          clearTimeout(this._rightPanelAnimTimer);
+          this._rightPanelAnimTimer = null;
+        }
+        this.$nextTick(() => this.updateCanvasViewportSize());
+      };
+      this._onRightPanelTransitionEnd = (e) => {
+        if (!e || e.target !== wrap) return;
+        if (e.propertyName !== 'width' && e.propertyName !== 'max-width' && e.propertyName !== 'flex-basis') return;
+        finish();
+      };
+      if (wrap) wrap.addEventListener('transitionend', this._onRightPanelTransitionEnd);
+      if (this._rightPanelAnimTimer) clearTimeout(this._rightPanelAnimTimer);
+      this._rightPanelAnimTimer = setTimeout(finish, 360);
     },
     onCanvasZoomCommand(z) {
       const n = Number(z);
@@ -3234,9 +4186,14 @@ export default {
         window.removeEventListener('resize', this._onWindowResizeForRuler);
         this._onWindowResizeForRuler = null;
       }
+      if (this._rightPanelAnimTimer) {
+        clearTimeout(this._rightPanelAnimTimer);
+        this._rightPanelAnimTimer = null;
+      }
     },
-    /** 根据画布可视区域更新刻度尺覆盖范围 */
+    /** 根据画布可视区域更新刻度尺覆盖范围（动画中跳过，避免整页抖动） */
     updateCanvasViewportSize() {
+      if (this.rightPanelAnimating) return;
       const el = this.$el && this.$el.querySelector('.left-panel-body');
       if (!el) return;
       const w = el.clientWidth || 0;
@@ -3270,25 +4227,51 @@ export default {
 }
 
 .dialog-layout.is-right-collapsed .left-column {
-  flex: 1;
   margin-right: 0;
+}
+
+/* 左侧始终吃剩余空间；右侧用可插值的 width/flex-basis 做丝滑收放 */
+.left-column {
+  flex: 1 1 0%;
+  min-width: 0;
+  min-height: 0;
+  margin-right: 2px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .right-panel-wrap {
   position: relative;
-  flex: 2;
+  flex: 0 0 28.5%;
+  width: 28.5%;
+  max-width: 28.5%;
   min-width: 0;
   display: flex;
   align-self: stretch;
+  overflow: hidden;
+  transition:
+    flex-basis 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width, flex-basis, max-width;
+}
+
+.right-panel-wrap.is-collapsed {
+  flex-basis: 0;
+  width: 0;
+  max-width: 0;
+}
+
+/* 动画结束后才露出把手，避免收放中被裁切/闪动 */
+.right-panel-wrap.is-collapsed:not(.is-animating) {
   overflow: visible;
 }
 
-/* 收拢后不占白条，画布铺满；把手挂在画布右缘对齐 */
-.right-panel-wrap.is-collapsed {
-  flex: 0 0 0;
-  width: 0;
-  min-width: 0;
-  overflow: visible;
+.right-panel-wrap.is-collapsed .right-panel {
+  opacity: 0;
+  pointer-events: none;
+  border-color: transparent;
 }
 
 .right-panel-drawer-handle {
@@ -3328,17 +4311,6 @@ export default {
   transform: translateX(-100%);
   width: 12px;
   border-radius: 3px 0 0 3px;
-}
-
-.left-column {
-  flex: 5;
-  min-width: 0;
-  min-height: 0;
-  margin-right: 2px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transition: flex 0.2s ease, margin-right 0.2s ease;
 }
 
 .left-panel {
@@ -3439,6 +4411,33 @@ export default {
   position: relative;
 }
 
+.canvas-billtype-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(1px);
+  cursor: not-allowed;
+  box-sizing: border-box;
+}
+
+.canvas-billtype-mask-tip {
+  padding: 10px 16px;
+  border-radius: 4px;
+  background: rgba(48, 49, 51, 0.85);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.left-column.is-canvas-locked .design-toolbar {
+  opacity: 0.7;
+}
+
 .ruler-panel {
   background-image:
     linear-gradient(to right, #e0e0e0 1px, transparent 1px),
@@ -3493,11 +4492,31 @@ export default {
   background: #f5f7fa;
   box-sizing: border-box;
   will-change: transform;
+  overflow: hidden;
+}
+
+.ruler-guide-h {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 100%;
+  background: rgba(64, 158, 255, 0.22);
+  border-left: 1px solid #409eff;
+  border-right: 1px solid #409eff;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 1;
+  transition: background 0.12s ease;
+}
+
+.ruler-guide-h.dragging {
+  background: rgba(64, 158, 255, 0.38);
 }
 
 .ruler-mark-horizontal {
   position: absolute;
   bottom: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3544,10 +4563,29 @@ export default {
   will-change: transform;
 }
 
+.ruler-guide-v {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  background: rgba(64, 158, 255, 0.22);
+  border-top: 1px solid #409eff;
+  border-bottom: 1px solid #409eff;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 1;
+  transition: background 0.12s ease;
+}
+
+.ruler-guide-v.dragging {
+  background: rgba(64, 158, 255, 0.38);
+}
+
 .ruler-mark-vertical {
   position: absolute;
   left: 0;
   right: 0;
+  z-index: 2;
   height: 18px;
   box-sizing: border-box;
   transform: translateY(-50%);
@@ -3607,6 +4645,40 @@ export default {
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
+}
+
+.canvas-text-widget {
+  box-sizing: border-box;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: move;
+  overflow: visible;
+}
+
+.canvas-text-widget.is-hovered {
+  border-color: rgba(64, 158, 255, 0.55);
+  background: transparent;
+}
+
+.canvas-text-widget.is-canvas-selected {
+  border-color: #409eff;
+  background: transparent;
+}
+
+.canvas-text-input {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 2px 6px;
+  border: none;
+  outline: none;
+  background: transparent !important;
+  box-sizing: border-box;
+  font-size: 13px;
+  color: #303133;
+  cursor: text;
 }
 
 .template-preview-content {
@@ -3710,8 +4782,17 @@ export default {
 
 /* 标题配置行：表头与表格之间，两行一行三列布局 */
 .template-title-container {
+  position: relative;
   margin-top: 2px;
   margin-bottom: 2px;
+}
+
+.field-common-row {
+  margin-bottom: 0;
+}
+
+.field-common-row .el-form-item {
+  margin-bottom: 8px;
 }
 
 .template-title-row {
@@ -3765,37 +4846,143 @@ export default {
   border-collapse: collapse;
   table-layout: fixed;
   empty-cells: show;
+  --table-border-line: 1px solid #000000;
 }
 
-.preview-table td {
-  border: 1px solid #909399;
+.preview-table td,
+.preview-table thead th {
+  border: var(--table-border-line);
   min-height: var(--table-row-height, 22px);
   height: var(--table-row-height, 22px);
   padding: 2px 6px;
   box-sizing: border-box;
 }
 
+.preview-table thead th {
+  padding: 2px 4px;
+  background: #f5f7fa;
+  vertical-align: middle;
+}
+
 .preview-table tbody tr:hover td {
   background-color: rgba(64, 158, 255, 0.06);
 }
 
-.preview-table thead th {
-  border: 1px solid #909399;
-  padding: 2px 4px;
-  background: #f5f7fa;
-  vertical-align: middle;
-  min-height: var(--table-row-height, 22px);
-  height: var(--table-row-height, 22px);
+/* 边框模式 */
+.preview-table--none td,
+.preview-table--none thead th {
+  border: none !important;
+}
+
+.preview-table--outer td,
+.preview-table--outer thead th {
+  border: none !important;
+}
+
+.preview-table--inner {
+  border: none !important;
+}
+
+.preview-table--inner tr:first-child > th,
+.preview-table--inner tr:first-child > td {
+  border-top-color: transparent !important;
+}
+
+.preview-table--inner tr:last-child > td,
+.preview-table--inner tr:last-child > th {
+  border-bottom-color: transparent !important;
+}
+
+.preview-table--inner tr > th:first-child,
+.preview-table--inner tr > td:first-child {
+  border-left-color: transparent !important;
+}
+
+.preview-table--inner tr > th:last-child,
+.preview-table--inner tr > td:last-child {
+  border-right-color: transparent !important;
+}
+
+.preview-table--left td,
+.preview-table--left thead th,
+.preview-table--right td,
+.preview-table--right thead th,
+.preview-table--top td,
+.preview-table--top thead th,
+.preview-table--bottom td,
+.preview-table--bottom thead th {
+  border: none !important;
+}
+
+.preview-table-header-cell.is-selected,
+.preview-table-body-cell.is-selected {
+  outline: 1px solid #409eff;
+  outline-offset: -1px;
+  z-index: 2;
+}
+
+/* 画布组件：悬停变色 + 双击选中（蓝框与八向手柄） */
+.canvas-widget {
+  position: relative;
+  cursor: pointer;
   box-sizing: border-box;
 }
 
-.preview-table-header-cell.is-selected {
-  outline: 2px solid #409eff;
+.canvas-widget.is-hovered:not(.is-canvas-selected) {
+  outline: 1px solid #409eff;
+  outline-offset: 0;
+  box-shadow: 0 0 0 1px rgba(64, 158, 255, 0.25);
 }
 
-.preview-table-body-cell.is-selected {
-  outline: 2px solid #409eff;
+.canvas-widget.is-canvas-selected {
+  outline: 1px solid #409eff;
+  outline-offset: 0;
+  z-index: 3;
 }
+
+.template-header.canvas-widget {
+  position: relative;
+}
+
+.template-title-item.canvas-widget,
+.template-bottom-item.canvas-widget {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.preview-table-wrap.canvas-widget {
+  position: relative;
+}
+
+.canvas-select-handles {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.canvas-handle {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  margin: 0;
+  background: #409eff;
+  border: 1px solid #fff;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.canvas-handle.nw { left: -3px; top: -3px; }
+.canvas-handle.n { left: 50%; top: -3px; margin-left: -3px; }
+.canvas-handle.ne { right: -3px; top: -3px; }
+.canvas-handle.e { right: -3px; top: 50%; margin-top: -3px; }
+.canvas-handle.se { right: -3px; bottom: -3px; }
+.canvas-handle.s { left: 50%; bottom: -3px; margin-left: -3px; }
+.canvas-handle.sw { left: -3px; bottom: -3px; }
+.canvas-handle.w { left: -3px; top: 50%; margin-top: -3px; }
 
 .preview-table-footer-cell {
   border: 1px solid #909399;
@@ -3919,6 +5106,8 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  opacity: 1;
+  transition: opacity 0.18s ease;
 }
 
 .right-panel > .el-form,
@@ -4058,11 +5247,25 @@ export default {
   margin-top: 8px;
 }
 
+.template-basic-row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.template-basic-row .el-form-item {
+  margin-bottom: 14px;
+}
+
 .component-palette {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   padding: 4px 2px 8px;
+}
+
+.component-palette.is-locked {
+  opacity: 0.55;
+  pointer-events: auto;
 }
 
 .component-card {
@@ -4294,6 +5497,155 @@ export default {
   font-weight: 600;
 }
 
+.dt-border-trigger-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  line-height: 0;
+}
+
+.dt-border-panel {
+  min-width: 148px;
+  padding: 6px 0 !important;
+  margin-top: 6px !important;
+  border: 1px solid #e4e7ed !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  background: #fff !important;
+}
+
+.dt-border-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 12px 0 10px;
+  color: #303133;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.dt-border-item:hover,
+.dt-border-item.active {
+  background: #e6f1ff;
+  color: #409eff;
+}
+
+.dt-border-item.active .dt-border-ico {
+  color: #409eff;
+}
+
+.dt-border-ico {
+  display: inline-flex;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: #303133;
+  line-height: 0;
+}
+
+.dt-border-ico >>> svg {
+  display: block;
+}
+
+.dt-border-label {
+  flex: 1;
+  line-height: 1;
+}
+
+.dt-border-arrow {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.dt-border-divider {
+  height: 1px;
+  margin: 4px 0;
+  background: #ebeef5;
+}
+
+.dt-border-item.has-sub {
+  padding-right: 10px;
+}
+
+.dt-border-submenu {
+  position: absolute;
+  left: calc(100% - 2px);
+  top: -6px;
+  min-width: 120px;
+  padding: 6px 0;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 30;
+}
+
+.dt-border-submenu::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+}
+
+.dt-border-line-item {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.dt-border-line-item:hover,
+.dt-border-line-item.active {
+  background: #e6f1ff;
+}
+
+.dt-border-line-preview {
+  display: block;
+  width: 88px;
+  height: 0;
+  box-sizing: border-box;
+}
+
+.dt-border-color-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 148px;
+  padding: 10px;
+}
+
+.dt-border-color-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.dt-border-color-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid #dcdfe6;
+  border-radius: 2px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.dt-border-color-swatch.active {
+  outline: 2px solid #409eff;
+  outline-offset: 1px;
+}
+
 .dt-color-menu {
   min-width: 120px;
 }
@@ -4450,5 +5802,65 @@ export default {
 .canvas-zoom-menu .el-dropdown-menu__item.is-active-zoom {
   color: #409eff;
   background-color: #ecf5ff;
+}
+
+.grid-setting-dialog .el-dialog__body {
+  padding: 16px 20px 8px;
+}
+
+.grid-setting-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.grid-setting-inputs {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.grid-setting-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grid-setting-label {
+  color: #606266;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.grid-setting-field .el-input {
+  width: 72px;
+}
+
+.grid-setting-picker {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.grid-setting-picker-row {
+  display: flex;
+  gap: 4px;
+}
+
+.grid-setting-cell {
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 1px solid #dcdfe6;
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.grid-setting-cell.active {
+  background: #ecf5ff;
+  border-color: #409eff;
 }
 </style>
