@@ -245,7 +245,7 @@
               <div
                 v-if="rulerGuideRange"
                 class="ruler-guide-h"
-                :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState }"
+                :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState || !!tableDragState }"
                 :style="{ left: rulerGuideRange.left + 'px', width: rulerGuideRange.width + 'px' }"
               />
               <div
@@ -270,7 +270,7 @@
               <div
                 v-if="rulerGuideRange"
                 class="ruler-guide-v"
-                :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState }"
+                :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState || !!tableDragState }"
                 :style="{ top: rulerGuideRange.top + 'px', height: rulerGuideRange.height + 'px' }"
               />
               <div
@@ -410,21 +410,35 @@
                 <div
                   v-if="canvasTableVisible"
                   class="preview-table-wrap canvas-widget"
-                  :class="canvasWidgetClass('table')"
-                  :style="previewTableStyle"
+                  :class="[canvasWidgetClass('table'), { 'is-table-dragging': !!tableDragState }]"
+                  :style="previewTableWrapStyle"
                   @mouseenter="setCanvasHover('table')"
                   @mouseleave="clearCanvasHover('table')"
-                  @dblclick.self.stop="selectCanvasWidget('table')"
+                  @mousedown.stop="onTableMouseDown"
+                  @click.stop="onTableFrameClick"
                 >
-                  <div v-if="canvasSelectedKey === 'table'" class="canvas-select-handles">
-                    <i v-for="h in canvasHandleDirs" :key="'tbh-' + h" :class="['canvas-handle', h]" />
+                  <div
+                    v-if="canvasSelectedKey === 'table'"
+                    class="canvas-select-handles is-interactive"
+                  >
+                    <i
+                      v-for="h in canvasHandleDirs"
+                      :key="'tbh-' + h"
+                      :class="['canvas-handle', h]"
+                      :title="'拖拽调整表格' + (h.indexOf('e') >= 0 || h.indexOf('w') >= 0 ? '宽度' : '') + (h.indexOf('n') >= 0 || h.indexOf('s') >= 0 ? '高度' : '')"
+                      @mousedown.stop.prevent="startTableFrameResize(h, $event)"
+                    />
                   </div>
-                  <table class="preview-table" :class="previewTableBorderClass" :style="previewTableInlineStyle" @dblclick.stop="selectCanvasWidget('table')">
+                  <table
+                    class="preview-table"
+                    :class="previewTableBorderClass"
+                    :style="previewTableInlineStyle"
+                  >
                     <colgroup>
                       <col v-for="c in tablePreviewCols" :key="'col-' + c" :style="{ width: (canvasColumnWidths[c - 1] || 80) + 'px' }" />
                     </colgroup>
                     <thead>
-                      <tr>
+                      <tr :style="getTableRowStyle(0)">
                         <th
                           v-for="c in tablePreviewCols"
                           v-if="isHeaderCellVisible(c - 1)"
@@ -434,30 +448,26 @@
                             { 'is-selected': isHeaderCellSelected(c - 1) },
                             canvasWidgetClass('header-cell:' + (c - 1))
                           ]"
+                          :style="getTableCellStyle(0, c - 1)"
                           :colspan="getHeaderCellColspan(c - 1)"
                           @mouseenter="setCanvasHover('header-cell:' + (c - 1))"
                           @mouseleave="clearCanvasHover('header-cell:' + (c - 1))"
-                          @click.stop="onHeaderCellClick(c - 1, $event)"
-                          @dblclick.stop="selectCanvasWidget('header-cell:' + (c - 1))"
+                          @click.stop="onHeaderCellSingleClick(c - 1, $event)"
+                          @dblclick.stop="onHeaderCellDblClick(c - 1, $event)"
                         >
-                          <el-select
-                            :value="tableHeaderFields[c - 1]"
-                            placeholder="请选择列"
-                            size="mini"
-                            class="canvas-header-select"
-                            @input="setHeaderField(c - 1, $event)"
-                          >
-                            <el-option
-                              v-for="col in columnList"
-                              :key="col.field"
-                              :label="col.label"
-                              :value="col.field"
-                            />
-                          </el-select>
+                          <span class="canvas-header-text" :style="getTableCellTextStyle(0, c - 1)">
+                            <i v-if="tableHeaderFields[c - 1] === 'checkbox'" class="print-checkbox-square" title="选择框" />
+                            <template v-else>{{ getHeaderCellLabel(c - 1) }}</template>
+                          </span>
                           <span
                             v-if="shouldShowResizeHandle(c - 1)"
                             class="col-resize-handle"
                             @mousedown.prevent.stop="startColResize($event, c - 1)"
+                          ></span>
+                          <span
+                            class="row-resize-handle"
+                            title="拖拽调整本行高度"
+                            @mousedown.prevent.stop="startRowResize($event, 0)"
                           ></span>
                           <div
                             v-if="canvasSelectedKey === ('header-cell:' + (c - 1)) || isHeaderCellSelected(c - 1)"
@@ -469,7 +479,11 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="rIndex in tablePreviewDataRows" :key="'r-' + rIndex">
+                      <tr
+                        v-for="rIndex in tablePreviewDataRows"
+                        :key="'r-' + rIndex"
+                        :style="getTableRowStyle(rIndex)"
+                      >
                         <td
                           v-for="cIndex in tablePreviewCols"
                           v-if="isBodyCellVisible(rIndex - 1, cIndex - 1)"
@@ -479,15 +493,14 @@
                             { 'is-selected': isBodyCellSelected(rIndex - 1, cIndex - 1) },
                             canvasWidgetClass('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1))
                           ]"
+                          :style="getTableCellStyle(rIndex, cIndex - 1)"
                           :colspan="getBodyCellColspan(rIndex - 1, cIndex - 1)"
                           @mouseenter="setCanvasHover('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1))"
                           @mouseleave="clearCanvasHover('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1))"
-                          @click.stop="onBodyCellClick(rIndex - 1, cIndex - 1, $event)"
+                          @click.stop="onBodyCellSingleClick(rIndex - 1, cIndex - 1, $event)"
+                          @dblclick.stop="onBodyCellDblClick(rIndex - 1, cIndex - 1, $event)"
                         >
-                          <div
-                            class="preview-table-cell-inner"
-                            @dblclick.stop="onBodyCellDblClick(rIndex - 1, cIndex - 1)"
-                          >
+                          <div class="preview-table-cell-inner" :style="getTableCellTextStyle(rIndex, cIndex - 1)">
                             <el-input
                               v-if="isEditingBodyCell(rIndex - 1, cIndex - 1)"
                               v-model="editingBodyCell.value"
@@ -495,6 +508,10 @@
                               class="preview-table-cell-input"
                               @blur="saveBodyCellEdit"
                               @keyup.enter.native="saveBodyCellEdit"
+                            />
+                            <i
+                              v-else-if="isCheckboxColumn(cIndex - 1)"
+                              class="print-checkbox-square"
                             />
                             <span
                               v-else
@@ -507,6 +524,11 @@
                             v-if="shouldShowResizeHandle(cIndex - 1)"
                             class="col-resize-handle"
                             @mousedown.prevent.stop="startColResize($event, cIndex - 1)"
+                          ></span>
+                          <span
+                            class="row-resize-handle"
+                            title="拖拽调整本行高度"
+                            @mousedown.prevent.stop="startRowResize($event, rIndex)"
                           ></span>
                           <div
                             v-if="canvasSelectedKey === ('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1)) || isBodyCellSelected(rIndex - 1, cIndex - 1)"
@@ -599,12 +621,12 @@
           <el-row :gutter="8" class="template-basic-row">
             <el-col :span="12">
               <el-form-item label="模板名称" prop="templateName" label-width="80px">
-                <el-input v-model="form.templateName" placeholder="模板名称" />
+                <el-input v-model="form.templateName" placeholder="模板名称" size="small" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="单据类型" prop="billType" label-width="80px">
-                <el-select v-model="form.billType" placeholder="请选择单据类型" clearable style="width: 100%">
+                <el-select v-model="form.billType" placeholder="请选择单据类型" clearable size="small" style="width: 100%">
                   <el-option label="入库单" :value="101" />
                   <el-option label="退货单" :value="102" />
                   <el-option label="出库单" :value="201" />
@@ -620,21 +642,27 @@
               </el-form-item>
             </el-col>
           </el-row>
-          <el-form-item label="默认模板" prop="isDefault" required>
-            <el-switch
-              v-model="form.isDefault"
-              :active-value="1"
-              :inactive-value="0"
-            />
-          </el-form-item>
-          <el-form-item label="状态" prop="status">
-            <el-radio-group v-model="form.status">
-              <el-radio label="0">正常</el-radio>
-              <el-radio label="1">停用</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item label="备注" prop="remark">
-            <el-input v-model="form.remark" type="textarea" placeholder="备注" />
+          <el-row :gutter="8" class="template-basic-row">
+            <el-col :span="12">
+              <el-form-item label="默认模板" prop="isDefault" required label-width="80px">
+                <el-switch
+                  v-model="form.isDefault"
+                  :active-value="1"
+                  :inactive-value="0"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="状态" prop="status" label-width="80px">
+                <el-radio-group v-model="form.status">
+                  <el-radio label="0">正常</el-radio>
+                  <el-radio label="1">停用</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="备注" prop="remark" label-width="80px" class="template-remark-item">
+            <el-input v-model="form.remark" placeholder="备注" size="small" />
           </el-form-item>
           </el-tab-pane>
 
@@ -791,23 +819,19 @@
               <el-collapse-item title="数据源" name="dataSource">
                 <el-form-item label-width="0" label="" class="title1-form-item">
                   <div class="title-config-row">
-                    <el-select v-model="activeFieldType" placeholder="请选择" style="width: 120px;" size="small" clearable>
-                      <el-option label="仓库" value="warehouse" />
-                      <el-option label="科室" value="department" />
-                      <el-option label="供应商" value="supplier" />
-                      <el-option label="单号" value="billNo" />
-                      <el-option label="金额" value="amount" />
-                      <el-option label="发票号" value="invoiceNo" />
-                      <el-option label="制单人" value="creator" />
-                      <el-option label="制单日期" value="createDate" />
-                      <el-option label="审核人" value="auditor" />
-                      <el-option label="审核日期" value="auditDate" />
-                      <el-option label="打印人" value="printer" />
-                      <el-option label="打印日期" value="printDate" />
-                      <el-option label="领用人" value="receiver" />
-                      <el-option label="退库人" value="returner" />
-                      <el-option label="采购员" value="purchaser" />
-                      <el-option label="备注" value="remark" />
+                    <el-select v-model="activeFieldType" placeholder="请选择" style="width: 140px;" size="small" clearable>
+                      <el-option
+                        v-for="opt in dataSourceFieldOptions"
+                        :key="'ds-' + opt.value"
+                        :label="opt.label"
+                        :value="opt.value"
+                      >
+                        <span v-if="opt.value === 'checkbox'" class="ds-opt-checkbox">
+                          <i class="print-checkbox-square" />
+                          <span>选择框</span>
+                        </span>
+                        <span v-else>{{ opt.label }}</span>
+                      </el-option>
                     </el-select>
                     <el-checkbox v-model="activeFieldVisible">显示</el-checkbox>
                     <el-checkbox v-model="activeFieldFixedValue">固定值</el-checkbox>
@@ -1119,6 +1143,7 @@ export default {
         { value: 'Foolscap', label: 'Foolscap', width: 215.9, height: 330.2 },
         { value: 'IndexCard', label: '索引卡片', width: 76.2, height: 127 },
         { value: '16K', label: '16K', width: 184, height: 260 },
+        { value: 'Triple241x140', label: '三联纸241X140', width: 241, height: 140 },
         { value: 'custom', label: '自定义 [固定名称]', width: null, height: null }
       ],
       /** 组件设置选中项 */
@@ -1208,6 +1233,8 @@ export default {
       canvasSelectedKey: '',
       /** 各标签/文本独立样式：key 同 canvasSelectedKey（如 title:t-1、text:text-1） */
       elementStyles: {},
+      /** 回填/加载模板时禁止自动插入单据类型标题文本 */
+      suppressBillTypeTitleSync: false,
       canvasHandleDirs: ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'],
       /** 边框下拉菜单 */
       borderMenuVisible: false,
@@ -1432,8 +1459,19 @@ export default {
       editingBodyCell: null,
       /** 画布上每列的宽度(px)，拖拽调整后同步回 columnList 对应列的 width */
       canvasColumnWidths: [],
+      /** 画布上行高(px)：下标 0=表头，其后为数据行 */
+      canvasRowHeights: [],
       /** 列宽拖拽状态 */
       colResizeState: null,
+      /** 行高拖拽状态 */
+      rowResizeState: null,
+      /** 整表外框宽高拖拽状态 */
+      tableFrameResizeState: null,
+      /** 整表在画布上的位置（相对 paper-content，px）；null 表示未拖过、跟随文档流 */
+      canvasTableX: null,
+      canvasTableY: null,
+      /** 整表拖动位置状态 */
+      tableDragState: null,
       /** 画布上单号码（一维码/二维码）拖拽状态 */
       codeDragState: null,
       /** 画布上单号码缩放状态 */
@@ -1472,6 +1510,8 @@ export default {
         }
       }).catch(() => {});
     }
+    this._onDesignKeyDown = (e) => this.onDesignKeyDown(e);
+    document.addEventListener('keydown', this._onDesignKeyDown);
     this.$nextTick(() => {
       this.pushDesignHistory();
       this.bindCanvasViewportObserver();
@@ -1479,12 +1519,11 @@ export default {
     });
   },
   beforeDestroy() {
+    if (this._onDesignKeyDown) {
+      document.removeEventListener('keydown', this._onDesignKeyDown);
+      this._onDesignKeyDown = null;
+    }
     this.unbindCanvasViewportObserver();
-  },
-  watch: {
-    canvasZoom() {
-      this.$nextTick(() => this.updateCanvasViewportSize());
-    },
   },
   computed: {
     /** 1mm 对应像素（含画布缩放） */
@@ -1593,6 +1632,40 @@ export default {
       const n = Math.max(1, Math.min(20, Number(this.form.tableColumns) || 1));
       return n;
     },
+    /**
+     * 字段属性-数据源下拉：按单据类型返回可选字段。
+     * 入库单(101)、出库单(201)使用指定字段集；其它类型暂用同一套（后续可再按类型扩展）。
+     */
+    dataSourceFieldOptions() {
+      const specialFields = [
+        { label: '序号', value: 'rowNo' },
+        { label: '选择框', value: 'checkbox' }
+      ];
+      const key = this.canvasSelectedKey || '';
+      // 选中表头/表体格：列字段 + 序号/选择框（用于分录列绑定）
+      if (key.indexOf('header-cell:') === 0 || key.indexOf('body-cell:') === 0 || key === 'table') {
+        const cols = (this.columnList || []).map(c => ({ label: c.label, value: c.field }));
+        return specialFields.concat(cols);
+      }
+      const inOutFields = [
+        { label: '仓库', value: 'warehouse' },
+        { label: '科室', value: 'department' },
+        { label: '供应商', value: 'supplier' },
+        { label: '单号', value: 'billNo' },
+        { label: '金额', value: 'amount' },
+        { label: '发票号', value: 'invoiceNo' },
+        { label: '制单人', value: 'creator' },
+        { label: '审核人', value: 'auditor' },
+        { label: '审核日期', value: 'auditDate' },
+        { label: '制单日期', value: 'createDate' },
+        { label: '打印日期', value: 'printDate' },
+        { label: '领用人', value: 'receiver' },
+        { label: '退库人', value: 'returner' },
+        { label: '采购员', value: 'purchaser' },
+        { label: '备注', value: 'remark' }
+      ];
+      return specialFields.concat(inOutFields);
+    },
     /** 已选单据类型后才允许画布/组件操作 */
     canOperateCanvas() {
       return this.form.billType != null && this.form.billType !== '';
@@ -1658,10 +1731,18 @@ export default {
         backgroundColor: (!this.form.fillColor || this.form.fillColor === 'transparent') ? 'transparent' : this.form.fillColor
       };
     },
-    /** 当前是否选中了可独立调字体的标签/文本/底部项 */
+    /** 当前是否选中了可独立调字体的标签/文本/底部项/表格单元格 */
     selectedTextWidgetKey() {
       const key = this.canvasSelectedKey || '';
-      if (key.indexOf('title:') === 0 || key.indexOf('bottom:') === 0 || key.indexOf('text:') === 0) return key;
+      if (
+        key.indexOf('title:') === 0 ||
+        key.indexOf('bottom:') === 0 ||
+        key.indexOf('text:') === 0 ||
+        key.indexOf('header-cell:') === 0 ||
+        key.indexOf('body-cell:') === 0
+      ) {
+        return key;
+      }
       return '';
     },
     toolbarFontSize: {
@@ -1929,13 +2010,7 @@ export default {
       const cols = this.tablePreviewCols;
       const labels = [];
       for (let i = 0; i < cols; i++) {
-        const field = this.tableHeaderFields[i];
-        if (!field) {
-          labels.push('');
-          continue;
-        }
-        const col = this.columnList.find(c => c.field === field);
-        labels.push(col ? col.label : '');
+        labels.push(this.getHeaderCellLabel(i));
       }
       return labels;
     },
@@ -1947,6 +2022,19 @@ export default {
         sum += this.canvasColumnWidths[i] || 80;
       }
       return Math.max(sum, 200);
+    },
+    /** 画布表格预估高度(px)：按各行实际行高累加 */
+    tableTotalHeight() {
+      const dataRows = Math.max(1, Number(this.tablePreviewDataRows) || 1);
+      const def = Math.max(16, Math.min(120, Number(this.form.lineHeight) || 30));
+      let sum = 0;
+      for (let i = 0; i <= dataRows; i++) {
+        const h = this.canvasRowHeights[i];
+        sum += Math.max(16, Math.min(200, Number(h) || def));
+      }
+      if (this.form.showPageSubtotal) sum += def;
+      if (this.form.showGrandTotal) sum += def;
+      return sum + 8;
     },
     /** 边框菜单项（带图标） */
     borderMenuItems() {
@@ -1975,6 +2063,23 @@ export default {
       const prefix = styleMap[this.form.tableBorderStyle] || '1px solid';
       return `${prefix} ${color}`;
     },
+    /** 表格外框样式：宽高随列宽/行高；有坐标时绝对定位可拖动 */
+    previewTableWrapStyle() {
+      const base = this.previewTableStyle || {};
+      const abs = this.canvasTableX != null && this.canvasTableY != null;
+      const selected = this.canvasSelectedKey === 'table';
+      return {
+        ...base,
+        width: this.tableTotalWidth + 'px',
+        position: abs ? 'absolute' : 'relative',
+        left: abs ? (Number(this.canvasTableX) || 0) + 'px' : undefined,
+        top: abs ? (Number(this.canvasTableY) || 0) + 'px' : undefined,
+        maxWidth: abs ? 'none' : '100%',
+        boxSizing: 'content-box',
+        zIndex: selected ? 11 : 4,
+        cursor: selected || this.tableDragState ? 'move' : 'pointer'
+      };
+    },
     /** 画布表格内联样式：宽度 + 行高 + 边框模式 */
     previewTableInlineStyle() {
       const rowHeight = Math.max(16, Math.min(120, Number(this.form.lineHeight) || 30));
@@ -1982,7 +2087,7 @@ export default {
       const line = this.tableBorderLineCss;
       const style = {
         tableLayout: 'fixed',
-        width: this.tableTotalWidth + 'px',
+        width: '100%',
         '--table-row-height': rowHeight + 'px',
         '--table-border-line': line,
         borderCollapse: 'collapse'
@@ -2002,9 +2107,17 @@ export default {
     previewTableBorderClass() {
       return 'preview-table--' + (this.form.tableBorder || 'all');
     },
-    /** 当前字段属性绑定目标：选中的文本组件优先，否则 title1 */
+    /** 当前字段属性绑定目标：选中的文本/表头列优先，否则 title1 */
     activeFieldTarget() {
       const key = this.canvasSelectedKey || '';
+      const headerMatch = /^header-cell:(\d+)$/.exec(key);
+      if (headerMatch) {
+        return { kind: 'headerCell', col: Number(headerMatch[1]) };
+      }
+      const bodyMatch = /^body-cell:(\d+):(\d+)$/.exec(key);
+      if (bodyMatch) {
+        return { kind: 'headerCell', col: Number(bodyMatch[2]) };
+      }
       if (key.indexOf('text:') === 0) {
         const id = key.slice(5);
         const item = (this.canvasTexts || []).find(t => t.id === id);
@@ -2020,11 +2133,17 @@ export default {
     activeFieldType: {
       get() {
         const t = this.activeFieldTarget;
+        if (t.kind === 'headerCell') return this.tableHeaderFields[t.col] || '';
         if (t.kind === 'text') return t.item.type || '';
         return this.form['title' + t.index + 'Type'] || '';
       },
       set(v) {
         const t = this.activeFieldTarget;
+        if (t.kind === 'headerCell') {
+          this.setHeaderField(t.col, v || '');
+          this.pushDesignHistory();
+          return;
+        }
         if (t.kind === 'text') {
           this.$set(t.item, 'type', v || '');
           return;
@@ -2080,6 +2199,9 @@ export default {
     /** 通用面板：当前编辑目标（选中组件或默认 title1） */
     commonGeoTarget() {
       const key = this.canvasSelectedKey || '';
+      if (key === 'table' && this.canvasTableVisible) {
+        return { type: 'table' };
+      }
       if (key.indexOf('text:') === 0) {
         const id = key.slice(5);
         const item = (this.canvasTexts || []).find(t => t.id === id);
@@ -2104,6 +2226,7 @@ export default {
     commonGeoWidth: {
       get() {
         const t = this.commonGeoTarget;
+        if (t.type === 'table') return Number(this.tableTotalWidth) || 0;
         if (t.type === 'text') return Number(t.item.width) || 0;
         if (t.type === 'code') return Number(this.currentCodeSize.width) || 0;
         if (t.type === 'bottom') return Number(this.form['bottom' + t.index + 'Width']) || 0;
@@ -2112,6 +2235,19 @@ export default {
       set(v) {
         const n = Number(v);
         const t = this.commonGeoTarget;
+        if (t.type === 'table') {
+          if (!Number.isFinite(n) || n < 200) return;
+          const startWidths = (this.canvasColumnWidths || []).map(w => Number(w) || 80);
+          const startTotal = Math.max(200, startWidths.reduce((s, w) => s + w, 0));
+          const scale = n / startTotal;
+          for (let i = 0; i < startWidths.length; i++) {
+            const nw = Math.min(400, Math.max(40, Math.round(startWidths[i] * scale)));
+            this.$set(this.canvasColumnWidths, i, nw);
+            this.syncColumnConfigWidthFromCanvas(i, nw);
+          }
+          this.pushDesignHistory();
+          return;
+        }
         if (t.type === 'text') {
           this.$set(t.item, 'width', Number.isFinite(n) ? Math.max(20, n) : 120);
           return;
@@ -2131,6 +2267,7 @@ export default {
     commonGeoHeight: {
       get() {
         const t = this.commonGeoTarget;
+        if (t.type === 'table') return Number(this.tableTotalHeight) || 0;
         if (t.type === 'text') return Number(t.item.height) || 0;
         if (t.type === 'code') return Number(this.currentCodeSize.height) || 0;
         if (t.type === 'bottom') return Number(this.form['bottom' + t.index + 'Height']) || 0;
@@ -2139,6 +2276,21 @@ export default {
       set(v) {
         const n = Number(v);
         const t = this.commonGeoTarget;
+        if (t.type === 'table') {
+          if (!Number.isFinite(n) || n < 16) return;
+          this.ensureCanvasRowHeights();
+          const dataRows = Math.max(1, Number(this.tablePreviewDataRows) || 1);
+          const count = dataRows + 1;
+          const target = Math.max(16 * count, n - 8);
+          const scale = target / Math.max(1, this.tableTotalHeight - 8);
+          for (let i = 0; i < count; i++) {
+            const cur = this.getTableRowHeight(i);
+            this.$set(this.canvasRowHeights, i, Math.max(16, Math.min(200, Math.round(cur * scale))));
+          }
+          this.form.lineHeight = this.getTableRowHeight(0);
+          this.pushDesignHistory();
+          return;
+        }
         if (t.type === 'text') {
           this.$set(t.item, 'height', Number.isFinite(n) ? Math.max(16, n) : 28);
           return;
@@ -2158,6 +2310,9 @@ export default {
     commonGeoX: {
       get() {
         const t = this.commonGeoTarget;
+        if (t.type === 'table') {
+          return this.canvasTableX == null ? null : Number(this.canvasTableX);
+        }
         if (t.type === 'text') return Number(t.item.x) || 0;
         if (t.type === 'code') return Number(this.currentCodePosition.x) || 0;
         if (t.type === 'bottom') {
@@ -2170,6 +2325,12 @@ export default {
       set(v) {
         const t = this.commonGeoTarget;
         const raw = v === '' || v == null ? null : Number(v);
+        if (t.type === 'table') {
+          this.canvasTableX = Number.isFinite(raw) ? raw : 0;
+          if (this.canvasTableY == null) this.canvasTableY = 0;
+          this.pushDesignHistory();
+          return;
+        }
         if (t.type === 'text') {
           this.$set(t.item, 'x', Number.isFinite(raw) ? raw : 0);
           return;
@@ -2189,6 +2350,9 @@ export default {
     commonGeoY: {
       get() {
         const t = this.commonGeoTarget;
+        if (t.type === 'table') {
+          return this.canvasTableY == null ? null : Number(this.canvasTableY);
+        }
         if (t.type === 'text') return Number(t.item.y) || 0;
         if (t.type === 'code') return Number(this.currentCodePosition.y) || 0;
         if (t.type === 'bottom') {
@@ -2201,6 +2365,12 @@ export default {
       set(v) {
         const t = this.commonGeoTarget;
         const raw = v === '' || v == null ? null : Number(v);
+        if (t.type === 'table') {
+          this.canvasTableY = Number.isFinite(raw) ? raw : 0;
+          if (this.canvasTableX == null) this.canvasTableX = 0;
+          this.pushDesignHistory();
+          return;
+        }
         if (t.type === 'text') {
           this.$set(t.item, 'y', Number.isFinite(raw) ? raw : 0);
           return;
@@ -2219,6 +2389,21 @@ export default {
     }
   },
   watch: {
+    canvasZoom() {
+      this.$nextTick(() => this.updateCanvasViewportSize());
+    },
+    'form.billType'(n, o) {
+      this.ensureActiveFieldTypeValid();
+      // 加载已有模板时不重复插入；用户选择/切换单据类型时在画布正中放标题文本
+      if (this.suppressBillTypeTitleSync) return;
+      if (n == null || n === '') {
+        this.removeBillTypeTitleText();
+        return;
+      }
+      // 首次赋值且与旧值相同（如回填）不处理；仅用户变更或从空选中时同步
+      if (o === undefined && this.form && this.form.id) return;
+      this.$nextTick(() => this.syncBillTypeTitleText());
+    },
     refBillTotalPages(n) {
       this.ensureDesignPages(Math.max(1, Number(n) || 1));
     },
@@ -2232,6 +2417,7 @@ export default {
     formData: {
       handler(newVal) {
         if (newVal) {
+          this.suppressBillTypeTitleSync = true;
           this.refBillData = null;
           this.refBillPage = 1;
           this.resetDesignPages();
@@ -2266,6 +2452,7 @@ export default {
               this.loadCanvasTextsFromConfig(config);
               this.elementStyles = (config.elementStyles && typeof config.elementStyles === 'object') ? { ...config.elementStyles } : {};
               this.applyCanvasVisibilityFromConfig(config, newVal);
+              this.loadCanvasTablePosFromConfig(config);
               if (config.codeDisplay !== undefined && config.codeDisplay !== null) {
                 this.form.codeDisplay = config.codeDisplay === 'qr' || config.codeDisplay === 'barcode' ? config.codeDisplay : '';
               } else {
@@ -2399,6 +2586,9 @@ export default {
           }
           this.ensureTableHeaderFieldsLength();
           this.syncPaperSizeFromDimensions();
+          this.$nextTick(() => { this.suppressBillTypeTitleSync = false; });
+        } else {
+          this.suppressBillTypeTitleSync = false;
         }
       },
       immediate: true,
@@ -2463,8 +2653,13 @@ export default {
       this.canvasSelectedKey = key || '';
       this.canvasHoverKey = key || '';
       if (this.formatPainterActive && this.designClipboard && key) {
-        const isTextWidget = key.indexOf('title:') === 0 || key.indexOf('bottom:') === 0 || key.indexOf('text:') === 0;
-        if (isTextWidget) {
+        const isStyleWidget =
+          key.indexOf('title:') === 0 ||
+          key.indexOf('bottom:') === 0 ||
+          key.indexOf('text:') === 0 ||
+          key.indexOf('header-cell:') === 0 ||
+          key.indexOf('body-cell:') === 0;
+        if (isStyleWidget) {
           this.applyCapturedTextStyle(this.designClipboard);
           this.formatPainterActive = false;
         }
@@ -2477,16 +2672,355 @@ export default {
       this.bodySelectedCells = [];
       this.headerSelectedCols = [];
     },
-    /** 双击表体单元格：首次选中（蓝框手柄），再次双击进入编辑 */
-    onBodyCellDblClick(rowIndex, colIndex) {
-      const key = 'body-cell:' + rowIndex + ':' + colIndex;
-      if (this.canvasSelectedKey === key) {
-        this.startEditBodyCell(rowIndex, colIndex);
+    /** 单击表格：选中整表（非单元格） */
+    onTableFrameClick() {
+      this.bodySelectedCells = [];
+      this.headerSelectedCols = [];
+      this.editingBodyCell = null;
+      this.selectCanvasWidget('table');
+      this.activeBottomTab = 'title';
+      this.fieldCollapseActive = ['dataSource', 'common'];
+    },
+    /** 表格 mousedown：选中整表并开始拖动位置（忽略手柄/列宽/行高/已选中的格子） */
+    onTableMouseDown(event) {
+      // Ctrl/Cmd 多选时不启动整表拖动
+      if (event && (event.ctrlKey || event.metaKey)) return;
+      const t = event && event.target;
+      if (t && t.closest) {
+        if (t.closest('.canvas-handle')) return;
+        if (t.closest('.col-resize-handle') || t.closest('.row-resize-handle')) return;
+        if (t.closest('.preview-table-cell-input') || t.closest('.el-input')) return;
+        const key = this.canvasSelectedKey || '';
+        if (key.indexOf('header-cell:') === 0 || key.indexOf('body-cell:') === 0) {
+          const cell = t.closest('th.preview-table-header-cell, td.preview-table-body-cell');
+          if (cell && (cell.classList.contains('is-selected') || cell.classList.contains('is-canvas-selected'))) {
+            return;
+          }
+        }
+      }
+      this.onTableFrameClick();
+      this.startTableDrag(event);
+    },
+    /** 单击表头格：未单独选中时选整表；Ctrl 时留给双击多选 */
+    onHeaderCellSingleClick(baseColIndex, event) {
+      if (event && (event.ctrlKey || event.metaKey)) return;
+      if (this.canvasSelectedKey === ('header-cell:' + baseColIndex) || this.isHeaderCellSelected(baseColIndex)) {
         return;
       }
-      this.selectCanvasWidget(key);
-      this.bodySelectedCells = [{ row: rowIndex, col: colIndex }];
+      this.onTableFrameClick();
+    },
+    /** 单击表体格：未单独选中时选整表；Ctrl 时留给双击多选 */
+    onBodyCellSingleClick(rowIndex, colIndex, event) {
+      if (event && (event.ctrlKey || event.metaKey)) return;
+      const key = 'body-cell:' + rowIndex + ':' + colIndex;
+      if (this.canvasSelectedKey === key || this.isBodyCellSelected(rowIndex, colIndex)) {
+        return;
+      }
+      this.onTableFrameClick();
+    },
+    /** 拖动整表在画布上的位置 */
+    startTableDrag(event) {
+      if (!event || this.tableFrameResizeState || this.colResizeState) return;
+      const contentRect = this.getPaperContentRect();
+      if (!contentRect) return;
+      const wrap = event.currentTarget;
+      const wrapRect = wrap && wrap.getBoundingClientRect ? wrap.getBoundingClientRect() : null;
+      let startX = this.canvasTableX;
+      let startY = this.canvasTableY;
+      if (startX == null || startY == null || !Number.isFinite(Number(startX)) || !Number.isFinite(Number(startY))) {
+        startX = wrapRect ? Math.round(wrapRect.left - contentRect.left) : 0;
+        startY = wrapRect ? Math.round(wrapRect.top - contentRect.top) : 0;
+        this.canvasTableX = startX;
+        this.canvasTableY = startY;
+      } else {
+        startX = Number(startX);
+        startY = Number(startY);
+      }
+      const width = Math.max(40, Number(this.tableTotalWidth) || 200);
+      const height = Math.max(16, Number(this.tableTotalHeight) || 40);
+      this.tableDragState = {
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        startX,
+        startY,
+        contentWidth: contentRect.width,
+        contentHeight: contentRect.height,
+        width,
+        height,
+        moved: false
+      };
+      document.body.style.cursor = 'move';
+      document.body.style.userSelect = 'none';
+      const onMove = (ev) => {
+        if (!this.tableDragState) return;
+        const st = this.tableDragState;
+        const dx = ev.clientX - st.startClientX;
+        const dy = ev.clientY - st.startClientY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) st.moved = true;
+        let newX = st.startX + dx;
+        let newY = st.startY + dy;
+        newX = Math.max(0, Math.min(st.contentWidth - st.width, newX));
+        newY = Math.max(0, Math.min(st.contentHeight - st.height, newY));
+        this.canvasTableX = Math.round(newX);
+        this.canvasTableY = Math.round(newY);
+      };
+      const onUp = () => {
+        const moved = !!(this.tableDragState && this.tableDragState.moved);
+        this.tableDragState = null;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        if (moved) this.pushDesignHistory();
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    /** 双击表头单元格：选中该格；Ctrl/Cmd+双击追加/取消多选，便于合并 */
+    onHeaderCellDblClick(baseColIndex, event) {
+      if (baseColIndex < 0) return;
+      const multi = !!(event && (event.ctrlKey || event.metaKey));
+      this.editingBodyCell = null;
+      if (multi) {
+        // 从整表选中切到多选时，保留已有表头选中并追加
+        if (this.canvasSelectedKey === 'table') {
+          // keep headerSelectedCols
+        } else if (!(this.headerSelectedCols && this.headerSelectedCols.length)) {
+          // 若当前是单选其它格，以其为起点
+          const cur = /^header-cell:(\d+)$/.exec(this.canvasSelectedKey || '');
+          if (cur) this.headerSelectedCols = [Number(cur[1])];
+        }
+        this.bodySelectedCells = [];
+        const idx = this.headerSelectedCols.indexOf(baseColIndex);
+        if (idx !== -1) {
+          this.headerSelectedCols.splice(idx, 1);
+          if (!this.headerSelectedCols.length) {
+            this.canvasSelectedKey = '';
+          } else {
+            this.selectCanvasWidget('header-cell:' + this.headerSelectedCols[this.headerSelectedCols.length - 1]);
+          }
+        } else {
+          this.headerSelectedCols.push(baseColIndex);
+          this.headerSelectedCols.sort((a, b) => a - b);
+          this.selectCanvasWidget('header-cell:' + baseColIndex);
+        }
+      } else {
+        this.bodySelectedCells = [];
+        this.headerSelectedCols = [baseColIndex];
+        this.selectCanvasWidget('header-cell:' + baseColIndex);
+      }
+      this.activeBottomTab = 'title';
+      this.fieldCollapseActive = ['dataSource', 'common'];
+    },
+    /** 拖拽表格外框手柄：按方向拉宽/拉高（列宽等比；高度按各行等比） */
+    startTableFrameResize(dir, event) {
+      if (!dir || this.colResizeState || this.rowResizeState) return;
+      this.onTableFrameClick();
+      this.ensureCanvasRowHeights();
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const startWidths = (this.canvasColumnWidths || []).map(w => Number(w) || 80);
+      const startTotal = Math.max(200, startWidths.reduce((s, w) => s + w, 0));
+      const rowCount = Math.max(1, (Number(this.tablePreviewDataRows) || 1) + 1);
+      const startHeights = [];
+      for (let i = 0; i < rowCount; i++) startHeights.push(this.getTableRowHeight(i));
+      const startHeightTotal = Math.max(16 * rowCount, startHeights.reduce((s, h) => s + h, 0));
+      this.tableFrameResizeState = { dir };
+      const cursorMap = {
+        n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',
+        ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize'
+      };
+      document.body.style.cursor = cursorMap[dir] || 'nwse-resize';
+      document.body.style.userSelect = 'none';
+      let moved = false;
+      const onMove = (ev) => {
+        if (!this.tableFrameResizeState) return;
+        let dx = 0;
+        let dy = 0;
+        if (dir.indexOf('e') >= 0) dx = ev.clientX - startX;
+        if (dir.indexOf('w') >= 0) dx = startX - ev.clientX;
+        if (dir.indexOf('s') >= 0) dy = ev.clientY - startY;
+        if (dir.indexOf('n') >= 0) dy = startY - ev.clientY;
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) moved = true;
+        if (dx) {
+          const newTotal = Math.max(200, Math.min(1200, startTotal + dx));
+          const scale = newTotal / startTotal;
+          for (let i = 0; i < startWidths.length; i++) {
+            const nw = Math.min(400, Math.max(40, Math.round(startWidths[i] * scale)));
+            this.$set(this.canvasColumnWidths, i, nw);
+            this.syncColumnConfigWidthFromCanvas(i, nw);
+          }
+        }
+        if (dy) {
+          const newTotal = Math.max(16 * rowCount, Math.min(800, startHeightTotal + dy));
+          const scale = newTotal / startHeightTotal;
+          for (let i = 0; i < startHeights.length; i++) {
+            const nh = Math.min(200, Math.max(16, Math.round(startHeights[i] * scale)));
+            this.$set(this.canvasRowHeights, i, nh);
+          }
+          this.form.lineHeight = this.getTableRowHeight(0);
+        }
+      };
+      const onUp = () => {
+        this.tableFrameResizeState = null;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        if (moved) this.pushDesignHistory();
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    getDefaultRowHeight() {
+      return Math.max(16, Math.min(120, Number(this.form.lineHeight) || 30));
+    },
+    getTableRowHeight(rowIndex) {
+      const def = this.getDefaultRowHeight();
+      const h = this.canvasRowHeights[rowIndex];
+      return Math.max(16, Math.min(200, Number(h) || def));
+    },
+    getTableRowStyle(rowIndex) {
+      return { height: this.getTableRowHeight(rowIndex) + 'px' };
+    },
+    getTableCellStyleKey(rowIndex, colIndex) {
+      if (colIndex == null || colIndex < 0) return '';
+      if (rowIndex === 0) return 'header-cell:' + colIndex;
+      return 'body-cell:' + (rowIndex - 1) + ':' + colIndex;
+    },
+    getTableCellStyle(rowIndex, colIndex) {
+      const h = this.getTableRowHeight(rowIndex);
+      const style = { height: h + 'px', minHeight: h + 'px', maxHeight: 'none' };
+      const key = this.getTableCellStyleKey(rowIndex, colIndex);
+      const custom = key && this.elementStyles && this.elementStyles[key];
+      if (custom) {
+        const textStyle = this.resolveElementTextStyle(key);
+        if (textStyle.backgroundColor) style.backgroundColor = textStyle.backgroundColor;
+        if (textStyle.verticalAlign) style.verticalAlign = textStyle.verticalAlign;
+        if (textStyle.textAlign) style.textAlign = textStyle.textAlign;
+        if (textStyle.color) style.color = textStyle.color;
+        if (textStyle.fontSize) style.fontSize = textStyle.fontSize;
+        if (textStyle.fontWeight) style.fontWeight = textStyle.fontWeight;
+        if (textStyle.fontStyle) style.fontStyle = textStyle.fontStyle;
+        if (textStyle.textDecoration) style.textDecoration = textStyle.textDecoration;
+      }
+      return style;
+    },
+    /** 单元格文字样式（有独立设置时覆盖表级默认） */
+    getTableCellTextStyle(rowIndex, colIndex) {
+      const key = this.getTableCellStyleKey(rowIndex, colIndex);
+      const custom = key && this.elementStyles && this.elementStyles[key];
+      if (!custom) return {};
+      const textStyle = this.resolveElementTextStyle(key);
+      return {
+        fontSize: textStyle.fontSize,
+        fontFamily: textStyle.fontFamily,
+        color: textStyle.color,
+        fontWeight: textStyle.fontWeight,
+        fontStyle: textStyle.fontStyle,
+        textDecoration: textStyle.textDecoration,
+        textAlign: textStyle.textAlign,
+        backgroundColor: textStyle.backgroundColor
+      };
+    },
+    ensureCanvasRowHeights() {
+      const need = Math.max(1, Number(this.tablePreviewDataRows) || 1) + 1;
+      const def = this.getDefaultRowHeight();
+      while (this.canvasRowHeights.length < need) {
+        this.canvasRowHeights.push(def);
+      }
+      while (this.canvasRowHeights.length > need) {
+        this.canvasRowHeights.pop();
+      }
+    },
+    /** 拖拽某一行底边：只改该行高度 */
+    startRowResize(event, rowIndex) {
+      if (this.rowResizeState || this.colResizeState || this.tableFrameResizeState) return;
+      this.ensureCanvasRowHeights();
+      const startY = event.clientY;
+      const startH = this.getTableRowHeight(rowIndex);
+      this.rowResizeState = { rowIndex };
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      let moved = false;
+      const onMove = (ev) => {
+        if (!this.rowResizeState) return;
+        const dy = ev.clientY - startY;
+        if (Math.abs(dy) > 1) moved = true;
+        const nh = Math.min(200, Math.max(16, Math.round(startH + dy)));
+        this.$set(this.canvasRowHeights, rowIndex, nh);
+        if (rowIndex === 0) this.form.lineHeight = nh;
+      };
+      const onUp = () => {
+        this.rowResizeState = null;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        if (moved) this.pushDesignHistory();
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    },
+    getHeaderCellLabel(colIndex) {
+      const field = this.tableHeaderFields[colIndex];
+      if (!field) return '';
+      if (field === 'rowNo') return '序号';
+      if (field === 'checkbox') return '选择框';
+      const col = (this.columnList || []).find(c => c.field === field);
+      if (col) return col.label || '';
+      return this.fieldTypeLabel(field);
+    },
+    isCheckboxColumn(colIndex) {
+      return this.tableHeaderFields[colIndex] === 'checkbox';
+    },
+    isRowNoColumn(colIndex) {
+      return this.tableHeaderFields[colIndex] === 'rowNo';
+    },
+    /** 双击表体单元格：选中该格；Ctrl/Cmd+双击追加/取消多选；无 Ctrl 再次双击进入编辑 */
+    onBodyCellDblClick(rowIndex, colIndex, event) {
+      const key = 'body-cell:' + rowIndex + ':' + colIndex;
+      const multi = !!(event && (event.ctrlKey || event.metaKey));
+      this.editingBodyCell = null;
+      if (multi) {
+        this.headerSelectedCols = [];
+        const idx = this.bodySelectedCells.findIndex(c => c.row === rowIndex && c.col === colIndex);
+        if (idx !== -1) {
+          this.bodySelectedCells.splice(idx, 1);
+          if (!this.bodySelectedCells.length) {
+            this.canvasSelectedKey = '';
+          } else {
+            const last = this.bodySelectedCells[this.bodySelectedCells.length - 1];
+            this.selectCanvasWidget('body-cell:' + last.row + ':' + last.col);
+          }
+        } else {
+          // 若当前仅 canvasSelectedKey 有单格、数组为空，先纳入
+          const cur = /^body-cell:(\d+):(\d+)$/.exec(this.canvasSelectedKey || '');
+          if (cur && !this.bodySelectedCells.length) {
+            const r = Number(cur[1]);
+            const c = Number(cur[2]);
+            if (!(r === rowIndex && c === colIndex)) {
+              this.bodySelectedCells.push({ row: r, col: c });
+            }
+          }
+          this.bodySelectedCells.push({ row: rowIndex, col: colIndex });
+          this.selectCanvasWidget(key);
+        }
+        this.activeBottomTab = 'title';
+        this.fieldCollapseActive = ['dataSource', 'common'];
+        return;
+      }
+      if (this.canvasSelectedKey === key && this.bodySelectedCells.length <= 1) {
+        if (!this.isCheckboxColumn(colIndex) && !this.isRowNoColumn(colIndex)) {
+          this.startEditBodyCell(rowIndex, colIndex);
+        }
+        return;
+      }
       this.headerSelectedCols = [];
+      this.bodySelectedCells = [{ row: rowIndex, col: colIndex }];
+      this.selectCanvasWidget(key);
+      this.activeBottomTab = 'title';
+      this.fieldCollapseActive = ['dataSource', 'common'];
     },
     /** 点击表头单元格：默认单选；按住 Ctrl/Cmd 可多选 */
     onHeaderCellClick(baseColIndex, event) {
@@ -2571,17 +3105,27 @@ export default {
         mergedBody.sort((a, b) => (a.row - b.row) || (a.start - b.start));
         this.bodyMerges = mergedBody;
         this.bodySelectedCells = [];
+        this.clearCanvasWidgetSelection();
+        this.pushDesignHistory();
+        this.$message && this.$message.success('已合并单元格');
         return;
       }
 
       // 若没有表体选择，再看是否有表头列选择，进行表头合并
       if (!this.headerSelectedCols || this.headerSelectedCols.length < 2) {
-        this.$message && this.$message.warning('请先选择同一行内需要合并的单元格');
+        this.$message && this.$message.warning('请先按住 Ctrl 双击选中同一行内连续的单元格再合并');
         return;
       }
       const selected = [...this.headerSelectedCols].sort((a, b) => a - b);
       const start = selected[0];
       const last = selected[selected.length - 1];
+      // 表头也要求连续选中
+      for (let i = start; i <= last; i++) {
+        if (selected.indexOf(i) === -1) {
+          this.$message && this.$message.warning('只能合并连续的表头单元格');
+          return;
+        }
+      }
       const span = last - start + 1;
       const end = start + span - 1;
       const merged = [];
@@ -2596,6 +3140,9 @@ export default {
       merged.sort((a, b) => a.start - b.start);
       this.headerMerges = merged;
       this.headerSelectedCols = [];
+      this.clearCanvasWidgetSelection();
+      this.pushDesignHistory();
+      this.$message && this.$message.success('已合并表头单元格');
     },
     /** 某个数据行单元格在当前合并配置下是否可见（若在合并块内部且非起始列则隐藏） */
     isBodyCellVisible(rowIndex, colIndex) {
@@ -2665,16 +3212,22 @@ export default {
     },
     /** 获取某个单元格当前文本 */
     getBodyCellText(rowIndex, colIndex) {
+      const field = this.tableHeaderFields[colIndex];
+      if (field === 'checkbox') return '';
+      if (field === 'rowNo') {
+        if (this.refBillData && this.refBillData.entries && this.refBillData.entries.length > 0) {
+          const pageSize = this.refBillPageSize;
+          return String((this.refBillPage - 1) * pageSize + rowIndex + 1);
+        }
+        return String(rowIndex + 1);
+      }
       if (this.refBillData && this.refBillData.entries && this.refBillData.entries.length > 0) {
         const pageSize = this.refBillPageSize;
         const entryIndex = (this.refBillPage - 1) * pageSize + rowIndex;
         const entry = this.refBillData.entries[entryIndex];
-        if (entry) {
-          const field = this.tableHeaderFields[colIndex];
-          if (field) {
-            const val = entry[field] != null ? entry[field] : entry[field === 'price' ? 'unitPrice' : field];
-            return val != null ? String(val) : '';
-          }
+        if (entry && field) {
+          const val = entry[field] != null ? entry[field] : entry[field === 'price' ? 'unitPrice' : field];
+          return val != null ? String(val) : '';
         }
       }
       const key = `${rowIndex}_${colIndex}`;
@@ -2733,9 +3286,25 @@ export default {
       }
       return base;
     },
-    /** 工具栏读写：有选中标签时只改该标签样式，否则改全局 form */
+    /** 当前应写入字体样式的画布键（支持多选表头/表体格） */
+    getSelectedStyleKeys() {
+      const key = this.canvasSelectedKey || '';
+      if (key.indexOf('title:') === 0 || key.indexOf('bottom:') === 0 || key.indexOf('text:') === 0) {
+        return [key];
+      }
+      if (this.headerSelectedCols && this.headerSelectedCols.length) {
+        return this.headerSelectedCols.map(c => 'header-cell:' + c);
+      }
+      if (key.indexOf('header-cell:') === 0) return [key];
+      if (this.bodySelectedCells && this.bodySelectedCells.length) {
+        return this.bodySelectedCells.map(c => 'body-cell:' + c.row + ':' + c.col);
+      }
+      if (key.indexOf('body-cell:') === 0) return [key];
+      return [];
+    },
+    /** 工具栏读写：有选中标签/单元格时只改其样式，否则改全局 form */
     getToolbarStyleValue(prop, fallback) {
-      const key = this.selectedTextWidgetKey;
+      const key = this.selectedTextWidgetKey || (this.getSelectedStyleKeys()[0] || '');
       if (key) {
         const s = this.elementStyles && this.elementStyles[key];
         if (s && s[prop] != null) return s[prop];
@@ -2743,10 +3312,12 @@ export default {
       return fallback;
     },
     setToolbarStyleValue(prop, value) {
-      const key = this.selectedTextWidgetKey;
-      if (key) {
-        const prev = (this.elementStyles && this.elementStyles[key]) || {};
-        this.$set(this.elementStyles, key, { ...prev, [prop]: value });
+      const keys = this.getSelectedStyleKeys();
+      if (keys.length) {
+        keys.forEach(k => {
+          const prev = (this.elementStyles && this.elementStyles[k]) || {};
+          this.$set(this.elementStyles, k, { ...prev, [prop]: value });
+        });
         this.pushDesignHistory();
         return;
       }
@@ -3019,6 +3590,7 @@ export default {
     },
     setFormData(data) {
       if (data) {
+        this.suppressBillTypeTitleSync = true;
         this.form = { ...this.form, ...data };
         // 转换显示字段为布尔值
         if (this.form.showPurchaser !== undefined) {
@@ -3047,6 +3619,7 @@ export default {
             this.loadCanvasTextsFromConfig(config);
             this.elementStyles = (config.elementStyles && typeof config.elementStyles === 'object') ? { ...config.elementStyles } : {};
             this.applyCanvasVisibilityFromConfig(config, data);
+            this.loadCanvasTablePosFromConfig(config);
             if (config.codeDisplay !== undefined && config.codeDisplay !== null) {
               this.form.codeDisplay = config.codeDisplay === 'qr' || config.codeDisplay === 'barcode' ? config.codeDisplay : '';
             } else {
@@ -3148,6 +3721,7 @@ export default {
           this.bodySelectedCells = [];
           this.editingBodyCell = null;
         }
+        this.$nextTick(() => { this.suppressBillTypeTitleSync = false; });
       }
     },
     resetForm() {
@@ -3324,6 +3898,11 @@ export default {
       this.canvasTextSeq = 1;
       this.canvasTableVisible = false;
       this.canvasHeaderVisible = false;
+      this.canvasTableX = null;
+      this.canvasTableY = null;
+      this.canvasRowHeights = [];
+      this.tableDragState = null;
+      this.rowResizeState = null;
       this.clearCanvasWidgetSelection();
       this.refBillData = null;
       this.refBillPage = 1;
@@ -3404,6 +3983,8 @@ export default {
     },
     fieldTypeLabel(type) {
       const map = {
+        rowNo: '序号',
+        checkbox: '选择框',
         warehouse: '仓库',
         department: '科室',
         supplier: '供应商',
@@ -3422,6 +4003,13 @@ export default {
         remark: '备注'
       };
       return map[type] || type || '文本';
+    },
+    /** 当前选中字段类型若不在数据源选项中则清空，避免切换单据类型后残留无效值 */
+    ensureActiveFieldTypeValid() {
+      const cur = this.activeFieldType;
+      if (cur == null || cur === '') return;
+      const ok = (this.dataSourceFieldOptions || []).some(o => o.value === cur);
+      if (!ok) this.activeFieldType = '';
     },
     /** 编辑态恢复画布显隐；新增或无配置时保持空白 */
     applyCanvasVisibilityFromConfig(config, record) {
@@ -3446,12 +4034,36 @@ export default {
       if (isEdit) return;
       this.canvasTableVisible = false;
       this.canvasHeaderVisible = false;
+      this.canvasTableX = null;
+      this.canvasTableY = null;
+      this.canvasRowHeights = [];
       this.form.codeDisplay = '';
       this.canvasTexts = [];
       this.canvasTextSeq = 1;
       this.elementStyles = {};
       for (let i = 1; i <= 6; i++) this.form['title' + i + 'Visible'] = false;
       for (let i = 1; i <= 5; i++) this.form['bottom' + i + 'Visible'] = false;
+    },
+    loadCanvasTablePosFromConfig(config) {
+      if (!config) {
+        this.canvasTableX = null;
+        this.canvasTableY = null;
+        this.canvasRowHeights = [];
+        return;
+      }
+      const x = config.canvasTableX;
+      const y = config.canvasTableY;
+      this.canvasTableX = (x == null || x === '' || !Number.isFinite(Number(x))) ? null : Number(x);
+      this.canvasTableY = (y == null || y === '' || !Number.isFinite(Number(y))) ? null : Number(y);
+      if (Array.isArray(config.canvasRowHeights)) {
+        this.canvasRowHeights = config.canvasRowHeights.map(h => {
+          const n = Number(h);
+          return Number.isFinite(n) ? Math.max(16, Math.min(200, n)) : this.getDefaultRowHeight();
+        });
+      } else {
+        this.canvasRowHeights = [];
+      }
+      this.ensureCanvasRowHeights();
     },
     loadCanvasTextsFromConfig(config) {
       const list = config && Array.isArray(config.canvasTexts) ? config.canvasTexts : [];
@@ -3465,7 +4077,8 @@ export default {
         width: Math.max(40, Number(t.width) || 160),
         height: Math.max(18, Number(t.height) || 28),
         x: Number(t.x) || 0,
-        y: Number(t.y) || 0
+        y: Number(t.y) || 0,
+        role: t.role || ''
       }));
       const seq = Number(config && config.canvasTextSeq);
       const maxId = this.canvasTexts.reduce((m, t) => {
@@ -3474,12 +4087,123 @@ export default {
       }, 0);
       this.canvasTextSeq = Math.max(1, Number.isFinite(seq) ? seq : 1, maxId + 1);
     },
+    /** 单据类型中文名 */
+    getBillTypeLabel(billType) {
+      const map = {
+        101: '入库单',
+        102: '退货单',
+        201: '出库单',
+        202: '退库单',
+        301: '盘点单',
+        111: '入库单(高值)',
+        112: '退货单(高值)',
+        211: '出库单(高值)',
+        212: '退库单(高值)',
+        401: '跟台条码',
+        402: '备货条码'
+      };
+      const key = Number(billType);
+      return map[key] || '';
+    },
+    /** 画布内容区尺寸（去掉 paper-content padding），用于居中 */
+    getPaperContentInnerSize() {
+      const mm = this.mmToPx || 3.78;
+      let pw = (Number(this.form.pageWidth) || 210) * mm;
+      let ph = (Number(this.form.pageHeight) || 297) * mm;
+      if (this.form.orientation === 'landscape') {
+        const t = pw;
+        pw = ph;
+        ph = t;
+      }
+      const pad = 15;
+      return {
+        width: Math.max(40, pw - pad * 2),
+        height: Math.max(40, ph - pad * 2)
+      };
+    },
+    findBillTypeTitleText() {
+      return (this.canvasTexts || []).find(t => t && t.role === 'billTypeTitle') || null;
+    },
+    removeBillTypeTitleText() {
+      const idx = (this.canvasTexts || []).findIndex(t => t && t.role === 'billTypeTitle');
+      if (idx < 0) return;
+      const removed = this.canvasTexts[idx];
+      this.canvasTexts.splice(idx, 1);
+      if (removed && removed.id) {
+        const key = 'text:' + removed.id;
+        if (this.elementStyles && this.elementStyles[key]) {
+          this.$delete(this.elementStyles, key);
+        }
+        if (this.canvasSelectedKey === key) this.clearCanvasWidgetSelection();
+      }
+      this.pushDesignHistory();
+    },
+    /** 选择单据类型后：在画布靠上居中位置放/更新标题文本（默认 X:315 Y:35，与设计稿一致） */
+    syncBillTypeTitleText() {
+      const label = this.getBillTypeLabel(this.form && this.form.billType);
+      if (!label) {
+        this.removeBillTypeTitleText();
+        return;
+      }
+      const tw = 160;
+      const th = 40;
+      const defaultX = 315;
+      const defaultY = 35;
+      let item = this.findBillTypeTitleText();
+      if (!item) {
+        const id = 'text-' + (this.canvasTextSeq++);
+        item = {
+          id,
+          role: 'billTypeTitle',
+          type: '',
+          text: label,
+          fixedValue: true,
+          fixedValueText: label,
+          visible: true,
+          width: tw,
+          height: th,
+          x: defaultX,
+          y: defaultY
+        };
+        this.canvasTexts.push(item);
+        this.$set(this.elementStyles, 'text:' + id, {
+          fontSize: 22,
+          fontBold: true,
+          textAlign: 'center'
+        });
+        this.selectCanvasText(item);
+        this.activeBottomTab = 'title';
+        this.fieldCollapseActive = ['dataSource', 'common'];
+      } else {
+        this.$set(item, 'fixedValue', true);
+        this.$set(item, 'fixedValueText', label);
+        this.$set(item, 'text', label);
+        // 仍在默认标题位附近时跟随默认坐标；用户拖走过则保留
+        const nearDefault =
+          Math.abs((Number(item.x) || 0) - defaultX) < 40 &&
+          Math.abs((Number(item.y) || 0) - defaultY) < 40;
+        if (nearDefault) {
+          this.$set(item, 'x', defaultX);
+          this.$set(item, 'y', defaultY);
+        }
+        const styleKey = 'text:' + item.id;
+        if (!this.elementStyles || !this.elementStyles[styleKey]) {
+          this.$set(this.elementStyles, styleKey, {
+            fontSize: 22,
+            fontBold: true,
+            textAlign: 'center'
+          });
+        }
+      }
+      this.pushDesignHistory();
+    },
     /** 点击「文本」组件：在画布新增一个可编辑文本框并选中 */
     addCanvasText() {
       const offset = (this.canvasTexts.length % 6) * 24;
       const id = 'text-' + (this.canvasTextSeq++);
       const item = {
         id,
+        role: '',
         type: '',
         text: '',
         fixedValue: false,
@@ -3751,6 +4475,7 @@ export default {
       this.form.tableColumns = this.gridDraftCols;
       this.canvasTableVisible = true;
       this.ensureTableHeaderFieldsLength();
+      this.ensureCanvasRowHeights();
       this.gridDialogVisible = false;
       this.selectCanvasWidget('table');
       this.bodySelectedCells = [];
@@ -3795,6 +4520,16 @@ export default {
           w: Number(size.width) || 64,
           h: Number(size.height) || 64
         };
+      }
+      if (this.tableDragState || this.canvasSelectedKey === 'table') {
+        if (this.canvasTableX != null && this.canvasTableY != null) {
+          return {
+            x: Number(this.canvasTableX) || 0,
+            y: Number(this.canvasTableY) || 0,
+            w: Number(this.tableTotalWidth) || 200,
+            h: Number(this.tableTotalHeight) || 40
+          };
+        }
       }
       const key = this.canvasSelectedKey || '';
       if (key.indexOf('text:') === 0) {
@@ -3913,8 +4648,12 @@ export default {
         bodyMerges: this.bodyMerges,
         bodyCellTexts: this.bodyCellTexts,
         canvasColumnWidths: this.canvasColumnWidths,
+        canvasRowHeights: this.canvasRowHeights,
         canvasTexts: this.canvasTexts,
-        elementStyles: this.elementStyles
+        elementStyles: this.elementStyles,
+        canvasTableX: this.canvasTableX,
+        canvasTableY: this.canvasTableY,
+        canvasTableVisible: this.canvasTableVisible
       });
     },
     applyDesignSnapshot(raw) {
@@ -3929,10 +4668,14 @@ export default {
         if (Array.isArray(snap.bodyMerges)) this.bodyMerges = snap.bodyMerges;
         if (snap.bodyCellTexts) this.bodyCellTexts = snap.bodyCellTexts;
         if (Array.isArray(snap.canvasColumnWidths)) this.canvasColumnWidths = snap.canvasColumnWidths;
+        if (Array.isArray(snap.canvasRowHeights)) this.canvasRowHeights = snap.canvasRowHeights;
         if (Array.isArray(snap.canvasTexts)) this.canvasTexts = snap.canvasTexts;
         if (snap.elementStyles && typeof snap.elementStyles === 'object') {
           this.elementStyles = { ...snap.elementStyles };
         }
+        if (snap.canvasTableX !== undefined) this.canvasTableX = snap.canvasTableX;
+        if (snap.canvasTableY !== undefined) this.canvasTableY = snap.canvasTableY;
+        if (snap.canvasTableVisible !== undefined) this.canvasTableVisible = !!snap.canvasTableVisible;
       } finally {
         this.$nextTick(() => { this.designHistoryLock = false; });
       }
@@ -4041,14 +4784,16 @@ export default {
     },
     applyCapturedTextStyle(s) {
       if (!s) return;
-      const key = this.selectedTextWidgetKey;
-      if (key) {
-        const prev = (this.elementStyles && this.elementStyles[key]) || {};
-        const next = { ...prev };
-        ['fontSize', 'fontBold', 'fontItalic', 'fontUnderline', 'fontColor', 'fillColor', 'textAlign', 'verticalAlign'].forEach((p) => {
-          if (s[p] != null) next[p] = s[p];
+      const keys = this.getSelectedStyleKeys();
+      if (keys.length) {
+        keys.forEach((key) => {
+          const prev = (this.elementStyles && this.elementStyles[key]) || {};
+          const next = { ...prev };
+          ['fontSize', 'fontBold', 'fontItalic', 'fontUnderline', 'fontColor', 'fillColor', 'textAlign', 'verticalAlign'].forEach((p) => {
+            if (s[p] != null) next[p] = s[p];
+          });
+          this.$set(this.elementStyles, key, next);
         });
-        this.$set(this.elementStyles, key, next);
         this.pushDesignHistory();
         return;
       }
@@ -4079,25 +4824,146 @@ export default {
       this.designClipboard = { type: 'style', ...this.captureCurrentTextStyle() };
       this.$message && this.$message.success('已复制当前样式');
     },
+    /** 是否处于可输入状态（此时键盘 Delete 不删画布组件） */
+    isTypingTarget(el) {
+      if (!el) return false;
+      // 画布文本：仅双击编辑态拦截；只读选中态允许 Delete 删组件
+      if (el.classList && el.classList.contains('canvas-text-input')) {
+        return !el.readOnly;
+      }
+      if (el.closest && el.closest('.canvas-text-input')) {
+        const input = el.closest('.canvas-text-input');
+        return input ? !input.readOnly : false;
+      }
+      const tag = (el.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+      if (el.isContentEditable) return true;
+      if (el.closest && el.closest('.el-input, .el-textarea, .el-select, .preview-table-cell-input')) {
+        return true;
+      }
+      return false;
+    },
+    onDesignKeyDown(e) {
+      if (!e || !this.canOperateCanvas) return;
+      const key = e.key || '';
+      if (key !== 'Delete' && key !== 'Backspace' && e.keyCode !== 46 && e.keyCode !== 8) return;
+      if (this.isTypingTarget(e.target)) return;
+      // Backspace 在部分浏览器会后退页面，统一拦截
+      e.preventDefault();
+      this.handleDesignDelete();
+    },
+    /** 删除当前选中的画布组件 / 表格 / 单元格内容 */
     handleDesignDelete() {
-      if (this.bodySelectedCells && this.bodySelectedCells.length) {
-        this.bodySelectedCells.forEach(cell => {
-          const key = cell.row + '_' + cell.col;
-          this.$set(this.bodyCellTexts, key, '');
-        });
+      if (!this.canOperateCanvas) {
+        this.$message && this.$message.warning('请先选择单据类型');
+        return;
+      }
+      const key = this.canvasSelectedKey || '';
+
+      // 1) 画布自由文本（含单据类型标题「入库单」等）
+      if (key.indexOf('text:') === 0) {
+        const id = key.slice(5);
+        const idx = (this.canvasTexts || []).findIndex(t => t && t.id === id);
+        if (idx >= 0) {
+          this.canvasTexts.splice(idx, 1);
+          if (this.elementStyles && this.elementStyles[key]) this.$delete(this.elementStyles, key);
+          if (this.editingCanvasTextId === id) this.editingCanvasTextId = null;
+          this.clearCanvasWidgetSelection();
+          this.pushDesignHistory();
+          return;
+        }
+      }
+
+      // 2) 整表
+      if (key === 'table') {
+        this.canvasTableVisible = false;
         this.bodySelectedCells = [];
+        this.headerSelectedCols = [];
+        this.editingBodyCell = null;
+        this.clearCanvasWidgetSelection();
         this.pushDesignHistory();
         return;
       }
-      if (this.headerSelectedCols && this.headerSelectedCols.length) {
-        this.headerSelectedCols.forEach(col => {
+
+      // 3) 二维码 / 条形码
+      if (key === 'code') {
+        this.form.codeDisplay = '';
+        this.clearCanvasWidgetSelection();
+        this.pushDesignHistory();
+        return;
+      }
+
+      // 4) 页眉
+      if (key === 'header') {
+        this.canvasHeaderVisible = false;
+        this.clearCanvasWidgetSelection();
+        this.pushDesignHistory();
+        return;
+      }
+
+      // 5) 标题标签 title:t-N
+      const titleMatch = /^title:t-(\d+)$/.exec(key) || /^title:(\d+)$/.exec(key);
+      if (titleMatch) {
+        const idx = Number(titleMatch[1]);
+        this.form['title' + idx + 'Visible'] = false;
+        if (this.elementStyles && this.elementStyles[key]) this.$delete(this.elementStyles, key);
+        this.clearCanvasWidgetSelection();
+        this.pushDesignHistory();
+        return;
+      }
+
+      // 6) 底部标签 bottom:b-N
+      const bottomMatch = /^bottom:b-(\d+)$/.exec(key) || /^bottom:(\d+)$/.exec(key);
+      if (bottomMatch) {
+        const idx = Number(bottomMatch[1]);
+        this.form['bottom' + idx + 'Visible'] = false;
+        if (this.elementStyles && this.elementStyles[key]) this.$delete(this.elementStyles, key);
+        this.clearCanvasWidgetSelection();
+        this.pushDesignHistory();
+        return;
+      }
+
+      // 7) 表体单元格：清空内容；选择框/序号列清空字段绑定
+      if (key.indexOf('body-cell:') === 0 || (this.bodySelectedCells && this.bodySelectedCells.length)) {
+        const cells = (this.bodySelectedCells && this.bodySelectedCells.length)
+          ? this.bodySelectedCells
+          : (() => {
+              const m = /^body-cell:(\d+):(\d+)$/.exec(key);
+              return m ? [{ row: Number(m[1]), col: Number(m[2]) }] : [];
+            })();
+        cells.forEach(cell => {
+          const ck = cell.row + '_' + cell.col;
+          if (this.bodyCellTexts && Object.prototype.hasOwnProperty.call(this.bodyCellTexts, ck)) {
+            this.$delete(this.bodyCellTexts, ck);
+          } else {
+            this.$set(this.bodyCellTexts, ck, '');
+          }
+        });
+        this.bodySelectedCells = [];
+        this.editingBodyCell = null;
+        this.clearCanvasWidgetSelection();
+        this.pushDesignHistory();
+        return;
+      }
+
+      // 8) 表头单元格：清空列字段绑定
+      if (key.indexOf('header-cell:') === 0 || (this.headerSelectedCols && this.headerSelectedCols.length)) {
+        const cols = (this.headerSelectedCols && this.headerSelectedCols.length)
+          ? this.headerSelectedCols
+          : (() => {
+              const m = /^header-cell:(\d+)$/.exec(key);
+              return m ? [Number(m[1])] : [];
+            })();
+        cols.forEach(col => {
           this.$set(this.tableHeaderFields, col, '');
         });
         this.headerSelectedCols = [];
+        this.clearCanvasWidgetSelection();
         this.pushDesignHistory();
         return;
       }
-      this.$message && this.$message.info('请先选中要删除的单元格或表头');
+
+      this.$message && this.$message.info('请先选中要删除的组件');
     },
     /** 保证 tableHeaderFields 长度不少于当前表格列数 */
     ensureTableHeaderFieldsLength() {
@@ -4106,6 +4972,7 @@ export default {
         this.tableHeaderFields.push('');
       }
       this.syncCanvasColumnWidthsFromConfig();
+      this.ensureCanvasRowHeights();
     },
     /** 根据列配置与表头选中的列，同步画布列宽数组（从 columnList 取对应 width） */
     syncCanvasColumnWidthsFromConfig() {
@@ -4343,6 +5210,9 @@ export default {
             canvasTextSeq: this.canvasTextSeq || 1,
             elementStyles: this.elementStyles && typeof this.elementStyles === 'object' ? { ...this.elementStyles } : {},
             canvasTableVisible: this.canvasTableVisible !== false,
+            canvasTableX: this.canvasTableX,
+            canvasTableY: this.canvasTableY,
+            canvasRowHeights: Array.isArray(this.canvasRowHeights) ? [...this.canvasRowHeights] : [],
             canvasHeaderVisible: this.canvasHeaderVisible !== false,
             codeDisplay: this.form.codeDisplay || '',
             qrPosition: this.form.qrPosition ? { ...this.form.qrPosition } : { x: 0, y: 0 },
@@ -5221,12 +6091,15 @@ export default {
   white-space: nowrap;
 }
 
-/* 画布内表格预览：随表格设置行/列数实时显示 */
+/* 画布内表格预览：外框宽度=列宽合计，选中后可拖动手柄/整表位移 */
 .preview-table-wrap {
-  width: 100%;
   margin-top: 2px;
-  overflow: auto;
-  max-height: 100%;
+  padding: 4px;
+  overflow: visible;
+  max-width: 100%;
+  display: inline-block;
+  vertical-align: top;
+  box-sizing: content-box;
 }
 
 .preview-table {
@@ -5244,6 +6117,7 @@ export default {
   height: var(--table-row-height, 22px);
   padding: 2px 6px;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .preview-table thead th {
@@ -5339,7 +6213,58 @@ export default {
 }
 
 .preview-table-wrap.canvas-widget {
-  position: relative;
+  cursor: move;
+}
+
+.preview-table-wrap.is-table-dragging {
+  opacity: 0.92;
+  user-select: none;
+}
+
+.print-checkbox-square {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #303133;
+  background: #fff;
+  box-sizing: border-box;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.ds-opt-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.canvas-header-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 18px;
+  line-height: 1.2;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  text-decoration: inherit;
+  pointer-events: none;
+}
+
+.row-resize-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  cursor: row-resize;
+  z-index: 3;
+}
+
+.row-resize-handle:hover {
+  background: rgba(64, 158, 255, 0.35);
 }
 
 .canvas-select-handles {
@@ -5350,6 +6275,11 @@ export default {
   bottom: 0;
   pointer-events: none;
   z-index: 5;
+}
+
+.canvas-select-handles.is-interactive .canvas-handle {
+  pointer-events: auto;
+  z-index: 6;
 }
 
 .canvas-handle {
@@ -5363,14 +6293,14 @@ export default {
   pointer-events: none;
 }
 
-.canvas-handle.nw { left: -3px; top: -3px; }
-.canvas-handle.n { left: 50%; top: -3px; margin-left: -3px; }
-.canvas-handle.ne { right: -3px; top: -3px; }
-.canvas-handle.e { right: -3px; top: 50%; margin-top: -3px; }
-.canvas-handle.se { right: -3px; bottom: -3px; }
-.canvas-handle.s { left: 50%; bottom: -3px; margin-left: -3px; }
-.canvas-handle.sw { left: -3px; bottom: -3px; }
-.canvas-handle.w { left: -3px; top: 50%; margin-top: -3px; }
+.canvas-handle.nw { left: -3px; top: -3px; cursor: nwse-resize; }
+.canvas-handle.n { left: 50%; top: -3px; margin-left: -3px; cursor: ns-resize; }
+.canvas-handle.ne { right: -3px; top: -3px; cursor: nesw-resize; }
+.canvas-handle.e { right: -3px; top: 50%; margin-top: -3px; cursor: ew-resize; }
+.canvas-handle.se { right: -3px; bottom: -3px; cursor: nwse-resize; }
+.canvas-handle.s { left: 50%; bottom: -3px; margin-left: -3px; cursor: ns-resize; }
+.canvas-handle.sw { left: -3px; bottom: -3px; cursor: nesw-resize; }
+.canvas-handle.w { left: -3px; top: 50%; margin-top: -3px; cursor: ew-resize; }
 
 .preview-table-footer-cell {
   border: 1px solid #909399;
@@ -5382,8 +6312,10 @@ export default {
 .preview-table-cell-inner {
   width: 100%;
   height: 100%;
+  min-height: inherit;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .preview-table-cell-input {
@@ -5396,6 +6328,12 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: inherit;
+  font-weight: inherit;
+  font-style: inherit;
+  color: inherit;
+  text-decoration: inherit;
+  text-align: inherit;
 }
 
 .line-height-merge-row {
@@ -5447,23 +6385,6 @@ export default {
 
 .preview-table-header-cell {
   min-width: 60px;
-}
-
-.canvas-header-select {
-  width: 100%;
-}
-
-.canvas-header-text {
-  display: inline-block;
-  min-height: 20px;
-  min-width: 20px;
-  cursor: pointer;
-}
-
-.canvas-header-select .el-input__inner {
-  height: 24px;
-  line-height: 24px;
-  font-size: 12px;
 }
 
 /* 列宽拖拽手柄：列与列之间的竖条 */
@@ -5642,6 +6563,22 @@ export default {
 
 .template-basic-row .el-form-item {
   margin-bottom: 14px;
+}
+
+/* 模板名称/单据类型/备注：与字段属性「宽」同为 small 高度 */
+.template-basic-row .el-input--small .el-input__inner,
+.template-basic-row .el-select--small .el-input__inner,
+.template-remark-item .el-input--small .el-input__inner {
+  height: 32px;
+  line-height: 32px;
+}
+
+.template-remark-item {
+  margin-bottom: 14px;
+}
+
+.template-remark-item .el-form-item__content {
+  line-height: 32px;
 }
 
 .component-palette {
