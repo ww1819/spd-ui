@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container list-page d-purchase-agg-page" :class="{ 'is-modal-open': open || templateDialogVisible }">
+  <div class="app-container list-page d-purchase-agg-page" :class="{ 'is-modal-open': open || templateDialogVisible || historyRefDialogVisible }">
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <el-row :gutter="16" class="query-row-first">
@@ -214,6 +214,8 @@
 
     <!-- 添加或修改汇总申购对话框（布局对齐到货验收 apply-modal；引用模板-SG 嵌套在编辑框内） -->
     <DPurchaseAggEditDialog v-if="open" />
+    <!-- 引用历史单据（样式对齐科室申领） -->
+    <DPurchaseAggHistoryRefDialog v-if="historyRefDialogVisible" />
     <!-- 维护模板名称：最上层（盖过引用模板-SG） -->
     <DPurchaseAggNewTemplateNameDialog v-if="newTemplateNameDialogVisible" />
   </div>
@@ -240,6 +242,15 @@ function buildListDefaultDateRange() {
   return { beginDate, endDate };
 }
 
+function buildHistoryRefDefaultDateRange() {
+  const today = new Date();
+  const endDate = parseTime(today, '{y}-{m}-{d}');
+  const begin = new Date(today);
+  begin.setDate(begin.getDate() - 5);
+  const beginDate = parseTime(begin, '{y}-{m}-{d}');
+  return { beginDate, endDate };
+}
+
 export default {
   // 须与菜单 path「dPurchaseAgg」→ 路由 name「DPurchaseAgg」一致，keep-alive 才能保留操作状态
   name: "DPurchaseAgg",
@@ -248,6 +259,7 @@ export default {
     SelectWarehouse,
     SelectDepartment,
     DPurchaseAggEditDialog: () => import('./components/DPurchaseAggEditDialog'),
+    DPurchaseAggHistoryRefDialog: () => import('./components/DPurchaseAggHistoryRefDialog'),
     DPurchaseAggNewTemplateNameDialog: () => import('./components/DPurchaseAggNewTemplateNameDialog')
   },
   data() {
@@ -255,6 +267,24 @@ export default {
       // 遮罩层
       loading: true,
       DialogComponentShow: false,
+      // 引用历史单据
+      historyRefDialogVisible: false,
+      historyRefLoading: false,
+      historyRefDetailLoading: false,
+      historyRefBillList: [],
+      historyRefTotal: 0,
+      historyRefDetailList: [],
+      historyRefDetailSelection: [],
+      selectedHistoryRefBill: null,
+      historyRefTableHeight: 420,
+      historyRefQuery: {
+        pageNum: 1,
+        pageSize: 10,
+        purchaseBillNo: null,
+        purchaseBillStatus: '2',
+        beginDate: null,
+        endDate: null
+      },
       currentRow: null, // 当前选择耗材的行
       // 选中数组
       ids: [],
@@ -873,6 +903,234 @@ export default {
       this.templateNameDialogMode = 'saveAs';
       this.newTemplateName = '';
       this.newTemplateNameDialogVisible = true;
+    },
+    /** 引用历史单据：日期控件只选天，查询时补齐整天起止 */
+    normalizeHistoryRefDay(val, endOfDay) {
+      if (val == null || val === '') return null;
+      const day = String(val).trim().slice(0, 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+      return endOfDay ? `${day} 23:59:59` : `${day} 00:00:00`;
+    },
+    buildHistoryRefDefaultQuery(pageSize) {
+      const range = buildHistoryRefDefaultDateRange();
+      return {
+        pageNum: 1,
+        pageSize: pageSize || 10,
+        purchaseBillNo: null,
+        purchaseBillStatus: '2',
+        beginDate: range.beginDate,
+        endDate: range.endDate
+      };
+    },
+    fmtHistoryRefQty(v) {
+      if (v == null || v === '') return '—';
+      const n = Number(v);
+      return Number.isFinite(n) ? n : v;
+    },
+    historyRefBillRowClassName({ row }) {
+      if (this.selectedHistoryRefBill && row && this.selectedHistoryRefBill.id === row.id) {
+        return 'history-ref-bill-row--selected';
+      }
+      return '';
+    },
+    openHistoryRefDialog() {
+      if (!this.form || !this.form.departmentId) {
+        this.$message.warning('请先选择科室');
+        return;
+      }
+      this.historyRefQuery = this.buildHistoryRefDefaultQuery(10);
+      this.historyRefBillList = [];
+      this.historyRefTotal = 0;
+      this.historyRefDetailList = [];
+      this.historyRefDetailSelection = [];
+      this.selectedHistoryRefBill = null;
+      this.historyRefDialogVisible = true;
+      this.loadHistoryRefBillList();
+      this.$nextTick(() => this.calcHistoryRefTableHeight());
+    },
+    closeHistoryRefDialog() {
+      this.historyRefDialogVisible = false;
+      this.historyRefBillList = [];
+      this.historyRefDetailList = [];
+      this.historyRefDetailSelection = [];
+      this.selectedHistoryRefBill = null;
+      this.historyRefTotal = 0;
+    },
+    handleHistoryRefSearch() {
+      this.historyRefQuery.pageNum = 1;
+      this.loadHistoryRefBillList();
+    },
+    handleHistoryRefReset() {
+      this.historyRefQuery = this.buildHistoryRefDefaultQuery(this.historyRefQuery.pageSize || 10);
+      this.loadHistoryRefBillList();
+    },
+    loadHistoryRefBillList() {
+      this.historyRefLoading = true;
+      const params = {
+        ...this.historyRefQuery,
+        beginDate: this.normalizeHistoryRefDay(this.historyRefQuery.beginDate, false),
+        endDate: this.normalizeHistoryRefDay(this.historyRefQuery.endDate, true),
+        departmentId: this.form && this.form.departmentId != null ? this.form.departmentId : null,
+        orderByColumn: 'create_time',
+        isAsc: 'desc'
+      };
+      listPurchaseAgg(params).then(res => {
+        let rows = res.rows || [];
+        // 编辑当前单时，列表中排除自身，避免自引用
+        if (this.form && this.form.id != null) {
+          const curId = String(this.form.id);
+          rows = rows.filter(r => r && String(r.id) !== curId);
+        }
+        this.historyRefBillList = rows;
+        this.historyRefTotal = res.total != null ? Number(res.total) : 0;
+        this.selectedHistoryRefBill = null;
+        this.historyRefDetailList = [];
+        this.historyRefDetailSelection = [];
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+          if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow();
+          this.calcHistoryRefTableHeight();
+        });
+      }).catch(() => {
+        this.historyRefBillList = [];
+        this.historyRefTotal = 0;
+      }).finally(() => {
+        this.historyRefLoading = false;
+      });
+    },
+    getHistoryRefDialogVm() {
+      return (this.$children || []).find(c => c && c.$options && c.$options.name === 'DPurchaseAggHistoryRefDialog') || null;
+    },
+    onSelectHistoryRefBill(row) {
+      if (!row || !row.id) {
+        this.selectedHistoryRefBill = null;
+        this.historyRefDetailList = [];
+        this.historyRefDetailSelection = [];
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+          if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow();
+        });
+        return;
+      }
+      if (this.selectedHistoryRefBill && this.selectedHistoryRefBill.id === row.id) {
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+          if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow(row);
+        });
+        return;
+      }
+      this.selectedHistoryRefBill = row;
+      this.historyRefDetailLoading = true;
+      this.historyRefDetailSelection = [];
+      this.$nextTick(() => {
+        const dialog = this.getHistoryRefDialogVm();
+        const billTable = dialog && dialog.$refs && dialog.$refs.historyRefBillTable;
+        if (billTable && typeof billTable.setCurrentRow === 'function') billTable.setCurrentRow(row);
+      });
+      getPurchaseAgg(row.id).then(res => {
+        const data = (res && res.data) ? res.data : {};
+        this.historyRefDetailList = data.entryList || [];
+        this.$nextTick(() => {
+          const dialog = this.getHistoryRefDialogVm();
+          const table = dialog && dialog.$refs && dialog.$refs.historyRefDetailTable;
+          if (table && typeof table.clearSelection === 'function') table.clearSelection();
+          this.calcHistoryRefTableHeight();
+        });
+      }).catch(() => {
+        this.historyRefDetailList = [];
+      }).finally(() => {
+        this.historyRefDetailLoading = false;
+      });
+    },
+    handleHistoryRefDetailSelectionChange(rows) {
+      this.historyRefDetailSelection = rows || [];
+    },
+    handleHistoryRefDetailRowDblclick(row, column) {
+      if (!row) return;
+      if (column && column.type === 'selection') return;
+      const dialog = this.getHistoryRefDialogVm();
+      const table = dialog && dialog.$refs && dialog.$refs.historyRefDetailTable;
+      if (!table || typeof table.toggleRowSelection !== 'function') return;
+      const selection = (table.store && table.store.states && table.store.states.selection) || table.selection || [];
+      const selected = selection.indexOf(row) !== -1;
+      table.toggleRowSelection(row, !selected);
+    },
+    calcHistoryRefTableHeight() {
+      if (!this.historyRefDialogVisible) return;
+      const run = () => {
+        const wraps = document.querySelectorAll('.history-ref-table-wrap');
+        if (!wraps || !wraps.length) return;
+        const rect = wraps[0].getBoundingClientRect();
+        const h = Math.floor(rect.height || 0);
+        if (h >= 160 && Math.abs(this.historyRefTableHeight - h) >= 2) {
+          this.historyRefTableHeight = h;
+        }
+      };
+      this.$nextTick(run);
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+      ;[50, 120, 300].forEach(ms => setTimeout(run, ms));
+    },
+    /** 确认引用历史明细：按 materialId+warehouseId+isGz 去重写入 */
+    confirmRefHistoryBill() {
+      const rows = this.historyRefDetailSelection || [];
+      if (!rows.length) {
+        this.$message.warning('请勾选要引用的明细');
+        return;
+      }
+      const exist = new Set((this.entryList || []).map(i => buildAggEntryPickKey(i)).filter(Boolean));
+      let added = 0;
+      let skipped = 0;
+      rows.forEach(entry => {
+        if (!entry || entry.materialId == null) {
+          skipped++;
+          return;
+        }
+        const material = entry.material || {};
+        const pickMaterial = {
+          materialId: entry.materialId,
+          id: entry.materialId,
+          code: entry.materialCode || material.code || entry.code || '',
+          name: entry.materialName || material.name || '',
+          speci: entry.materialSpec || material.speci || '',
+          model: entry.model || material.model || '',
+          unitName: entry.unit || (material.fdUnit && material.fdUnit.unitName) || material.unitName || '',
+          price: entry.unitPrice != null ? entry.unitPrice : material.price,
+          brand: entry.brand || material.brand || '',
+          supplierName: entry.supplierName || (material.supplier && material.supplier.name) || material.supplierName || '',
+          factoryName: entry.producer || (material.fdFactory && material.fdFactory.factoryName) || material.factoryName || '',
+          warehouseId: entry.warehouseId,
+          warehouseName: entry.warehouseName || '',
+          isGz: entry.isGz != null ? entry.isGz : material.isGz
+        };
+        const pickKey = buildAggEntryPickKey({
+          materialId: pickMaterial.materialId,
+          warehouseId: pickMaterial.warehouseId,
+          isGz: pickMaterial.isGz
+        });
+        if (!pickKey || exist.has(pickKey)) {
+          skipped++;
+          return;
+        }
+        const obj = {};
+        if (entry.qty != null && entry.qty !== '') {
+          obj.qty = String(entry.qty);
+        }
+        fillAggEntryFromFixedNumber(obj, pickMaterial);
+        this.entryList.push(obj);
+        exist.add(pickKey);
+        added++;
+      });
+      if (added > 0) {
+        this.calculateTotalAmount();
+        this.debouncedAutoSavePurchase();
+        this.$message.success(`已引用 ${added} 条明细${skipped > 0 ? `，跳过 ${skipped} 条重复` : ''}`);
+        this.closeHistoryRefDialog();
+      } else {
+        this.$message.warning(skipped > 0 ? '所选明细均已存在，未新增' : '请勾选要引用的明细');
+      }
     },
     closeAddTemplateDialog() {
       this.addTemplateDialogVisible = false;
