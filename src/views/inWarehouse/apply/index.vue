@@ -3858,4 +3858,61 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
   border-radius: 4px;
   padding: 10px;
 }
+
+/* 明细变更记录：挂在页面内容框内右侧，不遮顶栏 */
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+}
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-panel {
+  width: 720px;
+  max-width: 92%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-close:hover {
+  color: #409EFF;
+}
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px 16px;
+  box-sizing: border-box;
+}
+.app-container.inWarehouse-apply-page .entry-change-log-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
 </style>
