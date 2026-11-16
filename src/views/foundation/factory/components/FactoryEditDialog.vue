@@ -6,29 +6,45 @@
           <i class="el-icon-close page-drawer-close" @click="cancel" />
         </div>
         <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="100px">
-            <el-form-item label="厂家编码" prop="factoryCode">
-              <el-input v-model="form.factoryCode" :disabled="isDisabled" placeholder="厂家编码（不填自动生成）" />
-            </el-form-item>
-            <el-form-item label="厂家名称" prop="factoryName">
-              <el-input v-model="form.factoryName" @input="factoryNameChange" placeholder="厂家名称" />
-            </el-form-item>
-            <el-form-item label="厂家简码" prop="factoryReferredCode">
-              <el-input v-model="form.factoryReferredCode" :disabled="true" placeholder="厂家名称" />
-            </el-form-item>
-            <el-form-item label="使用状态" prop="factoryStatus">
-              <el-select v-model="form.factoryStatus" placeholder="使用状态" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="厂家联系方式" prop="factoryContact">
-              <el-input v-model="form.factoryContact" placeholder="厂家联系方式" />
-            </el-form-item>
+          <el-form ref="form" :model="form" :rules="rules" label-width="110px" size="small" class="factory-drawer-form">
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="厂家编码" prop="factoryCode">
+                  <el-input v-model="form.factoryCode" class="factory-drawer-control" :disabled="isDisabled" placeholder="厂家编码（不填自动生成）" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="厂家名称" prop="factoryName">
+                  <el-input v-model="form.factoryName" class="factory-drawer-control" @input="factoryNameChange" placeholder="厂家名称" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="厂家简码" prop="factoryReferredCode">
+                  <el-input v-model="form.factoryReferredCode" class="factory-drawer-control" :disabled="true" placeholder="厂家名称" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="使用状态" prop="factoryStatus">
+                  <el-select v-model="form.factoryStatus" class="factory-drawer-control" placeholder="使用状态">
+                    <el-option
+                      v-for="dict in dict.type.is_use_status"
+                      :key="dict.value"
+                      :label="dict.label"
+                      :value="dict.value"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="厂家联系方式" prop="factoryContact">
+                  <el-input v-model="form.factoryContact" class="factory-drawer-control" placeholder="厂家联系方式" />
+                </el-form-item>
+              </el-col>
+            </el-row>
             <el-form-item label="厂家地址" prop="factoryAddress">
               <el-input v-model="form.factoryAddress" type="textarea" :rows="2" placeholder="厂家地址" />
             </el-form-item>

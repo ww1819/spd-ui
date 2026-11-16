@@ -6,43 +6,68 @@
           <i class="el-icon-close page-drawer-close" @click="cancel" />
         </div>
         <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-            <el-form-item label="财务类别编码" prop="financeCategoryCode">
-              <el-input v-model="form.financeCategoryCode" :disabled="isDisabled" placeholder="请输入编码" />
-            </el-form-item>
-            <el-form-item label="财务类别名称" prop="financeCategoryName">
-              <el-input v-model="form.financeCategoryName" placeholder="请输入名称" />
-            </el-form-item>
-            <el-form-item label="名称简码" prop="referredName">
-              <el-input v-model="form.referredName" placeholder="可点「更新简码」生成" clearable />
-            </el-form-item>
-            <el-form-item label="使用状态" prop="isUse">
-              <el-select v-model="form.isUse" placeholder="使用状态" style="width: 100%">
-                <el-option
-                  v-for="dict in dict.type.is_use_status"
-                  :key="dict.value"
-                  :label="dict.label"
-                  :value="dict.value"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="HIS系统ID" prop="hisId">
-              <el-input
-                v-model="form.hisId"
-                :disabled="!!form.financeCategoryId"
-                :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水新增必填' : '非衡水无需填写')"
-                clearable
-              />
-            </el-form-item>
-            <el-form-item label="地址" prop="financeCategoryAddress">
-              <el-input v-model="form.financeCategoryAddress" placeholder="地址" clearable />
-            </el-form-item>
-            <el-form-item label="联系方式" prop="financeCategoryContact">
-              <el-input v-model="form.financeCategoryContact" placeholder="联系方式" clearable />
-            </el-form-item>
-            <el-form-item label="组织机构ID" prop="tenantId">
-              <el-input v-model="form.tenantId" disabled placeholder="保存时默认当前组织机构" />
-            </el-form-item>
+          <el-form ref="form" :model="form" :rules="rules" label-width="110px" size="small" class="fc-drawer-form">
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="财务类别编码" prop="financeCategoryCode">
+                  <el-input v-model="form.financeCategoryCode" class="fc-drawer-control" :disabled="isDisabled" placeholder="请输入编码" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="财务类别名称" prop="financeCategoryName">
+                  <el-input v-model="form.financeCategoryName" class="fc-drawer-control" placeholder="请输入名称" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="名称简码" prop="referredName">
+                  <el-input v-model="form.referredName" class="fc-drawer-control" placeholder="可点「更新简码」生成" clearable />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="使用状态" prop="isUse">
+                  <el-select v-model="form.isUse" class="fc-drawer-control" placeholder="使用状态">
+                    <el-option
+                      v-for="dict in dict.type.is_use_status"
+                      :key="dict.value"
+                      :label="dict.label"
+                      :value="dict.value"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="HIS系统ID" prop="hisId">
+                  <el-input
+                    v-model="form.hisId"
+                    class="fc-drawer-control"
+                    :disabled="!!form.financeCategoryId"
+                    :placeholder="form.financeCategoryId ? '保存后不可修改' : (factoryImportRequiresHisId ? '衡水新增必填' : '非衡水无需填写')"
+                    clearable
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="地址" prop="financeCategoryAddress">
+                  <el-input v-model="form.financeCategoryAddress" class="fc-drawer-control" placeholder="地址" clearable />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="联系方式" prop="financeCategoryContact">
+                  <el-input v-model="form.financeCategoryContact" class="fc-drawer-control" placeholder="联系方式" clearable />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="组织机构ID" prop="tenantId">
+                  <el-input v-model="form.tenantId" class="fc-drawer-control" disabled placeholder="保存时默认当前组织机构" />
+                </el-form-item>
+              </el-col>
+            </el-row>
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="备注" />
             </el-form-item>

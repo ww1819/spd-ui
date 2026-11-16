@@ -6,23 +6,35 @@
           <i class="el-icon-close page-drawer-close" @click="cancel" />
         </div>
         <div class="page-drawer-body">
-          <el-form ref="form" :model="form" :rules="rules" label-width="110px">
-            <el-form-item label="单位编码">
-              <el-input v-model="form.unitCode" placeholder="留空则自动生成D开头的编码" />
-            </el-form-item>
-            <el-form-item label="单位名称" prop="unitName">
-              <el-input v-model="form.unitName" placeholder="单位名称" />
-            </el-form-item>
-            <el-form-item label="启用">
-              <el-switch
-                v-model="form.delFlag"
-                :active-value="0"
-                :inactive-value="1"
-              />
-            </el-form-item>
-            <el-form-item label="组织机构ID">
-              <el-input v-model="form.tenantId" disabled placeholder="保存后由系统写入" />
-            </el-form-item>
+          <el-form ref="form" :model="form" :rules="rules" label-width="100px" size="small" class="unit-drawer-form">
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="单位编码">
+                  <el-input v-model="form.unitCode" class="unit-drawer-control" placeholder="留空则自动生成D开头的编码" />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="单位名称" prop="unitName">
+                  <el-input v-model="form.unitName" class="unit-drawer-control" placeholder="单位名称" />
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row :gutter="12">
+              <el-col :span="12">
+                <el-form-item label="启用">
+                  <el-switch
+                    v-model="form.delFlag"
+                    :active-value="0"
+                    :inactive-value="1"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :span="12">
+                <el-form-item label="组织机构ID">
+                  <el-input v-model="form.tenantId" class="unit-drawer-control" disabled placeholder="保存后由系统写入" />
+                </el-form-item>
+              </el-col>
+            </el-row>
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
             </el-form-item>

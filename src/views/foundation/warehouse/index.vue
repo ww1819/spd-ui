@@ -855,7 +855,7 @@ export default {
 }
 
 ::v-deep .warehouse-drawer-panel{
-  width: 520px;
+  width: 640px;
   max-width: 100%;
   height: 100%;
   background: #fff;
@@ -870,29 +870,54 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #ebeef5;
+  background: #2C569A;
+  border-bottom: 1px solid #2C569A;
 }
 
 ::v-deep .warehouse-drawer-title{
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: #fff;
 }
 
 ::v-deep .warehouse-drawer-close{
   font-size: 16px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
 }
 
 ::v-deep .warehouse-drawer-close:hover{
-  color: #409EFF;
+  color: #fff;
 }
 
 ::v-deep .warehouse-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
+}
+
+/* 抽屉表单控件：与顶部搜索框（.wh-query-control）同宽同高 160×32 */
+::v-deep .warehouse-drawer-form .wh-drawer-control{
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+}
+::v-deep .warehouse-drawer-form .wh-drawer-control .el-input__inner,
+::v-deep .warehouse-drawer-form .wh-drawer-control.el-input .el-input__inner,
+::v-deep .warehouse-drawer-form .wh-drawer-control.el-select .el-input__inner,
+::v-deep .warehouse-drawer-form .wh-drawer-control.el-input-number .el-input__inner{
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+  box-sizing: border-box !important;
+}
+::v-deep .warehouse-drawer-form .wh-drawer-control.el-input-number{
+  line-height: 32px !important;
+}
+::v-deep .warehouse-drawer-form .wh-drawer-control.el-input-number .el-input-number__decrease,
+::v-deep .warehouse-drawer-form .wh-drawer-control.el-input-number .el-input-number__increase{
+  height: 16px !important;
+  line-height: 16px !important;
 }
 
 ::v-deep .warehouse-drawer-footer{

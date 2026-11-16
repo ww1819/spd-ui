@@ -992,7 +992,7 @@ export default {
 }
 
 ::v-deep .page-drawer-panel{
-  width: 520px;
+  width: 640px;
   max-width: 100%;
   height: 100%;
   background: #fff;
@@ -1007,29 +1007,45 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #ebeef5;
+  background: #2C569A;
+  border-bottom: 1px solid #2C569A;
 }
 
 ::v-deep .page-drawer-title{
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: #fff;
 }
 
 ::v-deep .page-drawer-close{
   font-size: 16px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
 }
 
 ::v-deep .page-drawer-close:hover{
-  color: #409EFF;
+  color: #fff;
 }
 
 ::v-deep .page-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
+}
+
+/* 抽屉表单控件：与搜索框（.wc-query-control）同宽同高 160×32 */
+::v-deep .wc-drawer-form .wc-drawer-control{
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+}
+::v-deep .wc-drawer-form .wc-drawer-control .el-input__inner,
+::v-deep .wc-drawer-form .wc-drawer-control.el-input .el-input__inner,
+::v-deep .wc-drawer-form .wc-drawer-control.el-select .el-input__inner{
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+  box-sizing: border-box !important;
 }
 
 ::v-deep .page-drawer-footer{
