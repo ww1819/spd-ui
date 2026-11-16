@@ -390,6 +390,24 @@ function mat(row) {
   return row.material || {};
 }
 
+/** 简表导出：财务分类 / 库房分类名称（与完整导出一致） */
+function resolveCtkSimpleCategoryNames(row) {
+  const m = mat(row);
+  const fc = String(
+    (m.fdFinanceCategory && m.fdFinanceCategory.financeCategoryName) ||
+      row.financeCategoryName ||
+      row.materialFinanceCategoryName ||
+      ''
+  ).trim();
+  const wc = String(
+    (m.fdWarehouseCategory && m.fdWarehouseCategory.warehouseCategoryName) ||
+      row.materialWarehouseCategoryName ||
+      row.warehouseCategoryName ||
+      ''
+  ).trim();
+  return { financeCategoryName: fc, warehouseCategoryName: wc };
+}
+
 function detailSupplierGroupKey(row) {
   const n = row.supplierName || (row.supplier && row.supplier.name);
   const s = n != null ? String(n).trim() : '';
@@ -815,7 +833,7 @@ export function aggregateCtkRowsByNameSpeciUnitPrice(rows) {
 }
 
 /**
- * 出/退库明细简表（按供应商）：与对账简表一致七列——序号、产品名称、规格、单位、价格、数量、金额；
+ * 出/退库明细简表（按供应商）：序号、产品名称、规格、单位、价格、数量、金额、财务分类、库房分类；
  * 一供应商一段，标题「供应商名 + 出/退库明细 + 日期」；逐行明细不合并，段末仅合计数量与金额（红色）。
  * @param {Object[]} options.rows listCTKWarehouse 返回行
  * @param {string} [options.beginDate]
@@ -835,8 +853,8 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
   } = options;
   if (!rows.length) return;
 
-  const headers = ['序号', '产品名称', '规格', '单位', '价格', '数量', '金额'];
-  const colCount = 7;
+  const headers = ['序号', '产品名称', '规格', '单位', '价格', '数量', '金额', '财务分类', '库房分类'];
+  const colCount = 9;
   const priceCol = 5;
   const qtyCol = 6;
   const amtCol = 7;
@@ -874,6 +892,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
   const writeDetailBodyRow = (row, lineNo) => {
     const price =
       row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null;
+    const { financeCategoryName, warehouseCategoryName } = resolveCtkSimpleCategoryNames(row);
     const cells = [
       lineNo,
       row.materialName || '',
@@ -882,6 +901,8 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
       price,
       Number(row.materialQty || 0),
       Number(row.materialAmt || 0),
+      financeCategoryName,
+      warehouseCategoryName,
     ];
     cells.forEach((v, ci) => {
       const cell = ws.getCell(r, ci + 1);
@@ -896,7 +917,12 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
           }
         } else {
           cell.value = Number(v);
-          cell.numFmt = getAmountExcelNumFmt();
+          cell.numFmt =
+            col === priceCol
+              ? getPriceExcelNumFmt()
+              : col === qtyCol
+                ? getQtyExcelNumFmt()
+                : getAmountExcelNumFmt();
         }
         cell.font = FONT_BODY;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -985,6 +1011,8 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
   ws.getColumn(5).width = 12;
   ws.getColumn(6).width = 12;
   ws.getColumn(7).width = 14;
+  ws.getColumn(8).width = 14;
+  ws.getColumn(9).width = 14;
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {
@@ -1010,8 +1038,8 @@ export async function exportCTKWarehouseSummarySupplierSimpleXlsx(options) {
   const aggregated = aggregateCtkRowsByNameSpeciUnitPrice(rows);
   if (!aggregated.length) return;
 
-  const headers = ['序号', '产品名称', '规格', '单位', '价格', '数量', '金额'];
-  const colCount = 7;
+  const headers = ['序号', '产品名称', '规格', '单位', '价格', '数量', '金额', '财务分类', '库房分类'];
+  const colCount = 9;
   const priceCol = 5;
   const qtyCol = 6;
   const amtCol = 7;
@@ -1065,6 +1093,7 @@ export async function exportCTKWarehouseSummarySupplierSimpleXlsx(options) {
   const writeDetailBodyRow = (row, lineNo) => {
     const price =
       row.unitPrice != null && row.unitPrice !== '' ? Number(row.unitPrice) : null;
+    const { financeCategoryName, warehouseCategoryName } = resolveCtkSimpleCategoryNames(row);
     const cells = [
       lineNo,
       row.materialName || '',
@@ -1073,6 +1102,8 @@ export async function exportCTKWarehouseSummarySupplierSimpleXlsx(options) {
       price,
       Number(row.materialQty || 0),
       Number(row.materialAmt || 0),
+      financeCategoryName,
+      warehouseCategoryName,
     ];
     cells.forEach((v, ci) => {
       const cell = ws.getCell(r, ci + 1);
@@ -1247,6 +1278,8 @@ export async function exportCTKWarehouseSummarySupplierSimpleXlsx(options) {
   ws.getColumn(5).width = 12;
   ws.getColumn(6).width = 12;
   ws.getColumn(7).width = 14;
+  ws.getColumn(8).width = 14;
+  ws.getColumn(9).width = 14;
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {

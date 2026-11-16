@@ -188,6 +188,10 @@
               <span class="dt-border-ico" v-html="borderMenuIcons.merge"></span>
               <span class="dt-border-label">合并单元格</span>
             </div>
+            <div class="dt-border-item" @click="handleBorderCommand('split')">
+              <span class="dt-border-ico" v-html="borderMenuIcons.split"></span>
+              <span class="dt-border-label">拆分单元格</span>
+            </div>
           </el-dropdown-menu>
         </el-dropdown>
         <el-dropdown trigger="click" @command="handlePlaceholderCommand">
@@ -454,6 +458,7 @@
                           @mouseleave="clearCanvasHover('header-cell:' + (c - 1))"
                           @click.stop="onHeaderCellSingleClick(c - 1, $event)"
                           @dblclick.stop="onHeaderCellDblClick(c - 1, $event)"
+                          @contextmenu.prevent.stop="onTableCellContextMenu($event, 'header', c - 1)"
                         >
                           <span class="canvas-header-text" :style="getTableCellTextStyle(0, c - 1)">
                             <i v-if="tableHeaderFields[c - 1] === 'checkbox'" class="print-checkbox-square" title="选择框" />
@@ -499,6 +504,7 @@
                           @mouseleave="clearCanvasHover('body-cell:' + (rIndex - 1) + ':' + (cIndex - 1))"
                           @click.stop="onBodyCellSingleClick(rIndex - 1, cIndex - 1, $event)"
                           @dblclick.stop="onBodyCellDblClick(rIndex - 1, cIndex - 1, $event)"
+                          @contextmenu.prevent.stop="onTableCellContextMenu($event, 'body', rIndex - 1, cIndex - 1)"
                         >
                           <div class="preview-table-cell-inner" :style="getTableCellTextStyle(rIndex, cIndex - 1)">
                             <el-input
@@ -606,6 +612,17 @@
           <div class="design-page-add" title="新增分页" @click="addDesignPage">+</div>
         </div>
       </div>
+      <!-- 画布单元格右键：合并 / 拆分 -->
+      <ul
+        v-if="canvasCtxMenu.visible"
+        class="canvas-ctx-menu"
+        :style="{ left: canvasCtxMenu.x + 'px', top: canvasCtxMenu.y + 'px' }"
+        @mousedown.stop.prevent
+        @contextmenu.prevent.stop
+      >
+        <li class="canvas-ctx-item" @mousedown.prevent.stop="onCanvasCtxCommand('merge')">合并单元格</li>
+        <li class="canvas-ctx-item" @mousedown.prevent.stop="onCanvasCtxCommand('split')">拆分单元格</li>
+      </ul>
       </div>
       <!-- 右侧内容框：抽屉把手挂在面板左缘（靠近画布一侧顶部） -->
       <div
@@ -1259,7 +1276,14 @@ export default {
         none: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2.5" y="2.5" width="11" height="11" fill="none" stroke="#c0c4cc" stroke-dasharray="2 1"/><path d="M8 3v10M3 8h10" stroke="#c0c4cc" stroke-dasharray="2 1"/></svg>',
         lineStyle: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="3" y="2" width="10" height="12" rx="1" fill="none" stroke="#303133"/><path d="M5 5h6M5 8h6M5 11h4" stroke="#303133" stroke-width="1.2"/></svg>',
         lineColor: '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 13l7.2-7.2 1.8 1.8L4.8 14.8H3z" fill="#303133"/><path d="M10.5 4.3l1.2-1.2a1 1 0 011.4 0l1 1a1 1 0 010 1.4l-1.2 1.2z" fill="#409eff"/></svg>',
-        merge: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2" y="3" width="12" height="10" fill="none" stroke="#303133"/><path d="M8 3v10M2 8h12" stroke="#c0c4cc"/><path d="M4 8h8" stroke="#409eff" stroke-width="1.6"/></svg>'
+        merge: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2" y="3" width="12" height="10" fill="none" stroke="#303133"/><path d="M8 3v10M2 8h12" stroke="#c0c4cc"/><path d="M4 8h8" stroke="#409eff" stroke-width="1.6"/></svg>',
+        split: '<svg viewBox="0 0 16 16" width="16" height="16"><rect x="2" y="3" width="12" height="10" fill="none" stroke="#303133"/><path d="M8 3v10" stroke="#409eff" stroke-width="1.6"/><path d="M2 8h12" stroke="#c0c4cc"/></svg>'
+      },
+      /** 画布右键菜单：合并/拆分 */
+      canvasCtxMenu: {
+        visible: false,
+        x: 0,
+        y: 0
       },
       /** 画布可视区域尺寸（用于刻度尺铺满） */
       canvasViewportWidthPx: 0,
@@ -1523,6 +1547,7 @@ export default {
       document.removeEventListener('keydown', this._onDesignKeyDown);
       this._onDesignKeyDown = null;
     }
+    this.unbindCanvasCtxMenuOutside();
     this.unbindCanvasViewportObserver();
   },
   computed: {
@@ -2635,7 +2660,8 @@ export default {
     },
     /** 表头单元格是否被选中，用于高亮显示 */
     isHeaderCellSelected(baseColIndex) {
-      return this.headerSelectedCols.indexOf(baseColIndex) !== -1;
+      const col = this.normalizeCellCoord(baseColIndex);
+      return (this.headerSelectedCols || []).some(c => this.normalizeCellCoord(c) === col);
     },
     canvasWidgetClass(key) {
       return {
@@ -2683,8 +2709,8 @@ export default {
     },
     /** 表格 mousedown：选中整表并开始拖动位置（忽略手柄/列宽/行高/已选中的格子） */
     onTableMouseDown(event) {
-      // Ctrl/Cmd 多选时不启动整表拖动
-      if (event && (event.ctrlKey || event.metaKey)) return;
+      // Ctrl/Cmd/Shift 多选时不启动整表拖动
+      if (event && (event.ctrlKey || event.metaKey || event.shiftKey)) return;
       const t = event && event.target;
       if (t && t.closest) {
         if (t.closest('.canvas-handle')) return;
@@ -2701,22 +2727,119 @@ export default {
       this.onTableFrameClick();
       this.startTableDrag(event);
     },
-    /** 单击表头格：未单独选中时选整表；Ctrl 时留给双击多选 */
+    /** 单击表头格：未单独选中时选整表；Ctrl/Shift 多选追加 */
     onHeaderCellSingleClick(baseColIndex, event) {
-      if (event && (event.ctrlKey || event.metaKey)) return;
+      const multi = !!(event && (event.ctrlKey || event.metaKey));
+      const range = !!(event && event.shiftKey);
+      if (multi || range) {
+        this.applyHeaderCellMultiSelect(baseColIndex, { multi, range });
+        return;
+      }
       if (this.canvasSelectedKey === ('header-cell:' + baseColIndex) || this.isHeaderCellSelected(baseColIndex)) {
         return;
       }
       this.onTableFrameClick();
     },
-    /** 单击表体格：未单独选中时选整表；Ctrl 时留给双击多选 */
+    /** 单击表体格：未单独选中时选整表；Ctrl/Shift 多选追加 */
     onBodyCellSingleClick(rowIndex, colIndex, event) {
-      if (event && (event.ctrlKey || event.metaKey)) return;
+      const multi = !!(event && (event.ctrlKey || event.metaKey));
+      const range = !!(event && event.shiftKey);
+      if (multi || range) {
+        this.applyBodyCellMultiSelect(rowIndex, colIndex, { multi, range });
+        return;
+      }
       const key = 'body-cell:' + rowIndex + ':' + colIndex;
       if (this.canvasSelectedKey === key || this.isBodyCellSelected(rowIndex, colIndex)) {
         return;
       }
       this.onTableFrameClick();
+    },
+    /** 规范化单元格坐标为数字 */
+    normalizeCellCoord(v) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : -1;
+    },
+    applyHeaderCellMultiSelect(baseColIndex, opts) {
+      const col = this.normalizeCellCoord(baseColIndex);
+      if (col < 0) return;
+      this.bodySelectedCells = [];
+      this.editingBodyCell = null;
+      const multi = !!(opts && opts.multi);
+      const range = !!(opts && opts.range);
+      let cols = (this.headerSelectedCols || []).map(c => this.normalizeCellCoord(c)).filter(c => c >= 0);
+      if (!cols.length) {
+        const cur = /^header-cell:(\d+)$/.exec(this.canvasSelectedKey || '');
+        if (cur) cols = [this.normalizeCellCoord(cur[1])];
+      }
+      if (range && cols.length) {
+        const anchor = cols[cols.length - 1];
+        const a = Math.min(anchor, col);
+        const b = Math.max(anchor, col);
+        const next = [];
+        for (let i = a; i <= b; i++) next.push(i);
+        this.headerSelectedCols = next;
+      } else if (multi) {
+        const idx = cols.indexOf(col);
+        if (idx >= 0) cols.splice(idx, 1);
+        else cols.push(col);
+        cols.sort((a, b) => a - b);
+        this.headerSelectedCols = cols;
+      } else {
+        this.headerSelectedCols = [col];
+      }
+      if (!this.headerSelectedCols.length) {
+        this.canvasSelectedKey = '';
+        return;
+      }
+      this.selectCanvasWidget('header-cell:' + this.headerSelectedCols[this.headerSelectedCols.length - 1]);
+      this.activeBottomTab = 'title';
+      this.fieldCollapseActive = ['dataSource', 'common'];
+    },
+    applyBodyCellMultiSelect(rowIndex, colIndex, opts) {
+      const row = this.normalizeCellCoord(rowIndex);
+      const col = this.normalizeCellCoord(colIndex);
+      if (row < 0 || col < 0) return;
+      this.headerSelectedCols = [];
+      this.editingBodyCell = null;
+      const multi = !!(opts && opts.multi);
+      const range = !!(opts && opts.range);
+      let cells = (this.bodySelectedCells || [])
+        .map(c => ({ row: this.normalizeCellCoord(c.row), col: this.normalizeCellCoord(c.col) }))
+        .filter(c => c.row >= 0 && c.col >= 0);
+      if (!cells.length) {
+        const cur = /^body-cell:(\d+):(\d+)$/.exec(this.canvasSelectedKey || '');
+        if (cur) {
+          cells = [{ row: this.normalizeCellCoord(cur[1]), col: this.normalizeCellCoord(cur[2]) }];
+        }
+      }
+      if (range && cells.length) {
+        const anchor = cells[cells.length - 1];
+        // 仅支持同行拉选
+        if (anchor.row !== row) {
+          this.$message && this.$message.warning('请在同一行内框选要合并的单元格');
+          return;
+        }
+        const a = Math.min(anchor.col, col);
+        const b = Math.max(anchor.col, col);
+        const next = [];
+        for (let i = a; i <= b; i++) next.push({ row, col: i });
+        this.bodySelectedCells = next;
+      } else if (multi) {
+        const idx = cells.findIndex(c => c.row === row && c.col === col);
+        if (idx >= 0) cells.splice(idx, 1);
+        else cells.push({ row, col });
+        this.bodySelectedCells = cells;
+      } else {
+        this.bodySelectedCells = [{ row, col }];
+      }
+      if (!this.bodySelectedCells.length) {
+        this.canvasSelectedKey = '';
+        return;
+      }
+      const last = this.bodySelectedCells[this.bodySelectedCells.length - 1];
+      this.selectCanvasWidget('body-cell:' + last.row + ':' + last.col);
+      this.activeBottomTab = 'title';
+      this.fieldCollapseActive = ['dataSource', 'common'];
     },
     /** 拖动整表在画布上的位置 */
     startTableDrag(event) {
@@ -2776,39 +2899,19 @@ export default {
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     },
-    /** 双击表头单元格：选中该格；Ctrl/Cmd+双击追加/取消多选，便于合并 */
+    /** 双击表头单元格：选中该格；Ctrl/Shift 多选 */
     onHeaderCellDblClick(baseColIndex, event) {
       if (baseColIndex < 0) return;
       const multi = !!(event && (event.ctrlKey || event.metaKey));
-      this.editingBodyCell = null;
-      if (multi) {
-        // 从整表选中切到多选时，保留已有表头选中并追加
-        if (this.canvasSelectedKey === 'table') {
-          // keep headerSelectedCols
-        } else if (!(this.headerSelectedCols && this.headerSelectedCols.length)) {
-          // 若当前是单选其它格，以其为起点
-          const cur = /^header-cell:(\d+)$/.exec(this.canvasSelectedKey || '');
-          if (cur) this.headerSelectedCols = [Number(cur[1])];
-        }
-        this.bodySelectedCells = [];
-        const idx = this.headerSelectedCols.indexOf(baseColIndex);
-        if (idx !== -1) {
-          this.headerSelectedCols.splice(idx, 1);
-          if (!this.headerSelectedCols.length) {
-            this.canvasSelectedKey = '';
-          } else {
-            this.selectCanvasWidget('header-cell:' + this.headerSelectedCols[this.headerSelectedCols.length - 1]);
-          }
-        } else {
-          this.headerSelectedCols.push(baseColIndex);
-          this.headerSelectedCols.sort((a, b) => a - b);
-          this.selectCanvasWidget('header-cell:' + baseColIndex);
-        }
-      } else {
-        this.bodySelectedCells = [];
-        this.headerSelectedCols = [baseColIndex];
-        this.selectCanvasWidget('header-cell:' + baseColIndex);
+      const range = !!(event && event.shiftKey);
+      if (multi || range) {
+        this.applyHeaderCellMultiSelect(baseColIndex, { multi, range });
+        return;
       }
+      this.bodySelectedCells = [];
+      this.editingBodyCell = null;
+      this.headerSelectedCols = [this.normalizeCellCoord(baseColIndex)];
+      this.selectCanvasWidget('header-cell:' + this.headerSelectedCols[0]);
       this.activeBottomTab = 'title';
       this.fieldCollapseActive = ['dataSource', 'common'];
     },
@@ -2977,50 +3080,98 @@ export default {
     isRowNoColumn(colIndex) {
       return this.tableHeaderFields[colIndex] === 'rowNo';
     },
-    /** 双击表体单元格：选中该格；Ctrl/Cmd+双击追加/取消多选；无 Ctrl 再次双击进入编辑 */
+    /** 双击表体单元格：选中该格；Ctrl/Shift 多选；再次双击进入编辑 */
     onBodyCellDblClick(rowIndex, colIndex, event) {
-      const key = 'body-cell:' + rowIndex + ':' + colIndex;
+      const row = this.normalizeCellCoord(rowIndex);
+      const col = this.normalizeCellCoord(colIndex);
+      const key = 'body-cell:' + row + ':' + col;
       const multi = !!(event && (event.ctrlKey || event.metaKey));
+      const range = !!(event && event.shiftKey);
       this.editingBodyCell = null;
-      if (multi) {
-        this.headerSelectedCols = [];
-        const idx = this.bodySelectedCells.findIndex(c => c.row === rowIndex && c.col === colIndex);
-        if (idx !== -1) {
-          this.bodySelectedCells.splice(idx, 1);
-          if (!this.bodySelectedCells.length) {
-            this.canvasSelectedKey = '';
-          } else {
-            const last = this.bodySelectedCells[this.bodySelectedCells.length - 1];
-            this.selectCanvasWidget('body-cell:' + last.row + ':' + last.col);
-          }
-        } else {
-          // 若当前仅 canvasSelectedKey 有单格、数组为空，先纳入
-          const cur = /^body-cell:(\d+):(\d+)$/.exec(this.canvasSelectedKey || '');
-          if (cur && !this.bodySelectedCells.length) {
-            const r = Number(cur[1]);
-            const c = Number(cur[2]);
-            if (!(r === rowIndex && c === colIndex)) {
-              this.bodySelectedCells.push({ row: r, col: c });
-            }
-          }
-          this.bodySelectedCells.push({ row: rowIndex, col: colIndex });
-          this.selectCanvasWidget(key);
-        }
-        this.activeBottomTab = 'title';
-        this.fieldCollapseActive = ['dataSource', 'common'];
+      if (multi || range) {
+        this.applyBodyCellMultiSelect(row, col, { multi, range });
         return;
       }
       if (this.canvasSelectedKey === key && this.bodySelectedCells.length <= 1) {
-        if (!this.isCheckboxColumn(colIndex) && !this.isRowNoColumn(colIndex)) {
-          this.startEditBodyCell(rowIndex, colIndex);
+        if (!this.isCheckboxColumn(col) && !this.isRowNoColumn(col)) {
+          this.startEditBodyCell(row, col);
         }
         return;
       }
       this.headerSelectedCols = [];
-      this.bodySelectedCells = [{ row: rowIndex, col: colIndex }];
+      this.bodySelectedCells = [{ row, col }];
       this.selectCanvasWidget(key);
       this.activeBottomTab = 'title';
       this.fieldCollapseActive = ['dataSource', 'common'];
+    },
+    /** 画布单元格右键：弹出合并/拆分菜单 */
+    onTableCellContextMenu(event, kind, a, b) {
+      if (!this.canOperateCanvas) {
+        this.ensureBillTypeReady();
+        return;
+      }
+      if (kind === 'header') {
+        const col = this.normalizeCellCoord(a);
+        if (!this.isHeaderCellSelected(col)) {
+          this.headerSelectedCols = [col];
+          this.bodySelectedCells = [];
+          this.selectCanvasWidget('header-cell:' + col);
+        }
+      } else {
+        const row = this.normalizeCellCoord(a);
+        const col = this.normalizeCellCoord(b);
+        if (!this.isBodyCellSelected(row, col)) {
+          this.bodySelectedCells = [{ row, col }];
+          this.headerSelectedCols = [];
+          this.selectCanvasWidget('body-cell:' + row + ':' + col);
+        }
+      }
+      const x = Math.min((event.clientX || 0) + 2, window.innerWidth - 160);
+      const y = Math.min((event.clientY || 0) + 2, window.innerHeight - 90);
+      this.unbindCanvasCtxMenuOutside();
+      this.canvasCtxMenu = { visible: true, x, y };
+      // 下一帧再绑外侧关闭，避免本次右键的冒泡立刻关掉；且忽略点在菜单内的事件
+      this.$nextTick(() => {
+        this._onCanvasCtxOutside = (e) => {
+          const t = e && e.target;
+          if (t && t.closest && t.closest('.canvas-ctx-menu')) return;
+          this.hideCanvasCtxMenu();
+        };
+        document.addEventListener('mousedown', this._onCanvasCtxOutside, true);
+        document.addEventListener('scroll', this._onCanvasCtxOutside, true);
+      });
+    },
+    unbindCanvasCtxMenuOutside() {
+      if (this._onCanvasCtxOutside) {
+        document.removeEventListener('mousedown', this._onCanvasCtxOutside, true);
+        document.removeEventListener('scroll', this._onCanvasCtxOutside, true);
+        this._onCanvasCtxOutside = null;
+      }
+    },
+    hideCanvasCtxMenu() {
+      this.unbindCanvasCtxMenuOutside();
+      if (this.canvasCtxMenu && this.canvasCtxMenu.visible) {
+        this.canvasCtxMenu = { ...this.canvasCtxMenu, visible: false };
+      }
+    },
+    onCanvasCtxCommand(cmd) {
+      // 先取当前选中快照，再关菜单，避免关闭过程中选中被清掉
+      const bodySnap = (this.bodySelectedCells || []).map(c => ({
+        row: this.normalizeCellCoord(c.row),
+        col: this.normalizeCellCoord(c.col)
+      })).filter(c => c.row >= 0 && c.col >= 0);
+      const headerSnap = (this.headerSelectedCols || [])
+        .map(c => this.normalizeCellCoord(c))
+        .filter(c => c >= 0);
+      const selectedKey = this.canvasSelectedKey || '';
+      this.hideCanvasCtxMenu();
+      if (bodySnap.length) this.bodySelectedCells = bodySnap;
+      if (headerSnap.length) this.headerSelectedCols = headerSnap;
+      if (selectedKey) this.canvasSelectedKey = selectedKey;
+      this.$nextTick(() => {
+        if (cmd === 'merge') this.handleMergeCells();
+        else if (cmd === 'split') this.handleSplitCells();
+      });
     },
     /** 点击表头单元格：默认单选；按住 Ctrl/Cmd 可多选 */
     onHeaderCellClick(baseColIndex, event) {
@@ -3062,44 +3213,59 @@ export default {
       });
       return !inSameMerge;
     },
-    /** 点击“合并”按钮：
-     * - 若选中了表体格子：只合并该行中选中的相邻单元格
-     * - 否则，若选中了表头列：按列范围进行表头合并
+    /** 收集当前用于合并/拆分的表体选中格（含 canvasSelectedKey 单选回填） */
+    resolveBodySelectionForMerge() {
+      let cells = (this.bodySelectedCells || [])
+        .map(c => ({ row: this.normalizeCellCoord(c.row), col: this.normalizeCellCoord(c.col) }))
+        .filter(c => c.row >= 0 && c.col >= 0);
+      if (!cells.length) {
+        const cur = /^body-cell:(\d+):(\d+)$/.exec(this.canvasSelectedKey || '');
+        if (cur) {
+          cells = [{ row: this.normalizeCellCoord(cur[1]), col: this.normalizeCellCoord(cur[2]) }];
+        }
+      }
+      return cells;
+    },
+    resolveHeaderSelectionForMerge() {
+      let cols = (this.headerSelectedCols || []).map(c => this.normalizeCellCoord(c)).filter(c => c >= 0);
+      if (!cols.length) {
+        const cur = /^header-cell:(\d+)$/.exec(this.canvasSelectedKey || '');
+        if (cur) cols = [this.normalizeCellCoord(cur[1])];
+      }
+      return cols;
+    },
+    /**
+     * 合并单元格：
+     * - 表体：同一行内，按选中列的最小~最大列合并（中间未点选的也会并入）
+     * - 表头：按选中列最小~最大合并
      */
     handleMergeCells() {
-      // 优先处理表体合并
-      if (this.bodySelectedCells && this.bodySelectedCells.length >= 2) {
-        const rows = Array.from(new Set(this.bodySelectedCells.map(c => c.row)));
+      const bodyCells = this.resolveBodySelectionForMerge();
+      if (bodyCells.length >= 2) {
+        const rows = Array.from(new Set(bodyCells.map(c => c.row)));
         if (rows.length !== 1) {
-          this.$message && this.$message.warning('只能合并同一行内的相邻单元格');
+          this.$message && this.$message.warning('只能合并同一行内的单元格');
           return;
         }
         const row = rows[0];
-        const cols = this.bodySelectedCells.map(c => c.col).sort((a, b) => a - b);
+        const cols = bodyCells.map(c => c.col).sort((a, b) => a - b);
         const start = cols[0];
         const last = cols[cols.length - 1];
-        // 要求中间列也被选中，必须是连续
-        const colSet = new Set(cols);
-        for (let i = start; i <= last; i++) {
-          if (!colSet.has(i)) {
-            this.$message && this.$message.warning('只能合并同一行内连续的单元格');
-            return;
-          }
+        if (last <= start) {
+          this.$message && this.$message.warning('请至少选中两个不同列的单元格');
+          return;
         }
         const span = last - start + 1;
         const end = start + span - 1;
-        // 清理与新合并块有交集的旧配置（同一行）
         const mergedBody = [];
         for (const m of this.bodyMerges) {
-          if (m.row !== row) {
+          if (this.normalizeCellCoord(m.row) !== row) {
             mergedBody.push(m);
             continue;
           }
-          const mStart = m.start;
-          const mEnd = m.start + m.span - 1;
-          if (mEnd < start || mStart > end) {
-            mergedBody.push(m);
-          }
+          const mStart = this.normalizeCellCoord(m.start);
+          const mEnd = mStart + Math.max(1, Number(m.span) || 1) - 1;
+          if (mEnd < start || mStart > end) mergedBody.push(m);
         }
         mergedBody.push({ row, start, span });
         mergedBody.sort((a, b) => (a.row - b.row) || (a.start - b.start));
@@ -3111,30 +3277,24 @@ export default {
         return;
       }
 
-      // 若没有表体选择，再看是否有表头列选择，进行表头合并
-      if (!this.headerSelectedCols || this.headerSelectedCols.length < 2) {
-        this.$message && this.$message.warning('请先按住 Ctrl 双击选中同一行内连续的单元格再合并');
+      const selected = this.resolveHeaderSelectionForMerge().sort((a, b) => a - b);
+      if (selected.length < 2) {
+        this.$message && this.$message.warning('请先选中同一行内至少两个单元格再合并（Ctrl 多选或 Shift 拉选）');
         return;
       }
-      const selected = [...this.headerSelectedCols].sort((a, b) => a - b);
       const start = selected[0];
       const last = selected[selected.length - 1];
-      // 表头也要求连续选中
-      for (let i = start; i <= last; i++) {
-        if (selected.indexOf(i) === -1) {
-          this.$message && this.$message.warning('只能合并连续的表头单元格');
-          return;
-        }
+      if (last <= start) {
+        this.$message && this.$message.warning('请至少选中两个不同列的表头单元格');
+        return;
       }
       const span = last - start + 1;
       const end = start + span - 1;
       const merged = [];
       for (const m of this.headerMerges) {
-        const mStart = m.start;
-        const mEnd = m.start + m.span - 1;
-        if (mEnd < start || mStart > end) {
-          merged.push(m);
-        }
+        const mStart = this.normalizeCellCoord(m.start);
+        const mEnd = mStart + Math.max(1, Number(m.span) || 1) - 1;
+        if (mEnd < start || mStart > end) merged.push(m);
       }
       merged.push({ start, span });
       merged.sort((a, b) => a.start - b.start);
@@ -3143,6 +3303,58 @@ export default {
       this.clearCanvasWidgetSelection();
       this.pushDesignHistory();
       this.$message && this.$message.success('已合并表头单元格');
+    },
+    /** 拆分单元格：取消选中格所在的合并块 */
+    handleSplitCells() {
+      const bodyCells = this.resolveBodySelectionForMerge();
+      let changed = false;
+      if (bodyCells.length) {
+        const next = [];
+        for (const m of this.bodyMerges) {
+          const mRow = this.normalizeCellCoord(m.row);
+          const mStart = this.normalizeCellCoord(m.start);
+          const mEnd = mStart + Math.max(1, Number(m.span) || 1) - 1;
+          const hit = bodyCells.some(c => c.row === mRow && c.col >= mStart && c.col <= mEnd);
+          if (hit) {
+            changed = true;
+            continue;
+          }
+          next.push(m);
+        }
+        if (changed) this.bodyMerges = next;
+      }
+      const headerCols = this.resolveHeaderSelectionForMerge();
+      if (headerCols.length) {
+        const next = [];
+        for (const m of this.headerMerges) {
+          const mStart = this.normalizeCellCoord(m.start);
+          const mEnd = mStart + Math.max(1, Number(m.span) || 1) - 1;
+          const hit = headerCols.some(c => c >= mStart && c <= mEnd);
+          if (hit) {
+            changed = true;
+            continue;
+          }
+          next.push(m);
+        }
+        if (changed) this.headerMerges = next;
+      }
+      // 整表选中时：拆分该表所有合并
+      if (!changed && this.canvasSelectedKey === 'table') {
+        if ((this.bodyMerges && this.bodyMerges.length) || (this.headerMerges && this.headerMerges.length)) {
+          this.bodyMerges = [];
+          this.headerMerges = [];
+          changed = true;
+        }
+      }
+      if (!changed) {
+        this.$message && this.$message.warning('请先选中已合并的单元格再拆分');
+        return;
+      }
+      this.bodySelectedCells = [];
+      this.headerSelectedCols = [];
+      this.clearCanvasWidgetSelection();
+      this.pushDesignHistory();
+      this.$message && this.$message.success('已拆分单元格');
     },
     /** 某个数据行单元格在当前合并配置下是否可见（若在合并块内部且非起始列则隐藏） */
     isBodyCellVisible(rowIndex, colIndex) {
@@ -3163,7 +3375,11 @@ export default {
     },
     /** 数据行单元格是否被选中（用于高亮显示） */
     isBodyCellSelected(rowIndex, colIndex) {
-      return this.bodySelectedCells.some(c => c.row === rowIndex && c.col === colIndex);
+      const row = this.normalizeCellCoord(rowIndex);
+      const col = this.normalizeCellCoord(colIndex);
+      return (this.bodySelectedCells || []).some(
+        c => this.normalizeCellCoord(c.row) === row && this.normalizeCellCoord(c.col) === col
+      );
     },
     /** 点击数据行单元格：默认单选；按住 Ctrl/Cmd 可多选 */
     onBodyCellClick(rowIndex, colIndex, event) {
@@ -4735,7 +4951,10 @@ export default {
       this.borderSubMenu = '';
       if (cmd === 'merge') {
         this.handleMergeCells();
-        this.pushDesignHistory();
+        return;
+      }
+      if (cmd === 'split') {
+        this.handleSplitCells();
         return;
       }
       this.form.tableBorder = cmd;
@@ -6265,6 +6484,33 @@ export default {
 
 .row-resize-handle:hover {
   background: rgba(64, 158, 255, 0.35);
+}
+
+.canvas-ctx-menu {
+  position: fixed;
+  z-index: 4000;
+  margin: 0;
+  padding: 4px 0;
+  min-width: 140px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.canvas-ctx-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  line-height: 1.2;
+  user-select: none;
+}
+
+.canvas-ctx-item:hover {
+  background: #ecf5ff;
+  color: #409eff;
 }
 
 .canvas-select-handles {
