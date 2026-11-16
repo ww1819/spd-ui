@@ -383,6 +383,8 @@ export default {
       selectRow: [],
       // 出库明细表格数据
       stkIoBillEntryList: [],
+      /** 保存中：防连点并发导致明细翻倍 */
+      submitLoading: false,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -1499,8 +1501,28 @@ export default {
         this.$nextTick(() => this.refreshEntryStockQty());
       });
     },
+    reloadOutboundEntriesAfterSave(billId) {
+      if (billId == null) {
+        return Promise.resolve();
+      }
+      return getOutWarehouse(billId).then(response => {
+        const data = response && response.data ? response.data : response;
+        if (!data) {
+          return;
+        }
+        if (data.billNo) {
+          this.form.billNo = data.billNo;
+        }
+        this.$set(this.form, 'docRefList', Array.isArray(data.docRefList) ? data.docRefList : []);
+        this.stkIoBillEntryList = data.stkIoBillEntryList || [];
+        this.$nextTick(() => this.refreshEntryStockQty && this.refreshEntryStockQty());
+      }).catch(() => {});
+    },
     /** 提交按钮 */
     async submitForm() {
+      if (this.submitLoading) {
+        return;
+      }
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
           if (!this.assertOutboundDepartmentEnabled(this.form.departmentId)) {
@@ -1582,14 +1604,17 @@ export default {
             }
           });
           this.form.totalAmount = this.toMoneyStorage(totalAmt);
+          this.submitLoading = true;
           if (this.form.id != null) {
             updateOutWarehouse(this.form).then(response => {
               this.$modal.msgSuccess((response && response.msg) || "修改成功");
               const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
               if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+              return this.reloadOutboundEntriesAfterSave(this.form.id);
+            }).then(() => {
               this.getList();
-              // 保存成功后不关闭弹窗，允许继续修改
-              // this.open = false;
+            }).finally(() => {
+              this.submitLoading = false;
             });
           } else {
             addOutWarehouse(this.form).then(response => {
@@ -1602,9 +1627,11 @@ export default {
                 this.form.id = resData.id;
                 this.form.billNo = resData.billNo;
               }
+              return this.reloadOutboundEntriesAfterSave(this.form.id);
+            }).then(() => {
               this.getList();
-              // 保存成功后不关闭弹窗，允许继续修改
-              // this.open = false;
+            }).finally(() => {
+              this.submitLoading = false;
             });
           }
         }

@@ -297,6 +297,7 @@ export default {
       stkMaterialList: [],
       // 退货明细表格数据
       stkIoBillEntryList: [],
+      submitLoading: false,
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -916,8 +917,26 @@ export default {
         this.action = true;
       });
     },
+    reloadThEntriesAfterSave(billId) {
+      if (billId == null) {
+        return Promise.resolve();
+      }
+      return getThInventory(billId).then(response => {
+        const data = response && response.data ? response.data : response;
+        if (!data) {
+          return;
+        }
+        if (data.billNo) {
+          this.form.billNo = data.billNo;
+        }
+        this.stkIoBillEntryList = data.stkIoBillEntryList || [];
+      }).catch(() => {});
+    },
     /** 提交按钮 */
     async submitForm() {
+      if (this.submitLoading) {
+        return;
+      }
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
           // 校验明细批次号是否有重复
@@ -959,12 +978,15 @@ export default {
           });
           this.form.totalAmount = this.toMoneyStorage(totalAmt);
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
+          this.submitLoading = true;
           if (this.form.id != null) {
-            updateThInventory(this.form).then(response => {
+            updateThInventory(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
+              return this.reloadThEntriesAfterSave(this.form.id);
+            }).then(() => {
               this.getList();
-              // 保存成功后不关闭弹窗，允许继续办理业务
-              // this.open = false;
+            }).finally(() => {
+              this.submitLoading = false;
             });
           } else {
             addThInventory(this.form).then(response => {
@@ -975,9 +997,11 @@ export default {
                 this.form.id = resData.id;
                 this.form.billNo = resData.billNo;
               }
+              return this.reloadThEntriesAfterSave(this.form.id);
+            }).then(() => {
               this.getList();
-              // 保存成功后不关闭弹窗，允许继续办理业务
-              // this.open = false;
+            }).finally(() => {
+              this.submitLoading = false;
             });
           }
         }
