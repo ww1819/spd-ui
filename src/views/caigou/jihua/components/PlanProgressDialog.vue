@@ -1,26 +1,35 @@
 <template>
-  <el-dialog title="采购计划进度" :visible.sync="innerVisible" width="600px" :close-on-click-modal="false" append-to-body>
-    <div v-if="row" style="margin-bottom: 20px;">
-      <p><strong>计划单号：</strong>{{ row.planNo }}</p>
-      <p><strong>仓库：</strong>{{ row.warehouse && row.warehouse.name ? row.warehouse.name : '' }}</p>
-      <p><strong>金额：</strong>{{ row.totalAmount != null && row.totalAmount !== '' ? formatAmount(row.totalAmount, '0') : '0' }}</p>
-      <p><strong>单据状态：</strong>
-        <dict-tag :options="dict.type.plan_status" :value="row.planStatus"/>
-      </p>
+  <div class="plan-progress-drawer-mask" @click.self="innerVisible = false">
+    <div class="plan-progress-drawer-panel" @click.stop>
+      <div class="plan-progress-drawer-header">
+        <span class="plan-progress-drawer-title">采购计划进度</span>
+        <i class="el-icon-close plan-progress-drawer-close" @click="innerVisible = false" />
+      </div>
+      <div class="plan-progress-drawer-body">
+        <div v-if="row" class="plan-progress-meta">
+          <p><strong>计划单号：</strong>{{ row.planNo }}</p>
+          <p><strong>仓库：</strong>{{ row.warehouse && row.warehouse.name ? row.warehouse.name : '' }}</p>
+          <p><strong>金额：</strong>{{ row.totalAmount != null && row.totalAmount !== '' ? formatAmount(row.totalAmount, '0') : '0' }}</p>
+          <p>
+            <strong>单据状态：</strong>
+            <dict-tag :options="dict.type.plan_status" :value="row.planStatus"/>
+          </p>
+        </div>
+        <el-steps :active="activeStep" direction="vertical" finish-status="success">
+          <el-step
+            v-for="(step, index) in steps"
+            :key="index"
+            :title="step.title"
+            :description="step.description"
+            :status="step.status"
+          />
+        </el-steps>
+      </div>
+      <div class="plan-progress-drawer-footer">
+        <el-button size="small" class="spd-btn spd-btn--secondary" @click="innerVisible = false">关 闭</el-button>
+      </div>
     </div>
-    <el-steps :active="activeStep" direction="vertical" finish-status="success">
-      <el-step
-        v-for="(step, index) in steps"
-        :key="index"
-        :title="step.title"
-        :description="step.description"
-        :status="step.status"
-      />
-    </el-steps>
-    <div slot="footer" class="dialog-footer">
-      <el-button @click="innerVisible = false">关 闭</el-button>
-    </div>
-  </el-dialog>
+  </div>
 </template>
 
 <script>
@@ -61,6 +70,11 @@ export default {
       if (val && this.row) {
         this.applyPlanStatus(this.row.planStatus)
       }
+    }
+  },
+  created() {
+    if (this.visible && this.row) {
+      this.applyPlanStatus(this.row.planStatus)
     }
   },
   methods: {

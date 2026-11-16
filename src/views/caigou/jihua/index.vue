@@ -4051,4 +4051,69 @@ html body .app-container.caigou-jihua-page .apply-inbound-nested-modal .apply-ta
 .app-container.caigou-jihua-page .apply-main-table td.plan-creator-col .cell {
   white-space: nowrap !important;
 }
+
+/* 采购计划进度：挂在页面内容框内右侧，不遮顶栏（与到货验收变更记录一致） */
+.app-container.caigou-jihua-page .plan-progress-drawer-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+}
+.app-container.caigou-jihua-page .plan-progress-drawer-panel {
+  width: 480px;
+  max-width: 92%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+.app-container.caigou-jihua-page .plan-progress-drawer-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+.app-container.caigou-jihua-page .plan-progress-drawer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+.app-container.caigou-jihua-page .plan-progress-drawer-close {
+  font-size: 16px;
+  color: #909399;
+  cursor: pointer;
+}
+.app-container.caigou-jihua-page .plan-progress-drawer-close:hover {
+  color: #409EFF;
+}
+.app-container.caigou-jihua-page .plan-progress-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px;
+  box-sizing: border-box;
+}
+.app-container.caigou-jihua-page .plan-progress-meta {
+  margin-bottom: 20px;
+}
+.app-container.caigou-jihua-page .plan-progress-meta p {
+  margin: 0 0 10px;
+  line-height: 1.6;
+  color: #303133;
+}
+.app-container.caigou-jihua-page .plan-progress-drawer-footer {
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
 </style>

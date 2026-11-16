@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div :class="{'hidden':hidden}" class="pagination-container">
     <el-pagination
       :background="background"
@@ -106,7 +106,10 @@ export default {
 <style scoped>
 .pagination-container {
   background: #fff;
-  padding: 32px 16px;
+  /* 默认不额外撑开；各业务页自行控制上下留白，避免与 ruoyi 全局样式叠出不等空隙 */
+  padding: 0;
+  margin: 0;
+  height: auto;
 }
 .pagination-container.hidden {
   display: none;

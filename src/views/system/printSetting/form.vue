@@ -252,16 +252,16 @@
                 :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState || !!tableDragState }"
                 :style="{ left: rulerGuideRange.left + 'px', width: rulerGuideRange.width + 'px' }"
               />
-              <div
-                v-for="i in horizontalRuler"
-                :key="'h-' + i"
-                :class="['ruler-mark-horizontal', i % 10 === 0 ? 'major' : 'minor']"
-                :style="{ left: getHorizontalPosition(i) + 'px' }"
-              >
-                <span v-if="i % 10 === 0" class="ruler-number ruler-number-top">{{ i }}</span>
-                <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
-              </div>
+            <div
+              v-for="i in horizontalRuler"
+              :key="'h-' + i"
+              :class="['ruler-mark-horizontal', i % 10 === 0 ? 'major' : 'minor']"
+              :style="{ left: getHorizontalPosition(i) + 'px' }"
+            >
+              <span v-if="i % 10 === 0" class="ruler-number ruler-number-top">{{ i }}</span>
+              <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
             </div>
+          </div>
           </div>
         </div>
         <div class="ruler-main-row">
@@ -277,16 +277,16 @@
                 :class="{ dragging: !!textDragState || !!codeDragState || !!labelDragState || !!tableDragState }"
                 :style="{ top: rulerGuideRange.top + 'px', height: rulerGuideRange.height + 'px' }"
               />
-              <div
-                v-for="i in verticalRuler"
-                :key="'v-' + i"
-                :class="['ruler-mark-vertical', i % 10 === 0 ? 'major' : 'minor']"
-                :style="{ top: getVerticalPosition(i) + 'px' }"
-              >
-                <span v-if="i % 10 === 0" class="ruler-number ruler-number-left">{{ i }}</span>
-                <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
-              </div>
+            <div
+              v-for="i in verticalRuler"
+              :key="'v-' + i"
+              :class="['ruler-mark-vertical', i % 10 === 0 ? 'major' : 'minor']"
+              :style="{ top: getVerticalPosition(i) + 'px' }"
+            >
+              <span v-if="i % 10 === 0" class="ruler-number ruler-number-left">{{ i }}</span>
+              <div class="ruler-tick" :class="i % 10 === 0 ? 'major' : 'minor'"></div>
             </div>
+          </div>
           </div>
           <!-- 仅画布区域滚动 -->
           <div
@@ -597,9 +597,9 @@
               </div>
             </div>
           </div>
-              </div>
-            </div>
           </div>
+        </div>
+      </div>
         </div>
         <!-- 底部分页页签：分页1 / 分页2 / + -->
         <div class="design-page-tabs">
@@ -629,7 +629,7 @@
         class="right-panel-wrap"
         :class="{ 'is-collapsed': rightPanelCollapsed, 'is-animating': rightPanelAnimating }"
       >
-        <div class="right-panel">
+      <div class="right-panel">
         <el-form ref="form" :model="form" :rules="rules" label-width="120px" class="right-panel-form">
           <div class="right-panel-top">
           <el-tabs v-model="activeTab" class="right-config-tabs">
@@ -639,23 +639,23 @@
             <el-col :span="12">
               <el-form-item label="模板名称" prop="templateName" label-width="80px">
                 <el-input v-model="form.templateName" placeholder="模板名称" size="small" />
-              </el-form-item>
+          </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="单据类型" prop="billType" label-width="80px">
                 <el-select v-model="form.billType" placeholder="请选择单据类型" clearable size="small" style="width: 100%">
-                  <el-option label="入库单" :value="101" />
-                  <el-option label="退货单" :value="102" />
-                  <el-option label="出库单" :value="201" />
-                  <el-option label="退库单" :value="202" />
-                  <el-option label="盘点单" :value="301" />
-                  <el-option label="入库单(高值)" :value="111" />
-                  <el-option label="退货单(高值)" :value="112" />
-                  <el-option label="出库单(高值)" :value="211" />
-                  <el-option label="退库单(高值)" :value="212" />
-                  <el-option label="跟台条码" :value="401" />
-                  <el-option label="备货条码" :value="402" />
-                </el-select>
+              <el-option label="入库单" :value="101" />
+              <el-option label="退货单" :value="102" />
+              <el-option label="出库单" :value="201" />
+              <el-option label="退库单" :value="202" />
+              <el-option label="盘点单" :value="301" />
+              <el-option label="入库单(高值)" :value="111" />
+              <el-option label="退货单(高值)" :value="112" />
+              <el-option label="出库单(高值)" :value="211" />
+              <el-option label="退库单(高值)" :value="212" />
+              <el-option label="跟台条码" :value="401" />
+              <el-option label="备货条码" :value="402" />
+            </el-select>
               </el-form-item>
             </el-col>
           </el-row>
@@ -696,7 +696,7 @@
                 <div class="component-card-icon" v-html="item.icon"></div>
                 <div class="component-card-label">{{ item.label }}</div>
               </div>
-            </div>
+              </div>
           </el-tab-pane>
 
           <!-- 列配置 -->
@@ -860,7 +860,7 @@
                       size="small"
                     />
                   </div>
-                </el-form-item>
+      </el-form-item>
               </el-collapse-item>
               <el-collapse-item title="通用" name="common">
                 <el-row :gutter="12" class="field-common-row">
@@ -3180,13 +3180,13 @@ export default {
       if (!multi) this.bodySelectedCells = [];
       const idx = this.headerSelectedCols.indexOf(baseColIndex);
       if (multi) {
-        if (idx !== -1) {
-          this.headerSelectedCols.splice(idx, 1);
+      if (idx !== -1) {
+        this.headerSelectedCols.splice(idx, 1);
           if (!this.headerSelectedCols.length) this.canvasSelectedKey = '';
           else this.selectCanvasWidget('header-cell:' + this.headerSelectedCols[this.headerSelectedCols.length - 1]);
-        } else {
-          this.headerSelectedCols.push(baseColIndex);
-          this.headerSelectedCols.sort((a, b) => a - b);
+      } else {
+        this.headerSelectedCols.push(baseColIndex);
+        this.headerSelectedCols.sort((a, b) => a - b);
           this.selectCanvasWidget('header-cell:' + baseColIndex);
         }
         return;
@@ -3253,7 +3253,7 @@ export default {
         const last = cols[cols.length - 1];
         if (last <= start) {
           this.$message && this.$message.warning('请至少选中两个不同列的单元格');
-          return;
+            return;
         }
         const span = last - start + 1;
         const end = start + span - 1;
@@ -3402,16 +3402,16 @@ export default {
       if (!multi) this.headerSelectedCols = [];
       const idx = this.bodySelectedCells.findIndex(c => c.row === rowIndex && c.col === colIndex);
       if (multi) {
-        if (idx !== -1) {
-          this.bodySelectedCells.splice(idx, 1);
+      if (idx !== -1) {
+        this.bodySelectedCells.splice(idx, 1);
           if (!this.bodySelectedCells.length) {
             if (this.canvasSelectedKey === key) this.canvasSelectedKey = '';
           } else {
             const last = this.bodySelectedCells[this.bodySelectedCells.length - 1];
             this.selectCanvasWidget('body-cell:' + last.row + ':' + last.col);
           }
-        } else {
-          this.bodySelectedCells.push({ row: rowIndex, col: colIndex });
+      } else {
+        this.bodySelectedCells.push({ row: rowIndex, col: colIndex });
           this.selectCanvasWidget(key);
         }
         return;
@@ -3442,8 +3442,8 @@ export default {
         const entryIndex = (this.refBillPage - 1) * pageSize + rowIndex;
         const entry = this.refBillData.entries[entryIndex];
         if (entry && field) {
-          const val = entry[field] != null ? entry[field] : entry[field === 'price' ? 'unitPrice' : field];
-          return val != null ? String(val) : '';
+            const val = entry[field] != null ? entry[field] : entry[field === 'price' ? 'unitPrice' : field];
+            return val != null ? String(val) : '';
         }
       }
       const key = `${rowIndex}_${colIndex}`;

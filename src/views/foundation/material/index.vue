@@ -851,7 +851,11 @@
         </template>
       </el-table-column>
     </el-table>
-    <div class="material-pagination-wrap" ref="paginationWrap">
+    <div
+      class="material-pagination-wrap"
+      ref="paginationWrap"
+      style="padding: 8px 14px; margin: -22px 0 0 0; box-sizing: border-box;"
+    >
     <pagination
       v-show="total>0"
       :total="total"
@@ -1397,7 +1401,7 @@ export default {
         });
       });
     },
-    /** 按表格卡片剩余高度计算主表高度，保证翻页完整可见 */
+    /** 按表格卡片剩余高度计算主表高度，预留翻页完整高度，禁止把翻页挤出可视区 */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
       const pagWrap = this.$refs.paginationWrap;
@@ -1405,12 +1409,11 @@ export default {
       const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
       if (!panelH) return;
       const pagVisible = this.total > 0;
-      // 预留翻页实际高度 + 额外空隙，避免底栏贴边/被裁
+      // 预留翻页真实高度（至少 48），保证「共 x 条」整行完整可见
       const pagH = pagVisible
-        ? Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 12
+        ? Math.max((pagWrap && (pagWrap.offsetHeight || pagWrap.getBoundingClientRect().height)) || 0, 48)
         : 0;
-      const next = Math.floor(panelH - pagH);
-      const height = Math.max(200, next);
+      const height = Math.max(200, Math.floor(panelH - pagH));
       if (Math.abs(this.mainTableHeight - height) >= 2) {
         this.mainTableHeight = height;
       }
@@ -4069,31 +4072,38 @@ export default {
   flex-wrap: nowrap;
 }
 
-/* 页面四周留白：顶部与标签栏留约 8px 细缝，左右 8px */
+/* 页面四周留白：上下左右均为 8px，避免翻页底部视觉空隙偏大 */
 .material-page-container.app-container {
   position: relative;
   padding-top: 8px !important;
+  padding-bottom: 8px !important;
   padding-left: 8px !important;
   padding-right: 8px !important;
 }
 
-/* 翻页：覆盖 ruoyi 全局 height:25px + absolute，避免翻页被裁切 */
+/* 翻页：覆盖 ruoyi/全局 margin、height:25px、绝对定位；上下留白由 wrap 的 8px 控制 */
+.material-page-container .material-pagination-wrap .pagination-container,
 .material-page-container .pagination-container {
+  position: relative !important;
   height: auto !important;
-  min-height: 52px;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 10px 14px 14px !important;
-  transform: none;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  overflow: visible;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  display: block !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
 }
 
+.material-page-container .material-pagination-wrap .pagination-container .el-pagination,
 .material-page-container .pagination-container .el-pagination {
-  position: relative !important;
+  position: static !important;
   right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* 查询容器样式 */
@@ -5346,14 +5356,21 @@ export default {
   margin-right: auto;
 }
 
-.material-page-container .el-table::before {
-  height: 1px !important;
-  background-color: #EBEEF5 !important;
-}
-
+.material-page-container .el-table::before,
 .material-page-container .el-table::after {
-  width: 1px !important;
-  background-color: #EBEEF5 !important;
+  display: none !important;
+  content: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  background: transparent !important;
+}
+/* 主表明细框底：去掉滚动条与翻页之间的分隔线 */
+.material-page-container .material-main-table::before,
+.material-page-container .material-main-table::after {
+  display: none !important;
+  content: none !important;
+  height: 0 !important;
+  width: 0 !important;
 }
 
 /* 仅主明细表：大分页滚动性能（不影响弹窗等其它表格） */
@@ -5633,7 +5650,8 @@ export default {
   overflow: hidden;
   box-sizing: border-box;
   padding-top: 8px !important;
-  padding-bottom: 14px !important;
+  /* 与顶部一致，避免翻页视觉上「下面空隙更大」 */
+  padding-bottom: 8px !important;
 }
 
 .app-container.material-page-container .query-container {
@@ -5721,10 +5739,6 @@ export default {
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
 }
 
-.app-container.material-page-container .material-pagination-wrap {
-  flex: 0 0 auto;
-}
-
 .app-container.material-page-container .material-toolbar-row .el-button {
   margin-left: 0 !important;
 }
@@ -5777,26 +5791,61 @@ export default {
   margin-left: 0;
 }
 
-.app-container.material-page-container .pagination-container {
-  height: auto !important;
-  min-height: 52px;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 10px 14px 14px !important;
-  background: #fff;
-  border: none;
-  border-top: 1px solid #eef2f7;
+html body .app-container.material-page-container .material-pagination-wrap {
+  flex: 0 0 auto !important;
+  /* 仅整行翻页上移 22px，不改表格高度 */
+  margin: -22px 0 0 0 !important;
+  padding: 8px 14px !important;
+  position: relative !important;
+  top: auto !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  border: none !important;
+  border-top: none !important;
   border-radius: 0 0 10px 10px;
-  box-shadow: none;
-  display: flex;
+  display: flex !important;
   justify-content: flex-end;
   align-items: center;
-  overflow: visible;
+  z-index: 3 !important;
 }
 
-.app-container.material-page-container .pagination-container .el-pagination {
+html body .app-container.material-page-container .material-main-table::before,
+html body .app-container.material-page-container .material-main-table::after {
+  display: none !important;
+  content: none !important;
+  height: 0 !important;
+  border: none !important;
+}
+
+/* wrap 已负责 8px 上下留白，内层必须为 0，避免与 ruoyi 的 8px 叠加 */
+html body .app-container.material-page-container .material-pagination-wrap .pagination-container {
   position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: block !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+}
+
+html body .app-container.material-page-container .material-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  float: none !important;
   right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  vertical-align: middle !important;
 }
 
 .app-container.material-page-container .material-main-table {
@@ -5807,6 +5856,12 @@ export default {
   box-shadow: none;
   border: none;
   border-bottom: none;
+}
+
+/* 防止表体底边再画出一条线 */
+.app-container.material-page-container .material-main-table .el-table__body-wrapper,
+.app-container.material-page-container .material-main-table .el-table__fixed-body-wrapper {
+  border-bottom: none !important;
 }
 
 .app-container.material-page-container .form-fields-container .el-input__inner:hover,

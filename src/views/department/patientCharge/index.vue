@@ -60,15 +60,6 @@
               <el-option label="已处理" value="Y" />
               <el-option label="未处理" value="N" />
             </el-select>
-            <el-select v-model="detailQuery.valueLevel" placeholder="高低值标志" clearable size="small" class="pc-query-inline-select">
-              <el-option label="高值" value="1" />
-              <el-option label="低值" value="2" />
-              <el-option label="未设置" value="0" />
-            </el-select>
-            <el-select v-model="detailQuery.materialBound" placeholder="是否对照" clearable size="small" class="pc-query-inline-select">
-              <el-option label="是" value="Y" />
-              <el-option label="否" value="N" />
-            </el-select>
             <el-input
               v-model="detailQuery.orderDeptName"
               placeholder="开单科室"
@@ -205,11 +196,6 @@
           <el-table-column label="高低值类型" prop="valueLevel" width="110" align="center">
             <template slot-scope="scope">
               <span>{{ valueLevelText(scope.row.valueLevel) }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="是否对照" prop="materialBound" width="90" align="center">
-            <template slot-scope="scope">
-              <span>{{ materialBoundText(scope.row.materialBound) }}</span>
             </template>
           </el-table-column>
           <el-table-column label="计费时间" prop="chargeDate" width="160" show-overflow-tooltip />
@@ -433,8 +419,6 @@ export default {
         execDeptName: undefined,
         orderDeptName: undefined,
         processed: undefined,
-        valueLevel: undefined,
-        materialBound: undefined,
         ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
@@ -710,22 +694,16 @@ export default {
       return m[v] || v || ''
     },
     valueLevelText(v) {
+      // 业务仅两档：档案标高值=高值，其余（含历史未识别 0/空）=低值
       if (v === '1' || v === 1) return '高值'
-      if (v === '2' || v === 2) return '低值'
-      return '未设置'
-    },
-    materialBoundText(v) {
-      if (v === 'Y' || v === 'y' || v === true || v === 1 || v === '1') return '是'
-      if (v === 'N' || v === 'n' || v === false || v === 0 || v === '0') return '否'
-      return '否'
+      return '低值'
     },
     isUnknownValueLevel(row) {
-      const v = row && row.valueLevel
-      return !(v === '1' || v === 1 || v === '2' || v === 2)
+      return false
     },
     isLowValueLevel(row) {
       const v = row && row.valueLevel
-      return v === '2' || v === 2
+      return !(v === '1' || v === 1)
     },
     canProcessLow(row) {
       if (!row || row.processStatus !== 'PENDING_CONSUME') {
@@ -912,8 +890,6 @@ export default {
         execDeptName: undefined,
         orderDeptName: undefined,
         processed: undefined,
-        valueLevel: undefined,
-        materialBound: undefined,
         ...buildDefaultChargeDateRange(),
         beginProcessTime: undefined,
         endProcessTime: undefined
@@ -1200,7 +1176,7 @@ export default {
     },
     processLowValue(row) {
       if (this.isUnknownValueLevel(row)) {
-        this.$modal.msgWarning('收费项目未维护高低值标识，请先在「HIS收费项目」维护后再核销')
+        this.$modal.msgWarning('收费项目未维护高低值标识，请先在耗材档案维护是否高值后再核销')
         return
       }
       if (!this.isLowValueLevel(row)) {
@@ -1223,7 +1199,7 @@ export default {
     },
     openSelfDeptLowConsume(row) {
       if (this.isUnknownValueLevel(row)) {
-        this.$modal.msgWarning('收费项目未维护高低值标识，请先在「HIS收费项目」维护后再核销')
+        this.$modal.msgWarning('收费项目未维护高低值标识，请先在耗材档案维护是否高值后再核销')
         return
       }
       if (!this.isLowValueLevel(row)) {
