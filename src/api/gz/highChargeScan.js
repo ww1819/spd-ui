@@ -4,7 +4,8 @@ export function listHighChargeInpatientMirror(query) {
   return request({
     url: '/gz/highChargeMirror/mirror/inpatient/list',
     method: 'get',
-    timeout: 30000,
+    timeout: 60000,
+    timeoutMsg: '高值扫描核销列表查询超时，请缩小计费日期范围后重试',
     params: query
   })
 }
@@ -13,7 +14,8 @@ export function listHighChargeOutpatientMirror(query) {
   return request({
     url: '/gz/highChargeMirror/mirror/outpatient/list',
     method: 'get',
-    timeout: 30000,
+    timeout: 60000,
+    timeoutMsg: '高值扫描核销列表查询超时，请缩小计费日期范围后重试',
     params: query
   })
 }
@@ -22,7 +24,8 @@ export function listHighChargeAllMirror(query) {
   return request({
     url: '/gz/highChargeMirror/mirror/all/list',
     method: 'get',
-    timeout: 30000,
+    timeout: 60000,
+    timeoutMsg: '高值扫描核销列表查询超时，请缩小计费日期范围后重试',
     params: query
   })
 }
