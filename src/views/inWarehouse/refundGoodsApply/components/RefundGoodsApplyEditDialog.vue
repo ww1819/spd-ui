@@ -143,6 +143,8 @@
                 size="small"
                 class="spd-btn spd-btn--primary"
                 icon="el-icon-check"
+                :loading="submitLoading"
+                :disabled="submitLoading"
                 @click="submitForm"
               >保 存</el-button>
             </template>

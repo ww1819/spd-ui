@@ -372,6 +372,8 @@ export default {
       stkMaterialList: [],
       // 入库明细表格数据
       stkIoBillEntryList: [],
+      /** 保存中：防连点并发 PUT 导致明细翻倍 */
+      submitLoading: false,
       /** 仅用于触发 el-table 合计行随明细 qty/amt 等变更重新渲染（summary-method 对嵌套变更有时不重算） */
       detailSummaryTick: 0,
       // 扫描条码输入框（与引用配送单同一行，表头区）
@@ -1516,12 +1518,34 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.submitLoading) {
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (!valid) {
           return;
         }
         this.doSubmitForm();
       });
+    },
+    reloadInboundEntriesAfterSave(billId) {
+      if (billId == null) {
+        return Promise.resolve();
+      }
+      return getInWarehouse(billId).then(detailRes => {
+        const detail = (detailRes && detailRes.data) ? detailRes.data : detailRes;
+        if (!detail) {
+          return;
+        }
+        if (detail.billNo) {
+          this.form.billNo = detail.billNo;
+        }
+        const entryList = (detail.stkIoBillEntryList || []).map((item) => {
+          this.initRowLongTermFlag(item);
+          return item;
+        });
+        this.$set(this, 'stkIoBillEntryList', entryList);
+      }).catch(() => {});
     },
     doSubmitForm() {
           // 检查明细列表是否为空
@@ -1541,6 +1565,9 @@ export default {
           }
 
           const submitAfterWarehouseCheck = () => {
+          if (this.submitLoading) {
+            return;
+          }
           if (!this.form.createBy && this.$store.state.user && this.$store.state.user.userId) {
             this.form.createBy = this.$store.state.user.userId;
           }
@@ -1553,15 +1580,18 @@ export default {
             }
           });
           this.form.totalAmount = this.toMoneyStorage(totalAmt);
+          this.submitLoading = true;
           if (this.form.id != null) {
-            updateWarehouse(this.form).then(response => {
+            updateWarehouse(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
-              // 重置单据状态查询条件，确保能查询到所有状态的单据
+              // 修改成功也必须回填明细 id，避免连点/再保存时无 id 行被反复 insert
+              return this.reloadInboundEntriesAfterSave(this.form.id);
+            }).then(() => {
               this.queryParams.billStatus = null;
               this.getList();
               this.$nextTick(() => this.refreshDetailSummary());
-              // 保存成功后不关闭弹窗，允许继续修改
-              // this.open = false;
+            }).finally(() => {
+              this.submitLoading = false;
             });
           } else {
             addWarehouse(this.form).then(response => {
@@ -1573,26 +1603,13 @@ export default {
                 this.form.billNo = resData.billNo;
               }
               // 必须回填明细 id：否则再次保存时明细无 id，增量 sync 会软删旧行再插新行，易造成同单号明细翻倍
-              const newId = this.form.id;
-              if (newId != null) {
-                getInWarehouse(newId).then(detailRes => {
-                  const detail = (detailRes && detailRes.data) ? detailRes.data : detailRes;
-                  if (detail) {
-                    if (detail.billNo) this.form.billNo = detail.billNo;
-                    const entryList = (detail.stkIoBillEntryList || []).map((item, index) => {
-                      this.initRowLongTermFlag(item);
-                      return item;
-                    });
-                    this.$set(this, 'stkIoBillEntryList', entryList);
-                  }
-                }).catch(() => {});
-              }
-              // 重置单据状态查询条件，确保新增的单据能显示出来
+              return this.reloadInboundEntriesAfterSave(this.form.id);
+            }).then(() => {
               this.queryParams.billStatus = null;
               this.getList();
               this.$nextTick(() => this.refreshDetailSummary());
-              // 保存成功后不关闭弹窗，允许继续修改
-              // this.open = false;
+            }).finally(() => {
+              this.submitLoading = false;
             });
           }
           };

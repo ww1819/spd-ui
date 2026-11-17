@@ -77,7 +77,7 @@
               <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="nameBtn">添加</el-button>
               <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refCkApply">引用出库单</el-button>
               <el-button type="danger" size="small" icon="el-icon-delete" @click="handleDeleteStkIoBillEntry">删除</el-button>
-              <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
+              <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :loading="submitLoading" :disabled="submitLoading" @click="submitForm">保 存</el-button>
             </template>
           </div>
         </el-row>

@@ -13,20 +13,42 @@
           <el-option v-for="c in customerOptions" :key="c.customerId" :label="c.customerName + ' (' + (c.customerCode || '') + ')'" :value="c.customerId" />
         </el-select>
       </el-form-item>
+      <el-form-item v-if="selectedCustomerId">
+        <el-button size="small" @click="toggleExpandAll">展开/折叠</el-button>
+      </el-form-item>
     </el-form>
-    <el-table v-loading="loading" :data="menuList" border size="small" style="margin-top: 12px">
-      <el-table-column label="功能名称" prop="menuName" min-width="200" show-overflow-tooltip />
-      <el-table-column label="状态" width="90" align="center">
+    <el-table
+      v-if="refreshTable"
+      v-loading="loading"
+      :data="menuList"
+      row-key="menuId"
+      border
+      size="small"
+      style="margin-top: 12px"
+      :default-expand-all="isExpandAll"
+      :tree-props="{ children: 'children', hasChildren: 'hasChildren' }"
+    >
+      <el-table-column label="功能名称" prop="menuName" min-width="280" show-overflow-tooltip />
+      <el-table-column label="类型" width="80" align="center">
         <template slot-scope="scope">
-          <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag>
+          <span>{{ menuTypeLabel(scope.row.menuType) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260" align="center" fixed="right">
+      <el-table-column label="状态" width="90" align="center">
         <template slot-scope="scope">
-          <el-button size="mini" type="text" icon="el-icon-video-pause" @click="handleChangeStatus(scope.row, '1')" v-hasPermi="['hc:system:customerMenuManage:edit']" v-if="scope.row.status === '0'">停用</el-button>
-          <el-button size="mini" type="text" icon="el-icon-video-play" @click="handleChangeStatus(scope.row, '0')" v-hasPermi="['hc:system:customerMenuManage:edit']" v-if="scope.row.status === '1'">启用</el-button>
-          <el-button size="mini" type="text" icon="el-icon-document" @click="handleStatusLog(scope.row)" v-hasPermi="['hc:system:customerMenuManage:query']">启停用记录</el-button>
-          <el-button size="mini" type="text" icon="el-icon-time" @click="handlePeriodLog(scope.row)" v-hasPermi="['hc:system:customerMenuManage:query']">启停用时间段</el-button>
+          <el-tag v-if="isAssigned(scope.row)" :type="scope.row.status === '0' ? 'success' : 'danger'" size="small">{{ scope.row.status === '0' ? '启用' : '停用' }}</el-tag>
+          <span v-else class="struct-tip">—</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="260" align="center">
+        <template slot-scope="scope">
+          <template v-if="isAssigned(scope.row)">
+            <el-button size="mini" type="text" icon="el-icon-video-pause" @click="handleChangeStatus(scope.row, '1')" v-hasPermi="['hc:system:customerMenuManage:edit']" v-if="scope.row.status === '0'">停用</el-button>
+            <el-button size="mini" type="text" icon="el-icon-video-play" @click="handleChangeStatus(scope.row, '0')" v-hasPermi="['hc:system:customerMenuManage:edit']" v-if="scope.row.status === '1'">启用</el-button>
+            <el-button size="mini" type="text" icon="el-icon-document" @click="handleStatusLog(scope.row)" v-hasPermi="['hc:system:customerMenuManage:query']">启停用记录</el-button>
+            <el-button size="mini" type="text" icon="el-icon-time" @click="handlePeriodLog(scope.row)" v-hasPermi="['hc:system:customerMenuManage:query']">启停用时间段</el-button>
+          </template>
+          <span v-else class="struct-tip">目录分组</span>
         </template>
       </el-table-column>
     </el-table>
@@ -54,6 +76,8 @@ export default {
       customerOptions: [],
       loading: false,
       menuList: [],
+      isExpandAll: false,
+      refreshTable: true,
       openStatus: false,
       openLog: false,
       openPeriod: false,
@@ -78,9 +102,23 @@ export default {
       listMenusByCustomerId(tenantId).then(res => {
         const list = res.data || []
         list.forEach(item => { item.customerId = item.customerId || item.tenantId || tenantId })
-        this.menuList = list
+        this.menuList = this.handleTree(list, 'menuId')
         this.loading = false
       }).catch(() => { this.loading = false })
+    },
+    toggleExpandAll() {
+      this.refreshTable = false
+      this.isExpandAll = !this.isExpandAll
+      this.$nextTick(() => { this.refreshTable = true })
+    },
+    isAssigned(row) {
+      return !row || row.assigned !== false
+    },
+    menuTypeLabel(type) {
+      if (type === 'M') return '目录'
+      if (type === 'C') return '菜单'
+      if (type === 'F') return '按钮'
+      return ''
     },
     handleChangeStatus(row, status) {
       const tenantId = row.tenantId || row.customerId || this.selectedCustomerId
@@ -118,5 +156,6 @@ export default {
 .entry-path-tip .label { color: #909399; margin-right: 4px; }
 .entry-path-tip .divider { margin: 0 10px; color: #dcdfe6; }
 .empty-tip { color: #909399; padding: 20px; text-align: center; }
+.struct-tip { color: #c0c4cc; }
 .log-dialog-header { margin-bottom: 12px; font-weight: 600; color: #303133; }
 </style>

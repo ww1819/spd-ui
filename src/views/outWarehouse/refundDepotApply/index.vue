@@ -303,6 +303,7 @@ export default {
       selectRow: [],
       // 退库明细表格数据
       stkIoBillEntryList: [],
+      submitLoading: false,
       // 打印数据（用于隐藏打印组件）
       // 弹出层标题
       title: "",
@@ -947,8 +948,26 @@ export default {
         this.title = "修改退库";
       });
     },
+    reloadTkEntriesAfterSave(billId) {
+      if (billId == null) {
+        return Promise.resolve();
+      }
+      return getTkInventory(billId).then(response => {
+        const data = response && response.data ? response.data : response;
+        if (!data) {
+          return;
+        }
+        if (data.billNo) {
+          this.form.billNo = data.billNo;
+        }
+        this.stkIoBillEntryList = data.stkIoBillEntryList || [];
+      }).catch(() => {});
+    },
     /** 提交按钮 */
     async submitForm() {
+      if (this.submitLoading) {
+        return;
+      }
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
           // 校验：有科室库存 id 时按 id 判重；否则按批次号判重（兼容旧数据）
@@ -1005,17 +1024,27 @@ export default {
             }
           });
           this.form.totalAmount = this.toMoneyStorage(totalAmt);
+          this.submitLoading = true;
           if (this.form.id != null) {
-            updateTkInventory(this.form).then(response => {
+            updateTkInventory(this.form).then(() => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
+            }).finally(() => {
+              this.submitLoading = false;
             });
           } else {
             addTkInventory(this.form).then(response => {
               this.$modal.msgSuccess("新增成功");
+              const resData = response && response.data;
+              if (resData && (resData.id != null || resData.billNo != null)) {
+                this.form.id = resData.id;
+                this.form.billNo = resData.billNo;
+              }
               this.open = false;
               this.getList();
+            }).finally(() => {
+              this.submitLoading = false;
             });
           }
         }
