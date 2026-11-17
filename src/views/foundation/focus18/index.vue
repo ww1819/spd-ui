@@ -742,7 +742,7 @@ export default {
   background: #909399 !important;
 }
 
-.focus18-drawer-mask {
+::v-deep .page-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
@@ -754,8 +754,8 @@ export default {
   justify-content: flex-end;
 }
 
-.focus18-drawer-panel {
-  width: 560px;
+::v-deep .page-drawer-panel{
+  width: 640px;
   max-width: 100%;
   height: 100%;
   background: #fff;
@@ -764,43 +764,62 @@ export default {
   box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
 }
 
-.focus18-drawer-header {
+::v-deep .page-drawer-header{
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  border-bottom: 1px solid #ebeef5;
+  background: var(--spd-side-theme, #2C569A);
+  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
 }
 
-.focus18-drawer-title {
+::v-deep .page-drawer-title{
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: #fff;
 }
 
-.focus18-drawer-close {
+::v-deep .page-drawer-close{
   font-size: 16px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
 }
 
-.focus18-drawer-close:hover {
-  color: #409EFF;
+::v-deep .page-drawer-close:hover{
+  color: #fff;
 }
 
-.focus18-drawer-body {
+::v-deep .page-drawer-body{
   flex: 1;
   overflow: auto;
   padding: 12px 16px 8px;
 }
 
-.focus18-drawer-footer {
+::v-deep .focus18-drawer-form .focus18-drawer-control{
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+}
+::v-deep .focus18-drawer-form .focus18-drawer-control .el-input__inner,
+::v-deep .focus18-drawer-form .focus18-drawer-control.el-input .el-input__inner,
+::v-deep .focus18-drawer-form .focus18-drawer-control.el-select .el-input__inner{
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+  box-sizing: border-box !important;
+}
+
+::v-deep .page-drawer-footer{
   flex-shrink: 0;
   padding: 12px 16px;
   text-align: center;
   border-top: 1px solid #ebeef5;
   background: #fff;
+}
+
+::v-deep .page-drawer-footer .el-button{
+  margin: 0 8px;
 }
 </style>
 

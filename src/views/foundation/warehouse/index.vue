@@ -870,24 +870,26 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: #2C569A;
-  border-bottom: 1px solid #2C569A;
+  background: var(--spd-side-theme, #2C569A);
+  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
 }
 
 ::v-deep .warehouse-drawer-title{
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--spd-side-theme-on, #fff);
 }
 
 ::v-deep .warehouse-drawer-close{
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--spd-side-theme-on, #fff);
+  opacity: 0.85;
   cursor: pointer;
 }
 
 ::v-deep .warehouse-drawer-close:hover{
-  color: #fff;
+  opacity: 1;
+  color: var(--spd-side-theme-on, #fff);
 }
 
 ::v-deep .warehouse-drawer-body{

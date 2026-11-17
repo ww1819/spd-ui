@@ -973,8 +973,8 @@ export default {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: #2C569A;
-  border-bottom: 1px solid #2C569A;
+  background: var(--spd-side-theme, #2C569A);
+  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
 }
 
 ::v-deep .page-drawer-title{

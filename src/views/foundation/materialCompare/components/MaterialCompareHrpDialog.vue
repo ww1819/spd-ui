@@ -50,7 +50,7 @@
       <!-- 明细表格 -->
       <div class="hrp-table-container material-compare-dialog-table-wrap">
         <div class="material-compare-dialog-table-scroll">
-          <el-table v-loading="hrpLoading" :data="hrpList" border height="100%">
+          <el-table v-loading="hrpLoading" :data="hrpList" border :max-height="dialogTableMaxHeight">
           <el-table-column type="index" label="序号" align="center" width="80" />
           <el-table-column label="收费编码" align="center" prop="chargeCode" width="150" show-overflow-tooltip />
           <el-table-column label="收费名称" align="center" prop="chargeName" min-width="200" show-overflow-tooltip />
@@ -64,13 +64,15 @@
           </el-table>
         </div>
 
-        <pagination
-          v-show="hrpTotal > 0"
-          :total="hrpTotal"
-          :page.sync="hrpQueryParams.pageNum"
-          :limit.sync="hrpQueryParams.pageSize"
-          @pagination="getHrpList"
-        />
+        <div class="apply-pagination-wrap material-compare-dialog-pagination">
+          <pagination
+            v-show="hrpTotal > 0"
+            :total="hrpTotal"
+            :page.sync="hrpQueryParams.pageNum"
+            :limit.sync="hrpQueryParams.pageSize"
+            @pagination="getHrpList"
+          />
+        </div>
       </div>
     </el-dialog>
 </template>

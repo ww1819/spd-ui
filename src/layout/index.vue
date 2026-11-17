@@ -21,6 +21,7 @@ import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
 import ResizeMixin from './mixin/ResizeHandler'
 import { mapState } from 'vuex'
 import variables from '@/assets/styles/variables.scss'
+import { applySideThemeCssVars } from '@/utils/sideTheme'
 
 export default {
   name: 'Layout',
@@ -63,6 +64,12 @@ export default {
       immediate: true,
       handler() {
         this.syncNavLayout()
+      }
+    },
+    sideTheme: {
+      immediate: true,
+      handler(val) {
+        applySideThemeCssVars(val)
       }
     }
   },
@@ -116,6 +123,11 @@ export default {
     z-index: 9;
     width: 100%;
     background: #fff;
+  }
+
+  /* 顶部菜单时由 navbar 铺主题色，避免白底盖住 */
+  .navTop .fixed-header {
+    background: transparent;
   }
 
   .hideSidebar .fixed-header,

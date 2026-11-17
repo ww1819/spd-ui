@@ -322,14 +322,25 @@ export default {
   padding: 4px 6px !important;
 }
 .table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 6px !important;
+  height: 42px !important;
+  padding: 0 6px !important;
+  box-sizing: border-box !important;
 }
-.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
-.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 23px;
+  word-break: normal;
+}
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 42px !important;
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   word-break: normal;
 }
 .table-container ::v-deep .el-table th.ctk-col-left .cell,

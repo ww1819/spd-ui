@@ -1,5 +1,5 @@
 <template>
-  <div class="navbar">
+  <div class="navbar" :class="navbarThemeClass" :style="navbarThemeStyle">
     <hamburger v-if="navPosition === 'side'" id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
     <el-tooltip content="刷新当前页面" effect="dark" placement="bottom">
       <div
@@ -157,6 +157,9 @@ import RuoYiDoc from '@/components/RuoYi/Doc'
 import { listConfig } from '@/api/system/config'
 import { getAppVersion } from '@/api/common/version'
 import { promptDesktopShortcut } from '@/utils/desktopShortcut'
+import variables from '@/assets/styles/variables.scss'
+
+const TOP_DARK_THEMES = ['theme-dark', 'theme-medical', 'theme-teal', 'theme-navy', 'theme-brand']
 
 export default {
   components: {
@@ -205,6 +208,69 @@ export default {
     navPosition: {
       get() {
         return this.$store.state.settings.navPosition
+      }
+    },
+    sideTheme() {
+      return this.$store.state.settings.sideTheme || 'theme-dark'
+    },
+    isTopNav() {
+      return this.navPosition === 'top'
+    },
+    navbarThemeClass() {
+      if (!this.isTopNav) return {}
+      const key = String(this.sideTheme || '').replace(/^theme-/, '') || 'dark'
+      return {
+        'is-top-themed': true,
+        'is-top-dark': TOP_DARK_THEMES.indexOf(this.sideTheme) !== -1,
+        'is-top-light': TOP_DARK_THEMES.indexOf(this.sideTheme) === -1,
+        ['is-top-' + key]: true
+      }
+    },
+    navbarThemeStyle() {
+      if (!this.isTopNav) return {}
+      const v = variables || {}
+      if (this.sideTheme === 'theme-sky') {
+        const start = v.menuSkyGradientStart || '#EAF1FF'
+        const mid = v.menuSkyGradientMid || '#D6E4FF'
+        const end = v.menuSkyGradientEnd || '#B8CCF5'
+        return {
+          backgroundColor: mid,
+          backgroundImage: `linear-gradient(90deg, ${start} 0%, ${mid} 48%, ${end} 100%)`
+        }
+      }
+      if (this.sideTheme === 'theme-medical') {
+        return {
+          backgroundColor: v.menuMedicalBackground || '#0c4a6e',
+          backgroundImage: 'linear-gradient(90deg, #0e5a86 0%, #0c4a6e 50%, #083552 100%)'
+        }
+      }
+      if (this.sideTheme === 'theme-teal') {
+        return {
+          backgroundColor: v.menuTealBackground || '#0f766e',
+          backgroundImage: 'linear-gradient(90deg, #148f85 0%, #0f766e 50%, #0b5c56 100%)'
+        }
+      }
+      if (this.sideTheme === 'theme-navy') {
+        return {
+          backgroundColor: v.menuNavyBackground || '#2C569A',
+          backgroundImage: 'linear-gradient(90deg, #3A6BB0 0%, #2C569A 50%, #234780 100%)'
+        }
+      }
+      if (this.sideTheme === 'theme-brand') {
+        return {
+          backgroundColor: v.menuBrandBackground || '#2C569A',
+          backgroundImage: 'none'
+        }
+      }
+      if (this.sideTheme === 'theme-dark') {
+        return {
+          backgroundColor: v.menuBackground || '#1c2430',
+          backgroundImage: 'linear-gradient(90deg, #243044 0%, #1c2430 55%, #151b24 100%)'
+        }
+      }
+      return {
+        backgroundColor: '#fff',
+        backgroundImage: 'none'
       }
     },
     frontendVersion() {
@@ -326,6 +392,68 @@ export default {
   box-shadow: 0 1px 0 #e8ecf1;
   display: flex;
   align-items: stretch;
+
+  /* 顶部菜单：背景跟主题风格；深色主题反白文字/图标 */
+  &.is-top-themed.is-top-dark {
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+
+    .navbar-refresh-container {
+      color: rgba(255, 255, 255, 0.88);
+      &:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+      }
+    }
+
+    .right-menu-item {
+      color: rgba(255, 255, 255, 0.88);
+      &.hover-effect:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+    }
+
+    .organization-wrapper {
+      .organization-label,
+      .organization-name {
+        color: #fff;
+      }
+    }
+
+    .avatar-wrapper {
+      .user-nickname,
+      .el-icon-caret-bottom {
+        color: #fff;
+      }
+    }
+
+    ::v-deep .hover-top-item {
+      color: rgba(255, 255, 255, 0.88);
+    }
+    ::v-deep .hover-top-icon {
+      color: rgba(255, 255, 255, 0.72);
+    }
+    ::v-deep .hover-top-item:hover,
+    ::v-deep .hover-top-item.is-open {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+    }
+    ::v-deep .hover-top-item:hover .hover-top-icon,
+    ::v-deep .hover-top-item.is-open .hover-top-icon,
+    ::v-deep .hover-top-item.is-active .hover-top-icon {
+      color: #fff;
+    }
+    ::v-deep .hover-top-item.is-active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.16);
+    }
+    ::v-deep .hover-top-item.is-active::after {
+      background: #fff;
+    }
+  }
+
+  &.is-top-themed.is-top-light.is-top-sky {
+    box-shadow: 0 1px 0 rgba(59, 110, 165, 0.18);
+  }
 
   .hamburger-container {
     line-height: 46px;

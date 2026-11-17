@@ -830,36 +830,95 @@ export default {
   background: #909399 !important;
 }
 
-::v-deep .local-modal-mask{
+::v-deep .page-drawer-mask{
   position: absolute;
   left: 0;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 20;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+}
+
+::v-deep .page-drawer-panel{
+  width: 640px;
+  max-width: 100%;
+  height: 100%;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -2px 0 12px rgba(0, 0, 0, 0.12);
+}
+
+::v-deep .page-drawer-header{
+  flex-shrink: 0;
+  display: flex;
   align-items: center;
-  z-index: 1000;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--spd-side-theme, #2C569A);
+  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
 }
 
-::v-deep .local-modal-content{
-  background-color: #fff;
-  padding: 24px;
-  border-radius: 6px;
-  min-width: 900px;
-  width: 900px;
-  max-width: 90vw;
-  max-height: 90vh;
+::v-deep .page-drawer-title{
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--spd-side-theme-on, #fff);
+}
+
+::v-deep .page-drawer-close{
+  font-size: 16px;
+  color: var(--spd-side-theme-on, #fff);
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+::v-deep .page-drawer-close:hover{
+  opacity: 1;
+  color: var(--spd-side-theme-on, #fff);
+}
+
+::v-deep .page-drawer-body{
+  flex: 1;
   overflow: auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 12px 16px 8px;
 }
 
-.dialog-footer {
-  text-align: right;
-  margin-top: 16px;
+::v-deep .location-drawer-form .location-drawer-control{
+  width: 160px !important;
+  min-width: 160px !important;
+  max-width: 160px !important;
+}
+::v-deep .location-drawer-form .location-drawer-control .el-input__inner,
+::v-deep .location-drawer-form .location-drawer-control.el-input .el-input__inner,
+::v-deep .location-drawer-form .location-drawer-control.el-select .el-input__inner,
+::v-deep .location-drawer-form .location-drawer-control.el-input-number .el-input__inner{
+  height: 32px !important;
+  min-height: 32px !important;
+  line-height: 32px !important;
+  box-sizing: border-box !important;
+}
+::v-deep .location-drawer-form .location-drawer-control.el-input-number{
+  line-height: 32px !important;
+}
+::v-deep .location-drawer-form .location-drawer-control.el-input-number .el-input-number__decrease,
+::v-deep .location-drawer-form .location-drawer-control.el-input-number .el-input-number__increase{
+  height: 16px !important;
+  line-height: 16px !important;
+}
+
+::v-deep .page-drawer-footer{
+  flex-shrink: 0;
+  padding: 12px 16px;
+  text-align: center;
+  border-top: 1px solid #ebeef5;
+  background: #fff;
+}
+
+::v-deep .page-drawer-footer .el-button{
+  margin: 0 8px;
 }
 </style>
 

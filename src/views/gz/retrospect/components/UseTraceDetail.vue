@@ -189,7 +189,7 @@
             :width="item.col.width"
           >
             <template slot-scope="scope">
-              <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined && scope.row.chargePrice !== null && scope.row.chargePrice !== undefined">
+              <span v-if="scope.row.quantity !== null && scope.row.quantity !== undefined && scope.row.chargePrice !== null && scope.row.chargePrice !== undefined" class="amount-cell-num">
                 {{ formatTraceLineAmt(scope.row.quantity, scope.row.chargePrice) }}
               </span>
               <span v-else>--</span>
@@ -807,9 +807,7 @@
 
     <div class="pagination-wrapper">
       <div class="pagination-summary">
-        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额:
-        {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额:
-        {{ pageTotalAmtFormatted }}
+        <span class="summary-label">合计：</span>总数量：<span class="summary-num">{{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}</span>，总金额：<span class="summary-num">{{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}</span>，当前页数量：<span class="summary-num">{{ pageTotalQty }}</span>，当前页金额：<span class="summary-num">{{ pageTotalAmtFormatted }}</span>
       </div>
       <div class="pagination-container" v-show="total > 0">
         <el-pagination
@@ -837,16 +835,16 @@ import { createTableColumnSettingsMixin } from "@/mixins/tableColumnSettings";
 
 function createDefaultDetailColumns() {
   return [
-    { key: 0, label: "产品编码", visible: true, width: 145, align: "left", sortable: true },
-    { key: 1, label: "院内码", visible: true, width: 200, align: "left", sortable: true },
+    { key: 0, label: "产品编码", visible: true, width: 115, align: "left", sortable: true },
+    { key: 1, label: "院内码", visible: true, width: 150, align: "left", sortable: true },
     { key: 2, label: "产品名称", visible: true, width: 185, align: "left", sortable: true },
     { key: 3, label: "规格", visible: true, width: 130, align: "left", sortable: true },
     { key: 4, label: "型号", visible: true, width: 110, align: "left", sortable: true },
-    { key: 5, label: "单位", visible: true, width: 100, align: "left", sortable: true },
-    { key: 6, label: "数量", visible: true, width: 110, align: "center", sortable: true },
-    { key: 7, label: "单价", visible: true, width: 130, align: "center", sortable: true },
-    { key: 8, label: "金额", visible: true, width: 130, align: "center", sortable: true },
-    { key: 9, label: "生产日期", visible: true, width: 120, align: "left", sortable: false },
+    { key: 5, label: "单位", visible: true, width: 85, align: "left", sortable: true },
+    { key: 6, label: "数量", visible: true, width: 85, align: "center", sortable: true },
+    { key: 7, label: "单价", visible: true, width: 85, align: "center", sortable: true },
+    { key: 8, label: "金额", visible: true, width: 85, align: "center", sortable: true },
+    { key: 9, label: "生产日期", visible: true, width: 94, align: "center", sortable: false },
     { key: 10, label: "有效期", visible: true, width: 120, align: "left", sortable: false },
     { key: 11, label: "批号", visible: true, width: 120, align: "left", sortable: false },
     { key: 12, label: "批次号", visible: true, width: 120, align: "left", sortable: false },
@@ -872,15 +870,15 @@ function createDefaultDetailColumns() {
     { key: 32, label: "手术医生", visible: true, width: 160, align: "left", sortable: false },
     { key: 33, label: "手术诊断", visible: true, width: 160, align: "left", sortable: false },
     { key: 34, label: "计费时间", visible: true, width: 160, align: "left", sortable: false },
-    { key: 35, label: "UDI码", visible: true, width: 200, align: "left", sortable: false },
+    { key: 35, label: "UDI码", visible: true, width: 145, align: "left", sortable: false },
     { key: 36, label: "辅条码", visible: true, width: 160, align: "left", sortable: false },
-    { key: 37, label: "扫描日期", visible: true, width: 160, align: "left", sortable: false },
-    { key: 38, label: "扫描人", visible: true, width: 120, align: "left", sortable: false },
+    { key: 37, label: "扫描日期", visible: true, width: 95, align: "left", sortable: false },
+    { key: 38, label: "扫描人", visible: true, width: 75, align: "left", sortable: false },
     { key: 39, label: "阳光平台编码", visible: true, width: 160, align: "left", sortable: false },
-    { key: 40, label: "医保编码", visible: true, width: 180, align: "left", sortable: false },
-    { key: 41, label: "财务分类", visible: true, width: 120, align: "left", sortable: false },
-    { key: 42, label: "库房分类", visible: true, width: 120, align: "left", sortable: false },
-    { key: 43, label: "仓库来源", visible: true, width: 160, align: "left", sortable: false },
+    { key: 40, label: "医保编码", visible: true, width: 225, align: "left", sortable: false },
+    { key: 41, label: "财务分类", visible: true, width: 89, align: "left", sortable: false },
+    { key: 42, label: "库房分类", visible: true, width: 89, align: "left", sortable: false },
+    { key: 43, label: "仓库来源", visible: true, width: 89, align: "left", sortable: false },
     { key: 44, label: "批次字典", visible: true, width: 220, align: "left", sortable: false }
   ];
 }
@@ -1251,14 +1249,25 @@ export default {
   padding: 4px 6px !important;
 }
 .table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 6px !important;
+  height: 42px !important;
+  padding: 0 6px !important;
+  box-sizing: border-box !important;
 }
-.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
-.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 23px;
+  word-break: normal;
+}
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 42px !important;
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   word-break: normal;
 }
 .table-container ::v-deep .el-table th.ctk-col-left .cell,

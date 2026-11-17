@@ -7,7 +7,8 @@
       'is-medical': sideTheme === 'theme-medical',
       'is-teal': sideTheme === 'theme-teal',
       'is-sky': sideTheme === 'theme-sky',
-      'is-navy': sideTheme === 'theme-navy'
+      'is-navy': sideTheme === 'theme-navy',
+      'is-brand': sideTheme === 'theme-brand'
     }"
     :style="logoStyle"
   >
@@ -114,7 +115,8 @@ export default {
   &.is-dark,
   &.is-medical,
   &.is-teal,
-  &.is-navy {
+  &.is-navy,
+  &.is-brand {
     border-bottom-color: rgba(255, 255, 255, 0.06);
   }
 

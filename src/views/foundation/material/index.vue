@@ -209,12 +209,14 @@
           </el-select>
         </div>
         <el-button
+          type="success"
           size="small"
-          class="spd-btn spd-btn--secondary more-search-save-btn"
+          icon="el-icon-check"
+          class="spd-btn spd-btn--success more-search-save-btn"
           @click="saveMoreSearchDefaults"
         >保存查询条件</el-button>
         <el-dropdown trigger="click" class="material-more-ops" @command="handleMoreOpsCommand">
-          <el-button size="small" class="spd-btn spd-btn--secondary">
+          <el-button type="warning" size="small" class="spd-btn spd-btn--warning">
             更多操作<i class="el-icon-arrow-down el-icon--right"></i>
           </el-button>
           <el-dropdown-menu slot="dropdown" class="material-more-ops-menu">
@@ -302,7 +304,7 @@
         :stripe="materialTableLightMode"
       >
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="material-col-center material-select-col" />
-      <el-table-column type="index" label="序号" align="center" header-align="center" width="80" key="index" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center">
+      <el-table-column type="index" label="序号" align="center" header-align="center" width="50" key="index" :show-overflow-tooltip="materialTableLightMode" resizable class-name="material-col-center material-index-col">
         <template slot-scope="scope">
           {{ (queryParams.pageNum - 1) * queryParams.pageSize + scope.$index + 1 }}
         </template>
@@ -903,26 +905,26 @@ import { createTableColumnSettingsMixin } from "@/mixins/tableColumnSettings";
 
 function createDefaultMaterialColumns() {
   return [
-    { key: 0, label: "启用", visible: true, width: 72, align: "center", sortable: false },
-    { key: 1, label: "计费", visible: true, width: 72, align: "center", sortable: false },
-    { key: 2, label: "产品编码", visible: true, width: 100, align: "center", sortable: true },
-    { key: 3, label: "产品名称", visible: true, width: 240, align: "center", sortable: true },
-    { key: 4, label: "规格", visible: true, width: 200, align: "center", sortable: true },
-    { key: 5, label: "单位", visible: true, width: 80, align: "center", sortable: true },
-    { key: 6, label: "价格", visible: true, width: 130, align: "center", sortable: true },
-    { key: 7, label: "生产厂家", visible: true, width: 220, align: "center", sortable: true },
-    { key: 8, label: "供应商", visible: true, width: 240, align: "center", sortable: true },
-    { key: 9, label: "库房分类", visible: true, width: 120, align: "center", sortable: false },
-    { key: 10, label: "材料类别", visible: true, width: 120, align: "center", sortable: false },
-    { key: 11, label: "财务分类", visible: true, width: 120, align: "center", sortable: false },
+    { key: 0, label: "启用", visible: true, width: 45, align: "center", sortable: false },
+    { key: 1, label: "计费", visible: true, width: 45, align: "center", sortable: false },
+    { key: 17, label: "高值", visible: true, width: 45, align: "center", sortable: false },
+    { key: 19, label: "集采", visible: true, width: 45, align: "center", sortable: false },
+    { key: 2, label: "产品编码", visible: true, width: 100, align: "left", sortable: true },
+    { key: 3, label: "产品名称", visible: true, width: 210, align: "left", sortable: true },
+    { key: 4, label: "规格", visible: true, width: 95, align: "left", sortable: true },
+    { key: 5, label: "单位", visible: true, width: 55, align: "center", sortable: true },
+    { key: 6, label: "价格", visible: true, width: 70, align: "left", sortable: true },
+    { key: 8, label: "供应商", visible: true, width: 185, align: "left", sortable: true },
+    { key: 7, label: "生产厂家", visible: true, width: 160, align: "left", sortable: true },
+    { key: 9, label: "库房分类", visible: true, width: 100, align: "left", sortable: false },
+    { key: 10, label: "材料类别", visible: true, width: 100, align: "left", sortable: false },
+    { key: 11, label: "财务分类", visible: true, width: 100, align: "left", sortable: false },
     { key: 12, label: "注册证号", visible: true, width: 190, align: "center", sortable: false },
     { key: 13, label: "医保编码", visible: true, width: 190, align: "center", sortable: false },
     { key: 14, label: "型号", visible: true, width: 200, align: "center", sortable: false },
     { key: 15, label: "储存方式", visible: true, width: 100, align: "center", sortable: false },
     { key: 16, label: "货位", visible: true, width: 120, align: "center", sortable: false },
-    { key: 17, label: "高值", visible: true, width: 80, align: "center", sortable: false },
     { key: 18, label: "跟台", visible: true, width: 80, align: "center", sortable: false },
-    { key: 19, label: "集采", visible: true, width: 80, align: "center", sortable: false },
     { key: 20, label: "集采类型", visible: true, width: 120, align: "center", sortable: false },
     { key: 21, label: "品牌", visible: false, width: 120, align: "center", sortable: false },
     { key: 22, label: "创建日期", visible: true, width: 100, align: "center", sortable: false },
@@ -2470,7 +2472,7 @@ export default {
         this.originalIsUse = this.form.isUse;
         this.open = true;
         this.isDisabled = true;
-        this.title = "修改耗材产品";
+        this.title = "修改产品档案";
       });
     },
     /** 查看详情（只读） */
@@ -3724,15 +3726,24 @@ export default {
   max-width: none !important;
   box-sizing: border-box;
   padding: 8px 16px !important;
-  background: #fff;
+  background: var(--spd-side-theme, #2C569A);
   border: none;
-  border-bottom: 1px solid #E5E6EB;
+  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
   border-radius: 0 !important;
   box-shadow: none !important;
   flex-shrink: 0;
   min-height: 48px;
   position: relative;
   z-index: 2;
+}
+::v-deep .material-modal-content .modal-header.material-modal-header .modal-title{
+  color: #fff;
+}
+::v-deep .material-modal-content .modal-header.material-modal-header .material-modal-x{
+  color: rgba(255, 255, 255, 0.85);
+}
+::v-deep .material-modal-content .modal-header.material-modal-header .material-modal-x:hover{
+  color: #fff;
 }
 
 ::v-deep .material-modal-header-actions{
@@ -5315,30 +5326,67 @@ export default {
 .material-page-container .material-main-table th {
   border-right-color: #eef2f7 !important;
   border-bottom-color: #e2e8f0 !important;
-  padding: 4px 0 !important;
-  height: 34px !important;
+  padding: 0 !important;
+  height: 42px !important;
+  vertical-align: middle !important;
 }
 
 .material-page-container .material-main-table td {
   border-right-color: #f1f5f9 !important;
   border-bottom-color: #f1f5f9 !important;
-  padding: 10px 0 !important;
+  height: 42px !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  vertical-align: middle !important;
 }
 
-/* 表头居中且行高收紧；明细默认靠左，指定列仍居中 */
+/* 表头居中；有无升/降序时文字同一水平线（图标保持 Element 原尺寸） */
 .material-page-container .material-main-table th .cell {
-  text-align: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
   justify-content: center !important;
+  text-align: center !important;
+  height: 42px !important;
   line-height: 20px !important;
   padding-left: 6px !important;
   padding-right: 6px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
 }
 
+/* 明细统一 flex 垂直居中；文字行高用 22px，避免有/无内层包装的列上下错位 */
 .material-page-container .material-main-table td .cell {
+  display: flex !important;
+  align-items: center !important;
   text-align: left !important;
   justify-content: flex-start !important;
   padding-left: 6px !important;
   padding-right: 6px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  line-height: 22px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: keep-all !important;
+  box-sizing: border-box !important;
+}
+
+.material-page-container .material-main-table td .cell > *,
+.material-page-container .material-main-table .material-cell-body-left,
+.material-page-container .material-main-table .material-cell-price-right {
+  display: flex !important;
+  align-items: center !important;
+  line-height: 22px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
 }
 
 /* 勾选列 + 序号/启用/计费/单位/高值/集采/跟台：明细居中 */
@@ -5354,6 +5402,12 @@ export default {
   text-align: center !important;
   margin-left: auto;
   margin-right: auto;
+}
+
+.material-page-container .material-main-table td.material-action-col .cell {
+  min-height: 42px !important;
+  height: 42px !important;
+  line-height: 22px !important;
 }
 
 .material-page-container .el-table::before,
@@ -5403,27 +5457,42 @@ export default {
   box-sizing: border-box !important;
   border-right: 1px solid #e2e8f0;
 }
+/* 序号列 sticky：紧挨勾选列，横滑固定 */
+.material-page-container .material-main-table th.material-index-col,
+.material-page-container .material-main-table td.material-index-col {
+  position: sticky !important;
+  left: 55px !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+  border-right: 1px solid #e2e8f0;
+}
 /* 未选中/未悬停才钉白底；选中后由下方 material-row-selected 整行盖住 */
 .material-page-container .material-main-table .el-table__body tr:not(.material-row-selected):not(:hover) > td.material-select-col,
-.material-page-container .material-main-table .el-table__body tr:not(.material-row-selected):not(:hover) > td.el-table-column--selection {
+.material-page-container .material-main-table .el-table__body tr:not(.material-row-selected):not(:hover) > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr:not(.material-row-selected):not(:hover) > td.material-index-col {
   background-color: #fff !important;
 }
 .material-page-container .material-main-table th.material-select-col,
-.material-page-container .material-main-table th.el-table-column--selection {
+.material-page-container .material-main-table th.el-table-column--selection,
+.material-page-container .material-main-table th.material-index-col {
   z-index: 4;
   background-color: #f1f5f9 !important;
   border-right: 1px solid #e2e8f0;
 }
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-select-col,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-index-col,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-select-col .cell,
-.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.el-table-column--selection .cell {
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped:not(.material-row-selected):not(:hover) > td.material-index-col .cell {
   background-color: #fafafa !important;
 }
 .material-page-container .material-main-table td.material-select-col .cell,
 .material-page-container .material-main-table td.el-table-column--selection .cell,
+.material-page-container .material-main-table td.material-index-col .cell,
 .material-page-container .material-main-table th.material-select-col .cell,
-.material-page-container .material-main-table th.el-table-column--selection .cell {
+.material-page-container .material-main-table th.el-table-column--selection .cell,
+.material-page-container .material-main-table th.material-index-col .cell {
   background-color: transparent !important;
 }
 
@@ -5472,32 +5541,38 @@ export default {
   transition: none !important;
 }
 
-/* 整行悬停（含 sticky 勾选列 / 操作列）立刻同色 */
+/* 整行悬停（含 sticky 勾选列 / 序号列 / 操作列）立刻同色 */
 .material-page-container .material-main-table .el-table__body tr:hover > td,
 .material-page-container .material-main-table .el-table__body tr:hover > td .cell,
 .material-page-container .material-main-table .el-table__body tr:hover > td.material-select-col,
 .material-page-container .material-main-table .el-table__body tr:hover > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-index-col,
 .material-page-container .material-main-table .el-table__body tr:hover > td.material-select-col .cell,
 .material-page-container .material-main-table .el-table__body tr:hover > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr:hover > td.material-index-col .cell,
 .material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col,
 .material-page-container .material-main-table .el-table__body tr:hover > td.material-action-col .cell {
   background-color: #D6EBFF !important;
 }
 
-/* 勾选选中行常驻变色（含 sticky 勾选列/操作列）；无需悬停也整行盖住 */
+/* 勾选选中行常驻变色（含 sticky 勾选列/序号列/操作列）；无需悬停也整行盖住 */
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td .cell,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-select-col,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-index-col,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-action-col,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-select-col .cell,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-index-col .cell,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected > td.material-action-col .cell,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-select-col,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-index-col,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-action-col,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-select-col .cell,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-index-col .cell,
 .material-page-container .material-main-table .el-table__body tr.el-table__row--striped.material-row-selected > td.material-action-col .cell {
   background-color: #B8DAFF !important;
 }
@@ -5505,14 +5580,16 @@ export default {
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td .cell,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-select-col,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.el-table-column--selection,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-index-col,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-action-col,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-select-col .cell,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.el-table-column--selection .cell,
+.material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-index-col .cell,
 .material-page-container .material-main-table .el-table__body tr.material-row-selected:hover > td.material-action-col .cell {
   background-color: #A0CBFF !important;
 }
 
-/* 列表主表表头：冷静灰蓝，行高收紧，表头文字居中 */
+/* 列表主表表头：冷静灰蓝；高度按含排序图标对齐 */
 .material-page-container .material-main-table .el-table__header-wrapper th,
 .material-page-container .material-main-table .el-table__header-wrapper th.el-table__cell,
 .material-page-container .material-main-table .el-table__fixed-header-wrapper th,
@@ -5526,9 +5603,10 @@ export default {
   letter-spacing: 0.02em;
   border-right-color: #e2e8f0 !important;
   border-bottom-color: #e2e8f0 !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  height: 34px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 42px !important;
+  vertical-align: middle !important;
 }
 
 .material-page-container .material-main-table .el-table__header-wrapper th:first-child,
@@ -5539,26 +5617,40 @@ export default {
 .material-page-container .material-main-table .el-table__header-wrapper th .cell,
 .material-page-container .material-main-table .el-table__fixed-header-wrapper th .cell,
 .material-page-container .material-main-table .el-table__fixed-right-header-wrapper th .cell {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   text-align: center !important;
-  justify-content: center !important;
+  height: 42px !important;
   line-height: 20px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
 }
 
+/* 排序图标恢复 Element 默认尺寸与位置，仅保留配色；靠 flex 与无排序标题齐平 */
+.material-page-container .material-main-table .caret-wrapper {
+  height: 34px !important;
+  width: 24px !important;
+  flex-shrink: 0;
+  vertical-align: middle !important;
+}
+.material-page-container .material-main-table .sort-caret {
+  left: 7px !important;
+}
 .material-page-container .material-main-table .sort-caret.ascending {
   border-bottom-color: rgba(48, 49, 51, 0.35);
+  top: 5px !important;
 }
-
 .material-page-container .material-main-table .sort-caret.descending {
   border-top-color: rgba(48, 49, 51, 0.35);
+  bottom: 7px !important;
 }
-
 .material-page-container .material-main-table .ascending .sort-caret.ascending {
   border-bottom-color: #2563EB;
 }
-
 .material-page-container .material-main-table .descending .sort-caret.descending {
   border-top-color: #2563EB;
 }

@@ -85,7 +85,7 @@
             :data="hisList"
             class="his-detail-table"
             border
-            height="100%"
+            :max-height="dialogTableMaxHeight"
             :row-class-name="hisDetailRowClassName"
             @row-dblclick="handleHisDetailRowDblclick"
           >
@@ -114,13 +114,15 @@
           </el-table>
         </div>
 
-        <pagination
-          v-show="hisTotal > 0"
-          :total="hisTotal"
-          :page.sync="hisQueryParams.pageNum"
-          :limit.sync="hisQueryParams.pageSize"
-          @pagination="getHisList"
-        />
+        <div class="apply-pagination-wrap material-compare-dialog-pagination">
+          <pagination
+            v-show="hisTotal > 0"
+            :total="hisTotal"
+            :page.sync="hisQueryParams.pageNum"
+            :limit.sync="hisQueryParams.pageSize"
+            @pagination="getHisList"
+          />
+        </div>
       </div>
     </el-dialog>
 </template>

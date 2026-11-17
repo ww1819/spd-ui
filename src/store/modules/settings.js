@@ -23,10 +23,14 @@ function resolveNavPosition(storage) {
   return navPosition || 'side'
 }
 
-const SIDE_THEMES = ['theme-dark', 'theme-light', 'theme-medical', 'theme-teal', 'theme-sky', 'theme-navy']
+const SIDE_THEMES = ['theme-dark', 'theme-light', 'theme-medical', 'theme-teal', 'theme-sky', 'theme-brand']
 
 /** 默认深色侧栏；layoutStyleVer>=3 且已保存过的才沿用用户选择 */
 function resolveSideTheme(storage) {
+  // 旧「深蓝」theme-navy 已移除，迁移为纯色 #2C569A 的 theme-brand
+  if (storage.sideTheme === 'theme-navy') {
+    return 'theme-brand'
+  }
   if (storage.layoutStyleVer >= 3 && SIDE_THEMES.indexOf(storage.sideTheme) !== -1) {
     return storage.sideTheme
   }

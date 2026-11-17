@@ -142,7 +142,7 @@
             :width="item.col.width"
           >
             <template slot-scope="scope">
-              <span v-if="scope.row.amount != null && scope.row.amount !== ''">{{ scope.row.amount | formatCurrency}}</span>
+              <span v-if="scope.row.amount != null && scope.row.amount !== ''" class="amount-cell-num">{{ scope.row.amount | formatCurrency}}</span>
               <span v-else>--</span>
             </template>
           </el-table-column>
@@ -235,9 +235,7 @@
 
     <div class="pagination-wrapper">
       <div class="pagination-summary">
-        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额:
-        {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额:
-        {{ pageTotalAmtFormatted }}
+        <span class="summary-label">合计：</span>总数量：<span class="summary-num">{{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}</span>，总金额：<span class="summary-num">{{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}</span>，当前页数量：<span class="summary-num">{{ pageTotalQty }}</span>，当前页金额：<span class="summary-num">{{ pageTotalAmtFormatted }}</span>
       </div>
       <div class="pagination-container" v-show="total > 0">
         <el-pagination
@@ -579,14 +577,25 @@ export default {
   padding: 4px 6px !important;
 }
 .table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 6px !important;
+  height: 42px !important;
+  padding: 0 6px !important;
+  box-sizing: border-box !important;
 }
-.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
-.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+.table-container ::v-deep .el-table thead th.el-table__cell > .cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 23px;
+  word-break: normal;
+}
+.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 42px !important;
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   word-break: normal;
 }
 .table-container ::v-deep .el-table th.ctk-col-left .cell,

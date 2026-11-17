@@ -271,7 +271,9 @@ export default {
       },
       currentMaterialRow: null,
       // 明细表高度（占满明细框剩余空间，减少底部留白）
-      mainTableHeight: 400
+      mainTableHeight: 400,
+      /** HIS/HRP 对照弹窗表格最大高度（行少时不撑满，翻页贴表底） */
+      dialogTableMaxHeight: 360
     };
   },
   created() {
@@ -285,12 +287,32 @@ export default {
       setTimeout(() => this.updateMainTableHeight(), 80);
       setTimeout(() => this.updateMainTableHeight(), 200);
     });
-    window.addEventListener('resize', this.updateMainTableHeight);
+    window.addEventListener('resize', this.onMaterialCompareResize);
   },
   beforeDestroy() {
-    window.removeEventListener('resize', this.updateMainTableHeight);
+    window.removeEventListener('resize', this.onMaterialCompareResize);
   },
   methods: {
+    onMaterialCompareResize() {
+      this.updateMainTableHeight();
+      if (this.hisDialogVisible || this.hrpDialogVisible) {
+        this.updateDialogTableMaxHeight();
+      }
+    },
+    /** HIS/HRP 弹窗：按明细区剩余高度设 max-height，避免 height:100% 把翻页顶到底 */
+    updateDialogTableMaxHeight() {
+      this.$nextTick(() => {
+        const wrap = this.$el && this.$el.querySelector('.material-compare-dialog-table-wrap');
+        if (!wrap || !wrap.getBoundingClientRect) return;
+        const pagEl = wrap.querySelector('.material-compare-dialog-pagination, .pagination-container');
+        let pagH = pagEl ? pagEl.getBoundingClientRect().height : 48;
+        if (pagH < 36) pagH = 48;
+        const next = Math.max(200, Math.floor(wrap.clientHeight - pagH - 6));
+        if (Math.abs((this.dialogTableMaxHeight || 0) - next) >= 2) {
+          this.dialogTableMaxHeight = next;
+        }
+      });
+    },
     /** 只改明细框高度：底边对齐左侧供应商框底边（不改左侧） */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
@@ -465,6 +487,11 @@ export default {
       this.hisQueryParams.speci = null;
       this.loadCurrentHisChargeItem();
       this.getHisList();
+      this.$nextTick(() => {
+        this.updateDialogTableMaxHeight();
+        setTimeout(() => this.updateDialogTableMaxHeight(), 80);
+        setTimeout(() => this.updateDialogTableMaxHeight(), 200);
+      });
     },
     /** HIS 明细行唯一 key */
     getHisDetailRowKey(row) {
@@ -610,6 +637,11 @@ export default {
       this.hrpDialogVisible = true;
       this.hrpQueryParams.pageNum = 1;
       this.getHrpList();
+      this.$nextTick(() => {
+        this.updateDialogTableMaxHeight();
+        setTimeout(() => this.updateDialogTableMaxHeight(), 80);
+        setTimeout(() => this.updateDialogTableMaxHeight(), 200);
+      });
     },
     /** HRP搜索 */
     handleHrpQuery() {
@@ -730,27 +762,25 @@ export default {
   padding-bottom: 4px;
 }
 
-/* 占满正文剩余高度；翻页在 flex 底部，表体在上方 scroll 区内滚动 */
+/* 明细区占满剩余高度作上限；表用 max-height，行少不撑空，翻页贴表底 */
 .material-compare-page ::v-deep .material-compare-dialog-table-wrap {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   overflow: hidden;
 }
 
-/* flex:1 1 0 + min-height:0 让明细区吃满剩余高度，配合 el-table height=100% 仅表内滚动 */
 .material-compare-dialog-table-scroll {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: 0;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
-.material-compare-page ::v-deep .material-compare-dialog-table-scroll > .el-table {
-  flex: 1;
-  min-height: 0;
+.material-compare-page ::v-deep .material-compare-dialog-pagination {
+  flex-shrink: 0;
+  margin-top: 4px;
 }
 
 .material-compare-page ::v-deep .material-compare-dialog .el-dialog__body > .his-current-material-box,

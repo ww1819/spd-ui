@@ -36,10 +36,15 @@ $base-menu-sky-gradient-end:#B8CCF5;
 $base-menu-sky-hover:#c5d6f8;
 $base-menu-sky-active:#aebfea;
 
-/* 深蓝侧栏（用户色样 #2C569A） */
+/* 深蓝侧栏（渐变） */
 $base-menu-navy-background:#2C569A;
 $base-menu-navy-hover:#3A6BB0;
 $base-menu-navy-active:#1E3F72;
+
+/* 品牌蓝侧栏（深蓝后一项，纯色 #2C569A） */
+$base-menu-brand-background:#2C569A;
+$base-menu-brand-hover:#3A6BB0;
+$base-menu-brand-active:#1E3F72;
 
 $base-sub-menu-background:#020617;
 $base-sub-menu-hover:#1e293b;
@@ -76,6 +81,7 @@ $base-sidebar-width: 200px;
   menuSkyGradientMid: $base-menu-sky-gradient-mid;
   menuSkyGradientEnd: $base-menu-sky-gradient-end;
   menuNavyBackground: $base-menu-navy-background;
+  menuBrandBackground: $base-menu-brand-background;
   subMenuBackground: $base-sub-menu-background;
   subMenuHover: $base-sub-menu-hover;
   sideBarWidth: $base-sidebar-width;

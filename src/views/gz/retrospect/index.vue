@@ -608,15 +608,22 @@ body.inventory-query-fixed .main-container {
 .gz-retrospect-query .pagination-wrapper .pagination-summary {
   flex: 0 1 auto;
   min-width: 0;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 32px;
-  color: #606266;
+  color: #303133;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .gz-retrospect-query .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
+}
+.gz-retrospect-query .pagination-wrapper .pagination-summary .summary-num {
+  color: #2C569A;
+  font-weight: 600;
+}
+.gz-retrospect-query .amount-cell-num {
+  color: #2C569A;
 }
 .gz-retrospect-query .pagination-wrapper .pagination-container {
   position: relative !important;
@@ -662,6 +669,23 @@ body.inventory-query-fixed .main-container {
   border-right-color: #e2e8f0 !important;
   border-bottom-color: #e2e8f0 !important;
   height: 34px !important;
+}
+
+/* 明细行对齐「含升/降序箭头」的表头实际高度：caret-wrapper 34px + 表头上下 padding 4px*2 ≈ 42px */
+.gz-retrospect-query .gz-retrospect-main-table.el-table .el-table__body tr > td,
+.gz-retrospect-query .gz-retrospect-main-table.el-table .el-table__body tr > td.el-table__cell {
+  height: 42px !important;
+  padding: 0 6px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.gz-retrospect-query .gz-retrospect-main-table.el-table .el-table__body tr > td.el-table__cell > .cell {
+  line-height: 42px !important;
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 .gz-retrospect-query .gz-retrospect-main-table .el-table__header th.gutter {
   background-color: #f1f5f9 !important;

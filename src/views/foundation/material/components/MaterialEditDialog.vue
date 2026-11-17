@@ -1006,9 +1006,9 @@ export default {
   min-height: 48px;
   padding: 10px 16px !important;
   box-sizing: border-box;
-  background: #fff;
+  background: var(--spd-side-theme, #2C569A);
   border: none;
-  border-bottom: 1px solid #E5E6EB;
+  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
   border-radius: 0 !important;
   box-shadow: none !important;
 }
@@ -1016,20 +1016,20 @@ export default {
 .material-modal-content .modal-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: #fff;
   line-height: 1.4;
 }
 
 .material-modal-x {
   font-size: 16px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
   padding: 4px;
   line-height: 1;
 }
 
 .material-modal-x:hover {
-  color: #409EFF;
+  color: #fff;
 }
 
 .material-modal-content > .el-tabs.material-detail-tabs {

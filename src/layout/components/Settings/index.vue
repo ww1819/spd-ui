@@ -94,7 +94,7 @@ import imgLight from '@/assets/images/light.svg'
 import imgMedical from '@/assets/images/medical.svg'
 import imgTeal from '@/assets/images/teal.svg'
 import imgSky from '@/assets/images/sky.svg'
-import imgNavy from '@/assets/images/navy.svg'
+import imgBrand from '@/assets/images/brand.svg'
 
 export default {
   components: { ThemePicker },
@@ -108,7 +108,7 @@ export default {
         { value: 'theme-medical', label: '医疗蓝', img: imgMedical },
         { value: 'theme-teal', label: '青绿', img: imgTeal },
         { value: 'theme-sky', label: '柔蓝', img: imgSky },
-        { value: 'theme-navy', label: '深蓝', img: imgNavy }
+        { value: 'theme-brand', label: '深蓝', img: imgBrand }
       ]
     };
   },

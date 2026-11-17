@@ -9,7 +9,8 @@
       'is-medical': sideTheme === 'theme-medical',
       'is-teal': sideTheme === 'theme-teal',
       'is-sky': sideTheme === 'theme-sky',
-      'is-navy': sideTheme === 'theme-navy'
+      'is-navy': sideTheme === 'theme-navy',
+      'is-brand': sideTheme === 'theme-brand'
     }"
     :style="sidebarStyle"
   >
@@ -104,6 +105,12 @@ export default {
         return {
           backgroundColor: this.variables.menuNavyBackground || '#2C569A',
           backgroundImage: 'linear-gradient(180deg, #3A6BB0 0%, #2C569A 50%, #234780 100%)'
+        }
+      }
+      if (this.sideTheme === 'theme-brand') {
+        return {
+          backgroundColor: this.variables.menuBrandBackground || '#2C569A',
+          backgroundImage: 'none'
         }
       }
       if (this.sideTheme === 'theme-dark') {
@@ -304,42 +311,53 @@ export default {
   color: #5eead4;
 }
 
-/* 深蓝：默认即字体高亮（白字），无需悬停；悬停不再额外铺底，仅选中/展开保留底色 */
-.is-navy .hover-nav-item {
+/* 深蓝 / 品牌蓝：默认即字体高亮（白字），无需悬停；悬停不再额外铺底，仅选中/展开保留底色 */
+.is-navy .hover-nav-item,
+.is-brand .hover-nav-item {
   color: #ffffff;
 }
 
 .is-navy .hover-nav-icon,
-.is-navy .hover-nav-arrow {
+.is-navy .hover-nav-arrow,
+.is-brand .hover-nav-icon,
+.is-brand .hover-nav-arrow {
   color: #ffffff;
 }
 
-.is-navy .hover-nav-item:hover {
+.is-navy .hover-nav-item:hover,
+.is-brand .hover-nav-item:hover {
   background: transparent;
   color: #fff;
 }
 
 .is-navy .hover-nav-item:hover .hover-nav-icon,
-.is-navy .hover-nav-item:hover .hover-nav-arrow {
+.is-navy .hover-nav-item:hover .hover-nav-arrow,
+.is-brand .hover-nav-item:hover .hover-nav-icon,
+.is-brand .hover-nav-item:hover .hover-nav-arrow {
   color: #fff;
 }
 
-.is-navy .hover-nav-item.is-open {
+.is-navy .hover-nav-item.is-open,
+.is-brand .hover-nav-item.is-open {
   background: rgba(30, 63, 114, 0.55);
   color: #fff;
 }
 
 .is-navy .hover-nav-item.is-open .hover-nav-icon,
-.is-navy .hover-nav-item.is-open .hover-nav-arrow {
+.is-navy .hover-nav-item.is-open .hover-nav-arrow,
+.is-brand .hover-nav-item.is-open .hover-nav-icon,
+.is-brand .hover-nav-item.is-open .hover-nav-arrow {
   color: #fff;
 }
 
-.is-navy .hover-nav-item.is-active {
+.is-navy .hover-nav-item.is-active,
+.is-brand .hover-nav-item.is-active {
   background: #1E3F72;
   color: #fff;
 }
 
-.is-navy .hover-nav-item.is-active .hover-nav-icon {
+.is-navy .hover-nav-item.is-active .hover-nav-icon,
+.is-brand .hover-nav-item.is-active .hover-nav-icon {
   color: #fff;
 }
 
