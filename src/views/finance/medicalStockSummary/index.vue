@@ -1,6 +1,6 @@
 <template>
   <div class="app-container list-page medical-stock-summary-page">
-    <div class="form-fields-container list-query-panel" v-show="showSearch">
+    <div class="form-fields-container list-query-panel">
       <el-form ref="queryForm" :model="queryParams" size="small" :inline="true" class="query-form">
         <div class="ctk-query-top-fields">
           <div class="more-search-dynamic-field more-search-field--select">
@@ -26,41 +26,33 @@
           </div>
         </div>
 
-        <el-row :gutter="16" class="query-row-second">
-          <el-col :span="24" class="query-row-second-inner">
-            <el-form-item label="开始时间" class="query-item-inline">
-              <el-date-picker
-                v-model="queryParams.beginDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="开始时间"
-                class="query-date-picker"
-              />
-            </el-form-item>
-            <el-form-item label="结束时间" class="query-item-inline">
-              <el-date-picker
-                v-model="queryParams.endDate"
-                type="datetime"
-                value-format="yyyy-MM-dd HH:mm:ss"
-                placeholder="结束时间"
-                class="query-date-picker"
-              />
-            </el-form-item>
-            <div class="ctk-query-actions query-actions">
-              <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
-              <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
-            </div>
-          </el-col>
-        </el-row>
+        <div class="query-row-second-inner">
+          <el-form-item label="开始时间" class="query-item-inline">
+            <el-date-picker
+              v-model="queryParams.beginDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="开始时间"
+              class="query-date-picker"
+            />
+          </el-form-item>
+          <el-form-item label="结束时间" class="query-item-inline">
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="datetime"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              placeholder="结束时间"
+              class="query-date-picker"
+            />
+          </el-form-item>
+          <el-form-item class="query-item-inline mss-query-actions">
+            <el-button type="primary" size="small" icon="el-icon-search" class="spd-btn spd-btn--primary" @click="handleQuery">搜索</el-button>
+            <el-button size="small" icon="el-icon-refresh" class="spd-btn spd-btn--secondary" @click="resetQuery">重置</el-button>
+          </el-form-item>
+        </div>
       </el-form>
     </div>
 
-    <el-row :gutter="0" class="mb8 list-toolbar">
-      <div class="list-toolbar-left"></div>
-      <div class="list-toolbar-right">
-        <right-toolbar :showSearch.sync="showSearch" @queryTable="loadCurrentTab" />
-      </div>
-    </el-row>
     <p class="report-tip">统计口径：耗材出库单（201）金额计为正，退库单（401）金额计为负；两个 Tab 均按此出退库数据汇总。</p>
 
     <el-tabs v-model="activeTab" @tab-click="loadCurrentTab">
@@ -166,7 +158,6 @@ export default {
   components: { SelectWarehouse, SelectSupplier, SelectDepartment },
   data() {
     return {
-      showSearch: true,
       activeTab: 'inbound',
       queryParams: {
         ...monthRange(),
@@ -306,8 +297,29 @@ export default {
   gap: 8px 12px;
   margin-bottom: 8px;
 }
+.query-row-second-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  gap: 8px 12px;
+}
+.query-row-second-inner >>> .el-form-item {
+  flex: 0 0 auto;
+  margin-bottom: 0 !important;
+  margin-right: 0;
+  white-space: nowrap;
+}
+.query-row-second-inner >>> .el-form-item__content {
+  display: inline-flex;
+  align-items: center;
+  line-height: normal;
+}
+.mss-query-actions >>> .el-button + .el-button {
+  margin-left: 8px;
+}
 .report-tip {
-  margin: 0 0 12px;
+  margin: 12px 0;
   font-size: 12px;
   color: #909399;
   line-height: 1.5;
