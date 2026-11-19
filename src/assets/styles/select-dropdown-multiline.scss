@@ -13,18 +13,32 @@
   overflow-wrap: anywhere;
 }
 
-/* 悬停/选中：明显蓝色高亮，避免默认浅灰看不清 */
+/*
+ * 全局选择框下拉：悬停/选中统一明显蓝色高亮（浅蓝底 + 深蓝字）
+ * 覆盖所有页面 el-select / 带 select-dropdown--multiline 的下拉
+ */
+.el-select-dropdown .el-select-dropdown__item.hover,
+.el-select-dropdown .el-select-dropdown__item:hover,
 .select-dropdown--multiline .el-select-dropdown__item.hover,
 .select-dropdown--multiline .el-select-dropdown__item:hover {
   background-color: #DBEAFE !important;
   color: #1E40AF !important;
 }
 
+.el-select-dropdown .el-select-dropdown__item.selected,
+.el-select-dropdown .el-select-dropdown__item.selected.hover,
 .select-dropdown--multiline .el-select-dropdown__item.selected,
 .select-dropdown--multiline .el-select-dropdown__item.selected.hover {
   background-color: #BFDBFE !important;
   color: #1E3A8A !important;
   font-weight: 600;
+}
+
+/* 下拉内文字节点跟随高亮色（避免 option 自定义 span 仍是灰字） */
+.el-select-dropdown .el-select-dropdown__item.hover .select-option-label-wrap,
+.el-select-dropdown .el-select-dropdown__item:hover .select-option-label-wrap,
+.el-select-dropdown .el-select-dropdown__item.selected .select-option-label-wrap {
+  color: inherit !important;
 }
 
 .select-option-label-wrap {
