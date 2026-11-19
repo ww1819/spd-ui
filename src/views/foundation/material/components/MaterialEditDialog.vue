@@ -10,9 +10,7 @@
           <!-- 基础信息 -->
           <el-tab-pane name="form">
             <span slot="label">
-              <el-tooltip content="耗材基础档案、资质、收费配置" placement="top" :open-delay="300">
-                <span class="material-tab-label">基础信息</span>
-              </el-tooltip>
+              <span class="material-tab-label">基础信息</span>
             </span>
             <div class="material-tab-pane-body">
             <el-form ref="form" :model="form" :rules="rules" label-width="120px" :disabled="isViewMode" :show-message="false" :class="{ 'zq-material-limited-edit': zqTcmLimitedEdit, 'material-form-grid': true }">
@@ -770,9 +768,7 @@
           <!-- 产品图片 -->
           <el-tab-pane name="image">
             <span slot="label">
-              <el-tooltip content="耗材外包装、注册证附件图片" placement="top" :open-delay="300">
-                <span class="material-tab-label">产品图片</span>
-              </el-tooltip>
+              <span class="material-tab-label">产品图片</span>
             </span>
             <div class="material-tab-pane-body">
             <div class="material-detail-card">
@@ -1006,9 +1002,9 @@ export default {
   min-height: 48px;
   padding: 10px 16px !important;
   box-sizing: border-box;
-  background: var(--spd-side-theme, #2C569A);
+  background: var(--spd-side-theme, #1c2430) !important;
   border: none;
-  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
+  border-bottom: 1px solid var(--spd-side-theme, #1c2430) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
@@ -1016,20 +1012,22 @@ export default {
 .material-modal-content .modal-title {
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--spd-side-theme-on, #fff);
   line-height: 1.4;
 }
 
 .material-modal-x {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--spd-side-theme-on, #fff);
+  opacity: 0.85;
   cursor: pointer;
   padding: 4px;
   line-height: 1;
 }
 
 .material-modal-x:hover {
-  color: #fff;
+  color: var(--spd-side-theme-on, #fff);
+  opacity: 1;
 }
 
 .material-modal-content > .el-tabs.material-detail-tabs {

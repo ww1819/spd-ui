@@ -24,13 +24,14 @@
     v-model="supplier"
     popper-class="select-dropdown--multiline"
     filterable
-    remote
-    :remote-method="remoteMethod"
+    :filter-method="filterMethod"
     clearable
     :placeholder="placeholder"
     :disabled="value2"
     :loading="loading"
     default-first-option
+    @visible-change="onSupplierDropdownVisible"
+    @clear="onSupplierClear"
   >
     <el-option
       v-for="item in supplierOptions"
@@ -324,6 +325,9 @@ export default {
         : getCachedListSupplierAll;
       loader().then((all) => {
         this.allSuppliers = this.filterEnabledSuppliers(all || []);
+        if (!this.allowKeywordBlur && (!this.supplierOptions || this.supplierOptions.length === 0)) {
+          this.supplierOptions = this.allSuppliers.slice();
+        }
       }).catch(() => {
         this.allSuppliers = [];
       });
@@ -332,56 +336,104 @@ export default {
       if (this.financePickMode) {
         return;
       }
-      listSupplier({
-        pageNum: 1,
-        pageSize: 20,
-        ...this.listQueryParams()
-      }).then(response => {
-        this.supplierOptions = this.filterEnabledSuppliers(response.rows || []);
-      }).catch((err) => {
-        if (isForbiddenError(err)) {
-          this.fallbackToListAll = true;
-        }
-        if (this.allSuppliers.length > 0) {
-          this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers).slice(0, 20);
-          return;
-        }
-        getCachedListSupplierAll().then((allResponse) => {
-          this.allSuppliers = allResponse || [];
-          this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers).slice(0, 20);
-        }).catch(() => {
-          this.supplierOptions = [];
+      const applyAll = (list) => {
+        this.allSuppliers = this.filterEnabledSuppliers(list || []);
+        this.supplierOptions = this.allSuppliers.slice();
+        this.ensureSelectedOption();
+      };
+      if (this.allSuppliers.length > 0) {
+        this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers).slice();
+        return;
+      }
+      this.loading = true;
+      getCachedListSupplierAll()
+        .then((allResponse) => {
+          applyAll(allResponse || []);
+        })
+        .catch((err) => {
+          if (isForbiddenError(err)) {
+            this.fallbackToListAll = true;
+          }
+          listSupplier({
+            pageNum: 1,
+            pageSize: 100,
+            ...this.listQueryParams()
+          }).then(response => {
+            applyAll(response.rows || []);
+          }).catch(() => {
+            this.supplierOptions = [];
+          });
+        })
+        .finally(() => {
+          this.loading = false;
         });
-      });
     },
     getList() {
       this.loading = true;
       getCachedListSupplierAll().then((response) => {
-        this.supplierOptions = this.filterEnabledSuppliers(response || []);
+        this.allSuppliers = this.filterEnabledSuppliers(response || []);
+        this.supplierOptions = this.allSuppliers.slice();
         this.loading = false;
       }).catch(() => {
         this.loading = false;
       });
     },
-    remoteMethod(query) {
-      if (this.searchTimer) {
-        clearTimeout(this.searchTimer);
+    /** 点击展开：展示全部；输入编码/名称/首字母时本地过滤 */
+    onSupplierDropdownVisible(visible) {
+      if (!visible || this.allowKeywordBlur) {
+        return;
       }
-      if (!query || query.trim() === '') {
-        if (this.financePickMode) {
-          this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers || []).slice(0, 20);
-          this.loading = false;
-          return;
-        }
-        this.supplierOptions = [];
-        this.loading = false;
+      const showAll = () => {
+        this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers || []).slice();
+        this.ensureSelectedOption();
+      };
+      if (this.allSuppliers.length > 0) {
+        showAll();
         return;
       }
       this.loading = true;
-      const upperQuery = query.toUpperCase();
+      const loader = this.financePickMode
+        ? () => listSupplierDeptSafe()
+        : (this.onlyEnabled ? () => listSupplierAll(this.listQueryParams()) : getCachedListSupplierAll);
+      loader()
+        .then((response) => {
+          this.allSuppliers = this.filterEnabledSuppliers(response || []);
+          showAll();
+        })
+        .catch(() => {
+          this.supplierOptions = [];
+        })
+        .finally(() => {
+          this.loading = false;
+        });
+    },
+    onSupplierClear() {
+      this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers || []).slice();
+    },
+    filterMethod(query) {
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer);
+      }
+      const text = query != null ? String(query).trim() : '';
+      if (!text) {
+        this.supplierOptions = this.filterEnabledSuppliers(this.allSuppliers || []).slice();
+        this.ensureSelectedOption();
+        this.loading = false;
+        return;
+      }
+      const upperQuery = text.toUpperCase();
+      // 已有全量缓存时本地按名称/编码/首字母过滤，保证点击后输入即可搜
+      if ((this.allSuppliers || []).length > 0) {
+        this.filterSuppliers(text, upperQuery, []);
+        return;
+      }
+      this.loading = true;
       this.searchTimer = setTimeout(() => {
-        this.doSearch(query.trim(), upperQuery);
-      }, 200);
+        this.doSearch(text, upperQuery);
+      }, 120);
+    },
+    remoteMethod(query) {
+      this.filterMethod(query);
     },
     doSearch(query, upperQuery, cb) {
       if (this.financePickMode) {

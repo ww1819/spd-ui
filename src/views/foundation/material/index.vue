@@ -3726,9 +3726,9 @@ export default {
   max-width: none !important;
   box-sizing: border-box;
   padding: 8px 16px !important;
-  background: var(--spd-side-theme, #2C569A);
+  background: var(--spd-side-theme, #1c2430) !important;
   border: none;
-  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
+  border-bottom: 1px solid var(--spd-side-theme, #1c2430) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   flex-shrink: 0;
@@ -3737,13 +3737,15 @@ export default {
   z-index: 2;
 }
 ::v-deep .material-modal-content .modal-header.material-modal-header .modal-title{
-  color: #fff;
+  color: var(--spd-side-theme-on, #fff);
 }
 ::v-deep .material-modal-content .modal-header.material-modal-header .material-modal-x{
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--spd-side-theme-on, #fff);
+  opacity: 0.85;
 }
 ::v-deep .material-modal-content .modal-header.material-modal-header .material-modal-x:hover{
-  color: #fff;
+  color: var(--spd-side-theme-on, #fff);
+  opacity: 1;
 }
 
 ::v-deep .material-modal-header-actions{
@@ -4555,11 +4557,33 @@ export default {
 .material-modal-content .material-six-col-grid .el-date-editor .el-input__inner {
   height: 36px !important;
   line-height: 36px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .material-modal-content .material-six-col-grid .el-select,
 .material-modal-content .material-six-col-grid .el-select .el-input,
 .material-modal-content .material-six-col-grid .el-date-editor.el-input {
   width: 100%;
+}
+
+/* 产品档案输入框：悬停/聚焦蓝色发光 */
+.material-modal-content .material-detail-card .el-input__inner:hover,
+.material-modal-content .material-detail-card .el-textarea__inner:hover,
+.material-modal-content .material-detail-card .el-range-editor.el-input__inner:hover,
+.material-modal-content .material-detail-card .el-select:hover .el-input__inner,
+.material-modal-content .material-detail-card .el-autocomplete:hover .el-input__inner,
+.material-modal-content .material-detail-card .el-date-editor:hover.el-input__inner,
+.material-modal-content .material-detail-card .el-date-editor:hover .el-input__inner {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22) !important;
+}
+.material-modal-content .material-detail-card .el-input__inner:focus,
+.material-modal-content .material-detail-card .el-textarea__inner:focus,
+.material-modal-content .material-detail-card .el-range-editor.is-active,
+.material-modal-content .material-detail-card .el-select .el-input.is-focus .el-input__inner,
+.material-modal-content .material-detail-card .el-date-editor.is-active.el-input__inner,
+.material-modal-content .material-detail-card .el-date-editor.is-active .el-input__inner {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.28) !important;
 }
 
 /* 注册证有效期：日期框与单价同宽；「长期」缩小后挂在输入框后面 */

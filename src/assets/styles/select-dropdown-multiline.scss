@@ -13,6 +13,20 @@
   overflow-wrap: anywhere;
 }
 
+/* 悬停/选中：明显蓝色高亮，避免默认浅灰看不清 */
+.select-dropdown--multiline .el-select-dropdown__item.hover,
+.select-dropdown--multiline .el-select-dropdown__item:hover {
+  background-color: #DBEAFE !important;
+  color: #1E40AF !important;
+}
+
+.select-dropdown--multiline .el-select-dropdown__item.selected,
+.select-dropdown--multiline .el-select-dropdown__item.selected.hover {
+  background-color: #BFDBFE !important;
+  color: #1E3A8A !important;
+  font-weight: 600;
+}
+
 .select-option-label-wrap {
   display: inline-block;
   width: 100%;

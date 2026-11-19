@@ -1,7 +1,7 @@
 <template>
   <div class="navbar" :class="navbarThemeClass" :style="navbarThemeStyle">
     <hamburger v-if="navPosition === 'side'" id="hamburger-container" :is-active="sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
-    <el-tooltip content="刷新当前页面" effect="dark" placement="bottom">
+    <el-tooltip content="刷新当前页面" effect="dark" placement="bottom" :open-delay="5000">
       <div
         id="navbar-refresh"
         class="navbar-refresh-container"

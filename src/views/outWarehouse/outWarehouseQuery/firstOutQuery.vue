@@ -3,33 +3,37 @@
     <div class="form-fields-container list-query-panel" v-show="showSearch">
       <el-form :model="queryParams" ref="queryForm" size="small" :inline="true" class="query-form">
         <div class="ctk-query-top-fields">
-          <div class="more-search-dynamic-field more-search-field--text">
-            <el-input
-              v-model="queryParams.supplierKeyword"
-              placeholder="供应商编码/名称"
-              clearable
-              class="more-search-input more-search-input--dynamic"
-              @keyup.enter.native="handleQuery"
-            />
+          <div class="more-search-dynamic-field more-search-field--select">
+            <div class="query-select-wrapper more-search-select-wrap">
+              <SelectSupplier
+                v-model="queryParams.supplerId"
+                placeholder="供应商"
+              />
+            </div>
           </div>
           <div
             v-for="t in moreSearchTypes"
             :key="t"
             class="more-search-dynamic-field"
-            :class="(t === 'warehouse' || t === 'department') ? 'more-search-field--select' : 'more-search-field--text'"
+            :class="(t === 'warehouse' || t === 'department' || t === 'factory') ? 'more-search-field--select' : 'more-search-field--text'"
           >
             <template v-if="t === 'warehouse'">
               <div class="query-select-wrapper more-search-select-wrap">
                 <SelectWarehouse
                   v-model="queryParams.warehouseId"
                   excludeWarehouseType="高值"
-                  placeholder="仓库编码/名称/简码搜索"
+                  placeholder="仓库"
                 />
               </div>
             </template>
             <template v-else-if="t === 'department'">
               <div class="query-select-wrapper more-search-select-wrap">
                 <SelectDepartment v-model="queryParams.departmentId" />
+              </div>
+            </template>
+            <template v-else-if="t === 'factory'">
+              <div class="query-select-wrapper more-search-select-wrap">
+                <SelectFactory v-model="queryParams.queryFactoryId" placeholder="生产厂家" />
               </div>
             </template>
             <el-input
@@ -135,7 +139,7 @@
           class="spd-btn"
           @click="handleExport"
         >导出</el-button>
-        <el-tooltip content="单表导出，列布局与枣强出退库明细表一致（后端生成 xlsx，不按供应商拆分）" placement="top">
+        <el-tooltip content="单表导出，列布局与枣强出退库明细表一致（后端生成 xlsx，不按供应商拆分）" placement="top" :open-delay="3000">
           <el-button
             type="success"
             size="small"
@@ -145,7 +149,7 @@
             v-hasPermi="['outWarehouse:outWarehouseQuery:exportOverall']"
           >整体导出</el-button>
         </el-tooltip>
-        <el-tooltip content="出退库明细表（按供应商、名称、规格、单价）：每供应商一段，七列简表；逐行明细不合并，仅段末合计数量与金额" placement="top">
+        <el-tooltip content="出退库明细表（按供应商、名称、规格、单价）：每供应商一段，七列简表；逐行明细不合并，仅段末合计数量与金额" placement="top" :open-delay="3000">
           <el-button
             type="primary"
             size="small"
@@ -730,6 +734,8 @@ import { formatAmount as formatAmountByTenant, formatPrice as formatPriceByTenan
 import { exportCTKWarehouseDetailStyledXlsx, exportCTKWarehouseDetailSupplierSimpleXlsx } from "@/utils/departmentOutSummaryExport";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
+import SelectSupplier from '@/components/SelectModel/SelectSupplier';
+import SelectFactory from '@/components/SelectModel/SelectFactory';
 import SelectUser from '@/components/SelectModel/SelectUser';
 import SelectFinanceCategoryLow from '@/components/SelectModel/SelectFinanceCategoryLow';
 import SelectWarehouseCategoryLow from '@/components/SelectModel/SelectWarehouseCategoryLow';
@@ -777,7 +783,7 @@ function createDefaultFirstOutQueryColumns() {
 export default {
   name: "firstOutQuery",
   dicts: ['biz_status','bill_type','out_warehouse_bill_type','way_status'],
-  components: {SelectWarehouse,SelectDepartment,SelectUser,SelectFinanceCategoryLow,SelectWarehouseCategoryLow,RightToolbar,TableColumnSettingDialog},
+  components: {SelectWarehouse,SelectDepartment,SelectSupplier,SelectFactory,SelectUser,SelectFinanceCategoryLow,SelectWarehouseCategoryLow,RightToolbar,TableColumnSettingDialog},
   mixins: [
     createTableColumnSettingsMixin({
       createDefaultColumns: createDefaultFirstOutQueryColumns,
@@ -854,6 +860,7 @@ export default {
         materialModelLike: null,
         supplierKeyword: null,
         factoryKeyword: null,
+        queryFactoryId: null,
         batchNo: null,
         batchNumberKeyword: null,
         financeCategoryKeyword: null,
@@ -1113,6 +1120,7 @@ export default {
       this.queryParams.materialModelLike = null;
       this.queryParams.supplierKeyword = null;
       this.queryParams.factoryKeyword = null;
+      this.queryParams.queryFactoryId = null;
       this.queryParams.batchNo = null;
       this.queryParams.batchNumberKeyword = null;
       this.queryParams.billNo = null;
@@ -1232,15 +1240,15 @@ export default {
     },
     moreSearchPlaceholderFor(t) {
       const map = {
-        factory: '生产厂家编码/名称/简码',
-        materialName: '产品编码/名称/简码',
+        factory: '生产厂家',
+        materialName: '产品名称',
         billNo: '业务单号',
-        materialSpeci: '规格模糊',
-        materialModel: '型号模糊',
-        batchNo: '批号模糊',
-        batchNumber: '批次号模糊'
+        materialSpeci: '规格',
+        materialModel: '型号',
+        batchNo: '批号',
+        batchNumber: '批次号'
       };
-      return map[t] || '请输入关键字';
+      return map[t] || '请输入';
     },
     buildListQueryParams() {
       const queryParams = { ...this.queryParams };
@@ -1248,16 +1256,23 @@ export default {
       queryParams.materialSpeciLike = null;
       queryParams.materialModelLike = null;
       queryParams.factoryKeyword = null;
+      if (queryParams.queryFactoryId === '' || queryParams.queryFactoryId === undefined) {
+        queryParams.queryFactoryId = null;
+      }
+      if (!(this.moreSearchTypes || []).includes('factory')) {
+        queryParams.queryFactoryId = null;
+      }
       queryParams.batchNo = null;
       queryParams.batchNumberKeyword = null;
       queryParams.billNo = null;
       // 财务/库房分类仅走第二行多选，不再使用关键字框
       queryParams.financeCategoryKeyword = null;
       queryParams.warehouseCategoryKeyword = null;
-      queryParams.supplerId = null;
-      // 供应商固定首行
-      const supplierKw = queryParams.supplierKeyword != null ? String(queryParams.supplierKeyword).trim() : '';
-      queryParams.supplierKeyword = supplierKw || null;
+      // 供应商固定首行：下拉选中 id；不再用关键字模糊
+      queryParams.supplierKeyword = null;
+      if (queryParams.supplerId === '' || queryParams.supplerId === undefined) {
+        queryParams.supplerId = null;
+      }
       if (!queryParams.beginDate || queryParams.beginDate === '') {
         queryParams.beginDate = null;
       }
@@ -1280,7 +1295,7 @@ export default {
         queryParams.departmentId = null;
       }
       types.forEach(t => {
-        if (t === 'warehouse' || t === 'department') {
+        if (t === 'warehouse' || t === 'department' || t === 'factory') {
           return;
         }
         const raw = this.moreSearchKeywords[t];
@@ -1290,7 +1305,6 @@ export default {
         }
         switch (t) {
           case 'factory':
-            queryParams.factoryKeyword = kw;
             break;
           case 'materialName':
             queryParams.materialNameLike = kw;
