@@ -7,8 +7,7 @@
         class="wh-reminder-local-mask"
         @click.self="closeWarehouseReminder"
       >
-        <transition name="wh-modal-zoom">
-          <div v-if="warehouseReminderVisible" class="wh-reminder-local-content">
+          <div class="wh-reminder-local-content">
             <div class="wh-reminder-modal-header">
               <div class="wh-reminder-modal-title">消息提醒</div>
               <el-button size="small" class="wh-reminder-close-btn" @click="closeWarehouseReminder">关闭</el-button>
@@ -598,7 +597,6 @@
               </div>
             </div>
           </div>
-        </transition>
       </div>
     </transition>
     <transition name="fade-transform" mode="out-in" @after-enter="onRouteViewEntered">
@@ -1342,6 +1340,7 @@ export default {
         this.warehouseReminderError = (e && e.message) ? String(e.message) : '加载失败，请稍后重试'
       } finally {
         this.warehouseReminderLoading = false
+        this.$store.dispatch('app/refreshMessageReminderBadge')
       }
     }
   }
@@ -1392,8 +1391,8 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 6px 20px;
-  border-bottom: 1px solid #ebeef5;
-  background: #ebeef5;
+  border-bottom: 1px solid var(--spd-side-theme, #2C569A);
+  background: var(--spd-side-theme, #2C569A);
   min-height: 40px;
   flex-shrink: 0;
 }
@@ -1401,17 +1400,21 @@ export default {
 .wh-reminder-modal-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--spd-side-theme-on, #fff);
   line-height: 1.4;
 }
 
 .wh-reminder-close-btn {
-  border: none;
-  background: transparent;
+  border: none !important;
+  background: transparent !important;
+  color: var(--spd-side-theme-on, #fff) !important;
 }
 
-.wh-reminder-close-btn:hover {
-  background: rgba(0, 0, 0, 0.1);
+.wh-reminder-close-btn:hover,
+.wh-reminder-close-btn:focus {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: var(--spd-side-theme-on, #fff) !important;
+  border-color: transparent !important;
 }
 
 .wh-reminder-modal-body {
@@ -1695,30 +1698,17 @@ export default {
   color: #f56c6c;
 }
 
-.wh-modal-fade-enter-active,
+.wh-modal-fade-enter-active {
+  transition: opacity 0.18s ease;
+}
+
 .wh-modal-fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.1s ease;
 }
 
 .wh-modal-fade-enter,
 .wh-modal-fade-leave-to {
   opacity: 0;
-}
-
-.wh-modal-zoom-enter-active,
-.wh-modal-zoom-leave-active {
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  transform-origin: center center;
-}
-
-.wh-modal-zoom-enter {
-  opacity: 0;
-  transform: scale(0.3) translateY(-50px);
-}
-
-.wh-modal-zoom-leave-to {
-  opacity: 0;
-  transform: scale(0.8);
 }
 </style>
 

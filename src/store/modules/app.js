@@ -1,4 +1,5 @@
 import Cookies from 'js-cookie'
+import { fetchHomeWarehouseReminderCounts, fetchHomeDepartmentReminderCounts } from '@/api/dashboard/home'
 
 function resolveSidebarOpened() {
   try {
@@ -35,6 +36,8 @@ const state = {
   warehouseReminderSubTab: 'apply',
   /** 科室预警内子 Tab：unreceivedConfirm | inventory | expiry | consume */
   departmentReminderSubTab: 'unreceivedConfirm',
+  /** 顶栏铃铛：消息提醒未处理合计 */
+  messageReminderBadgeTotal: 0,
   /** 侧栏叶子菜单点击：{ path, tick }，用于同页从侧栏进入时重置弹窗 */
   sidebarNavTick: null
 }
@@ -95,6 +98,10 @@ const mutations = {
     const normalized = subTab === 'all' ? 'unreceivedConfirm' : subTab
     state.departmentReminderSubTab = allowed.includes(normalized) ? normalized : 'unreceivedConfirm'
   },
+  SET_MESSAGE_REMINDER_BADGE_TOTAL: (state, total) => {
+    const n = Number(total)
+    state.messageReminderBadgeTotal = Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
+  },
   SET_SIDEBAR_NAV_TICK: (state, payload) => {
     if (!payload || !payload.path) {
       state.sidebarNavTick = null
@@ -129,6 +136,48 @@ const actions = {
   toggleSideBarHide({ commit }, status) {
     commit('SET_SIDEBAR_HIDE', status)
   },
+  /** 顶栏铃铛角标：按授权汇总仓库/科室未处理数量 */
+  async refreshMessageReminderBadge({ commit, rootGetters }) {
+    const keys = rootGetters.messageReminderKeys
+    const allowAll = keys == null
+    const allowWh = allowAll || (Array.isArray(keys) && keys.includes('warehouse'))
+    const allowDept = allowAll || (Array.isArray(keys) && keys.includes('department'))
+    const tasks = []
+    if (allowWh) {
+      tasks.push(
+        fetchHomeWarehouseReminderCounts()
+          .then(res => {
+            const w = (res && res.data) || {}
+            return (Number(w.pendingApplyBillCount) || 0)
+              + (Number(w.pendingPurchaseBillCount) || 0)
+              + (Number(w.nearExpiryInventoryLineCount) || 0)
+              + (Number(w.inventoryAlertLineCount) || 0)
+          })
+          .catch(() => 0)
+      )
+    }
+    if (allowDept) {
+      tasks.push(
+        fetchHomeDepartmentReminderCounts()
+          .then(res => {
+            const d = (res && res.data) || {}
+            return (Number(d.unreceivedBillCount) || 0)
+              + (Number(d.nearExpiryLineCount) || 0)
+              + (Number(d.inventoryAlertLineCount) || 0)
+              + (Number(d.consumeLineCount) || 0)
+          })
+          .catch(() => 0)
+      )
+    }
+    let total = 0
+    try {
+      const parts = await Promise.all(tasks)
+      total = parts.reduce((sum, n) => sum + (Number(n) || 0), 0)
+    } catch (e) {
+      total = 0
+    }
+    commit('SET_MESSAGE_REMINDER_BADGE_TOTAL', total)
+  },
   openWarehouseReminder({ commit }, payload) {
     const mainAllowed = ['warehouse', 'department', 'data']
     const warehouseSubAllowed = ['apply', 'purchase', 'inventory', 'nearExpiry']
@@ -158,8 +207,12 @@ const actions = {
     commit('SET_DEPARTMENT_REMINDER_SUB_TAB', departmentSub)
     commit('SET_WAREHOUSE_REMINDER_VISIBLE', true)
   },
-  closeWarehouseReminder({ commit }) {
+  closeWarehouseReminder({ commit, dispatch }) {
+    // 先关弹窗，角标刷新延后，避免关闭瞬间卡顿
     commit('SET_WAREHOUSE_REMINDER_VISIBLE', false)
+    setTimeout(() => {
+      dispatch('refreshMessageReminderBadge')
+    }, 120)
   }
 }
 

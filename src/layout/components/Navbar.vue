@@ -35,9 +35,13 @@
 <!--          <ruo-yi-doc id="ruoyi-doc" class="right-menu-item hover-effect" />-->
 <!--        </el-tooltip>-->
 
-        <!-- 消息提醒：点击铃铛直接打开弹窗 -->
-        <div class="right-menu-item hover-effect" @click="openMessageReminderModal">
+        <!-- 消息提醒：点击铃铛直接打开弹窗；角标为未处理合计，不改变铃铛字号 -->
+        <div class="right-menu-item hover-effect message-reminder-bell" @click="openMessageReminderModal">
           <i class="el-icon-bell"></i>
+          <span
+            v-if="messageReminderBadgeTotal > 0"
+            class="message-reminder-bell-badge"
+          >{{ messageReminderBadgeTotal > 99 ? '99+' : messageReminderBadgeTotal }}</span>
         </div>
 
         <screenfull id="screenfull" class="right-menu-item hover-effect" />
@@ -278,6 +282,9 @@ export default {
     },
     frontendBuildLabel() {
       return this.formatVersionTime(process.env.VUE_APP_BUILD_TIME)
+    },
+    messageReminderBadgeTotal() {
+      return Number(this.$store.state.app.messageReminderBadgeTotal) || 0
     }
   },
   methods: {
@@ -376,9 +383,15 @@ export default {
       this.loadBackendVersion()
     }
   },
+  watch: {
+    messageReminderKeys() {
+      this.$store.dispatch('app/refreshMessageReminderBadge')
+    }
+  },
   created() {
     // 获取参数设置第七条参数值
     this.getOrganizationUnit()
+    this.$store.dispatch('app/refreshMessageReminderBadge')
   }
 }
 </script>
@@ -540,6 +553,34 @@ export default {
 
         &:hover {
           background: rgba(0, 0, 0, .025)
+        }
+      }
+
+      &.message-reminder-bell {
+        position: relative;
+
+        .el-icon-bell {
+          font-size: 18px;
+          line-height: 1;
+        }
+
+        .message-reminder-bell-badge {
+          position: absolute;
+          top: 8px;
+          right: 2px;
+          min-width: 16px;
+          height: 16px;
+          padding: 0 4px;
+          border-radius: 8px;
+          background: #f56c6c;
+          color: #fff;
+          font-size: 11px;
+          font-weight: 600;
+          line-height: 16px;
+          text-align: center;
+          box-sizing: border-box;
+          pointer-events: none;
+          transform: translate(25%, -10%);
         }
       }
 
