@@ -2703,7 +2703,7 @@ export default {
 ::v-deep .local-modal-content .modal-detail-section .el-table ::v-deep .detail-date-begin .el-input__inner {
   padding-left: 6px !important;
   padding-right: 6px !important;
-  text-align: center;
+  text-align: left !important;
   letter-spacing: 0;
 }
 /* 有值时隐藏灰色占位符（勿改 font-size，避免日期显示异常） */
@@ -2857,6 +2857,19 @@ export default {
   font-weight: 600 !important;
   text-align: center !important;
   line-height: 20px !important;
+}
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent.el-table__cell,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent .cell {
+  color: #513AEF !important;
+}
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table thead th,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table th.is-leaf {
+  height: 42px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  vertical-align: middle !important;
 }
 
 /* 表体横向滚动条与合计行错开（非明细表保留底部内边距） */
@@ -3380,7 +3393,9 @@ export default {
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-begin-date .detail-date-begin .el-input__inner {
   overflow: visible;
   text-overflow: clip;
+  padding-left: 6px !important;
   padding-right: 6px !important;
+  text-align: left !important;
 }
 
 /* 明细表合计行：与表头同高、同色 */
@@ -3713,6 +3728,7 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
 }
 
 /* 弹窗明细表头：与主列表一致 */
+/* 明细表头：对齐耗材档案 material-main-table（有无排序同一水平线，不改排序组件结构） */
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
@@ -3723,21 +3739,62 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
+  letter-spacing: 0.02em;
   border-right-color: #e2e8f0 !important;
   border-bottom-color: #e2e8f0 !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  height: 34px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 42px !important;
+  vertical-align: middle !important;
 }
 
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell,
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th .cell {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   text-align: center !important;
+  height: 42px !important;
   line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+/* 排序图标保持 Element 默认尺寸与位置，仅靠 flex 与无排序标题齐平 */
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .caret-wrapper {
+  height: 34px !important;
+  width: 24px !important;
+  flex-shrink: 0;
+  vertical-align: middle !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .sort-caret {
+  left: 7px !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+  top: 5px !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+  bottom: 7px !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+/* 数量/金额/批号/有效期/生产日期 表头色（label-class-name → th.detail-th-accent） */
+html body .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent,
+html body .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent.el-table__cell,
+html body .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent .cell {
+  color: #513AEF !important;
 }
 
 /* 单据状态列表头不换行 */

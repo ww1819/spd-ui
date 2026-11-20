@@ -279,7 +279,7 @@
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="数量" align="center" prop="qty" width="90" show-overflow-tooltip resizable sortable>
+          <el-table-column label="数量" align="center" prop="qty" width="90" show-overflow-tooltip resizable sortable label-class-name="detail-th-accent">
             <template slot-scope="scope">
               <div
                 class="detail-cell-focus-wrap"
@@ -310,7 +310,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="金额" align="center" prop="amt" width="90" show-overflow-tooltip resizable sortable>
+          <el-table-column label="金额" align="center" prop="amt" width="90" show-overflow-tooltip resizable sortable label-class-name="detail-th-accent">
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <span>{{ scope.row.amt | formatAmount }}</span>
@@ -325,6 +325,7 @@
             min-width="100"
             :show-overflow-tooltip="false"
             class-name="detail-col-batch"
+            label-class-name="detail-th-accent"
             resizable
             sortable
           >
@@ -347,7 +348,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" align="center" prop="beginTime" width="118" :show-overflow-tooltip="false" resizable sortable class-name="detail-col-begin-date">
+          <el-table-column label="生产日期" align="center" prop="beginTime" width="118" :show-overflow-tooltip="false" resizable sortable class-name="detail-col-begin-date" label-class-name="detail-th-accent">
             <template slot-scope="scope">
               <div
                 class="detail-cell-edit-wrap detail-begin-date-wrap detail-cell-focus-wrap"
@@ -381,6 +382,7 @@
             min-width="160"
             :show-overflow-tooltip="false"
             class-name="detail-col-date"
+            label-class-name="detail-th-accent"
             resizable
             sortable
           >
