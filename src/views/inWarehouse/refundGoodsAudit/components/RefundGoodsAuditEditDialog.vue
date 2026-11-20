@@ -112,8 +112,8 @@
                 :disabled="!form.warehouseId"
               >添加</el-button>
               <el-button
+                type="danger"
                 size="small"
-                class="spd-btn spd-btn--danger"
                 icon="el-icon-delete"
                 @click="handleDeleteStkIoBillEntry"
               >删除</el-button>
@@ -212,8 +212,10 @@
                 placeholder="数量"
                 size="small"
                 class="detail-cell-fluid-input"
-                @input="onQtyInput(scope.row)"
-                @blur="onQtyBlur(scope.row)"
+                onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                        @blur="form.result=$event.target.value"
+                        @input="qtyChange(scope.row)"
               />
             </template>
           </el-table-column>

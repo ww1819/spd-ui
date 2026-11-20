@@ -104,8 +104,8 @@
               <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refDeptApply">引用仓库申请单</el-button>
               <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refDepPurchaseApply">引用科室申购单</el-button>
               <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refRkApply">引用入库单</el-button>
-              <el-button size="small" class="spd-btn spd-btn--danger" icon="el-icon-delete" @click="handleDeleteStkIoBillEntry">删除</el-button>
-              <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :loading="submitLoading" :disabled="submitLoading" @click="submitForm">保 存</el-button>
+              <el-button type="danger" size="small" icon="el-icon-delete" @click="handleDeleteStkIoBillEntry">删除</el-button>
+              <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
               <el-button
                 v-if="isZqTenant"
                 type="primary"
@@ -215,8 +215,10 @@
                   size="small"
                   class="detail-cell-fluid-input"
                   style="width: 100%"
-                  @input="onQtyInput(scope.row)"
-                  @blur="onQtyBlur(scope.row)"
+                  onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                  onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                  @blur="form.result=$event.target.value"
+                  @input="qtyChange(scope.row)"
                 />
               </div>
             </template>

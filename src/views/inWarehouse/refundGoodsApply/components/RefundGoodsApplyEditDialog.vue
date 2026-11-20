@@ -77,7 +77,7 @@
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="发票金额" prop="invoiceAmount">
-              <el-input v-model="form.invoiceAmount" placeholder="发票金额" @input="onFormDecimalInput(form, 'invoiceAmount')" @blur="onFormDecimalBlur(form, 'invoiceAmount')" />
+              <el-input v-model="form.invoiceAmount" placeholder="发票金额" />
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
@@ -133,8 +133,8 @@
                 @click="refTkApply"
               >引用科室退库单</el-button>
               <el-button
+                type="danger"
                 size="small"
-                class="spd-btn spd-btn--danger"
                 icon="el-icon-delete"
                 @click="handleDeleteStkIoBillEntry"
               >删除</el-button>
@@ -143,8 +143,6 @@
                 size="small"
                 class="spd-btn spd-btn--primary"
                 icon="el-icon-check"
-                :loading="submitLoading"
-                :disabled="submitLoading"
                 @click="submitForm"
               >保 存</el-button>
             </template>
@@ -240,8 +238,10 @@
                 placeholder="数量"
                 size="small"
                 class="detail-cell-fluid-input"
-                @input="onQtyInput(scope.row)"
-                @blur="onQtyBlur(scope.row)"
+                onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                @blur="form.result=$event.target.value"
+                @input="qtyChange(scope.row)"
               />
             </template>
           </el-table-column>

@@ -177,8 +177,9 @@
                       placeholder="数量"
                       size="small"
                       style="width: 100%"
-                      @input="onQtyInput(scope.row)"
-                      @blur="onQtyBlur(scope.row)"
+                      onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                      onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
+                      @input="qtyChange(scope.row)"
                     />
                     <span v-else>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '—' }}</span>
                   </template>

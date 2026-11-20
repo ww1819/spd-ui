@@ -622,9 +622,6 @@ body.inventory-query-fixed .main-container {
   color: #2C569A;
   font-weight: 600;
 }
-.gz-retrospect-query .amount-cell-num {
-  color: #2C569A;
-}
 .gz-retrospect-query .pagination-wrapper .pagination-container {
   position: relative !important;
   height: auto !important;
@@ -670,6 +667,9 @@ body.inventory-query-fixed .main-container {
   border-bottom-color: #e2e8f0 !important;
   height: 34px !important;
 }
+.gz-retrospect-query .gz-retrospect-main-table .el-table__header th.gutter {
+  height: 34px !important;
+}
 
 /* 明细行对齐「含升/降序箭头」的表头实际高度：caret-wrapper 34px + 表头上下 padding 4px*2 ≈ 42px */
 .gz-retrospect-query .gz-retrospect-main-table.el-table .el-table__body tr > td,
@@ -686,9 +686,6 @@ body.inventory-query-fixed .main-container {
   padding-bottom: 0 !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
-}
-.gz-retrospect-query .gz-retrospect-main-table .el-table__header th.gutter {
-  background-color: #f1f5f9 !important;
 }
 .gz-retrospect-query .gz-retrospect-main-table .el-table__body tr:hover > td {
   background-color: #D6EBFF !important;

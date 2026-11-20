@@ -81,7 +81,7 @@
             </el-col>
                 <el-col :span="4">
                   <el-form-item label="单价：" prop="price" class="zq-editable-field material-label-hint-red">
-                    <el-input v-model="form.price" placeholder="请输入单价" @input="onFormDecimalInput(form, 'price')" @blur="onFormDecimalBlur(form, 'price')" />
+                    <el-input v-model="form.price" placeholder="请输入单价" />
                   </el-form-item>
                 </el-col>
                 <el-col :span="4">
@@ -646,7 +646,7 @@
             </el-col>
                 <el-col :span="4">
                       <el-form-item label="单价：" prop="sunshinePrice">
-                        <el-input v-model="form.sunshinePrice" placeholder="单价" @input="onFormDecimalInput(form, 'sunshinePrice')" @blur="onFormDecimalBlur(form, 'sunshinePrice')" />
+                        <el-input v-model="form.sunshinePrice" placeholder="单价" />
               </el-form-item>
             </el-col>
                 <el-col :span="4">

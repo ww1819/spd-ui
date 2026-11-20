@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <template v-for="(item, index) in options">
       <template v-if="values.includes(item.value)">
@@ -66,7 +66,7 @@ export default {
         }
         // 传入值为Array
         this.value.forEach((item) => {
-          if (!this.options.some((v) => v.value == item))
+          if (!opts.some((v) => v.value == item))
             this.unmatchArray.push(item);
         });
         return true;

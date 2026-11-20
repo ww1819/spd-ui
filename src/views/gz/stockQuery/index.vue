@@ -205,7 +205,12 @@ export default {
         { value: "materialKeyword", label: "产品" },
         { value: "inHospitalCode", label: "院内码" },
         { value: "orderNo", label: "单号" },
-        { value: "department", label: "科室" }
+        { value: "department", label: "科室" },
+        { value: "batchNumber", label: "批号" },
+        { value: "batchNo", label: "批次号" },
+        { value: "udiNo", label: "UDI码" },
+        { value: "factoryKeyword", label: "生产厂家" },
+        { value: "materialSpeci", label: "规格" }
       ],
       toolbarMoreHover: false,
       toolbarMoreCloseTimer: null,
@@ -218,6 +223,11 @@ export default {
         supplierId: null,
         departmentId: null,
         orderNo: null,
+        batchNumber: null,
+        batchNo: null,
+        udiNo: null,
+        factoryKeyword: null,
+        materialSpeci: null,
         orderStatus: null,
         beginDate: createDefaultBeginDate(),
         endDate: createDefaultEndDate()
@@ -262,7 +272,12 @@ export default {
       const map = {
         materialKeyword: "产品编码/名称/规格/型号",
         inHospitalCode: "院内码",
-        orderNo: this.activeName === "outbound" ? "出库/退库单号" : "单号"
+        orderNo: this.activeName === "outbound" ? "出库/退库单号" : "单号",
+        batchNumber: "批号",
+        batchNo: "批次号",
+        udiNo: "UDI码",
+        factoryKeyword: "生产厂家",
+        materialSpeci: "规格"
       };
       return map[t] || "请输入";
     },
@@ -292,6 +307,11 @@ export default {
       if (!set.has("materialKeyword")) target.materialKeyword = null;
       if (!set.has("inHospitalCode")) target.inHospitalCode = null;
       if (!set.has("orderNo")) target.orderNo = null;
+      if (!set.has("batchNumber")) target.batchNumber = null;
+      if (!set.has("batchNo")) target.batchNo = null;
+      if (!set.has("udiNo")) target.udiNo = null;
+      if (!set.has("factoryKeyword")) target.factoryKeyword = null;
+      if (!set.has("materialSpeci")) target.materialSpeci = null;
     },
     onMoreSearchTypesChange(val) {
       const allow = new Set(this.moreSearchOptions.map(o => o.value));
@@ -349,6 +369,12 @@ export default {
     handleQuery() {
       this.applyMoreSearchToQueryParams(this.queryParams);
       this.queryParams.pageNum = 1;
+      this.$nextTick(() => {
+        const ref = this.activeTableRef();
+        if (ref && typeof ref.getList === 'function') {
+          ref.getList();
+        }
+      });
     },
     resetQuery() {
       this.resetForm("queryForm");
@@ -358,6 +384,11 @@ export default {
       this.queryParams.supplierId = null;
       this.queryParams.departmentId = null;
       this.queryParams.orderNo = null;
+      this.queryParams.batchNumber = null;
+      this.queryParams.batchNo = null;
+      this.queryParams.udiNo = null;
+      this.queryParams.factoryKeyword = null;
+      this.queryParams.materialSpeci = null;
       this.queryParams.orderStatus = null;
       this.moreSearchTypes = this.loadMoreSearchDefaults();
       this.onMoreSearchTypesChange();
@@ -382,7 +413,24 @@ export default {
       }
     },
     handleTabClick() {
-      this.resetQuery();
+      // 切 Tab 会销毁/重建表格组件（v-if），由子组件 created 拉数；这里只重置条件，避免重复请求
+      this.resetForm("queryForm");
+      this.queryParams.materialKeyword = null;
+      this.queryParams.inHospitalCode = null;
+      this.queryParams.warehouseId = null;
+      this.queryParams.supplierId = null;
+      this.queryParams.departmentId = null;
+      this.queryParams.orderNo = null;
+      this.queryParams.batchNumber = null;
+      this.queryParams.batchNo = null;
+      this.queryParams.udiNo = null;
+      this.queryParams.factoryKeyword = null;
+      this.queryParams.materialSpeci = null;
+      this.queryParams.orderStatus = null;
+      this.moreSearchTypes = this.loadMoreSearchDefaults();
+      this.onMoreSearchTypesChange();
+      this.initDefaultDateRange();
+      this.queryParams.pageNum = 1;
       this.$nextTick(() => {
         this.refreshActiveTableHeight();
         setTimeout(() => this.refreshActiveTableHeight(), 80);
@@ -390,27 +438,40 @@ export default {
     },
     handleExport() {
       const ref = this.activeTableRef();
-      const rows = (ref && ref.allDetailRows) || [];
-      if (!rows.length) {
+      if (!ref) {
         this.$modal.msgWarning('暂无数据可导出，请先查询');
         return;
       }
       const dictOptions = (this.dict && this.dict.type && this.dict.type.biz_status) || [];
       const tabLabel = this.activeName === 'inbound' ? '入退货表'
         : this.activeName === 'outbound' ? '出退库表' : '跟台表';
-      const previewRows = this.activeName === 'inbound'
-        ? mapInboundExportRows(rows, dictOptions)
-        : this.activeName === 'outbound'
-          ? mapOutboundExportRows(rows, dictOptions)
-          : mapFollowExportRows(rows);
-      const ok = exportStockQueryRows(
-        previewRows,
-        `备货查询_${tabLabel}_${new Date().getTime()}.xlsx`,
-        tabLabel
-      );
-      if (ok) {
-        this.$modal.msgSuccess(`导出成功，共 ${previewRows.length} 条`);
-      }
+      const loading = this.$loading({ text: '正在导出...', lock: true });
+      const fetchPromise = typeof ref.fetchAllForExport === 'function'
+        ? ref.fetchAllForExport()
+        : Promise.resolve(ref.allDetailRows || []);
+      fetchPromise.then(rows => {
+        if (!rows || !rows.length) {
+          this.$modal.msgWarning('暂无数据可导出，请先查询');
+          return;
+        }
+        const previewRows = this.activeName === 'inbound'
+          ? mapInboundExportRows(rows, dictOptions)
+          : this.activeName === 'outbound'
+            ? mapOutboundExportRows(rows, dictOptions)
+            : mapFollowExportRows(rows);
+        const ok = exportStockQueryRows(
+          previewRows,
+          `备货查询_${tabLabel}_${new Date().getTime()}.xlsx`,
+          tabLabel
+        );
+        if (ok) {
+          this.$modal.msgSuccess(`导出成功，共 ${previewRows.length} 条`);
+        }
+      }).catch(err => {
+        this.$modal.msgError('导出失败: ' + ((err && err.message) || '未知错误'));
+      }).finally(() => {
+        loading.close();
+      });
     }
   }
 };
@@ -507,9 +568,23 @@ body.inventory-query-fixed .main-container {
   border-right-color: #e2e8f0 !important;
   border-bottom-color: #e2e8f0 !important;
   height: 34px !important;
+  padding: 4px 4px !important;
 }
 .gz-stock-query .gz-stock-main-table .el-table__header th.gutter {
   background-color: #f1f5f9 !important;
+}
+/* 明细行高与表头一致 */
+.gz-stock-query .gz-stock-main-table .el-table__body td,
+.gz-stock-query .gz-stock-main-table .el-table__body td.el-table__cell {
+  height: 34px !important;
+  padding: 4px 4px !important;
+  box-sizing: border-box !important;
+}
+.gz-stock-query .gz-stock-main-table .el-table__header-wrapper th .cell,
+.gz-stock-query .gz-stock-main-table .el-table__body td .cell {
+  line-height: 22px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
 }
 .gz-stock-query .gz-stock-main-table .el-table__body tr:hover > td {
   background-color: #D6EBFF !important;

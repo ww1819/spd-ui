@@ -34,12 +34,15 @@ module.exports = {
     host: '0.0.0.0',
     port: port,
     open: true,
+    // HMR / sockjs 固定走前端端口，避免误连后端 8080 刷红错
+    sockHost: 'localhost',
+    sockPort: port,
     proxy: {
       // detail: https://cli.vuejs.org/config/#devserver-proxy
       [process.env.VUE_APP_BASE_API]: {
         target: `http://localhost:8080`,
         changeOrigin: true,
-        ws: true, // 启用websocket
+        ws: false, // API 不转发 websocket，防止 sockjs-node 误代理到 Java
         secure: false, // 如果是https接口，需要配置这个参数
         pathRewrite: {
           ['^' + process.env.VUE_APP_BASE_API]: ''

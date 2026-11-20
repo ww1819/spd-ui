@@ -1018,45 +1018,14 @@ export default {
         return;
       }
       const payload = this.buildSavePayload();
-      const wasNew = !this.form.id;
       const req = this.form.id ? updateScrapBill(payload) : addScrapBill(payload);
       req.then((res) => {
         this.$modal.msgSuccess("保存成功");
-        if (wasNew && res && res.data) {
+        if (!this.form.id && res && res.data) {
           this.form.id = res.data.id;
           this.form.billNo = res.data.billNo || "";
           this.form.billStatus = res.data.billStatus != null ? res.data.billStatus : this.form.billStatus;
         }
-        const billId = this.form.id;
-        if (billId) {
-          return getScrapBill(billId).then((detailRes) => {
-            const detail = detailRes && detailRes.data ? detailRes.data : detailRes;
-            if (!detail) {
-              return;
-            }
-            if (detail.billNo) this.form.billNo = detail.billNo;
-            const entries = detail.entryList || [];
-            this.detailList = entries.map((e, idx) => ({
-              inventoryId: e.inventoryId || null,
-              materialId: e.materialId,
-              materialCode: e.materialCode || "",
-              materialName: e.materialName || "",
-              speci: e.speci || "",
-              model: e.model || "",
-              unit: e.unitName || e.unit || "",
-              qty: e.qty,
-              price: e.price,
-              amount: e.amount,
-              batchNo: e.batchNo || "",
-              produceDate: e.produceDate || "",
-              expiryDate: e.expiryDate || "",
-              manufacturer: e.manufacturer || "",
-              index: idx + 1,
-              id: e.id
-            }));
-          }).catch(() => {});
-        }
-      }).then(() => {
         this.getList();
       });
     }
