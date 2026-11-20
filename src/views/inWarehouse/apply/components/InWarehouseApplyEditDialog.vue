@@ -82,7 +82,7 @@
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="发票金额" prop="invoiceAmount">
-              <el-input v-model="form.invoiceAmount" placeholder="发票金额" />
+              <el-input v-model="form.invoiceAmount" placeholder="发票金额" @input="onFormDecimalInput(form, 'invoiceAmount')" @blur="onFormDecimalBlur(form, 'invoiceAmount')" />
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
@@ -156,8 +156,8 @@
                 @click="refDingdan"
               >引用采购订单</el-button>
               <el-button
-                type="danger"
                 size="small"
+                class="spd-btn spd-btn--danger"
                 icon="el-icon-delete"
                 @click="handleDeleteStkIoBillEntry"
               >删除</el-button>
@@ -288,10 +288,8 @@
                   :readonly="!action"
                   v-model="scope.row.qty"
                   placeholder="数量"
-                  onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                  onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                  @blur="form.result=$event.target.value"
-                  @input="qtyChange(scope.row)"
+                  @input="onQtyInput(scope.row)"
+                  @blur="onQtyBlur(scope.row)"
                   size="small"
                   style="width: 100%"
                 />

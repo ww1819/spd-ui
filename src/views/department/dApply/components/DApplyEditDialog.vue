@@ -135,10 +135,8 @@
                       placeholder="数量"
                       class="apply-detail-qty-input"
                       style="width: 100%"
-                      onkeyup="value=value.replace(/\D/g,'')"
-                      onafterpaste="value=value.replace(/\D/g,'')"
-                      @blur="form.result=$event.target.value"
-                      @input="qtyChange(scope.row)"
+                      @input="onQtyInput(scope.row)"
+                      @blur="onQtyBlur(scope.row)"
                     />
                     <span v-else>{{ fmtQty(scope.row.qty) }}</span>
                   </template>

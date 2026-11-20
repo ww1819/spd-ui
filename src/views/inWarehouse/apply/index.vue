@@ -267,6 +267,7 @@ import {
 import { ZQ_TCM_TENANT } from '@/utils/msunHis'
 import { normalizeCompactDateInput, readDatePickerInputValue, isValidYmd } from '@/utils/compactDateInput'
 import { assertWarehouseInboundEnabled } from '@/utils/warehouseInboundGuard'
+import { sanitizeDecimalInput, finalizeDecimalInput } from '@/utils/format-quantity'
 
 export default {
   name: "Apply",
@@ -1026,6 +1027,24 @@ export default {
       this.resetForm("form");
     },
     //数量改变事件
+    /** 数量录入中：过滤非法字符，允许临时尾部小数点 */
+    onQtyInput(row) {
+      if (!row || !this.action) return;
+      const cleaned = sanitizeDecimalInput(row.qty);
+      if (cleaned !== String(row.qty == null ? '' : row.qty)) {
+        this.$set(row, 'qty', cleaned);
+      }
+      this.qtyChange(row);
+    },
+    /** 数量失焦：去掉 "400." 这类孤立小数点，避免提交时 Jackson 反序列化 BigDecimal 失败 */
+    onQtyBlur(row) {
+      if (!row) return;
+      const finalized = finalizeDecimalInput(row.qty);
+      if (finalized !== row.qty) {
+        this.$set(row, 'qty', finalized);
+      }
+      this.qtyChange(row);
+    },
     qtyChange(row){
       if (!this.action) return;
       let totalAmt = 0;
@@ -1581,6 +1600,15 @@ export default {
             this.form.createBy = this.$store.state.user.userId;
           }
 
+          // 提交前规范化数量（去掉 "400." 等非法小数串）
+          (this.stkIoBillEntryList || []).forEach((item) => {
+            if (!item || item.qty == null || item.qty === '') return;
+            const q = finalizeDecimalInput(item.qty);
+            if (q !== item.qty) {
+              this.$set(item, 'qty', q);
+            }
+            this.qtyChange(item);
+          });
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           var totalAmt = 0;
           this.stkIoBillEntryList.forEach(item => {

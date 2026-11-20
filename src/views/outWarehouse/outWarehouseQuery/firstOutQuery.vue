@@ -149,7 +149,7 @@
             v-hasPermi="['outWarehouse:outWarehouseQuery:exportOverall']"
           >整体导出</el-button>
         </el-tooltip>
-        <el-tooltip content="出退库明细表（按供应商、名称、规格、单价）：每供应商一段，七列简表；逐行明细不合并，仅段末合计数量与金额" placement="top" :open-delay="3000">
+        <el-tooltip content="出退库明细简表（按供应商）：每供应商一段，段内拆分耗材/试剂；逐行明细不合并；段末分类合计；文末按供应商×耗材/试剂合计后再总计" placement="top" :open-delay="3000">
           <el-button
             type="primary"
             size="small"
@@ -1419,7 +1419,7 @@ export default {
         this.loading = false;
       }
     },
-    /** 出退库明细简表（按供应商）：七列版式，逐行明细，每供应商段末合计 */
+    /** 出退库明细简表（按供应商）：段内耗材/试剂拆分，文末供应商×分类合计 + 总计 */
     async handleExportSupplierSimple() {
       const requestParams = this.buildCTKExportRequestParams();
       this.loading = true;

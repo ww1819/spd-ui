@@ -160,10 +160,8 @@
                     <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable>
                       <template slot-scope="scope">
                         <el-input v-if="action" clearable v-model="scope.row.qty" placeholder="数量" size="small" class="detail-input-compact"
-                                  onkeyup="value=value.replace(/\D/g,'')"
-                                  onafterpaste="value=value.replace(/\D/g,'')"
-                                  @blur="form.result=$event.target.value"
-                                  @input="qtyChange(scope.row)"
+                                  @input="onQtyInput(scope.row)"
+                                  @blur="onQtyBlur(scope.row)"
                         />
                         <span v-else>{{ scope.row.qty != null && scope.row.qty !== '' ? scope.row.qty : '--' }}</span>
                       </template>

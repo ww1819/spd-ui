@@ -259,6 +259,7 @@ import {
 import { buildInboundPrintRowFromDetail } from '@/views/inWarehouse/audit/inboundPrintRow'
 import {STOCK_IN_TEMPLATE} from '@/utils/printData'
 import { normalizeCompactDateInput, readDatePickerInputValue, isValidYmd } from '@/utils/compactDateInput'
+import { sanitizeDecimalInput, finalizeDecimalInput } from '@/utils/format-quantity'
 
 export default {
   name: "Audit",
@@ -1113,11 +1114,29 @@ export default {
       this.detailSelectedRowMap = {};
       this.resetForm("form");
     },
+    /** 数量录入中：过滤非法字符，允许临时尾部小数点 */
+    onQtyInput(row) {
+      if (!row) return;
+      const cleaned = sanitizeDecimalInput(row.qty);
+      if (cleaned !== String(row.qty == null ? '' : row.qty)) {
+        this.$set(row, 'qty', cleaned);
+      }
+      this.qtyChange(row);
+    },
+    /** 数量失焦：去掉 "400." 这类孤立小数点，避免提交时 Jackson 反序列化 BigDecimal 失败 */
+    onQtyBlur(row) {
+      if (!row) return;
+      const finalized = finalizeDecimalInput(row.qty);
+      if (finalized !== row.qty) {
+        this.$set(row, 'qty', finalized);
+      }
+      this.qtyChange(row);
+    },
     //数量改变事件
     qtyChange(row){
       let totalAmt = 0;
       if(row.qty && row.unitPrice){
-        totalAmt = row.qty * row.unitPrice;
+        totalAmt = Number(row.qty) * Number(row.unitPrice);
       }else{
         totalAmt = 0;
       }
@@ -1376,6 +1395,15 @@ export default {
           return;
         }
         const doSave = () => {
+          // 提交前规范化数量（去掉 "400." 等非法小数串）
+          (this.stkIoBillEntryList || []).forEach((item) => {
+            if (!item || item.qty == null || item.qty === '') return;
+            const q = finalizeDecimalInput(item.qty);
+            if (q !== item.qty) {
+              this.$set(item, 'qty', q);
+            }
+            this.qtyChange(item);
+          });
           this.form.stkIoBillEntryList = this.stkIoBillEntryList;
           var totalAmt = 0;
           this.stkIoBillEntryList.forEach(item => {

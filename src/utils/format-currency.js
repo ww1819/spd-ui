@@ -9,7 +9,18 @@ import {
   toMoneyStorageStr,
   calcLineAmt
 } from '@/utils/moneyFormat'
-import { formatQuantity } from '@/utils/format-quantity'
+import {
+  formatQuantity,
+  sanitizeDecimalInput,
+  finalizeDecimalInput,
+  deepFinalizeIncompleteDecimals,
+  onQtyInput,
+  onQtyBlur,
+  onPriceInput,
+  onPriceBlur,
+  onFormDecimalInput,
+  onFormDecimalBlur
+} from '@/utils/format-quantity'
 
 // 货币格式化：最多按租户金额小数位，末尾 0 不补齐（0.02 不显示 0.020）
 const formatCurrency = (value, blankValue = '-') => {
@@ -99,6 +110,15 @@ export default {
   formatQuantity,
   formatSignedQty,
   formatSumByProp,
+  sanitizeDecimalInput,
+  finalizeDecimalInput,
+  deepFinalizeIncompleteDecimals,
+  onQtyInput,
+  onQtyBlur,
+  onPriceInput,
+  onPriceBlur,
+  onFormDecimalInput,
+  onFormDecimalBlur,
   toMoneyStorage,
   toMoneyStorageStr,
   calcLineAmt
