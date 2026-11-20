@@ -69,8 +69,8 @@
           </el-col>
         </el-row>
 
-        <el-row v-if="action" :gutter="0" class="apply-modal-form-row apply-modal-row-delivery-scan" type="flex">
-          <el-col class="apply-modal-field apply-modal-field--compact">
+        <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second apply-modal-row-delivery-scan" type="flex">
+          <el-col v-if="action" class="apply-modal-field apply-modal-field--delivery-ref">
             <el-form-item label="引用配送单" label-width="92px" class="delivery-ref-form-item" :title="deliveryRefBlockTitle">
               <el-input
                 v-model="deliveryRefKeyword"
@@ -91,7 +91,7 @@
               </el-input>
             </el-form-item>
           </el-col>
-          <el-col class="apply-modal-field apply-modal-field--compact">
+          <el-col v-if="action" class="apply-modal-field apply-modal-field--compact">
             <el-form-item label="扫描条码" class="detail-scan-form-item">
               <el-input
                 ref="scanBarcodeInputRef"
@@ -105,9 +105,6 @@
               />
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="0" class="apply-modal-form-row apply-modal-row-second" type="flex">
           <el-col class="apply-modal-field apply-modal-field--compact">
             <el-form-item label="采购员" prop="proPerson">
               <SelectUser v-model="form.proPerson"/>
@@ -205,7 +202,14 @@
                   :height="detailTableHeight"
         >
           <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" />
-          <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
+          <el-table-column
+            label="序号"
+            align="center"
+            prop="index"
+            width="60"
+            class-name="apply-index-col"
+            header-cell-class-name="apply-index-col"
+          />
           <!-- 主条码、辅条码列隐藏（数据仍可通过顶部扫描条码写入，如需恢复可取消注释） -->
           <!--
           <el-table-column label="主条码" align="center" width="160" show-overflow-tooltip resizable>
@@ -222,7 +226,7 @@
             </template>
           </el-table-column>
           -->
-          <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable sortable>
+          <el-table-column label="产品编码" align="center" width="110" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '--' }}</span>
             </template>
@@ -238,8 +242,8 @@
             label="产品名称"
             align="left"
             header-align="center"
-            width="180"
-            min-width="140"
+            width="140"
+            min-width="120"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -256,8 +260,8 @@
             label="规格"
             align="left"
             header-align="center"
-            width="130"
-            min-width="110"
+            width="110"
+            min-width="90"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -270,12 +274,12 @@
               >{{ (scope.row.material && scope.row.material.speci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="单位" align="center" width="80" min-width="80" show-overflow-tooltip resizable sortable>
+          <el-table-column label="单位" align="center" width="56" show-overflow-tooltip>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="数量" align="center" prop="qty" width="100" min-width="90" show-overflow-tooltip resizable sortable>
+          <el-table-column label="数量" align="center" prop="qty" width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div
                 class="detail-cell-focus-wrap"
@@ -299,14 +303,14 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="价格" align="center" prop="unitPrice" width="100" min-width="90" show-overflow-tooltip resizable sortable>
+          <el-table-column label="价格" align="center" prop="unitPrice" width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <span>{{ scope.row.unitPrice | formatPrice }}</span>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="金额" align="center" prop="amt" width="100" min-width="90" show-overflow-tooltip resizable sortable>
+          <el-table-column label="金额" align="center" prop="amt" width="90" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div style="text-align: center;">
                 <span>{{ scope.row.amt | formatAmount }}</span>
@@ -317,8 +321,8 @@
             label="批号"
             align="center"
             prop="batchNumber"
-            width="140"
-            min-width="120"
+            width="120"
+            min-width="100"
             :show-overflow-tooltip="false"
             class-name="detail-col-batch"
             resizable
@@ -343,7 +347,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" align="center" prop="beginTime" width="128" min-width="128" :show-overflow-tooltip="false" resizable sortable class-name="detail-col-begin-date">
+          <el-table-column label="生产日期" align="center" prop="beginTime" width="118" :show-overflow-tooltip="false" resizable sortable class-name="detail-col-begin-date">
             <template slot-scope="scope">
               <div
                 class="detail-cell-edit-wrap detail-begin-date-wrap detail-cell-focus-wrap"
@@ -373,8 +377,8 @@
             label="有效期"
             align="center"
             prop="endTime"
-            width="190"
-            min-width="170"
+            width="168"
+            min-width="160"
             :show-overflow-tooltip="false"
             class-name="detail-col-date"
             resizable
@@ -412,8 +416,8 @@
             label="生产厂家"
             align="left"
             header-align="center"
-            width="180"
-            min-width="150"
+            width="140"
+            min-width="120"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -430,8 +434,8 @@
             label="型号"
             align="left"
             header-align="center"
-            width="120"
-            min-width="100"
+            width="100"
+            min-width="80"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -444,17 +448,17 @@
               >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="包装规格" align="center" width="180" show-overflow-tooltip resizable sortable>
+          <el-table-column label="包装规格" align="center" width="120" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="已引用" align="center" prop="srcRefedQty" width="72" show-overflow-tooltip resizable>
+          <el-table-column label="已引用" align="center" prop="srcRefedQty" width="64" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.srcRefedQty != null ? scope.row.srcRefedQty : '—' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="可引用" align="center" prop="srcRefableQty" width="72" show-overflow-tooltip resizable>
+          <el-table-column label="可引用" align="center" prop="srcRefableQty" width="64" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
             </template>
@@ -463,8 +467,8 @@
             label="批次号"
             align="center"
             prop="batchNo"
-            width="200"
-            min-width="160"
+            width="140"
+            min-width="120"
             :show-overflow-tooltip="false"
             class-name="detail-col-batch-no"
             resizable
@@ -477,27 +481,27 @@
               >{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="注册证号" align="center" width="180" show-overflow-tooltip resizable sortable>
+          <el-table-column label="注册证号" align="center" width="130" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="库房分类" align="center" width="180" show-overflow-tooltip resizable sortable>
+          <el-table-column label="库房分类" align="center" width="110" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="财务分类" align="center" width="180" show-overflow-tooltip resizable sortable>
+          <el-table-column label="财务分类" align="center" width="110" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="180" show-overflow-tooltip resizable sortable>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="140" show-overflow-tooltip resizable sortable>
+          <el-table-column label="备注" prop="remark" width="120" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
               <div class="detail-cell-focus-wrap" :data-detail-row="scope.$index" data-detail-col="remark" v-detail-cell-nav>
                 <el-input
@@ -513,9 +517,10 @@
             v-if="action"
             label="操作"
             align="center"
+            header-align="center"
             width="120"
-            fixed="right"
             class-name="apply-action-col small-padding fixed-width"
+            header-cell-class-name="apply-action-col"
           >
             <template slot-scope="scope">
               <el-button

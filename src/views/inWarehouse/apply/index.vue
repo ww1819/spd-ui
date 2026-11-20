@@ -438,9 +438,9 @@ export default {
     };
   },
   computed: {
-    /** 明细表高度（弹窗留边后略收） */
+    /** 明细表高度：撑满 table-wrapper，合计贴底盖住卡片底边空白 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 360px))';
+      return '100%';
     },
     /** 列表全量总金额（后端合计） */
     listTotalAmtFormatted() {
@@ -752,7 +752,11 @@ export default {
         }
         const prop = column.property;
         if (!summaryLabelPlaced && (prop === 'index' || column.label === '序号')) {
-          sums[index] = '合计';
+          // 合计汉字黑色，数量/金额数字仍由页脚 CSS 使用 #2C569A
+          sums[index] = this.$createElement('span', {
+            class: 'apply-summary-label',
+            style: { color: '#303133', fontWeight: '600' }
+          }, '合计');
           summaryLabelPlaced = true;
           return;
         }
@@ -771,14 +775,13 @@ export default {
           }
           return;
         }
-        if (prop === 'unitPrice' || prop === 'amt') {
+        // 价格列不合计，仅数量 + 金额
+        if (prop === 'amt') {
           const values = data.map(row => Number(row[prop]));
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = prop === 'unitPrice' ? this.formatPrice(total) : this.formatAmount(total);
-            if (prop === 'amt') {
-              this.form.totalAmount = this.toMoneyStorage(total);
-            }
+            sums[index] = this.formatAmount(total);
+            this.form.totalAmount = this.toMoneyStorage(total);
           }
         }
       });
@@ -2167,28 +2170,51 @@ export default {
 ::v-deep .apply-modal-row-delivery-scan .detail-scan-form-item .el-form-item__content{
   line-height: 32px;
 }
-/* 引用配送单 / 扫描条码：与采购员同宽 162px */
+/* 扫描条码：162px；引用配送单输入框 162px，整组预留按钮宽度，避免盖住「引用」 */
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--compact .el-form-item__content {
   max-width: 162px;
 }
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--delivery-ref {
+  overflow: visible !important;
+  margin-right: 8px;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--delivery-ref .el-form-item,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--delivery-ref .el-form-item__content {
+  overflow: visible !important;
+  max-width: none !important;
+}
+/* 整组宽度 = 输入162 + 引用按钮，列宽跟着走，扫描条码不会压上来 */
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group {
+  width: 230px !important;
+  max-width: 230px !important;
+  display: inline-flex !important;
+  box-sizing: border-box;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group > .el-input__inner {
+  width: 162px !important;
+  flex: 0 0 162px;
+  box-sizing: border-box;
+}
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .detail-scan-form-item .el-input,
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .scan-barcode-input {
   width: 162px !important;
   max-width: 162px !important;
 }
-/* 引用配送单：右侧「引用」按钮与输入框同高 */
+/* 引用配送单：右侧「引用」按钮与输入框同高，占满剩余宽度 */
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group__append {
   padding: 0;
+  flex: 1 1 auto;
+  min-width: 60px;
   background: #f5f7fa;
   border-color: #dcdfe6;
+  box-sizing: border-box;
 }
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group__append .el-button {
   margin: 0;
+  width: 100%;
   height: 30px;
   min-height: 30px;
-  padding: 0 10px;
+  padding: 0 8px;
   line-height: 30px;
   border: none;
   border-radius: 0;
@@ -2549,11 +2575,18 @@ export default {
   max-width: 100%;
   box-sizing: border-box;
   padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #f1f5f9;
 }
 
 ::v-deep .local-modal-content .apply-modal-table-panel .apply-detail-table{
   margin-bottom: 0 !important;
   box-shadow: none;
+  flex: 1;
+  min-height: 0;
+  height: 100% !important;
+  border-bottom: none !important;
 }
 
 /* 明细表可编辑列：与「数量」列同尺度（约 98px，small） */
@@ -2869,7 +2902,7 @@ export default {
   line-height: 24px !important;
   box-sizing: border-box !important;
   background-color: #f1f5f9 !important;
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-top: 1px solid #e2e8f0 !important;
@@ -2877,11 +2910,17 @@ export default {
 }
 ::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
 ::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 24px !important;
   text-align: center !important;
+}
+/* 「合计」汉字黑色，数量/金额数字保持蓝 */
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell .apply-summary-label,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell .apply-summary-label {
+  color: #303133 !important;
+  font-weight: 600 !important;
 }
 ::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__footer-wrapper td,
 ::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__fixed-footer-wrapper td {
@@ -3217,7 +3256,7 @@ export default {
   line-height: 24px !important;
   box-sizing: border-box !important;
   background-color: #f1f5f9 !important;
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-top: 1px solid #e2e8f0 !important;
@@ -3226,11 +3265,16 @@ export default {
 
 ::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell .cell,
 ::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell .cell {
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 24px !important;
   text-align: center !important;
+}
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell .cell .apply-summary-label,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell .cell .apply-summary-label {
+  color: #303133 !important;
+  font-weight: 600 !important;
 }
 
 /* 仅弹窗内按钮行，勿影响主列表 list-toolbar 与搜索区之间的留白 */
@@ -3360,7 +3404,7 @@ export default {
   line-height: 24px !important;
   box-sizing: border-box !important;
   background-color: #f1f5f9 !important;
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-top: 1px solid #e2e8f0 !important;
@@ -3370,7 +3414,7 @@ export default {
 }
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 24px !important;
@@ -3807,7 +3851,7 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table td.el-table-column--selection {
   position: sticky !important;
   left: 0 !important;
-  z-index: 3;
+  z-index: 4;
   box-sizing: border-box !important;
 }
 
@@ -3819,7 +3863,42 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
 
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.apply-select-col,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.el-table-column--selection {
+  z-index: 6;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+}
+
+/* 序号列：与勾选列同宽(60)，紧贴勾选列右侧 sticky */
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.apply-index-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table td.apply-index-col {
+  position: sticky !important;
+  left: 60px !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table td.apply-index-col {
+  background-color: #fff !important;
+  border-right: 1px solid #e2e8f0;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.apply-index-col {
   z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-right: 1px solid #e2e8f0;
+  color: #334155 !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.apply-index-col .cell {
+  color: #334155 !important;
+  font-weight: 600 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__footer-wrapper td.apply-index-col {
+  position: sticky !important;
+  left: 60px !important;
+  z-index: 4;
   background-color: #f1f5f9 !important;
   border-right: 1px solid #e2e8f0;
 }
@@ -3833,22 +3912,26 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td .cell,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-select-col,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-index-col,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td .cell,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-select-col,
-.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.el-table-column--selection {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-index-col {
   background-color: #D6EBFF !important;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td .cell,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-select-col,
-.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-index-col {
   background-color: #B8DAFF !important;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td .cell,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-select-col,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.el-table-column--selection,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-index-col,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td,
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td .cell {
   background-color: #A0CBFF !important;
@@ -3863,6 +3946,66 @@ html body .app-container.inWarehouse-apply-page .apply-inbound-nested-modal .app
 .app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table td.el-table-column--selection .el-checkbox {
   display: inline-block !important;
   visibility: visible !important;
+}
+
+/* 明细表操作列 sticky 右侧：横向滚动条盖住操作列，与左侧勾选列一致；表头「操作」正常显示 */
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.apply-action-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.apply-action-col {
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+  color: #334155 !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table th.apply-action-col .cell {
+  color: #334155 !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__footer-wrapper td.apply-action-col {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__footer-wrapper td.apply-select-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__footer-wrapper td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-action-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.hover-row > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected.hover-row > td.apply-action-col {
+  background-color: #A0CBFF !important;
+}
+
+/* 合计行贴底：盖住卡片底部空白与边框 */
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-table-panel .apply-detail-table > .el-table__footer-wrapper {
+  margin-bottom: 0 !important;
+  padding-bottom: 2px !important;
+  background-color: #f1f5f9 !important;
+  box-shadow: 0 12px 0 #f1f5f9 !important;
 }
 
 /*
