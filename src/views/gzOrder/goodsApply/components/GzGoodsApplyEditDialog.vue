@@ -89,8 +89,8 @@
                     <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm" @click="checkMaterialBtn">添加</el-button>
                     <el-button size="small" class="spd-btn spd-btn--secondary" :disabled="isAuditedForm" v-hasPermi="['gz:refDoc:query']" @click="openRefAcceptanceTh">引用验收单</el-button>
                     <el-button type="danger" icon="el-icon-delete" size="small" :disabled="isAuditedForm" @click="handleDeleteGzRefundGoodsEntry">删除</el-button>
-                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
-                    <el-button type="primary" size="small" class="spd-btn spd-btn--primary" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :loading="saveSubmitting" :disabled="isAuditedForm || submitBusy" @click="submitForm">保 存</el-button>
+                    <el-button type="primary" size="small" class="spd-btn spd-btn--primary" :loading="auditSubmitting" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id || submitBusy" @click="handleDialogAudit">审 核</el-button>
                     <el-button type="primary" icon="el-icon-printer" size="small" class="spd-btn spd-btn--secondary" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
                   </template>
                 </div>

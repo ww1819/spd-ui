@@ -90,6 +90,8 @@
           type="primary"
           size="small"
           class="spd-btn spd-btn--primary"
+          :loading="auditSubmitting"
+          :disabled="submitBusy"
           @click="handleBatchAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
@@ -205,10 +207,12 @@ import { listGzDepInventoryPick } from "@/api/gzDepartment/gzDepInventory";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectMaterialFilter from '@/components/SelectModel/SelectMaterialFilter';
 import { parseTime } from "@/utils/ruoyi";
+import submitGuardMixin from '@/mixins/submitGuardMixin'
 
 export default {
   name: "GoodsAudit",
   dicts: ['biz_status','bill_type'],
+  mixins: [submitGuardMixin],
   components: {
     SelectWarehouse,
     SelectMaterialFilter,
@@ -412,6 +416,9 @@ export default {
       return primary || fallback || '--';
     },
     handleBatchAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       const ids = this.ids;
       if (ids.length === 0) {
         this.$modal.msgWarning('请选择要审核的数据');
@@ -426,7 +433,7 @@ export default {
       );
       Promise.all(validations).then(() => {
         this.$modal.confirm('确定要审核选中的数据项？').then(() => {
-          return auditOrder({ids: ids, orderType: 301});
+          return this.runAuditSubmit(() => auditOrder({ids: ids, orderType: 301}));
         }).then(() => {
           this.getList();
           this.$modal.msgSuccess("审核成功！");
@@ -699,7 +706,7 @@ export default {
           return;
         }
         this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
-          return auditOrder({id: id, orderType: 301});
+          return this.runAuditSubmit(() => auditOrder({id: id, orderType: 301}));
         }).then(() => {
           this.getList();
           this.$modal.msgSuccess("审核退库成功！");
@@ -910,6 +917,9 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.submitBusy) {
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.gzOrderEntryList = this.gzOrderEntryList.map(item => ({
@@ -918,27 +928,34 @@ export default {
           }));
           this.form.orderType = 301; // 确保设置退库类型
           if (this.form.id != null) {
-            updateOrder(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.markDialogSnapshotSaved();
-              this.open = false;
-              this.getList();
-            });
+            this.runSaveSubmit(() =>
+              updateOrder(this.form).then(response => {
+                this.$modal.msgSuccess("修改成功");
+                this.markDialogSnapshotSaved();
+                this.open = false;
+                this.getList();
+              })
+            ).catch(() => {});
           } else {
-            addOrder(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              if (response && response.data && response.data.id) {
-                this.form.id = response.data.id;
-              }
-              this.markDialogSnapshotSaved();
-              this.open = false;
-              this.getList();
-            });
+            this.runSaveSubmit(() =>
+              addOrder(this.form).then(response => {
+                this.$modal.msgSuccess("新增成功");
+                if (response && response.data && response.data.id) {
+                  this.form.id = response.data.id;
+                }
+                this.markDialogSnapshotSaved();
+                this.open = false;
+                this.getList();
+              })
+            ).catch(() => {});
           }
         }
       });
     },
     handleDialogAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       if (!this.form.id) return this.$modal.msgWarning('请先保存单据后再审核');
       if (this.hasDialogUnsavedChanges) return this.$modal.msgWarning('当前有未保存修改，请先保存后再审核');
       if (this.isAuditedForm) return this.$modal.msgWarning('该单据已审核');
@@ -946,7 +963,7 @@ export default {
         return;
       }
       this.$modal.confirm(`确定审核单据"${this.form.orderNo || this.form.id}"吗？`).then(() => {
-        return auditOrder({ id: this.form.id, orderType: 301 });
+        return this.runAuditSubmit(() => auditOrder({ id: this.form.id, orderType: 301 }));
       }).then(() => {
         this.form.orderStatus = '2';
         this.markDialogSnapshotSaved();

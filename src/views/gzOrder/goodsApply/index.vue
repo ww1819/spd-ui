@@ -85,7 +85,8 @@
           size="small"
           icon="el-icon-check"
           class="spd-btn spd-btn--primary"
-          :disabled="single"
+          :loading="auditSubmitting"
+          :disabled="single || submitBusy"
           @click="handleAudit"
           v-hasPermi="['gzOrder:goodsApply:audit']"
         >审核</el-button>
@@ -233,11 +234,13 @@ import SelectGzDepotInventory from '@/components/SelectModel/SelectGzDepotInvent
 import gzOrderPrint from "@/views/gzOrder/audit/gzOrderPrint";
 import { listUserAll } from "@/api/system/user";
 import RMBConverter from "@/utils/tools";
+import submitGuardMixin from '@/mixins/submitGuardMixin'
 
 export default {
   // 须与后端菜单 path「goodsApply」生成的路由 name「GoodsApply」一致，否则 keep-alive 不缓存，切页后查询条件丢失
   name: "GoodsApply",
   dicts: ['biz_status','bill_type'],
+  mixins: [submitGuardMixin],
   components: {
     SelectWarehouse,
     SelectGzDepotInventory,
@@ -1160,6 +1163,9 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.submitBusy) {
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.gzRefundGoodsEntryList = this.gzRefundGoodsEntryList.map(item => ({
@@ -1169,39 +1175,43 @@ export default {
             billNo: this.form.goodsNo || item.billNo || null
           }));
           if (this.form.id != null) {
-            updateGoods(this.form).then(response => {
-              this.$modal.msgSuccess((response && response.msg) || "修改成功");
-              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
-              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
-              // 不关闭弹窗，刷新列表数据
-              this.getList();
-              // 重新获取最新数据以更新表单
-              getGoods(this.form.id).then(res => {
-                this.form = res.data;
-                this.mapEntryData(res.data);
-                this.normalizeHeaderDisplayFields(res.data);
-                this.markDialogSnapshotSaved();
-              });
-            });
-          } else {
-            addGoods(this.form).then(response => {
-              this.$modal.msgSuccess((response && response.msg) || "新增成功");
-              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
-              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
-              // 不关闭弹窗，刷新列表数据
-              this.getList();
-              // 如果是新增，保存后获取新创建的ID并更新表单
-              if (response.data && response.data.id) {
-                getGoods(response.data.id).then(res => {
+            this.runSaveSubmit(() =>
+              updateGoods(this.form).then(response => {
+                this.$modal.msgSuccess((response && response.msg) || "修改成功");
+                const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+                if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+                // 不关闭弹窗，刷新列表数据
+                this.getList();
+                // 重新获取最新数据以更新表单
+                return getGoods(this.form.id).then(res => {
                   this.form = res.data;
-                  this.form.id = res.data.id;
                   this.mapEntryData(res.data);
                   this.normalizeHeaderDisplayFields(res.data);
-                  this.title = "修改高值退货";
                   this.markDialogSnapshotSaved();
                 });
-              }
-            });
+              })
+            ).catch(() => {});
+          } else {
+            this.runSaveSubmit(() =>
+              addGoods(this.form).then(response => {
+                this.$modal.msgSuccess((response && response.msg) || "新增成功");
+                const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+                if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+                // 不关闭弹窗，刷新列表数据
+                this.getList();
+                // 如果是新增，保存后获取新创建的ID并更新表单
+                if (response.data && response.data.id) {
+                  return getGoods(response.data.id).then(res => {
+                    this.form = res.data;
+                    this.form.id = res.data.id;
+                    this.mapEntryData(res.data);
+                    this.normalizeHeaderDisplayFields(res.data);
+                    this.title = "修改高值退货";
+                    this.markDialogSnapshotSaved();
+                  });
+                }
+              })
+            ).catch(() => {});
           }
         }
       });
@@ -1218,6 +1228,9 @@ export default {
     },
     /** 审核按钮操作 */
     handleAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       const id = this.ids.length > 0 ? this.ids[0] : null;
       if (!id) {
         this.$modal.msgError('请先选择要审核的数据');
@@ -1228,7 +1241,7 @@ export default {
           return;
         }
         this.$modal.confirm('确定要审核选中的数据项？').then(() => {
-          return auditGoods({id: id});
+          return this.runAuditSubmit(() => auditGoods({id: id}));
         }).then(() => {
           this.getList();
           this.$modal.msgSuccess("审核成功");
@@ -1253,6 +1266,9 @@ export default {
       }).catch(() => {});
     },
     handleDialogAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       if (!this.form.id) return this.$modal.msgWarning('请先保存单据后再审核');
       if (this.hasDialogUnsavedChanges) return this.$modal.msgWarning('当前有未保存修改，请先保存后再审核');
       if (this.isAuditedForm) return this.$modal.msgWarning('该单据已审核');
@@ -1260,7 +1276,7 @@ export default {
         return;
       }
       this.$modal.confirm(`确定审核单据"${this.form.goodsNo || this.form.id}"吗？`).then(() => {
-        return auditGoods({ id: this.form.id });
+        return this.runAuditSubmit(() => auditGoods({ id: this.form.id }));
       }).then(() => {
         this.form.goodsStatus = 2;
         this.markDialogSnapshotSaved();

@@ -112,7 +112,7 @@
                     <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="!form.warehouseId || !form.supplerId" @click="checkMaterialBtn">添加</el-button>
                     <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry">删除</el-button>
                     <el-button size="small" class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-                    <el-button type="primary" size="small" class="spd-btn spd-btn--primary" icon="el-icon-check" @click="submitForm">确 定</el-button>
+                    <el-button type="primary" size="small" class="spd-btn spd-btn--primary" icon="el-icon-check" :loading="saveSubmitting" :disabled="submitBusy" @click="submitForm">确 定</el-button>
                   </template>
                   <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
                 </div>

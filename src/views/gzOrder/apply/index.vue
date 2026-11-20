@@ -84,7 +84,8 @@
           size="small"
           icon="el-icon-check"
           class="spd-btn spd-btn--primary"
-          :disabled="multiple"
+          :loading="auditSubmitting"
+          :disabled="multiple || submitBusy"
           @click="handleAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
@@ -239,11 +240,13 @@ import RMBConverter from "@/utils/tools";
 import { parseTime } from "@/utils/ruoyi";
 import { normalizeUdiScanInput, parseGs1UdiScan, buildUdiQueryVariants } from '@/utils/udi';
 import item from "@/layout/components/Sidebar/Item.vue";
+import submitGuardMixin from '@/mixins/submitGuardMixin'
 
 export default {
   // 须与后端菜单 path「apply」生成的路由 name「Apply」一致，否则 keep-alive 不缓存，切页后弹窗/表单状态丢失
   name: "Apply",
   dicts: ['biz_status','bill_type'],
+  mixins: [submitGuardMixin],
   components: {
     SelectSupplier,
     SelectMaterial,
@@ -2199,6 +2202,9 @@ export default {
       });
     },
     handleAuditOnly() {
+      if (this.submitBusy) {
+        return;
+      }
       if (this.guardUnsavedThenStop()) {
         return;
       }
@@ -2210,21 +2216,23 @@ export default {
         this.$modal.msgSuccess('当前单据已审核');
         return;
       }
-      auditOrder({ id: this.form.id, orderType: 101 }).then(() => {
-        this.$modal.msgSuccess('审核成功');
-        return getOrder(this.form.id, 101);
-      }).then((response) => {
-        if (response && response.data) {
-          this.form = { ...this.form, ...response.data };
-          delete this.form.creatorName;
-          delete this.form.auditorName;
-          this.normalizeHeaderDisplayFields(this.form);
-        } else {
-          this.form.orderStatus = '2';
-        }
-        this.markSnapshotSaved();
-        this.getList();
-      });
+      this.runAuditSubmit(() =>
+        auditOrder({ id: this.form.id, orderType: 101 }).then(() => {
+          this.$modal.msgSuccess('审核成功');
+          return getOrder(this.form.id, 101);
+        }).then((response) => {
+          if (response && response.data) {
+            this.form = { ...this.form, ...response.data };
+            delete this.form.creatorName;
+            delete this.form.auditorName;
+            this.normalizeHeaderDisplayFields(this.form);
+          } else {
+            this.form.orderStatus = '2';
+          }
+          this.markSnapshotSaved();
+          this.getList();
+        })
+      ).catch(() => {});
     },
     handlePrintOnly() {
       if (this.guardUnsavedThenStop()) {
@@ -2315,6 +2323,9 @@ export default {
     },
     /** 执行保存操作 */
     doSubmit() {
+      if (this.submitBusy) {
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
           if (!assertBillHasEntries(this.gzOrderEntryList, this, '请至少添加一条明细')) {
@@ -2332,48 +2343,52 @@ export default {
             delete updatePayload.createTime;
             delete updatePayload.creatorName;
             delete updatePayload.auditorName;
-            updateOrder(updatePayload).then(response => {
-              this.$modal.msgSuccess("保存成功");
-              return getOrder(this.form.id, 101);
-            }).then((detailResp) => {
-              if (detailResp && detailResp.data) {
-                this.form = { ...this.form, ...detailResp.data };
-                delete this.form.creatorName;
-                delete this.form.auditorName;
-                this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
-                this.applyMaterialListToGzOrderEntries(detailResp.data);
-                this.normalizeHeaderDisplayFields(this.form);
-              }
-              this.markSnapshotSaved();
-              // 保存后不关闭页面，继续操作
-              this.getList();
-            });
-          } else {
-            addOrder(this.form).then(response => {
-              this.$modal.msgSuccess("保存成功");
-              // 保存后不关闭页面，继续操作
-              // 更新表单ID，以便后续修改
-              const maybeId = response && response.data
-                ? (typeof response.data === 'object' ? response.data.id : response.data)
-                : null;
-              if (maybeId !== null && maybeId !== undefined && maybeId !== '') {
-                this.form.id = maybeId;
+            this.runSaveSubmit(() =>
+              updateOrder(updatePayload).then(response => {
+                this.$modal.msgSuccess("保存成功");
                 return getOrder(this.form.id, 101);
-              }
-              // 后端若未返回主键ID，避免请求 /gz/order/undefined
-              return null;
-            }).then((detailResp) => {
-              if (detailResp && detailResp.data) {
-                this.form = { ...this.form, ...detailResp.data };
-                delete this.form.creatorName;
-                delete this.form.auditorName;
-                this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
-                this.applyMaterialListToGzOrderEntries(detailResp.data);
-                this.normalizeHeaderDisplayFields(this.form);
-              }
-              this.markSnapshotSaved();
-              this.getList();
-            });
+              }).then((detailResp) => {
+                if (detailResp && detailResp.data) {
+                  this.form = { ...this.form, ...detailResp.data };
+                  delete this.form.creatorName;
+                  delete this.form.auditorName;
+                  this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
+                  this.applyMaterialListToGzOrderEntries(detailResp.data);
+                  this.normalizeHeaderDisplayFields(this.form);
+                }
+                this.markSnapshotSaved();
+                // 保存后不关闭页面，继续操作
+                this.getList();
+              })
+            ).catch(() => {});
+          } else {
+            this.runSaveSubmit(() =>
+              addOrder(this.form).then(response => {
+                this.$modal.msgSuccess("保存成功");
+                // 保存后不关闭页面，继续操作
+                // 更新表单ID，以便后续修改
+                const maybeId = response && response.data
+                  ? (typeof response.data === 'object' ? response.data.id : response.data)
+                  : null;
+                if (maybeId !== null && maybeId !== undefined && maybeId !== '') {
+                  this.form.id = maybeId;
+                  return getOrder(this.form.id, 101);
+                }
+                // 后端若未返回主键ID，避免请求 /gz/order/undefined
+                return null;
+              }).then((detailResp) => {
+                if (detailResp && detailResp.data) {
+                  this.form = { ...this.form, ...detailResp.data };
+                  delete this.form.creatorName;
+                  delete this.form.auditorName;
+                  this.gzOrderEntryList = detailResp.data.gzOrderEntryList || this.gzOrderEntryList;
+                  this.applyMaterialListToGzOrderEntries(detailResp.data);
+                  this.normalizeHeaderDisplayFields(this.form);
+                }
+                this.markSnapshotSaved();
+                this.getList();
+              })
+            ).catch(() => {});
           }
         }
       });
@@ -2407,16 +2422,15 @@ export default {
       
       const orderNos = selectedOrders.map(item => item.orderNo).join('、');
       this.$modal.confirm('确定要审核选中的 ' + ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
-        // 批量审核
-        const auditPromises = ids.map(id => auditOrder({id: id}));
-        
-        Promise.all(auditPromises).then(() => {
-          this.getList();
-          this.$modal.msgSuccess("批量审核成功！共审核 " + ids.length + " 个订单");
-        }).catch(() => {
-          this.$modal.msgError("批量审核失败！");
-        });
-      }).catch(() => {});
+        return this.runAuditSubmit(() => Promise.all(ids.map(id => auditOrder({ id: id }))));
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("批量审核成功！共审核 " + ids.length + " 个订单");
+      }).catch((err) => {
+        if (err && err.message === 'submit_busy') return;
+        if (err === 'cancel' || err === 'close') return;
+        this.$modal.msgError("批量审核失败！");
+      });
     },
     /** 批量打印按钮操作（仅支持已审核单据） */
     async handleBatchPrint() {

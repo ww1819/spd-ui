@@ -116,8 +116,8 @@
                     <template v-if="action">
                       <el-button type="primary" icon="el-icon-plus" size="small" @click="checkMaterialBtn" :disabled="!form.warehouseId || !form.supplerId || isAudited">添加</el-button>
                       <el-button type="danger" icon="el-icon-delete" size="small" @click="handleDeleteGzOrderEntry" :disabled="isAudited">删除</el-button>
-                      <el-button type="primary" icon="el-icon-check" size="small" @click="submitForm" :disabled="isAudited">保 存</el-button>
-                      <el-button type="primary" size="small" @click="handleAuditOnly" :disabled="isAudited">审 核</el-button>
+                      <el-button type="primary" icon="el-icon-check" size="small" :loading="saveSubmitting" :disabled="isAudited || submitBusy" @click="submitForm">保 存</el-button>
+                      <el-button type="primary" size="small" :loading="auditSubmitting" :disabled="isAudited || submitBusy" @click="handleAuditOnly">审 核</el-button>
                       <el-button type="primary" icon="el-icon-printer" size="small" @click="handlePrintOnly">打 印</el-button>
                       <el-button size="small" icon="el-icon-document" @click="openEntryChangeLog">变更记录</el-button>
                       <el-button size="small" @click="cancel" :disabled="isAudited">取 消</el-button>

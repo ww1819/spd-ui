@@ -87,7 +87,8 @@
           size="small"
           icon="el-icon-check"
           class="spd-btn spd-btn--primary"
-          :disabled="multiple"
+          :loading="auditSubmitting"
+          :disabled="multiple || submitBusy"
           @click="handleAudit"
           v-hasPermi="['gzOrder:follow:audit']"
         >审核</el-button>
@@ -207,10 +208,12 @@ import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
 import { buildCode128Label, normalizeBarcodePayload } from "@/utils/code128DataUrl";
+import submitGuardMixin from '@/mixins/submitGuardMixin'
 
 export default {
   name: "Follow",
   dicts: ['biz_status','bill_type','is_yes_no'],
+  mixins: [submitGuardMixin],
   components: {
     SelectSupplier,
     SelectWarehouse,
@@ -1316,6 +1319,9 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.submitBusy) {
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (valid) {
           this.form.gzOrderEntryList = this.gzOrderEntryList;
@@ -1325,17 +1331,21 @@ export default {
             warehouseId: this.form.warehouseId || item.warehouseId || null
           }));
           if (this.form.id != null) {
-            updateOrder(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功");
-              this.open = false;
-              this.getList();
-            });
+            this.runSaveSubmit(() =>
+              updateOrder(this.form).then(response => {
+                this.$modal.msgSuccess("修改成功");
+                this.open = false;
+                this.getList();
+              })
+            ).catch(() => {});
           } else {
-            addOrder(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功");
-              this.open = false;
-              this.getList();
-            });
+            this.runSaveSubmit(() =>
+              addOrder(this.form).then(response => {
+                this.$modal.msgSuccess("新增成功");
+                this.open = false;
+                this.getList();
+              })
+            ).catch(() => {});
           }
         }
       });
@@ -1352,6 +1362,9 @@ export default {
     },
     /** 审核按钮操作 */
     handleAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       const ids = this.ids;
       if (ids.length === 0) {
         this.$modal.msgError("请先选择要审核的数据项");
@@ -1369,16 +1382,15 @@ export default {
       
       const orderNos = selectedOrders.map(item => item.orderNo).join('、');
       this.$modal.confirm('确定要审核选中的 ' + ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
-        // 批量审核
-        const auditPromises = ids.map(id => auditOrder({id: id}));
-        
-        Promise.all(auditPromises).then(() => {
-          this.getList();
-          this.$modal.msgSuccess("批量审核成功！共审核 " + ids.length + " 个订单");
-        }).catch(() => {
-          this.$modal.msgError("批量审核失败！");
-        });
-      }).catch(() => {});
+        return this.runAuditSubmit(() => Promise.all(ids.map(id => auditOrder({id: id}))));
+      }).then(() => {
+        this.getList();
+        this.$modal.msgSuccess("批量审核成功！共审核 " + ids.length + " 个订单");
+      }).catch((err) => {
+        if (err && err.message === 'submit_busy') return;
+        if (err === 'cancel' || err === 'close') return;
+        this.$modal.msgError("批量审核失败！");
+      });
     },
     handleEntryPagination({ page, limit }) {
       if (page != null) this.entryPageNum = page;

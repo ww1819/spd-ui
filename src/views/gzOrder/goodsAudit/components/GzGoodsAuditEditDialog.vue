@@ -191,8 +191,8 @@
             </el-form>
             <div v-show="action" class="modal-footer">
               <el-button class="spd-btn spd-btn--secondary" @click="cancel">取 消</el-button>
-              <el-button type="primary" class="spd-btn spd-btn--primary" :disabled="isAuditedForm" @click="submitForm">保 存</el-button>
-              <el-button type="success" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id" @click="handleDialogAudit">审 核</el-button>
+              <el-button type="primary" class="spd-btn spd-btn--primary" :loading="saveSubmitting" :disabled="isAuditedForm || submitBusy" @click="submitForm">保 存</el-button>
+              <el-button type="success" :loading="auditSubmitting" :disabled="isAuditedForm || hasDialogUnsavedChanges || !form.id || submitBusy" @click="handleDialogAudit">审 核</el-button>
               <el-button type="primary" icon="el-icon-printer" :disabled="hasDialogUnsavedChanges || !form.id || !isAuditedForm" @click="handleDialogPrint">打 印</el-button>
             </div>
           </div>

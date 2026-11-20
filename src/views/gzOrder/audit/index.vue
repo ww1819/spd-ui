@@ -87,6 +87,8 @@
           size="small"
           icon="el-icon-check"
           class="spd-btn spd-btn--primary"
+          :loading="auditSubmitting"
+          :disabled="submitBusy"
           @click="handleBatchAudit"
           v-hasPermi="['gzOrder:apply:audit']"
         >审核</el-button>
@@ -238,11 +240,13 @@ import { parseTime } from "@/utils/ruoyi";
 import { listUserAll } from "@/api/system/user";
 import {STOCK_IN_TEMPLATE} from "@/utils/printData";
 import RMBConverter from "@/utils/tools";
+import submitGuardMixin from '@/mixins/submitGuardMixin'
 
 export default {
   // 须与后端菜单 path「audit」生成的路由 name「Audit」一致，否则 keep-alive 不缓存，切页后查询条件丢失
   name: "Audit",
   dicts: ['biz_status','bill_type'],
+  mixins: [submitGuardMixin],
   components: {
     SelectWarehouse,
     SelectMaterialFilter,
@@ -1547,7 +1551,7 @@ export default {
           return;
         }
         this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
-          return auditOrder({id: id, orderType: orderType});
+          return this.runAuditSubmit(() => auditOrder({id: id, orderType: orderType}));
         }).then(() => {
         this.getList();
         if (isOutbound) {
@@ -1560,6 +1564,9 @@ export default {
     },
     /** 批量审核按钮操作 */
     handleBatchAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       if (this.ids.length === 0) {
         this.$modal.msgError('请先选择要审核的数据');
         return;
@@ -1579,8 +1586,7 @@ export default {
       );
       Promise.all(validations).then(() => {
         this.$modal.confirm('确定要审核选中的' + this.ids.length + '条数据项？').then(() => {
-          const promises = this.ids.map(id => auditOrder({id: id, orderType: orderType}));
-          return Promise.all(promises);
+          return this.runAuditSubmit(() => Promise.all(this.ids.map(id => auditOrder({id: id, orderType: orderType}))));
         }).then(() => {
         this.getList();
         if (isOutbound) {
@@ -1764,6 +1770,9 @@ export default {
     },
     /** 提交按钮 */
     async submitForm() {
+      if (this.submitBusy) {
+        return;
+      }
       this.$refs["form"].validate(async (valid) => {
         if (valid) {
           // 如果是出库，验证数量不能大于库存数量
@@ -1887,36 +1896,43 @@ export default {
             }))
           });
           if (this.form.id != null) {
-            updateOrder(this.form).then(response => {
-              this.$modal.msgSuccess((response && response.msg) || "修改成功");
-              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
-              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
-              this.markDialogSnapshotSaved();
-              this.open = false;
-              // 确保查询时使用正确的 orderType
-              this.setOrderTypeByRoute();
-              this.getList();
-            });
+            this.runSaveSubmit(() =>
+              updateOrder(this.form).then(response => {
+                this.$modal.msgSuccess((response && response.msg) || "修改成功");
+                const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+                if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+                this.markDialogSnapshotSaved();
+                this.open = false;
+                // 确保查询时使用正确的 orderType
+                this.setOrderTypeByRoute();
+                this.getList();
+              })
+            ).catch(() => {});
           } else {
-            addOrder(this.form).then(response => {
-              this.$modal.msgSuccess((response && response.msg) || "新增成功");
-              const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
-              if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
-              if (response && response.data && response.data.id) {
-                this.form.id = response.data.id;
-              }
-              this.markDialogSnapshotSaved();
-              this.open = false;
-              // 确保查询时使用正确的 orderType
-              this.setOrderTypeByRoute();
-              this.getList();
-            });
+            this.runSaveSubmit(() =>
+              addOrder(this.form).then(response => {
+                this.$modal.msgSuccess((response && response.msg) || "新增成功");
+                const filteredCount = Number(response && response.data && response.data.dedupFilteredCount) || 0;
+                if (filteredCount > 0) this.$message.warning(`后台已自动过滤 ${filteredCount} 条重复明细`);
+                if (response && response.data && response.data.id) {
+                  this.form.id = response.data.id;
+                }
+                this.markDialogSnapshotSaved();
+                this.open = false;
+                // 确保查询时使用正确的 orderType
+                this.setOrderTypeByRoute();
+                this.getList();
+              })
+            ).catch(() => {});
           }
         }
       });
     },
     /** 弹窗内审核按钮 */
     handleDialogAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       if (!this.form.id) {
         this.$modal.msgWarning('请先保存单据后再审核');
         return;
@@ -1937,7 +1953,7 @@ export default {
         return;
       }
       this.$modal.confirm(`确定要审核单据"${this.form.orderNo || this.form.id}"吗？`).then(() => {
-        return auditOrder({ id: this.form.id, orderType: orderType });
+        return this.runAuditSubmit(() => auditOrder({ id: this.form.id, orderType: orderType }));
       }).then(() => {
         this.form.orderStatus = '2';
         this.form.auditDate = new Date();

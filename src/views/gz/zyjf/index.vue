@@ -154,10 +154,10 @@
               >
                 <i slot="prefix" class="el-icon-scan"></i>
               </el-input>
-          <el-button type="primary" icon="el-icon-check" size="medium" class="spd-btn spd-btn--primary" :disabled="form.orderStatus === 2" @click="handleSave" v-hasPermi="['gz:traceability:add','gz:traceability:edit']">
+          <el-button type="primary" icon="el-icon-check" size="medium" class="spd-btn spd-btn--primary" :loading="saveSubmitting" :disabled="form.orderStatus === 2 || submitBusy" @click="handleSave" v-hasPermi="['gz:traceability:add','gz:traceability:edit']">
             保存
           </el-button>
-          <el-button type="success" icon="el-icon-check" size="medium" class="spd-btn spd-btn--secondary" :disabled="form.orderStatus === 2" @click="handleAudit" v-hasPermi="['gz:traceability:audit']">
+          <el-button type="success" icon="el-icon-check" size="medium" class="spd-btn spd-btn--secondary" :loading="auditSubmitting" :disabled="form.orderStatus === 2 || submitBusy" @click="handleAudit" v-hasPermi="['gz:traceability:audit']">
             审核
           </el-button>
           <el-button type="warning" icon="el-icon-printer" size="medium" class="spd-btn spd-btn--secondary" @click="handlePrintMaterialList" v-hasPermi="['gz:traceability:printMaterial']">
@@ -575,10 +575,12 @@ import SelectDepartment from "@/components/SelectModel/SelectDepartment";
 import { getPatientByMedicalRecordNo } from "@/api/gz/patient";
 import { listGzDepInventory } from "@/api/gzDepartment/gzDepInventory";
 import { addTraceability, listTraceability, auditTraceability, getTraceability, updateTraceability, delTraceability, unauditTraceability } from "@/api/gz/traceability";
+import submitGuardMixin from '@/mixins/submitGuardMixin'
 
 export default {
   // 须与菜单 path「zyjf」→ 路由 name「Zyjf」一致，keep-alive 才能保留查询条件与表单
   name: "Zyjf",
+  mixins: [submitGuardMixin],
   components: {
     SelectDepartment,
     PrintDialog: () => import('@/components/PrintDialog')
@@ -838,6 +840,9 @@ export default {
     },
     /** 保存 */
     handleSave() {
+      if (this.submitBusy) {
+        return;
+      }
       // 验证必填字段
       if (!this.form.medicalRecordNo || this.form.medicalRecordNo.trim() === '') {
         this.$message.warning('请先扫描/输入病历号');
@@ -900,34 +905,38 @@ export default {
       // 判断是新增还是修改
       if (this.form.id) {
         // 修改
-        updateTraceability(traceabilityData).then(response => {
-          if (response.code === 200) {
-            this.$message.success('修改成功');
-            // 刷新订单列表
-            this.handleQuery();
-          } else {
-            this.$message.error(response.msg || '修改失败');
-          }
-        }).catch(error => {
-          console.error('修改失败:', error);
-          this.$message.error('修改失败，请稍后重试');
-        });
+        this.runSaveSubmit(() =>
+          updateTraceability(traceabilityData).then(response => {
+            if (response.code === 200) {
+              this.$message.success('修改成功');
+              // 刷新订单列表
+              this.handleQuery();
+            } else {
+              this.$message.error(response.msg || '修改失败');
+            }
+          }).catch(error => {
+            console.error('修改失败:', error);
+            this.$message.error('修改失败，请稍后重试');
+          })
+        ).catch(() => {});
       } else {
         // 新增
-        addTraceability(traceabilityData).then(response => {
-          if (response.code === 200) {
-            this.$message.success('保存成功');
-            // 清空表单和明细列表
-            this.resetForm();
-            // 刷新订单列表
-            this.handleQuery();
-          } else {
-            this.$message.error(response.msg || '保存失败');
-          }
-        }).catch(error => {
-          console.error('保存失败:', error);
-          this.$message.error('保存失败，请稍后重试');
-        });
+        this.runSaveSubmit(() =>
+          addTraceability(traceabilityData).then(response => {
+            if (response.code === 200) {
+              this.$message.success('保存成功');
+              // 清空表单和明细列表
+              this.resetForm();
+              // 刷新订单列表
+              this.handleQuery();
+            } else {
+              this.$message.error(response.msg || '保存失败');
+            }
+          }).catch(error => {
+            console.error('保存失败:', error);
+            this.$message.error('保存失败，请稍后重试');
+          })
+        ).catch(() => {});
       }
     },
     /** 重置表单 */
@@ -960,31 +969,36 @@ export default {
     },
     /** 审核 */
     handleAudit() {
+      if (this.submitBusy) {
+        return;
+      }
       if (!this.form.id) {
         this.$message.warning('请先选择要审核的追溯单');
         return;
       }
       this.$modal.confirm('是否确认审核该追溯单？').then(() => {
-        auditTraceability(this.form.id).then(response => {
-          if (response.code === 200) {
-            this.$message.success('审核成功');
-            // 刷新订单列表
-            this.handleQuery();
-            // 重新加载当前追溯单数据
-            if (this.form.id) {
-              getTraceability(this.form.id).then(res => {
-                if (res.code === 200 && res.data) {
-                  this.loadTraceabilityData(res.data);
-                }
-              });
+        return this.runAuditSubmit(() =>
+          auditTraceability(this.form.id).then(response => {
+            if (response.code === 200) {
+              this.$message.success('审核成功');
+              // 刷新订单列表
+              this.handleQuery();
+              // 重新加载当前追溯单数据
+              if (this.form.id) {
+                return getTraceability(this.form.id).then(res => {
+                  if (res.code === 200 && res.data) {
+                    this.loadTraceabilityData(res.data);
+                  }
+                });
+              }
+            } else {
+              this.$message.error(response.msg || '审核失败');
             }
-          } else {
-            this.$message.error(response.msg || '审核失败');
-          }
-        }).catch(error => {
-          console.error('审核失败:', error);
-          this.$message.error('审核失败，请稍后重试');
-        });
+          }).catch(error => {
+            console.error('审核失败:', error);
+            this.$message.error('审核失败，请稍后重试');
+          })
+        );
       }).catch(() => {});
     },
     /** 加载追溯单数据到表单 */
