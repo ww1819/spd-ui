@@ -79,9 +79,25 @@ import SelectGzDepInventory from '@/components/SelectModel/SelectGzDepInventory'
 // 金额格式化
 import numberFormatter from './utils/format-currency'
 
-Object.keys(numberFormatter).forEach((key) =>{
-  Vue.prototype[key] = numberFormatter[key];
-  Vue.filter(key,numberFormatter[key]);
+const NUMBER_FILTER_SKIP = new Set([
+  'onQtyInput',
+  'onQtyBlur',
+  'onPriceInput',
+  'onPriceBlur',
+  'onFormDecimalInput',
+  'onFormDecimalBlur',
+  'sanitizeDecimalInput',
+  'finalizeDecimalInput',
+  'deepFinalizeIncompleteDecimals',
+  'toMoneyStorage',
+  'toMoneyStorageStr',
+  'calcLineAmt'
+])
+Object.keys(numberFormatter).forEach((key) => {
+  Vue.prototype[key] = numberFormatter[key]
+  if (!NUMBER_FILTER_SKIP.has(key)) {
+    Vue.filter(key, numberFormatter[key])
+  }
 })
 
 //dataV:将自动注册所有组件为全局组件

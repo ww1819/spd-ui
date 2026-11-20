@@ -129,7 +129,8 @@
           <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.price" placeholder="单价"
-                        @input="priceChange(scope.row)"
+                        @input="onPriceInput(scope.row, 'price')"
+                        @blur="onPriceBlur(scope.row, 'price')"
               />
             </template>
           </el-table-column>

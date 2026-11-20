@@ -82,17 +82,15 @@
           <el-table-column label="数量" prop="qty" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="数量"
-                        onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                        onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                        @blur="form.result=$event.target.value"
-                        @input="qtyChange(scope.row)"
+                        @input="onQtyInput(scope.row)"
+                        @blur="onQtyBlur(scope.row)"
               />
             </template>
           </el-table-column>
 
           <el-table-column label="单价" prop="unitPrice" width="150" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-model="scope.row.unitPrice" type='number' @input="priceChange(scope.row)" placeholder="单价" />
+              <el-input v-model="scope.row.unitPrice" clearable @input="onPriceInput(scope.row)" @blur="onPriceBlur(scope.row)" placeholder="单价" />
             </template>
           </el-table-column>
           <el-table-column label="金额" prop="amt" width="150" show-overflow-tooltip resizable>

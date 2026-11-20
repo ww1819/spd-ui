@@ -258,6 +258,7 @@ import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectInventory from "@/components/SelectModel/SelectInventory";
 import SelectDepInventory from "@/components/SelectModel/SelectDepInventory";
 import { sortInventoryRowsByNameSpecCodeMaterialId } from "@/utils/stocktakingInventorySort";
+import { sanitizeDecimalInput, finalizeDecimalInput } from '@/utils/format-quantity';
 
 export default {
   name: "InStocktaking",
@@ -1028,6 +1029,24 @@ export default {
       }
     },
     //盘点数量改变：盈亏数量 = 盘点(stockQty) − 账面(qty)；盘点金额 = 盘点×单价；盈亏金额 = 盈亏×单价
+    /** 盘点数量录入：过滤非法字符 */
+    onStockQtyInput(row) {
+      if (!row) return;
+      const cleaned = sanitizeDecimalInput(row.stockQty);
+      if (cleaned !== String(row.stockQty == null ? '' : row.stockQty)) {
+        this.$set(row, 'stockQty', cleaned);
+      }
+      this.stockQtyChange(row);
+    },
+    /** 盘点数量失焦：去掉 "400." 并沿用上限校验 */
+    onStockQtyBlur(row) {
+      if (!row) return;
+      const finalized = finalizeDecimalInput(row.stockQty);
+      if (finalized !== row.stockQty) {
+        this.$set(row, 'stockQty', finalized);
+      }
+      this.handleStockQtyBlur(row);
+    },
     stockQtyChange(row){
       const sq = parseFloat(row.stockQty);
       const bq = parseFloat(row.qty);

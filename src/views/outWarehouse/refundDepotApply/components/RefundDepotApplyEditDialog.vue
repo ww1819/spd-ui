@@ -172,10 +172,8 @@
           <el-table-column label="数量" prop="qty" width="100" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <el-input clearable v-model="scope.row.qty" placeholder="数量" size="small" class="detail-input-compact"
-                        onkeyup="value=value.replace(/\D/g,'')"
-                        onafterpaste="value=value.replace(/\D/g,'')"
-                        @blur="form.result=$event.target.value"
-                        @input="qtyChange(scope.row)"
+                        @input="onQtyInput(scope.row)"
+                        @blur="onQtyBlur(scope.row)"
               />
             </template>
           </el-table-column>

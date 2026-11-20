@@ -131,10 +131,8 @@
                 placeholder="盘点数量"
                 size="small"
                 class="detail-input-compact"
-                onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                @blur="handleStockQtyBlur(scope.row)"
-                @input="stockQtyChange(scope.row)"
+                @input="onStockQtyInput(scope.row)"
+                @blur="onStockQtyBlur(scope.row)"
               />
               <span v-else>{{ scope.row.stockQty || '--' }}</span>
             </template>

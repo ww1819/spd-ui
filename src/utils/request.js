@@ -8,6 +8,7 @@ import errorCode from '@/utils/errorCode'
 import { tansParams, blobValidate } from "@/utils/ruoyi";
 import cache from '@/plugins/cache'
 import { saveAs } from 'file-saver'
+import { deepFinalizeIncompleteDecimals } from '@/utils/format-quantity'
 
 let downloadLoadingInstance;
 // 是否显示重新登录
@@ -64,6 +65,10 @@ service.interceptors.request.use(async config => {
     url = url.slice(0, -1);
     config.params = {};
     config.url = url;
+  }
+  // 提交前去掉 "400." 这类不完整小数串，避免后端 BigDecimal 反序列化失败
+  if ((config.method === 'post' || config.method === 'put') && config.data && typeof config.data === 'object') {
+    deepFinalizeIncompleteDecimals(config.data)
   }
   if (!isRepeatSubmit && (config.method === 'post' || config.method === 'put')) {
     const requestObj = {

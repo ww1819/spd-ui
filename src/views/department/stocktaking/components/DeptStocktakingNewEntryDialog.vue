@@ -29,7 +29,7 @@
         </el-table-column>
         <el-table-column label="单价" min-width="120">
           <template slot-scope="scope">
-            <el-input v-model="scope.row.unitPrice" type="number" placeholder="请输入单价" @input="priceChange(scope.row)" />
+            <el-input v-model="scope.row.unitPrice" clearable placeholder="请输入单价" @input="onPriceInput(scope.row)" @blur="onPriceBlur(scope.row)" />
           </template>
         </el-table-column>
         <el-table-column label="盘点数量" min-width="120">

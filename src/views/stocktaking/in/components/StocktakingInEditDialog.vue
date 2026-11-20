@@ -189,7 +189,7 @@
 
           <el-table-column label="单价" prop="price" width="120" show-overflow-tooltip resizable>
             <template slot-scope="scope">
-              <el-input v-if="!scope.row.kcNo && detailEditable" v-model="scope.row.price" type="number" @input="priceChange(scope.row)" placeholder="单价" />
+              <el-input v-if="!scope.row.kcNo && detailEditable" v-model="scope.row.price" clearable @input="onPriceInput(scope.row, 'price')" @blur="onPriceBlur(scope.row, 'price')" placeholder="单价" />
               <span v-else>{{ scope.row.unitPrice != null ? this.formatPrice(scope.row.unitPrice) : (scope.row.price != null ? this.formatAmount(scope.row.price) : '--') }}</span>
             </template>
           </el-table-column>

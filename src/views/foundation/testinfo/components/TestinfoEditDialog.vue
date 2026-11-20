@@ -39,7 +39,7 @@
 
             <el-col :span="6">
               <el-form-item label="价格" prop="price" label-width="100px">
-                <el-input v-model="form.price" placeholder="价格" />
+                <el-input v-model="form.price" placeholder="价格" @input="onFormDecimalInput(form, 'price')" @blur="onFormDecimalBlur(form, 'price')" />
               </el-form-item>
             </el-col>
 

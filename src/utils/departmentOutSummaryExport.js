@@ -834,7 +834,8 @@ export function aggregateCtkRowsByNameSpeciUnitPrice(rows) {
 
 /**
  * 出/退库明细简表（按供应商）：序号、产品名称、规格、单位、价格、数量、金额、财务分类、库房分类；
- * 一供应商一段，标题「供应商名 + 出/退库明细 + 日期」；逐行明细不合并，段末仅合计数量与金额（红色）。
+ * 一供应商一段；段内按耗材/试剂（库房分类）拆分；逐行明细不合并；
+ * 段末分类合计 + 供应商合计；文末「供应商×耗材/试剂」合计后再写总计。
  * @param {Object[]} options.rows listCTKWarehouse 返回行
  * @param {string} [options.beginDate]
  * @param {string} [options.endDate]
@@ -878,6 +879,21 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
 
   let r = 1;
 
+  const writeMergedTitle = (richTextParts, height = 26) => {
+    ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
+    const cell = ws.getCell(r, 1);
+    cell.value = { richText: richTextParts };
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cell.border = {
+      top: BORDER_THIN,
+      left: BORDER_THIN,
+      bottom: BORDER_THIN,
+      right: BORDER_THIN,
+    };
+    ws.getRow(r).height = height;
+    r += 1;
+  };
+
   const writeHeaderRow = () => {
     headers.forEach((text, c) => {
       const cell = ws.getCell(r, c + 1);
@@ -913,7 +929,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
             cell.value = '';
           } else {
             cell.value = 0;
-            cell.numFmt = (col === priceCol ? getPriceExcelNumFmt() : col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
+            cell.numFmt = (col === amtCol ? getAmountExcelNumFmt() : getQtyExcelNumFmt());
           }
         } else {
           cell.value = Number(v);
@@ -936,36 +952,7 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
     r += 1;
   };
 
-  supplierNames.forEach((supplierName, blockIdx) => {
-    const grp = bySupplier.get(supplierName);
-    if (blockIdx > 0) {
-      r += 1;
-    }
-
-    ws.mergeCells(`A${r}:${colToLetter(colCount)}${r}`);
-    const titleCell = ws.getCell(r, 1);
-    titleCell.value = {
-      richText: [
-        { font: { ...FONT_TITLE, bold: true }, text: supplierName },
-        { font: { ...FONT_TITLE, bold: false }, text: `${sectionTitleSuffix}${datePart || ''}` },
-      ],
-    };
-    titleCell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    titleCell.border = {
-      top: BORDER_THIN,
-      left: BORDER_THIN,
-      bottom: BORDER_THIN,
-      right: BORDER_THIN,
-    };
-    ws.getRow(r).height = 26;
-    r += 1;
-
-    writeHeaderRow();
-
-    grp.forEach((row, ri) => {
-      writeDetailBodyRow(row, ri + 1);
-    });
-
+  const writeBlankRow = () => {
     for (let c = 1; c <= colCount; c++) {
       const cell = ws.getCell(r, c);
       cell.value = '';
@@ -974,24 +961,23 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
       setCellBorder(cell);
     }
     r += 1;
+  };
 
-    const totalQty = grp.reduce((s, row) => s + Number(row.materialQty || 0), 0);
-    const totalAmt = grp.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
-
+  const writeTotalRow = (label, totalQty, totalAmt) => {
     for (let c = 1; c <= colCount; c++) {
       const cell = ws.getCell(r, c);
       setCellBorder(cell);
       if (c === 1) {
-        cell.value = '合计';
+        cell.value = label || '合计';
         cell.font = { ...FONT_BODY, bold: true };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       } else if (c === qtyCol) {
-        cell.value = totalQty;
+        cell.value = Number(totalQty || 0);
         cell.numFmt = getQtyExcelNumFmt();
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else if (c === amtCol) {
-        cell.value = totalAmt;
+        cell.value = Number(totalAmt || 0);
         cell.numFmt = getAmountExcelNumFmt();
         cell.font = RED_NUM;
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -1002,7 +988,79 @@ export async function exportCTKWarehouseDetailSupplierSimpleXlsx(options) {
       }
     }
     r += 1;
+  };
+
+  let grandTotalQty = 0;
+  let grandTotalAmt = 0;
+  /** 文末「供应商×耗材/试剂」合计：key = supplier||kind */
+  const supplierKindTotals = new Map();
+
+  supplierNames.forEach((supplierName, blockIdx) => {
+    const grp = bySupplier.get(supplierName) || [];
+    if (!grp.length) return;
+    if (blockIdx > 0) r += 1;
+
+    writeMergedTitle([
+      { font: { ...FONT_TITLE, bold: true }, text: supplierName },
+      { font: { ...FONT_TITLE, bold: false }, text: `${sectionTitleSuffix}${datePart || ''}` },
+    ]);
+
+    const byKind = new Map();
+    grp.forEach((row) => {
+      const kind = resolveCtkSummarySimpleKind(row);
+      if (!byKind.has(kind)) byKind.set(kind, []);
+      byKind.get(kind).push(row);
+    });
+    const kindBlocks = CTK_KIND_BLOCKS_SIMPLE.filter((b) => {
+      const list = byKind.get(b.kind);
+      return list && list.length > 0;
+    });
+
+    let supplierTotalQty = 0;
+    let supplierTotalAmt = 0;
+
+    kindBlocks.forEach((kb, kIdx) => {
+      const kindRows = byKind.get(kb.kind) || [];
+      if (!kindRows.length) return;
+      if (kIdx > 0) r += 1;
+
+      writeMergedTitle([
+        { font: { ...FONT_TITLE, bold: true }, text: kb.title },
+        { font: { ...FONT_TITLE, bold: false }, text: `${datePart || ''}` },
+      ]);
+      writeHeaderRow();
+      kindRows.forEach((row, ri) => writeDetailBodyRow(row, ri + 1));
+      writeBlankRow();
+
+      const kindQty = kindRows.reduce((s, row) => s + Number(row.materialQty || 0), 0);
+      const kindAmt = kindRows.reduce((s, row) => s + Number(row.materialAmt || 0), 0);
+      writeTotalRow(`${kb.kind}合计`, kindQty, kindAmt);
+
+      supplierKindTotals.set(`${supplierName}||${kb.kind}`, {
+        supplierName,
+        kind: kb.kind,
+        qty: kindQty,
+        amt: kindAmt,
+      });
+      supplierTotalQty += kindQty;
+      supplierTotalAmt += kindAmt;
+    });
+
+    writeTotalRow(`${supplierName}合计`, supplierTotalQty, supplierTotalAmt);
+    grandTotalQty += supplierTotalQty;
+    grandTotalAmt += supplierTotalAmt;
   });
+
+  // 文末：各供应商按耗材/试剂合计，再总计
+  if (supplierNames.length) r += 1;
+  supplierNames.forEach((supplierName) => {
+    CTK_KIND_BLOCKS_SIMPLE.forEach((kb) => {
+      const t = supplierKindTotals.get(`${supplierName}||${kb.kind}`);
+      if (!t) return;
+      writeTotalRow(`${supplierName}${kb.kind}合计`, t.qty, t.amt);
+    });
+  });
+  writeTotalRow('总计', grandTotalQty, grandTotalAmt);
 
   ws.getColumn(1).width = 8;
   ws.getColumn(2).width = 28;

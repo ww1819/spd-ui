@@ -214,10 +214,8 @@
                   size="small"
                   class="detail-cell-fluid-input"
                   style="width: 100%"
-                  onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                  onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
-                  @blur="form.result=$event.target.value"
-                  @input="qtyChange(scope.row)"
+                  @input="onQtyInput(scope.row)"
+                  @blur="onQtyBlur(scope.row)"
                 />
               </div>
             </template>
