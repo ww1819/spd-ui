@@ -2158,21 +2158,46 @@ export default {
 }
 .delivery-scan-toolbar-row .delivery-ref-form-item .el-form-item__label,
 .delivery-scan-toolbar-row .detail-scan-form-item .el-form-item__label,
-::v-deep .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
-::v-deep .apply-modal-row-third .detail-scan-form-item .el-form-item__label{
+::v-deep .apply-modal-row-delivery-scan .delivery-ref-form-item .el-form-item__label,
+::v-deep .apply-modal-row-delivery-scan .detail-scan-form-item .el-form-item__label{
   white-space: nowrap;
 }
 .delivery-scan-toolbar-row .el-form-item__content,
-::v-deep .apply-modal-row-third .delivery-ref-form-item .el-form-item__content,
-::v-deep .apply-modal-row-third .detail-scan-form-item .el-form-item__content{
+::v-deep .apply-modal-row-delivery-scan .delivery-ref-form-item .el-form-item__content,
+::v-deep .apply-modal-row-delivery-scan .detail-scan-form-item .el-form-item__content{
   line-height: 32px;
 }
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-input,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-input-group,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-input,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-input-group{
-  width: 100%;
-  max-width: 100%;
+/* 引用配送单 / 扫描条码：与采购员同宽 162px */
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--compact .el-form-item__content {
+  max-width: 162px;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .detail-scan-form-item .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .scan-barcode-input {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+/* 引用配送单：右侧「引用」按钮与输入框同高 */
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group__append {
+  padding: 0;
+  background: #f5f7fa;
+  border-color: #dcdfe6;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group__append .el-button {
+  margin: 0;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 10px;
+  line-height: 30px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #606266;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input--small .el-input__inner {
+  height: 32px;
+  line-height: 32px;
 }
 .delivery-scan-toolbar-row .scan-barcode-input .el-input-group__prepend {
   padding: 0 8px;
@@ -2404,19 +2429,8 @@ export default {
   margin-bottom: 0;
 }
 
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item{
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .el-form-item{
   margin-bottom: 0;
-}
-
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor{
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row{
-  flex-wrap: nowrap;
 }
 
 ::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row.el-row{
@@ -3228,8 +3242,7 @@ export default {
 
 <style>
 /* 弹窗表头：inline-flex 保证标签与输入框同一行 */
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item,
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
   margin-bottom: 0;
   white-space: nowrap;
   display: inline-flex;
@@ -3237,8 +3250,7 @@ export default {
   vertical-align: top;
 }
 
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label,
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
   float: none;
   width: auto !important;
   flex: 0 0 auto;
@@ -3249,15 +3261,14 @@ export default {
   font-size: 13px;
 }
 
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content,
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
   flex: 0 0 auto;
   margin-left: 0 !important;
   line-height: 28px;
 }
 
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
-.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-form-item__label,
+.app-container.inWarehouse-apply-page .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .detail-scan-form-item .el-form-item__label {
   white-space: nowrap;
 }
 

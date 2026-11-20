@@ -49,6 +49,11 @@
               <el-input v-model="form.invoiceNumber" placeholder="发票号" />
             </el-form-item>
           </el-col>
+          <el-col class="apply-modal-field apply-modal-field--standard">
+            <el-form-item label="发票金额" prop="invoiceAmount">
+              <el-input v-model="form.invoiceAmount" placeholder="发票金额" />
+            </el-form-item>
+          </el-col>
           <el-col v-if="!action" class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="制单人">
               <el-input
@@ -60,6 +65,44 @@
           <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="发票时间" prop="invoiceTime">
               <el-input v-model="form.invoiceTime" clearable placeholder="发票时间" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row v-if="action" :gutter="0" class="apply-modal-form-row apply-modal-row-delivery-scan" type="flex">
+          <el-col class="apply-modal-field apply-modal-field--compact">
+            <el-form-item label="引用配送单" label-width="92px" class="delivery-ref-form-item" :title="deliveryRefBlockTitle">
+              <el-input
+                v-model="deliveryRefKeyword"
+                placeholder="配送单号/配送单输入码"
+                clearable
+                size="small"
+                class="delivery-ref-input"
+                :disabled="deliveryRefBlocked"
+                @keyup.enter.native="handleRefDeliverySubmit"
+              >
+                <el-button
+                  slot="append"
+                  size="small"
+                  icon="el-icon-search"
+                  :disabled="deliveryRefBlocked"
+                  @click="handleRefDeliverySubmit"
+                >引用</el-button>
+              </el-input>
+            </el-form-item>
+          </el-col>
+          <el-col class="apply-modal-field apply-modal-field--compact">
+            <el-form-item label="扫描条码" class="detail-scan-form-item">
+              <el-input
+                ref="scanBarcodeInputRef"
+                v-model="scanBarcodeInput"
+                placeholder="扫码或输入条码后回车"
+                title="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
+                clearable
+                size="small"
+                class="scan-barcode-input"
+                @keyup.enter.native="onScanBarcodeSubmit"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -81,55 +124,11 @@
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
-            <el-form-item label="发票金额" prop="invoiceAmount">
-              <el-input v-model="form.invoiceAmount" placeholder="发票金额" />
-            </el-form-item>
-          </el-col>
-          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="引用单号" prop="refBillNo">
               <el-input v-model="form.refBillNo" :disabled="true" placeholder="引用采购订单号" />
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="8" class="apply-modal-form-row apply-modal-row-third" type="flex">
-          <el-col v-if="action" :span="7">
-            <el-form-item label="引用配送单" label-width="92px" class="delivery-ref-form-item" :title="deliveryRefBlockTitle">
-              <el-input
-                v-model="deliveryRefKeyword"
-                placeholder="配送单号/配送单输入码"
-                clearable
-                :disabled="deliveryRefBlocked"
-                @keyup.enter.native="handleRefDeliverySubmit"
-              >
-                <el-button slot="append" icon="el-icon-search" :disabled="deliveryRefBlocked" @click="handleRefDeliverySubmit">引用</el-button>
-              </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col v-if="action" :span="8">
-            <el-form-item label="扫描条码" label-width="80px" class="detail-scan-form-item">
-              <el-input
-                ref="scanBarcodeInputRef"
-                v-model="scanBarcodeInput"
-                placeholder="扫码或输入条码后回车"
-                title="请用扫码枪扫描或键盘输入条码后回车，自动解析主/辅条码并匹配产品档案"
-                clearable
-                size="small"
-                class="scan-barcode-input"
-                @keyup.enter.native="onScanBarcodeSubmit"
-              >
-                <template slot="prepend">
-                  <i class="el-icon-s-operation"></i>
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col v-if="action" :span="5">
-            <el-form-item label="备注" prop="remark">
-              <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
-            </el-form-item>
-          </el-col>
-          <el-col v-else :span="24">
+          <el-col class="apply-modal-field apply-modal-field--standard">
             <el-form-item label="备注" prop="remark">
               <el-input v-model="form.remark" placeholder="备注" clearable :disabled="!action" />
             </el-form-item>
@@ -150,14 +149,16 @@
                 :disabled="!form.warehouseId"
               >添加</el-button>
               <el-button
+                type="primary"
                 size="small"
-                class="spd-btn spd-btn--secondary"
-                icon="el-icon-ref"
+                class="spd-btn spd-btn--primary"
+                icon="el-icon-document"
                 @click="refDingdan"
               >引用采购订单</el-button>
               <el-button
                 type="danger"
                 size="small"
+                class="spd-btn spd-btn--danger"
                 icon="el-icon-delete"
                 @click="handleDeleteStkIoBillEntry"
               >删除</el-button>
