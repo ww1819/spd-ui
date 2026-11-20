@@ -19,14 +19,14 @@
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--compact">
             <el-form-item label="供应商" prop="supplerId" class="form-item-header-supplier apply-modal-label-required">
-              <el-input
-                v-if="isHeaderSupplierReadonly"
-                :value="supplierHeaderDisplayName"
-                disabled
-                :title="supplierHeaderDisplayName"
-                class="header-field-supplier-readonly"
+              <!-- 有明细时仅禁用，仍用 SelectSupplier 按 id 回显名称（勿切 el-input，否则 form.supplier 为空时空白） -->
+              <SelectSupplier
+                v-model="form.supplerId"
+                :onlyEnabled="true"
+                :value2="isHeaderSupplierReadonly"
+                placeholder="供应商"
+                class="header-field-select-compact"
               />
-              <SelectSupplier v-else v-model="form.supplerId" :onlyEnabled="true" placeholder="供应商" class="header-field-select-compact"/>
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">

@@ -269,8 +269,8 @@ export default {
       }, 200);
     },
     ensureSelectedOption() {
-      if (!this.value) return;
-      const exists = this.supplierOptions.some(item => item.id === this.value);
+      if (this.value == null || this.value === '') return;
+      const exists = this.supplierOptions.some(item => String(item.id) === String(this.value));
       if (exists) return;
       if (this.financePickMode) {
         const hit = (this.allSuppliers || []).find(item => item.id === this.value);

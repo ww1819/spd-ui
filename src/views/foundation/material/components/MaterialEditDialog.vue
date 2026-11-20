@@ -1,6 +1,6 @@
 <template>
-    <!-- 添加或修改耗材产品局部弹窗 -->
-    <div v-if="open" class="local-modal-mask material-modal-mask">
+    <!-- 添加或修改耗材产品局部弹窗（关窗用 class，避免 display:flex !important 盖住 v-show） -->
+    <div class="local-modal-mask material-modal-mask" :class="{ 'is-closed': !open }">
       <div class="local-modal-content material-modal-content" :class="{ 'material-modal-view': isViewMode, 'zq-material-limited-modal': zqTcmLimitedEdit }">
         <div class="modal-header material-modal-header">
           <div class="modal-title">{{ isViewMode ? '耗材档案详情' : title }}</div>
@@ -971,6 +971,12 @@ export default {
   justify-content: stretch !important;
   background: transparent !important;
   z-index: 2000;
+}
+
+.material-page-container .local-modal-mask.material-modal-mask.is-closed,
+.local-modal-mask.material-modal-mask.is-closed {
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .material-page-container .local-modal-mask.material-modal-mask > .local-modal-content.material-modal-content,

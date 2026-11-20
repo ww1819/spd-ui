@@ -869,7 +869,7 @@
     </div>
       </div>
 
-    <MaterialEditDialog v-if="open" />
+    <MaterialEditDialog v-if="materialDialogReady" />
     <MaterialImagePreviewDialog v-if="imagePreviewVisible" />
     <MaterialZoomEditorDialog v-if="zoomEditor.visible" />
     <MaterialImportDialog v-if="upload.open" />
@@ -1040,6 +1040,8 @@ export default {
       title: "",
       // 是否显示弹出层
       open: false,
+      /** 首次打开后保持挂载，关窗用 v-show，避免反复销毁卡顿 */
+      materialDialogReady: false,
       // 弹窗模式：add/edit/view
       dialogMode: 'add',
       // 查询参数
@@ -1669,10 +1671,13 @@ export default {
       this.single = ids.length !== 1;
       this.multiple = !ids.length;
     },
-    // 取消按钮
+    // 取消/关闭/右上角 X：先关弹窗再清表单，避免关窗前整表重渲染卡顿
     cancel() {
+      if (!this.open) return;
       this.open = false;
-      this.reset();
+      this.$nextTick(() => {
+        this.reset();
+      });
     },
     createDefaultForm() {
       return {
@@ -2424,6 +2429,7 @@ export default {
         return;
       }
       this.reset();
+      this.materialDialogReady = true;
       this.open = true;
       this.dialogMode = 'add';
       this.isDisabled = false;
@@ -2470,6 +2476,7 @@ export default {
         this.form = this.hydrateMaterialForm(response.data);
         this.syncPeriodDateLongTermFromForm();
         this.originalIsUse = this.form.isUse;
+        this.materialDialogReady = true;
         this.open = true;
         this.isDisabled = true;
         this.title = "修改产品档案";
@@ -2485,6 +2492,7 @@ export default {
         this.form = this.hydrateMaterialForm(response.data);
         this.syncPeriodDateLongTermFromForm();
         this.originalIsUse = this.form.isUse;
+        this.materialDialogReady = true;
         this.open = true;
         this.title = "耗材档案详情";
         this.activeTab = 'form';
@@ -2569,6 +2577,7 @@ export default {
         this.isDisabled = false;
         this.originalIsUse = null;
         this.title = '复制新增耗材产品';
+        this.materialDialogReady = true;
         this.open = true;
         this.activeTab = 'form';
       } catch (e) {

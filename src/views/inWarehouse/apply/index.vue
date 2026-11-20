@@ -473,6 +473,9 @@ export default {
       if (this.form && this.form.supplier && this.form.supplier.name) {
         return this.form.supplier.name;
       }
+      if (this.form && this.form.deliveryRefSupplierName) {
+        return this.form.deliveryRefSupplierName;
+      }
       return '';
     },
     /** 枣强县中医院：到货验收弹窗内可直接审核（其他租户仍走入库审核菜单） */
@@ -1539,6 +1542,12 @@ export default {
         }
         if (detail.billNo) {
           this.form.billNo = detail.billNo;
+        }
+        if (detail.supplerId != null && detail.supplerId !== '') {
+          this.form.supplerId = detail.supplerId;
+        }
+        if (detail.supplier) {
+          this.$set(this.form, 'supplier', detail.supplier);
         }
         const entryList = (detail.stkIoBillEntryList || []).map((item) => {
           this.initRowLongTermFlag(item);
