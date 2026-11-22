@@ -21,7 +21,7 @@
                 popper-class="column-dialog-help-tooltip"
               >
                 <div slot="content" class="column-dialog-help-content">
-                  勾选为显示、取消勾选为隐藏；「排序」勾选后该列可升/降序，未勾选则不可排序；点击行后可点上移/下移调整顺序；可设置列宽与明细对齐（左/中/右）。表头固定居中。「初始化」恢复系统默认且不保留本次修改。
+                  勾选为显示、取消勾选为隐藏；「排序」勾选后该列可升/降序，未勾选则不可排序；点击行后可点上移/下移调整顺序；可设置列宽与明细对齐（左/中/右）。表头固定居中。「初始化」恢复当前列间距默认配置（列宽/对齐/顺序），弹窗内可直接核对。
                 </div>
                 <i class="el-icon-question column-dialog-help-icon" />
               </el-tooltip>

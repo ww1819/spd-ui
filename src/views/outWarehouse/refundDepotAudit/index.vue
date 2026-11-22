@@ -108,35 +108,35 @@
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="退库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="退库单号" align="center" prop="billNo" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')" />
-      <el-table-column label="科室" align="center" prop="department.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
-      <el-table-column label="制单人" align="center" prop="creater.nickName" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="110" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')" />
+      <el-table-column label="科室" align="center" prop="department.name" width="110" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="90" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable sortable>
+      <el-table-column label="金额" align="center" prop="totalAmount" width="110" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" class-name="col-bill-status" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="100" min-width="90" class-name="col-bill-status" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span style="white-space: nowrap;">
             <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
           </span>
         </template>
       </el-table-column>
-      <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="100" show-overflow-tooltip>
+      <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="90" show-overflow-tooltip>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.billStatus == 2" :type="msunPushTag(scope.row.hisPushStatus).type" size="mini">
             {{ msunPushTag(scope.row.hisPushStatus).label }}
@@ -145,19 +145,19 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable />
-      <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="90" show-overflow-tooltip resizable />
+      <el-table-column label="打印状态" align="center" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.printDate" type="success" size="small">已打印</el-tag>
           <el-tag v-else type="info" size="small">未打印</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="打印人" align="center" prop="printPerson" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="打印人" align="center" prop="printPerson" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.printPerson || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="打印日期" align="center" prop="printDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="打印日期" align="center" prop="printDate" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.printDate">{{ parseTime(scope.row.printDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
@@ -206,8 +206,9 @@
               type="text"
               icon="el-icon-document"
               @click="handleShowEntryChangeLog(scope.row)"
-              style="padding: 0 5px; margin: 0;"
               v-hasPermi="['outWarehouse:refundDepotApply:query']"
+              v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
             >变更记录</el-button>
             <el-button
               v-if="isZaoqiangTenant && scope.row.billStatus == 2"
@@ -1988,6 +1989,41 @@ export default {
   z-index: 5;
   background-color: #f1f5f9 !important;
   border-bottom-color: #e2e8f0 !important;
+}
+
+/* 主列表：表头与数据行同高，收紧列间距 */
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header-wrapper th,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
+}
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body td.el-table__cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
+}
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__body td.el-table__cell > .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell > .cell,
+.app-container.outWarehouse-refundDepotAudit-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell > .cell {
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
 }
 
 /* 弹窗明细框：与到货验收 apply-modal-table-panel 一致（铺满、无左右圆角边框） */

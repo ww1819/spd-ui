@@ -111,36 +111,36 @@
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="入库单号" align="center" prop="billNo" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"/>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')"/>
-      <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable sortable>
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"/>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')"/>
+      <el-table-column label="金额" align="center" prop="totalAmount" width="110" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="90" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else-if="scope.row.billDate">{{ parseTime(scope.row.billDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="100" min-width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="90" show-overflow-tooltip resizable/>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
@@ -209,6 +209,7 @@
               icon="el-icon-document"
               @click="handleShowEntryChangeLog(scope.row)"
               v-hasPermi="['inWarehouse:apply:query']"
+              v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >变更记录</el-button>
           </span>
@@ -252,6 +253,7 @@ import {
   assertBillHasActiveEntriesForAudit,
   assertInboundBillEntriesHaveBatchAndExpiry,
   assertInboundBillEntriesUniqueBatchExpiry,
+  assertInboundBillEntryDatesValid,
   collectInboundNearExpiryWarnLines,
   confirmInboundNearExpiryWarn,
   resolveInboundRequireOptsFromWarehouse
@@ -341,6 +343,8 @@ export default {
       checkedStkIoBillEntry: [],
       detailSelectedRowMap: {},
       detailSummaryTick: 0,
+      submitLoading: false,
+      auditSubmitting: false,
       /** 明细表可键盘导航的列顺序：数量 → 批号 → 生产日期 → 有效期 → 备注 */
       detailEditCols: ['qty', 'batchNumber', 'beginTime', 'endTime', 'remark'],
       scanBarcodeInput: "",
@@ -428,9 +432,9 @@ export default {
     };
   },
   computed: {
-    /** 明细表高度：与到货验收弹窗一致 */
+    /** 明细表高度：撑满 table-wrapper，与到货验收一致 */
     detailTableHeight() {
-      return 'max(240px, calc(100vh - 360px))';
+      return '100%';
     },
     /** 列表全量总金额（后端合计） */
     listTotalAmtFormatted() {
@@ -853,7 +857,11 @@ export default {
         }
         const prop = column.property;
         if (!summaryLabelPlaced && (prop === 'index' || column.label === '序号')) {
-          sums[index] = '合计';
+          // 合计汉字黑色，数量/金额数字仍由页脚 CSS 使用 #2C569A
+          sums[index] = this.$createElement('span', {
+            class: 'apply-summary-label',
+            style: { color: '#303133', fontWeight: '600' }
+          }, '合计');
           summaryLabelPlaced = true;
           return;
         }
@@ -872,14 +880,13 @@ export default {
           }
           return;
         }
-        if (prop === 'unitPrice' || prop === 'amt') {
+        // 价格列不合计，仅数量 + 金额（与到货验收一致）
+        if (prop === 'amt') {
           const values = data.map(row => Number(row[prop]));
           if (!values.every(v => isNaN(v))) {
             const total = values.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            sums[index] = prop === 'unitPrice' ? this.formatPrice(total) : this.formatAmount(total);
-            if (prop === 'amt') {
-              this.form.totalAmount = this.toMoneyStorage(total);
-            }
+            sums[index] = this.formatAmount(total);
+            this.form.totalAmount = this.toMoneyStorage(total);
           }
         }
       });
@@ -1296,7 +1303,10 @@ export default {
             if (!cont) {
               return;
             }
-            return this.$modal.confirm('确定要审核"' + id + '"的数据项？').then(() => {
+            const billNo = (res.data && res.data.billNo) || (row && row.billNo) || id;
+            return this.$modal.confirm(
+              '确定审核选中的【' + billNo + '】待审核入库单？审核通过后单据生效，将更新库存。'
+            ).then(() => {
               return auditWarehouse({ id: id, auditBy: auditBy });
             }).then(() => {
               this.getList();
@@ -1316,8 +1326,10 @@ export default {
       }
       const ids = pending.map(r => r.id);
       const auditBy = this.$store.state.user.userId;
-      const skipTip = pending.length < rows.length ? "（已跳过" + (rows.length - pending.length) + "条已审核单据）" : "";
-      this.$modal.confirm('确定要审核选中的"' + pending.length + '"条待审核数据？' + skipTip).then(() => {
+      const billNos = pending.map(r => r.billNo || r.id).join('、');
+      this.$modal.confirm(
+        '确定审核选中的【' + billNos + '】待审核入库单？审核通过后单据生效，将更新库存。'
+      ).then(() => {
         const warnLines = [];
         const validatePromises = ids.map(id =>
           getInWarehouse(id).then(res => {
@@ -1387,6 +1399,9 @@ export default {
     },
     /** 提交按钮 */
     submitForm() {
+      if (this.submitLoading) {
+        return;
+      }
       this.$refs["form"].validate(valid => {
         if (!valid) {
           return;
@@ -1395,6 +1410,9 @@ export default {
           return;
         }
         const doSave = () => {
+          if (this.submitLoading) {
+            return;
+          }
           // 提交前规范化数量（去掉 "400." 等非法小数串）
           (this.stkIoBillEntryList || []).forEach((item) => {
             if (!item || item.qty == null || item.qty === '') return;
@@ -1412,17 +1430,14 @@ export default {
             }
           });
           this.form.totalAmount = this.toMoneyStorage(totalAmt);
-          if (this.form.id != null) {
-            updateWarehouse(this.form).then(() => {
-              this.$modal.msgSuccess("修改成功");
-              this.getList();
-            });
-          } else {
-            addWarehouse(this.form).then(() => {
-              this.$modal.msgSuccess("新增成功");
-              this.getList();
-            });
-          }
+          this.submitLoading = true;
+          const req = this.form.id != null ? updateWarehouse(this.form) : addWarehouse(this.form);
+          req.then(() => {
+            this.$modal.msgSuccess(this.form.id != null ? "修改成功" : "新增成功");
+            this.getList();
+          }).finally(() => {
+            this.submitLoading = false;
+          });
         };
         const whId = this.form.warehouseId;
         const loadOpts = whId
@@ -1469,6 +1484,87 @@ export default {
       })
     },
     /** 弹窗内打印：仅已审核单据 */
+    /** 弹窗内审核（保存后） */
+    handleModalAudit() {
+      if (this.submitLoading || this.auditSubmitting) {
+        return;
+      }
+      const id = this.form && this.form.id;
+      if (!id) {
+        this.$modal.msgWarning('请先保存后再审核');
+        return;
+      }
+      if (String(this.form.billStatus) === '2') {
+        this.$modal.msgWarning('该单据已审核，不能再次审核');
+        return;
+      }
+      const auditBy = this.$store.state.user.userId;
+      const loadRequireOpts = () => {
+        if (!this.form.warehouseId) {
+          return Promise.resolve(resolveInboundRequireOptsFromWarehouse(null));
+        }
+        return getWarehouse(this.form.warehouseId).then((res) => {
+          return resolveInboundRequireOptsFromWarehouse(res && res.data);
+        }).catch(() => resolveInboundRequireOptsFromWarehouse(null));
+      };
+      loadRequireOpts().then((requireOpts) => {
+        if (!assertInboundBillEntriesHaveBatchAndExpiry(this.stkIoBillEntryList, this, '审核', requireOpts)) {
+          return;
+        }
+        if (!assertInboundBillEntriesUniqueBatchExpiry(this.stkIoBillEntryList, this)) {
+          return;
+        }
+        if (!assertInboundBillEntryDatesValid(this.stkIoBillEntryList, this)) {
+          return;
+        }
+        getInWarehouse(id).then(res => {
+          if (!assertBillHasActiveEntriesForAudit(res.data.stkIoBillEntryList, this, '低值入库')) {
+            return;
+          }
+          if (!assertInboundBillEntriesHaveBatchAndExpiry(res.data.stkIoBillEntryList, this, '审核', requireOpts)) {
+            return;
+          }
+          if (!assertInboundBillEntriesUniqueBatchExpiry(res.data.stkIoBillEntryList, this)) {
+            return;
+          }
+          if (!assertInboundBillEntryDatesValid(res.data.stkIoBillEntryList, this)) {
+            return;
+          }
+          confirmInboundNearExpiryWarn(
+            this,
+            res.data.stkIoBillEntryList,
+            requireOpts && requireOpts.inboundExpiryWarnDays
+          ).then((cont) => {
+            if (!cont) {
+              return;
+            }
+            const billNo = res.data.billNo || this.form.billNo || id;
+            this.$modal.confirm(
+              '确定审核选中的【' + billNo + '】待审核入库单？审核通过后单据生效，将更新库存。'
+            ).then(() => {
+              this.auditSubmitting = true;
+              return auditWarehouse({ id: id, auditBy: auditBy });
+            }).then(() => {
+              this.$modal.msgSuccess('审核入库成功！');
+              this.getList();
+              return getInWarehouse(id);
+            }).then(response => {
+              this.form = response.data;
+              this.form.billStatus = '2';
+              this.form.billType = '101';
+              const entries = response.data.stkIoBillEntryList || [];
+              entries.forEach(r => this.initRowLongTermFlag(r));
+              this.stkIoBillEntryList = entries;
+              this.action = false;
+              this.title = '查看入库';
+              this.$nextTick(() => this.refreshDetailSummary());
+            }).catch(() => {}).finally(() => {
+              this.auditSubmitting = false;
+            });
+          });
+        }).catch(() => {});
+      });
+    },
     handleModalPrint() {
       if (!this.form || !this.form.id) {
         this.$modal.msgWarning('缺少单据信息，无法打印')
@@ -2070,36 +2166,65 @@ export default {
   margin-bottom: 0;
 }
 
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item{
-  margin-bottom: 0;
-}
-
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-input,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-select,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-date-editor{
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-form-row.apply-modal-row-third.el-row{
-  flex-wrap: nowrap;
-}
-
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-input,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-input-group,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-input,
-::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-input-group{
-  width: 100%;
-  max-width: 100%;
-}
-
-::v-deep .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
-::v-deep .apply-modal-row-third .detail-scan-form-item .el-form-item__label{
+/* 引用配送单 + 扫描条码：与到货验收同一行布局 */
+::v-deep .apply-modal-row-delivery-scan .delivery-ref-form-item .el-form-item__label,
+::v-deep .apply-modal-row-delivery-scan .detail-scan-form-item .el-form-item__label{
   white-space: nowrap;
 }
-
-::v-deep .apply-modal-row-third .delivery-ref-form-item .el-form-item__content,
-::v-deep .apply-modal-row-third .detail-scan-form-item .el-form-item__content{
+::v-deep .apply-modal-row-delivery-scan .delivery-ref-form-item .el-form-item__content,
+::v-deep .apply-modal-row-delivery-scan .detail-scan-form-item .el-form-item__content{
+  line-height: 32px;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--compact .el-form-item__content {
+  max-width: 162px;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--delivery-ref {
+  overflow: visible !important;
+  margin-right: 8px;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--delivery-ref .el-form-item,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .apply-modal-field--delivery-ref .el-form-item__content {
+  overflow: visible !important;
+  max-width: none !important;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group {
+  width: 230px !important;
+  max-width: 230px !important;
+  display: inline-flex !important;
+  box-sizing: border-box;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group > .el-input__inner {
+  width: 162px !important;
+  flex: 0 0 162px;
+  box-sizing: border-box;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .detail-scan-form-item .el-input,
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .scan-barcode-input {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group__append {
+  padding: 0;
+  flex: 1 1 auto;
+  min-width: 60px;
+  background: #f5f7fa;
+  border-color: #dcdfe6;
+  box-sizing: border-box;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input-group__append .el-button {
+  margin: 0;
+  width: 100%;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 8px;
+  line-height: 30px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #606266;
+}
+::v-deep .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-input--small .el-input__inner {
+  height: 32px;
   line-height: 32px;
 }
 
@@ -2219,11 +2344,18 @@ export default {
   max-width: 100%;
   box-sizing: border-box;
   padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: #f1f5f9;
 }
 
 ::v-deep .local-modal-content .apply-modal-table-panel .apply-detail-table{
   margin-bottom: 0 !important;
   box-shadow: none;
+  flex: 1;
+  min-height: 0;
+  height: 100% !important;
+  border-bottom: none !important;
 }
 
 /* 明细表可编辑列：与「数量」列同尺度（约 98px，small） */
@@ -2328,7 +2460,7 @@ export default {
 ::v-deep .local-modal-content .modal-detail-section .el-table ::v-deep .detail-date-begin .el-input__inner {
   padding-left: 6px !important;
   padding-right: 6px !important;
-  text-align: center;
+  text-align: left;
   letter-spacing: 0;
 }
 /* 有值时隐藏灰色占位符（勿改 font-size，避免日期显示异常） */
@@ -2527,7 +2659,7 @@ export default {
   line-height: 24px !important;
   box-sizing: border-box !important;
   background-color: #f1f5f9 !important;
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-top: 1px solid #e2e8f0 !important;
@@ -2535,11 +2667,15 @@ export default {
 }
 ::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
 ::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 24px !important;
   text-align: center !important;
+}
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell .apply-summary-label,
+::v-deep .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell .apply-summary-label {
+  color: #303133 !important;
 }
 ::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__footer-wrapper td,
 ::v-deep .local-modal-content .modal-detail-section .el-table:not(.apply-detail-table) .el-table__fixed-footer-wrapper td {
@@ -2875,7 +3011,7 @@ export default {
   line-height: 24px !important;
   box-sizing: border-box !important;
   background-color: #f1f5f9 !important;
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-top: 1px solid #e2e8f0 !important;
@@ -2884,11 +3020,15 @@ export default {
 
 ::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell .cell,
 ::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell .cell {
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 24px !important;
   text-align: center !important;
+}
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__footer-wrapper td.el-table__cell .cell .apply-summary-label,
+::v-deep .local-modal-content .modal-detail-section .el-table.apply-detail-table .el-table__fixed-footer-wrapper td.el-table__cell .cell .apply-summary-label {
+  color: #303133 !important;
 }
 
 /* 仅弹窗内按钮行，勿影响主列表 list-toolbar 与搜索区之间的留白 */
@@ -3020,7 +3160,26 @@ export default {
   font-weight: 600 !important;
   text-align: center !important;
   line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
   font-family: inherit !important;
+}
+
+/* 主列表数据行与表头同高 */
+.app-container.inWarehouse-audit-page .apply-main-table .el-table__body td.el-table__cell,
+.app-container.inWarehouse-audit-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell,
+.app-container.inWarehouse-audit-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
+}
+.app-container.inWarehouse-audit-page .apply-main-table .el-table__body td.el-table__cell > .cell,
+.app-container.inWarehouse-audit-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell > .cell,
+.app-container.inWarehouse-audit-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell > .cell {
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
 }
 
 .app-container.inWarehouse-audit-page .apply-main-table .sort-caret.ascending {
@@ -3312,27 +3471,17 @@ export default {
   z-index: 31 !important;
 }
 
-/* 弹窗表头：供应商/仓库/总金额标签红色，不显示 * 号 */
-.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
-  color: #f56c6c !important;
-}
-.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
-  content: none !important;
-  display: none !important;
-}
-
-/* 第三行宽字段：标签与输入同一行（配合 modal-form-compact 清零 margin-left） */
-.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item {
+/* 弹窗表头：inline-flex 保证「单据号/供应商…」提示词与输入框同一行可见（与到货验收一致） */
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item {
   margin-bottom: 0;
   white-space: nowrap;
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   vertical-align: top;
-  width: 100%;
 }
 
-.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__label {
-  float: none;
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__label {
+  float: none !important;
   width: auto !important;
   flex: 0 0 auto;
   text-align: left;
@@ -3340,18 +3489,29 @@ export default {
   line-height: 28px;
   height: 28px;
   font-size: 13px;
+  color: #606266;
+  overflow: visible !important;
+  white-space: nowrap;
 }
 
-.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .el-form-item__content {
-  flex: 1 1 auto;
-  min-width: 0;
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-form-row .el-form-item__content {
+  flex: 0 0 auto;
   margin-left: 0 !important;
   line-height: 28px;
 }
 
-.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .delivery-ref-form-item .el-form-item__label,
-.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-third .detail-scan-form-item .el-form-item__label {
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .delivery-ref-form-item .el-form-item__label,
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .apply-modal-row-delivery-scan .detail-scan-form-item .el-form-item__label {
   white-space: nowrap;
+}
+
+/* 弹窗表头：供应商/仓库/总金额标签红色，不显示 * 号 */
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
+  color: #f56c6c !important;
+}
+.app-container.inWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
+  content: none !important;
+  display: none !important;
 }
 
 /* 添加入库弹窗：有效期列单元格允许换行展示 */
@@ -3401,6 +3561,7 @@ export default {
   padding-left: 4px;
   padding-right: 4px;
   overflow: visible;
+  text-align: left !important;
 }
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table td.detail-col-begin-date .detail-date-begin .el-input__prefix,
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .el-table td.detail-col-begin-date .detail-date-begin .el-input__suffix {
@@ -3410,6 +3571,7 @@ export default {
   overflow: visible;
   text-overflow: clip;
   padding-right: 6px !important;
+  text-align: left !important;
 }
 
 /* 明细表合计行：与表头同高、同色 */
@@ -3433,7 +3595,7 @@ export default {
   line-height: 24px !important;
   box-sizing: border-box !important;
   background-color: #f1f5f9 !important;
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   border-top: 1px solid #e2e8f0 !important;
@@ -3443,11 +3605,15 @@ export default {
 }
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell,
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell {
-  color: #334155 !important;
+  color: #2C569A !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 24px !important;
   text-align: center !important;
+}
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell .apply-summary-label,
+.app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell .apply-summary-label {
+  color: #303133 !important;
 }
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper tr td:first-child,
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper tr td:first-child {
@@ -3738,7 +3904,7 @@ html body .app-container.inWarehouse-audit-page .apply-inbound-nested-modal .app
   overflow: visible;
 }
 
-/* 弹窗明细表头：与主列表一致 */
+/* 弹窗明细表头：与到货验收一致 */
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.el-table__cell,
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th,
@@ -3749,21 +3915,37 @@ html body .app-container.inWarehouse-audit-page .apply-inbound-nested-modal .app
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
+  letter-spacing: 0.02em;
   border-right-color: #e2e8f0 !important;
   border-bottom-color: #e2e8f0 !important;
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  height: 34px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 42px !important;
+  vertical-align: middle !important;
 }
 
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th .cell,
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-header-wrapper th .cell,
 .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th .cell {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   text-align: center !important;
+  height: 42px !important;
   line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+html body .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent,
+html body .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent.el-table__cell,
+html body .app-container.inWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent .cell {
+  color: #513AEF !important;
 }
 
 /* 单据状态列表头不换行 */

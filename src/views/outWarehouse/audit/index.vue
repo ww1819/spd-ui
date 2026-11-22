@@ -116,33 +116,33 @@
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" :selectable="selectableAuditRow" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="出库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="出库单号" align="center" prop="billNo" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="科室" align="center" prop="department.name" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
-      <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="科室" align="center" prop="department.name" width="110" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'department.name')" />
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="90" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span>{{ parseTime(scope.row.billDate, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')" />
-      <el-table-column label="金额" align="center" prop="totalAmount" show-overflow-tooltip resizable sortable>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="110" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')" />
+      <el-table-column label="金额" align="center" prop="totalAmount" width="110" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" class-name="col-bill-status" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="100" min-width="90" class-name="col-bill-status" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
-      <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="100" show-overflow-tooltip>
+      <el-table-column v-if="isZaoqiangTenant" label="HIS推送" align="center" width="90" show-overflow-tooltip>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.billStatus == 2" :type="msunPushTag(scope.row.hisPushStatus).type" size="mini">
             {{ msunPushTag(scope.row.hisPushStatus).label }}
@@ -151,25 +151,25 @@
         </template>
       </el-table-column>
 
-      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" show-overflow-tooltip resizable />
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="90" show-overflow-tooltip resizable />
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="打印状态" align="center" width="100" show-overflow-tooltip resizable>
+      <el-table-column label="打印状态" align="center" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <el-tag v-if="scope.row.printDate" type="success" size="small">已打印</el-tag>
           <el-tag v-else type="info" size="small">未打印</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="打印人" align="center" prop="printPerson" width="120" show-overflow-tooltip resizable>
+      <el-table-column label="打印人" align="center" prop="printPerson" width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span>{{ scope.row.printPerson || '--' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="打印日期" align="center" prop="printDate" width="180" show-overflow-tooltip resizable>
+      <el-table-column label="打印日期" align="center" prop="printDate" width="160" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <span v-if="scope.row.printDate">{{ parseTime(scope.row.printDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
@@ -218,8 +218,9 @@
               type="text"
               icon="el-icon-document"
               @click="handleShowEntryChangeLog(scope.row)"
-              style="padding: 0 5px; margin: 0;"
               v-hasPermi="['outWarehouse:apply:query']"
+              v-if="scope.row.billStatus == 2"
+              style="padding: 0 5px; margin: 0;"
             >变更记录</el-button>
             <el-button
               v-if="isZaoqiangTenant && scope.row.billStatus == 2"
@@ -713,35 +714,74 @@ export default {
         this.getList()
       }).catch(() => {})
     },
+    getSummariesWithRefresh(param) {
+      void this.detailSummaryTick;
+      return this.getSummaries(param);
+    },
+    refreshDetailSummary() {
+      this.detailSummaryTick++;
+      this.$nextTick(() => {
+        const t = this.$refs.stkIoBillEntry;
+        if (t && typeof t.doLayout === 'function') {
+          t.doLayout();
+        }
+      });
+    },
+    formatEntryStockQty(row) {
+      if (!row || row.stockQty == null || row.stockQty === '') {
+        return '--';
+      }
+      const n = Number(row.stockQty);
+      return Number.isFinite(n) ? n : row.stockQty;
+    },
     getSummaries(param) {
       const { columns, data } = param;
-      const sums = [];
+      const sums = columns.map(() => '');
+      const totalQty = (data || []).reduce((prev, item) => {
+        const value = Number(item && item.qty);
+        return !isNaN(value) ? prev + value : prev;
+      }, 0);
+      const totalAmt = (data || []).reduce((prev, item) => {
+        const value = Number(item && item.amt);
+        return !isNaN(value) ? prev + value : prev;
+      }, 0);
+      let summaryLabelPlaced = false;
+
       columns.forEach((column, index) => {
-        if (index === 0) {
-          sums[index] = '合计';
+        if (column.type === 'selection') {
+          sums[index] = '';
           return;
         }
         const prop = column.property;
-        if (prop === 'unitPrice' || prop === 'qty' || prop === 'amt') {
-          const values = data.map(item => Number(item[prop]));
-          if (!values.every(value => isNaN(value))) {
-            sums[index] = values.reduce((prev, curr) => {
-              const value = Number(curr);
-              if (!isNaN(value)) {
-                return prev + curr;
-              }
-              return prev;
-            }, 0);
-            sums[index] = this.formatAmount(sums[index]);
-          }
-          if (prop === 'amt') {
-            const res = parseFloat(sums[index]);
-            if (!isNaN(res)) {
-              this.form.totalAmount = this.toMoneyStorage(res);
-            }
-          }
+        if (!summaryLabelPlaced && (prop === 'index' || column.label === '序号')) {
+          sums[index] = this.$createElement('span', {
+            class: 'apply-summary-label',
+            style: { color: '#303133', fontWeight: '600' }
+          }, '合计');
+          summaryLabelPlaced = true;
+          return;
         }
+        // 价格列不合计，仅数量 + 金额；数字用 #F53F3F
+        if (prop === 'qty') {
+          sums[index] = this.$createElement('span', {
+            class: 'apply-summary-num',
+            style: { color: '#F53F3F', fontWeight: '600' }
+          }, this.formatQty(totalQty));
+          return;
+        }
+        if (prop === 'amt') {
+          sums[index] = this.$createElement('span', {
+            class: 'apply-summary-num',
+            style: { color: '#F53F3F', fontWeight: '600' }
+          }, this.formatAmount(totalAmt));
+          return;
+        }
+        sums[index] = '';
       });
+
+      if (!isNaN(totalAmt)) {
+        this.form.totalAmount = this.toMoneyStorage(totalAmt);
+      }
       return sums;
     },
     getTotalSummaries(param) {
@@ -1600,7 +1640,6 @@ export default {
   box-sizing: border-box;
 }
 
-.wh-apply-outbound-hint { margin: 4px 0 0; flex-shrink: 0; }
 .table-header-with-tip { cursor: help; }
 .table-header-with-tip .el-icon-question { margin-left: 2px; font-size: 12px; color: #909399; }
 .his-bill-status { margin: 0 8px; color: #606266; font-size: 13px; line-height: 32px; }
@@ -2800,7 +2839,26 @@ export default {
   font-weight: 600 !important;
   text-align: center !important;
   line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
   font-family: inherit !important;
+}
+
+/* 主列表：数据行与表头同高，收紧列间距 */
+.app-container.outWarehouse-audit-page .apply-main-table .el-table__body td.el-table__cell,
+.app-container.outWarehouse-audit-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell,
+.app-container.outWarehouse-audit-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
+}
+.app-container.outWarehouse-audit-page .apply-main-table .el-table__body td.el-table__cell > .cell,
+.app-container.outWarehouse-audit-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell > .cell,
+.app-container.outWarehouse-audit-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell > .cell {
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
 }
 
 .app-container.outWarehouse-audit-page .apply-main-table .sort-caret.ascending {
@@ -3041,6 +3099,8 @@ export default {
 
 .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
   padding: 4px 0 !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
 }
 .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .el-table tbody td {
   vertical-align: middle;
@@ -3048,10 +3108,10 @@ export default {
 .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell > .cell {
   padding-left: 6px !important;
   padding-right: 6px !important;
-  line-height: 1.35;
+  line-height: 20px !important;
 }
 .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .el-table thead th.el-table__cell {
-  padding: 6px 0 !important;
+  padding: 4px 0 !important;
 }
 
 .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th,
@@ -3108,41 +3168,65 @@ export default {
   line-height: 28px;
 }
 
-.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label {
-  color: #f56c6c !important;
+/* 仓库/科室/总金额：标签黑色；框内显示值 #F53F3F（与出库申请一致） */
+.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required .el-form-item__label,
+.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
+  color: #303133 !important;
 }
 .app-container.outWarehouse-audit-page .local-modal-content .apply-modal-query-panel .el-form-item.apply-modal-label-required.is-required .el-form-item__label::before {
   content: none !important;
   display: none !important;
 }
-/* 总金额：标签与数值红色 */
-.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-header-amount .el-form-item__label {
-  color: #f56c6c !important;
+.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-field-value-accent .el-input__inner,
+.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-field-value-accent .el-input.is-disabled .el-input__inner,
+.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-field-value-accent .el-select .el-input__inner,
+.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-field-value-accent .el-select .el-input.is-disabled .el-input__inner {
+  color: #F53F3F !important;
+  font-weight: 600;
+  -webkit-text-fill-color: #F53F3F !important;
 }
 
-/* 明细操作列表头强制显示「操作」 */
-.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.detail-action-col .cell,
-.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.detail-action-col .cell,
-.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-action-col .cell {
+/* 明细表操作列 sticky 右侧：表头「操作」正常显示 */
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table th.apply-action-col,
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table td.apply-action-col {
+  position: sticky !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table td.apply-action-col {
+  right: 0 !important;
+  background-color: #fff !important;
+  border-left: 1px solid #e2e8f0;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table th.apply-action-col {
+  right: 0 !important;
+  z-index: 5;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
   color: #334155 !important;
-  font-size: 13px !important;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table th.apply-action-col .cell {
+  color: #334155 !important;
   font-weight: 600 !important;
+  text-align: center !important;
   visibility: visible !important;
   opacity: 1 !important;
-  text-align: center !important;
 }
-.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-right-header-wrapper th.detail-action-col .cell:empty::before,
-.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__header-wrapper th.detail-action-col .cell:empty::before,
-.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-action-col .cell:empty::before {
-  content: '操作';
-  color: #334155;
-  font-size: 13px;
-  font-weight: 600;
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table .el-table__footer-wrapper td.apply-action-col {
+  position: sticky !important;
+  right: 0 !important;
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+  border-left: 1px solid #e2e8f0;
 }
-.app-container.outWarehouse-audit-page .local-modal-content .apply-modal-header-amount .el-input__inner {
-  color: #f56c6c !important;
-  font-weight: 600;
-  -webkit-text-fill-color: #f56c6c !important;
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table .el-table__body tr:hover > td.apply-action-col {
+  background-color: #D6EBFF !important;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected > td.apply-action-col {
+  background-color: #B8DAFF !important;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table .el-table__body tr.apply-row-selected:hover > td.apply-action-col {
+  background-color: #A0CBFF !important;
 }
 .app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table .el-table__body tr > td,
 .app-container.outWarehouse-audit-page .local-modal-content .apply-detail-table .el-table__body tr > td .cell {
@@ -3246,6 +3330,44 @@ export default {
   background-color: #f1f5f9 !important;
   color: #334155 !important;
   font-weight: 600 !important;
+}
+/* 明细合计：数量/金额数字 #F53F3F；「合计」汉字深色 */
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell .apply-summary-num,
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell .apply-summary-num {
+  color: #F53F3F !important;
+  font-weight: 600 !important;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__footer-wrapper td .cell .apply-summary-label,
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .el-table__fixed-footer-wrapper td .cell .apply-summary-label {
+  color: #303133 !important;
+  font-weight: 600 !important;
+}
+
+/* 数量/金额/价格 表头强调色 */
+html body .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent,
+html body .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent.el-table__cell,
+html body .app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table th.detail-th-accent .cell {
+  color: #513AEF !important;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .detail-qty-input-center .el-input__inner {
+  text-align: center !important;
+}
+
+/* 批号/生产日期/有效期：纯文本白底 */
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table td.detail-col-plain-text,
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table td.detail-col-plain-text .cell {
+  background-color: #fff !important;
+}
+.app-container.outWarehouse-audit-page .local-modal-content .modal-detail-section .apply-detail-table .detail-plain-text {
+  display: inline-block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #606266;
+  line-height: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .json-viewer-pre {

@@ -165,26 +165,27 @@
                 class="spd-btn spd-btn--primary"
                 icon="el-icon-check"
                 :loading="submitLoading"
-                :disabled="submitLoading"
+                :disabled="submitLoading || auditSubmitting"
                 @click="submitForm"
               >保 存</el-button>
               <el-button
-                v-if="isZqTenant"
                 type="primary"
                 size="small"
-                :disabled="!form.id || String(form.billStatus) === '2'"
+                class="spd-btn spd-btn--primary"
+                icon="el-icon-s-check"
+                :loading="auditSubmitting"
+                :disabled="!form.id || String(form.billStatus) === '2' || submitLoading || auditSubmitting"
                 @click="handleModalAudit"
                 v-hasPermi="['inWarehouse:apply:audit']"
-              >审核</el-button>
+              >审 核</el-button>
             </template>
-            <!-- 枣强：审核完成后可打印（审核后 action=false，故放在 action 模板外） -->
+            <!-- 审核完成后可打印（审核后 action=false，故放在 action 模板外） -->
             <el-button
-              v-if="isZqTenant"
               type="primary"
               size="small"
               class="spd-btn spd-btn--secondary"
               icon="el-icon-printer"
-              :disabled="!form.id || String(form.billStatus) !== '2'"
+              :disabled="!form.id || String(form.billStatus) !== '2' || submitLoading || auditSubmitting"
               @click="handleModalPrint"
             >打印</el-button>
           </div>

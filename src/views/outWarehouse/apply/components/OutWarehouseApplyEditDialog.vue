@@ -18,12 +18,12 @@
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
-            <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required">
+            <el-form-item label="仓库" prop="warehouseId" class="apply-modal-label-required apply-modal-field-value-accent">
               <SelectWarehouse v-model="form.warehouseId" :value2="stkIoBillEntryList.length > 0" :excludeWarehouseType="['高值', '设备']" placeholder="仓库"/>
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
-            <el-form-item label="科室" prop="departmentId" class="apply-modal-label-required">
+            <el-form-item label="科室" prop="departmentId" class="apply-modal-label-required apply-modal-field-value-accent">
               <SelectDepartment
                 ref="formDepartmentSelect"
                 v-model="form.departmentId"
@@ -33,7 +33,7 @@
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
-            <el-form-item label="总金额" prop="totalAmount" class="apply-modal-header-amount">
+            <el-form-item label="总金额" prop="totalAmount" class="apply-modal-header-amount apply-modal-field-value-accent">
               <el-input :value="formatAmount(form.totalAmount)" :disabled="true" placeholder="总金额" />
             </el-form-item>
           </el-col>
@@ -56,7 +56,23 @@
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--compact">
             <el-form-item label="领用人" prop="recipientName">
-              <el-input v-model="form.recipientName" :disabled="true" placeholder="领用人" />
+              <el-select
+                v-model="form.recipientName"
+                filterable
+                clearable
+                :filter-method="filterRecipientUser"
+                :disabled="!action || String(form.billStatus) === '2'"
+                placeholder="领用人"
+                @visible-change="onRecipientSelectVisible"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in recipientUserOptions"
+                  :key="item.userId"
+                  :label="item.nickName || item.userName"
+                  :value="item.nickName || item.userName"
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col class="apply-modal-field apply-modal-field--standard">
@@ -77,19 +93,35 @@
         </el-row>
         </div>
 
-        <el-alert
-          v-if="form.whWarehouseApplyId"
-          type="warning"
-          :closable="false"
-          show-icon
-          class="wh-apply-outbound-hint"
-          title="引用库房申请单出库：「可引用」列为申请数扣减明细作废与其它出库单已占用后的参考值；保存与审核不再强制要求出库数量不得超过该参考值。"
-        />
-
         <el-row :gutter="0" class="list-toolbar apply-modal-toolbar">
           <div class="list-toolbar-left">
             <span class="apply-modal-detail-title">出库明细信息</span>
             <template v-if="action">
+              <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="nameBtn">添加</el-button>
+              <el-button type="danger" size="small" icon="el-icon-delete" class="spd-btn spd-btn--danger" @click="handleDeleteStkIoBillEntry">删除</el-button>
+              <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
+              <el-button
+                type="primary"
+                size="small"
+                class="spd-btn spd-btn--primary"
+                icon="el-icon-s-check"
+                :disabled="!form.id || String(form.billStatus) === '2'"
+                @click="handleModalAudit"
+                v-hasPermi="['outWarehouse:apply:audit']"
+              >审 核</el-button>
+            </template>
+            <el-button
+              type="primary"
+              size="small"
+              class="spd-btn spd-btn--secondary"
+              icon="el-icon-printer"
+              :disabled="!form.id || String(form.billStatus) !== '2'"
+              @click="handleModalPrint"
+            >打印</el-button>
+            <template v-if="action">
+              <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refDeptApply">引用仓库申请单</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refDepPurchaseApply">引用科室申购单</el-button>
+              <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refRkApply">引用入库单</el-button>
               <el-button
                 v-if="form.id"
                 type="warning"
@@ -100,31 +132,7 @@
                 @click="handleExportDetailPickList"
                 v-hasPermi="['outWarehouse:apply:export']"
               >导出拣货单</el-button>
-              <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" @click="nameBtn">添加</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refDeptApply">引用仓库申请单</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refDepPurchaseApply">引用科室申购单</el-button>
-              <el-button size="small" class="spd-btn spd-btn--secondary" icon="el-icon-ref" :disabled="stkIoBillEntryList.length > 0" @click="refRkApply">引用入库单</el-button>
-              <el-button type="danger" size="small" icon="el-icon-delete" @click="handleDeleteStkIoBillEntry">删除</el-button>
-              <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
-              <el-button
-                v-if="isZqTenant"
-                type="primary"
-                size="small"
-                class="spd-btn spd-btn--primary"
-                :disabled="!form.id || String(form.billStatus) === '2'"
-                @click="handleModalAudit"
-                v-hasPermi="['outWarehouse:apply:audit']"
-              >审核</el-button>
             </template>
-            <!-- 审核完成后显示打印（全局；放在审核按钮后） -->
-            <el-button
-              v-if="form.id && String(form.billStatus) === '2'"
-              type="primary"
-              size="small"
-              class="spd-btn spd-btn--secondary"
-              icon="el-icon-printer"
-              @click="handleModalPrint"
-            >打印</el-button>
           </div>
         </el-row>
 
@@ -134,13 +142,14 @@
                   class="apply-detail-table"
                   show-summary :summary-method="getSummariesWithRefresh"
                   @selection-change="handleStkIoBillEntrySelectionChange"
+                  @row-dblclick="handleDetailRowDblclick"
                   ref="stkIoBillEntry"
                   border
                   :height="detailTableHeight"
         >
-          <el-table-column type="selection" width="60" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" />
-          <el-table-column label="序号" align="center" prop="index" width="80" min-width="80" show-overflow-tooltip resizable sortable/>
-          <el-table-column label="产品编码" align="center" width="120" show-overflow-tooltip resizable>
+          <el-table-column type="selection" width="55" align="center" class-name="apply-select-col" header-cell-class-name="apply-select-col" />
+          <el-table-column label="序号" align="center" prop="index" width="56" show-overflow-tooltip class-name="apply-index-col" header-cell-class-name="apply-index-col" />
+          <el-table-column label="产品编码" align="center" width="110" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ (scope.row.material && scope.row.material.code) || '—' }}</span>
             </template>
@@ -149,8 +158,8 @@
             label="产品名称"
             align="left"
             header-align="center"
-            width="180"
-            min-width="140"
+            width="150"
+            min-width="120"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -167,8 +176,8 @@
             label="规格"
             align="left"
             header-align="center"
-            width="130"
-            min-width="110"
+            width="110"
+            min-width="90"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -185,8 +194,8 @@
             label="型号"
             align="left"
             header-align="center"
-            width="130"
-            min-width="110"
+            width="100"
+            min-width="80"
             :show-overflow-tooltip="false"
             class-name="detail-col-text-wrap"
             resizable
@@ -199,13 +208,8 @@
               >{{ (scope.row.material && scope.row.material.model) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="70" min-width="56" show-overflow-tooltip resizable/>
-          <el-table-column label="价格" prop="unitPrice" width="100" align="right" header-align="center" show-overflow-tooltip resizable sortable>
-            <template slot-scope="scope">
-              <span>{{ scope.row.unitPrice | formatPrice }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="数量" prop="qty" width="110" min-width="100" align="center" show-overflow-tooltip resizable sortable class-name="detail-col-fluid-input">
+          <el-table-column label="单位" align="center" prop="material.fdUnit.unitName" width="56" show-overflow-tooltip />
+          <el-table-column label="数量" prop="qty" width="90" align="center" header-align="center" show-overflow-tooltip resizable sortable class-name="detail-col-fluid-input" label-class-name="detail-th-accent">
             <template slot-scope="scope">
               <div class="detail-cell-edit-wrap detail-cell-fluid-wrap">
                 <el-input
@@ -213,7 +217,7 @@
                   v-model="scope.row.qty"
                   placeholder="数量"
                   size="small"
-                  class="detail-cell-fluid-input"
+                  class="detail-cell-fluid-input detail-qty-input-center"
                   style="width: 100%"
                   onkeyup="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
                   onafterpaste="value=(String(value).match(/^-?\d*\.?\d{0,3}/)||[''])[0]"
@@ -223,67 +227,54 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="库存数量" prop="stockQty" width="100" min-width="96" align="center" show-overflow-tooltip resizable sortable>
+          <el-table-column label="价格" prop="unitPrice" width="90" align="center" header-align="center" show-overflow-tooltip resizable sortable label-class-name="detail-th-accent">
+            <template slot-scope="scope">
+              <span>{{ scope.row.unitPrice | formatPrice }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="库存数量" prop="stockQty" width="90" align="center" show-overflow-tooltip resizable>
             <template slot-scope="scope">
               <span>{{ formatEntryStockQty(scope.row) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="金额" prop="amt" width="110" align="right" header-align="center" show-overflow-tooltip resizable sortable>
+          <el-table-column label="金额" prop="amt" width="90" align="center" header-align="center" show-overflow-tooltip resizable sortable label-class-name="detail-th-accent">
             <template slot-scope="scope">
               <span>{{ scope.row.amt | formatAmount }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="批号" prop="batchNumber" width="140" min-width="120" show-overflow-tooltip resizable sortable class-name="detail-col-fluid-input detail-col-batch">
+          <el-table-column label="批号" prop="batchNumber" width="110" min-width="90" align="center" show-overflow-tooltip resizable sortable class-name="detail-col-batch detail-col-plain-text">
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap detail-batch-wrap detail-cell-fluid-wrap">
-                <el-input
-                  v-model="scope.row.batchNumber"
-                  :disabled="true"
-                  placeholder="批号"
-                  size="small"
-                  class="detail-cell-fluid-input detail-batch-input"
-                  style="width: 100%"
-                />
-              </div>
+              <span class="detail-plain-text" :title="scope.row.batchNumber || ''">{{ scope.row.batchNumber || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="生产日期" prop="beginTime" width="150" min-width="140" show-overflow-tooltip resizable sortable class-name="detail-col-fluid-input detail-col-begin-date">
+          <el-table-column label="生产日期" prop="beginTime" width="108" align="center" show-overflow-tooltip resizable sortable class-name="detail-col-begin-date detail-col-plain-text">
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap detail-begin-date-wrap detail-cell-fluid-wrap">
-                <el-date-picker
-                  clearable
-                  v-model="scope.row.beginTime"
-                  type="date"
-                  :disabled="true"
-                  value-format="yyyy-MM-dd"
-                  placeholder="请选择生产日期"
-                  size="small"
-                  class="detail-cell-fluid-input detail-date-begin"
-                  style="width: 100%"
-                />
-              </div>
+              <span class="detail-plain-text" :title="scope.row.beginTime || ''">{{ scope.row.beginTime || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="有效期" prop="endTime" width="150" min-width="140" show-overflow-tooltip resizable sortable class-name="detail-col-fluid-input detail-col-date">
+          <el-table-column label="有效期" prop="endTime" width="108" align="center" show-overflow-tooltip resizable sortable class-name="detail-col-date detail-col-plain-text">
             <template slot-scope="scope">
-              <div class="detail-cell-edit-wrap detail-cell-fluid-wrap">
-                <el-date-picker
-                  clearable
-                  v-model="scope.row.endTime"
-                  type="date"
-                  :disabled="true"
-                  value-format="yyyy-MM-dd"
-                  placeholder="请选择有效期"
-                  size="small"
-                  class="detail-cell-fluid-input detail-date-expiry"
-                  style="width: 100%"
-                />
-              </div>
+              <span class="detail-plain-text" :title="scope.row.endTime || ''">{{ scope.row.endTime || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.packageSpeci) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="生产厂家" align="left" header-align="center" width="140" min-width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdFactory && scope.row.material.fdFactory.factoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="供应商" align="left" header-align="center" width="140" min-width="120" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="批次号" prop="batchNo" width="160" min-width="140" show-overflow-tooltip resizable sortable>
             <template slot-scope="scope">
-              <span class="batch-no-text" :title="scope.row.batchNo || ''">{{ scope.row.batchNo }}</span>
+              <span class="batch-no-text" :title="scope.row.batchNo || ''">{{ scope.row.batchNo || '--' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="已引用" prop="srcRefedQty" width="72" align="center" show-overflow-tooltip resizable>
@@ -304,7 +295,27 @@
               <span>{{ scope.row.srcRefableQty != null ? scope.row.srcRefableQty : '—' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="备注" prop="remark" width="140" min-width="120" show-overflow-tooltip resizable sortable class-name="detail-col-fluid-input">
+          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="140" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.registerNo) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="110" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdWarehouseCategory && scope.row.material.fdWarehouseCategory.warehouseCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="110" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <span>{{ (scope.row.material && scope.row.material.fdFinanceCategory && scope.row.material.fdFinanceCategory.financeCategoryName) || '--' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
+            <template slot-scope="scope">
+              <dict-tag :options="dict.type.way_status" :value="scope.row.material && scope.row.material.isWay"/>
+            </template>
+          </el-table-column>
+          <el-table-column label="备注" prop="remark" width="120" min-width="100" show-overflow-tooltip resizable sortable class-name="detail-col-fluid-input">
             <template slot-scope="scope">
               <div class="detail-cell-edit-wrap detail-cell-fluid-wrap">
                 <el-input
@@ -317,25 +328,16 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="供应商" align="center" prop="material.supplier.name" width="160" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <span>{{ (scope.row.material && scope.row.material.supplier && scope.row.material.supplier.name) || '--' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="注册证号" align="center" prop="material.registerNo" width="160" show-overflow-tooltip resizable/>
-          <el-table-column label="包装规格" align="center" prop="material.packageSpeci" width="140" show-overflow-tooltip resizable/>
-          <el-table-column label="生产厂家" align="center" prop="material.fdFactory.factoryName" width="160" show-overflow-tooltip resizable/>
-          <el-table-column label="库房分类" align="center" prop="material.fdWarehouseCategory.warehouseCategoryName" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="财务分类" align="center" prop="material.fdFinanceCategory.financeCategoryName" width="120" show-overflow-tooltip resizable/>
-          <el-table-column label="储存方式" align="center" prop="material.isWay" width="100" show-overflow-tooltip resizable>
-            <template slot-scope="scope">
-              <dict-tag :options="dict.type.way_status" :value="scope.row.material.isWay"/>
-            </template>
-          </el-table-column>
-          <el-table-column v-if="action" label="操作" width="188" align="center" header-align="center" fixed="right" resizable class-name="detail-action-col" header-cell-class-name="detail-action-col">
-            <template slot="header">
-              <span>操作</span>
-            </template>
+          <el-table-column
+            v-if="action"
+            label="操作"
+            width="188"
+            align="center"
+            header-align="center"
+            resizable
+            class-name="apply-action-col small-padding fixed-width"
+            header-cell-class-name="apply-action-col"
+          >
             <template slot-scope="scope">
               <el-button type="text" size="small" @click="copyOutEntryRow(scope.$index)">复制</el-button>
               <el-button type="text" size="small" style="color:#f56c6c" @click="deleteOutEntryRow(scope.$index)">删除</el-button>
@@ -379,12 +381,74 @@ import SelectDepartment from '@/components/SelectModel/SelectDepartment'
 import SelectUser from '@/components/SelectModel/SelectUser'
 import SelectDApply from '@/components/SelectModel/SelectDApply'
 import SelectDepPurchaseApply from '@/components/SelectModel/SelectDepPurchaseApply'
+import { listUserAll } from '@/api/system/user'
+import { pinyin } from 'pinyin-pro'
 
 export default {
   name: 'OutWarehouseApplyEditDialog',
   dicts: ['way_status'],
   mixins: [createHostProxyMixin(vm => vm.$options && vm.$options.name === 'Apply' && vm.rkOutDeptDialogVisible !== undefined)],
   components: { SelectWarehouse, SelectDepartment, SelectUser, SelectDApply, SelectDepPurchaseApply },
-  inheritAttrs: false
+  inheritAttrs: false,
+  data() {
+    return {
+      allRecipientUsers: [],
+      recipientUserOptions: []
+    }
+  },
+  created() {
+    this.loadRecipientUsers()
+  },
+  methods: {
+    loadRecipientUsers() {
+      listUserAll().then(response => {
+        this.allRecipientUsers = Array.isArray(response) ? response : []
+        this.recipientUserOptions = this.allRecipientUsers
+      }).catch(() => {
+        this.allRecipientUsers = []
+        this.recipientUserOptions = []
+      })
+    },
+    onRecipientSelectVisible(visible) {
+      if (visible) {
+        this.recipientUserOptions = this.allRecipientUsers
+      }
+    },
+    /** 姓名/账号/简码/拼音首字母模糊（不区分大小写） */
+    filterRecipientUser(query) {
+      if (!query) {
+        this.recipientUserOptions = this.allRecipientUsers
+        return
+      }
+      const q = String(query).trim()
+      const qUpper = q.toUpperCase()
+      this.recipientUserOptions = this.allRecipientUsers.filter(item => {
+        const name = (item && (item.nickName || item.userName)) || ''
+        if (!name && !(item && item.userName)) return false
+        const nameUpper = name.toUpperCase()
+        const userName = String((item && item.userName) || '').toUpperCase()
+        const referred = String((item && item.referredName) || '').toUpperCase()
+        if (
+          name.includes(q) ||
+          nameUpper.includes(qUpper) ||
+          userName.includes(qUpper) ||
+          referred.includes(qUpper)
+        ) {
+          return true
+        }
+        if (/^[a-zA-Z]+$/.test(q)) {
+          try {
+            const initials = pinyin(name, {
+              pattern: 'first',
+              toneType: 'none',
+              type: 'array'
+            }).join('').toUpperCase()
+            if (initials.includes(qUpper)) return true
+          } catch (e) { /* ignore */ }
+        }
+        return false
+      })
+    }
+  }
 }
 </script>

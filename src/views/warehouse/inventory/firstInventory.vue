@@ -190,13 +190,13 @@
       border
       stripe
     >
-      <el-table-column type="selection" width="55" align="center" header-align="center" class-name="inv-select-col col-serial-center"/>
+      <el-table-column type="selection" width="48" align="center" header-align="center" class-name="inv-select-col col-serial-center"/>
       <template v-for="item in tableColumnItems">
         <el-table-column
           v-if="item.type === 'col' && Number(item.col.key) === 0"
           :key="'tc-' + tableColumnEpoch + '-0'"
           label="序号"
-          class-name="col-serial-center"
+          class-name="inv-index-col col-serial-center"
           show-overflow-tooltip
           resizable
           :sortable="!!item.col.sortable"
@@ -316,6 +316,7 @@
           :key="'tc-' + tableColumnEpoch + '-8'"
           label="单价"
           prop="unitPrice"
+          label-class-name="col-header-accent"
           show-overflow-tooltip
           resizable
           :sortable="!!item.col.sortable"
@@ -333,6 +334,7 @@
           v-else-if="item.type === 'col' && Number(item.col.key) === 9"
           :key="'tc-' + tableColumnEpoch + '-9'"
           label="单位"
+          label-class-name="col-header-accent"
           show-overflow-tooltip
           resizable
           :sortable="!!item.col.sortable"
@@ -349,6 +351,7 @@
           :key="'tc-' + tableColumnEpoch + '-10'"
           label="库存数量"
           prop="qty"
+          label-class-name="col-header-accent"
           show-overflow-tooltip
           resizable
           :sortable="!!item.col.sortable"
@@ -362,6 +365,7 @@
           :key="'tc-' + tableColumnEpoch + '-11'"
           label="金额"
           prop="amt"
+          label-class-name="col-header-accent"
           show-overflow-tooltip
           resizable
           :sortable="!!item.col.sortable"
@@ -391,10 +395,59 @@
           </template>
         </el-table-column>
         <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 29"
+          :key="'tc-' + tableColumnEpoch + '-29'"
+          label="阳光平台编码"
+          prop="material.sunshineCode"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.sunshineCode) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 30"
+          :key="'tc-' + tableColumnEpoch + '-30'"
+          label="医保名称"
+          prop="material.medicalName"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'left'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.medicalName) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 31"
+          :key="'tc-' + tableColumnEpoch + '-31'"
+          label="医保编码"
+          prop="material.medicalNo"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span>{{ (scope.row.material && scope.row.material.medicalNo) || '--' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
           v-else-if="item.type === 'col' && Number(item.col.key) === 13"
           :key="'tc-' + tableColumnEpoch + '-13'"
           label="批号"
           prop="materialNo"
+          label-class-name="col-header-accent"
           show-overflow-tooltip
           resizable
           :sortable="!!item.col.sortable"
@@ -502,15 +555,17 @@
           :width="item.col.width"
         >
           <template slot-scope="scope">
-            <span v-if="scope.row.material && (scope.row.material.isBilling === '1' || scope.row.material.isBilling === 1 || scope.row.material.isBilling === true || scope.row.material.isBilling === 'true')">是</span>
-            <span v-else-if="scope.row.material && (scope.row.material.isBilling === '0' || scope.row.material.isBilling === 0 || scope.row.material.isBilling === '2' || scope.row.material.isBilling === false || scope.row.material.isBilling === 'false')">否</span>
-            <span v-else>--</span>
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.material && scope.row.material.isBilling) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.material && scope.row.material.isBilling) ? '是' : '否' }}</span>
           </template>
         </el-table-column>
         <el-table-column
-          v-else-if="item.type === 'col' && Number(item.col.key) === 24"
-          :key="'tc-' + tableColumnEpoch + '-24'"
-          label="产品档案状态"
+          v-else-if="item.type === 'col' && Number(item.col.key) === 25"
+          :key="'tc-' + tableColumnEpoch + '-25'"
+          label="集采"
+          prop="material.isProcure"
           show-overflow-tooltip
           resizable
           :sortable="!!item.col.sortable"
@@ -519,7 +574,86 @@
           :width="item.col.width"
         >
           <template slot-scope="scope">
-            <span>{{ materialUseDictLabel(scope.row.material && scope.row.material.isUse) }}</span>
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.material && scope.row.material.isProcure) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 26"
+          :key="'tc-' + tableColumnEpoch + '-26'"
+          label="临采"
+          prop="material.isTemporaryPurchase"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.material && scope.row.material.isTemporaryPurchase) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.material && scope.row.material.isTemporaryPurchase) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 27"
+          :key="'tc-' + tableColumnEpoch + '-27'"
+          label="阳采"
+          prop="material.isSunshineProcurement"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.material && scope.row.material.isSunshineProcurement) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.material && scope.row.material.isSunshineProcurement) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 28"
+          :key="'tc-' + tableColumnEpoch + '-28'"
+          label="重点监控"
+          prop="material.isMonitor"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.material && scope.row.material.isMonitor) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.material && scope.row.material.isMonitor) ? '是' : '否' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          v-else-if="item.type === 'col' && Number(item.col.key) === 24"
+          :key="'tc-' + tableColumnEpoch + '-24'"
+          label="启用"
+          prop="material.isUse"
+          show-overflow-tooltip
+          resizable
+          :sortable="!!item.col.sortable"
+          :align="item.col.align || 'center'"
+          header-align="center"
+          :width="item.col.width"
+        >
+          <template slot-scope="scope">
+            <span
+              class="material-yn-btn"
+              :class="isMaterialYesValue(scope.row.material && scope.row.material.isUse) ? 'material-yn-btn--yes' : 'material-yn-btn--no'"
+            >{{ isMaterialYesValue(scope.row.material && scope.row.material.isUse) ? '是' : '否' }}</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -632,7 +766,7 @@
 
     <div class="pagination-wrapper">
       <div class="pagination-summary">
-        <span class="summary-label">合计：</span>总数量: {{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}，总金额: {{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}，当前页数量: {{ pageTotalQty }}，当前页金额: {{ pageTotalAmtFormatted }}
+        <span class="summary-label">合计：</span>总数量: <span class="summary-num">{{ totalInfo.totalQty != null ? totalInfo.totalQty : 0 }}</span>，总金额: <span class="summary-num">{{ (totalInfo.totalAmt != null ? totalInfo.totalAmt : 0) | formatCurrency }}</span>，当前页数量: <span class="summary-num">{{ pageTotalQty }}</span>，当前页金额: <span class="summary-num">{{ pageTotalAmtFormatted }}</span>
       </div>
       <div class="pagination-container">
         <pagination
@@ -658,38 +792,66 @@ import RightToolbar from "@/components/RightToolbar";
 import hisChargeItemTableColumnsMixin from "@/mixins/hisChargeItemTableColumns";
 import { listWarehouse } from "@/api/foundation/warehouse";
 
+/** 系统默认列宽/对齐/排序（与列设置「初始化」一致；间距以当前业务调优值为准） */
 function createDefaultInventoryColumns() {
   return [
-    { key: 0, label: '序号', visible: true, width: 80, align: 'center', sortable: false },
-    { key: 1, label: '产品编码', visible: true, width: 150, align: 'center', sortable: true },
-    { key: 2, label: '产品名称', visible: true, width: 160, align: 'center', sortable: true },
-    { key: 3, label: '规格', visible: true, width: 120, align: 'center', sortable: true },
-    { key: 4, label: '型号', visible: true, width: 120, align: 'center', sortable: true },
-    { key: 5, label: '生产厂家', visible: true, width: 150, align: 'center', sortable: true },
-    { key: 6, label: '仓库', visible: true, width: 120, align: 'center', sortable: true },
-    { key: 7, label: '供应商', visible: true, width: 160, align: 'center', sortable: true },
-    { key: 8, label: '单价', visible: true, width: 120, align: 'center', sortable: true },
-    { key: 9, label: '单位', visible: true, width: 80, align: 'center', sortable: false },
-    { key: 10, label: '库存数量', visible: true, width: 120, align: 'center', sortable: false },
-    { key: 11, label: '金额', visible: true, width: 120, align: 'center', sortable: true },
-    { key: 12, label: '入库批次号', visible: true, width: 220, align: 'center', sortable: false },
-    { key: 13, label: '批号', visible: true, width: 120, align: 'center', sortable: false },
-    { key: 14, label: '生产日期', visible: true, width: 160, align: 'center', sortable: false },
-    { key: 15, label: '有效期', visible: true, width: 160, align: 'center', sortable: false },
-    { key: 16, label: '注册证号', visible: true, width: 180, align: 'center', sortable: false },
-    { key: 17, label: '注册证有效期', visible: true, width: 180, align: 'center', sortable: false },
-    { key: 18, label: '计费', visible: true, width: 80, align: 'center', sortable: false },
-    { key: 19, label: '入库单号', visible: true, width: 180, align: 'center', sortable: false },
-    { key: 20, label: '制单日期', visible: true, width: 160, align: 'center', sortable: false },
-    { key: 21, label: '制单人', visible: true, width: 120, align: 'center', sortable: false },
-    { key: 22, label: '审核日期', visible: true, width: 160, align: 'center', sortable: false },
-    { key: 23, label: '审核人', visible: true, width: 120, align: 'center', sortable: false },
-    { key: 24, label: '产品档案状态', visible: true, width: 110, align: 'center', sortable: false }
+    { key: 0, label: '序号', visible: true, width: 58, align: 'center', sortable: false },
+    { key: 1, label: '产品编码', visible: true, width: 105, align: 'left', sortable: true },
+    { key: 2, label: '产品名称', visible: true, width: 150, align: 'left', sortable: true },
+    { key: 3, label: '规格', visible: true, width: 140, align: 'left', sortable: true },
+    { key: 4, label: '型号', visible: true, width: 90, align: 'center', sortable: true },
+    { key: 5, label: '生产厂家', visible: true, width: 130, align: 'center', sortable: true },
+    { key: 6, label: '仓库', visible: true, width: 90, align: 'center', sortable: true },
+    { key: 7, label: '供应商', visible: true, width: 140, align: 'center', sortable: true },
+    { key: 8, label: '单价', visible: true, width: 77, align: 'left', sortable: true },
+    { key: 9, label: '单位', visible: true, width: 56, align: 'center', sortable: false },
+    { key: 10, label: '库存数量', visible: true, width: 81, align: 'center', sortable: false },
+    { key: 11, label: '金额', visible: true, width: 82, align: 'left', sortable: true },
+    { key: 12, label: '入库批次号', visible: true, width: 180, align: 'center', sortable: false },
+    { key: 29, label: '阳光平台编码', visible: true, width: 140, align: 'center', sortable: false },
+    { key: 30, label: '医保名称', visible: true, width: 140, align: 'left', sortable: false },
+    { key: 31, label: '医保编码', visible: true, width: 160, align: 'center', sortable: false },
+    { key: 13, label: '批号', visible: true, width: 100, align: 'center', sortable: false },
+    { key: 14, label: '生产日期', visible: true, width: 110, align: 'center', sortable: false },
+    { key: 15, label: '有效期', visible: true, width: 110, align: 'center', sortable: false },
+    { key: 16, label: '注册证号', visible: true, width: 150, align: 'center', sortable: false },
+    { key: 17, label: '注册证有效期', visible: true, width: 120, align: 'center', sortable: false },
+    { key: 18, label: '计费', visible: true, width: 55, align: 'center', sortable: false },
+    { key: 25, label: '集采', visible: true, width: 55, align: 'center', sortable: false },
+    { key: 26, label: '临采', visible: true, width: 55, align: 'center', sortable: false },
+    { key: 27, label: '阳采', visible: true, width: 55, align: 'center', sortable: false },
+    { key: 28, label: '重点监控', visible: true, width: 70, align: 'center', sortable: false },
+    { key: 19, label: '入库单号', visible: true, width: 150, align: 'center', sortable: false },
+    { key: 20, label: '制单日期', visible: true, width: 110, align: 'center', sortable: false },
+    { key: 21, label: '制单人', visible: true, width: 90, align: 'center', sortable: false },
+    { key: 22, label: '审核日期', visible: true, width: 110, align: 'center', sortable: false },
+    { key: 23, label: '审核人', visible: true, width: 90, align: 'center', sortable: false },
+    { key: 24, label: '启用', visible: true, width: 55, align: 'center', sortable: false }
   ];
 }
 
+/** 默认列顺序：序号 → 仓库 → 产品编码 → …；计费后接集采组；入库批次号后接阳光/医保 */
 function createDefaultColumnOrder() {
-  return createDefaultInventoryColumns().map(c => c.key);
+  return [0, 6, 1, 2, 3, 9, 8, 10, 11, 13, 4, 5, 7, 12, 29, 30, 31, 14, 15, 16, 17, 18, 25, 26, 27, 28, 19, 20, 21, 22, 23, 24];
+}
+
+/** 旧列顺序补入新增列：12 后阳光/医保；18 后集采组 */
+function insertMissingInventoryColumnKeys(orderKeys) {
+  const list = Array.isArray(orderKeys) ? orderKeys.slice() : [];
+  const has = (k) => list.some(x => String(x) === String(k));
+  const insertAfter = (anchor, keys) => {
+    const missing = keys.filter(k => !has(k));
+    if (!missing.length) return;
+    let idx = list.findIndex(x => String(x) === String(anchor));
+    if (idx < 0) {
+      list.push(...missing);
+      return;
+    }
+    list.splice(idx + 1, 0, ...missing);
+  };
+  insertAfter(12, [29, 30, 31]);
+  insertAfter(18, [25, 26, 27, 28]);
+  return list;
 }
 
 export default {
@@ -828,14 +990,22 @@ export default {
       const i = list.findIndex(c => String(c.key) === this.columnActiveKey);
       return i >= 0 && i < list.length - 1;
     },
-    /** 表格渲染项（含批号后固定插入主/辅条码） */
+    /** 表格渲染项（计费及集采组后固定插入主/辅条码） */
     tableColumnItems() {
       const items = [];
+      const ynGroup = [18, 25, 26, 27, 28];
+      const visibleKeys = (this.orderedColumns || [])
+        .filter(c => c.visible)
+        .map(c => Number(c.key));
+      let barcodeAfterKey = 18;
+      ynGroup.forEach(k => {
+        if (visibleKeys.includes(k)) barcodeAfterKey = k;
+      });
       this.orderedColumns.forEach(col => {
         if (col.visible) {
           items.push({ type: 'col', col });
         }
-        if (Number(col.key) === 13) {
+        if (col.visible && Number(col.key) === barcodeAfterKey) {
           items.push({ type: 'mainBarcode' });
           items.push({ type: 'subBarcode' });
         }
@@ -1013,7 +1183,7 @@ export default {
               const valid = new Set(this.columns.map(c => String(c.key)));
               const seen = new Set();
               const next = [];
-              orderKeys.forEach(k => {
+              insertMissingInventoryColumnKeys(orderKeys).forEach(k => {
                 const s = String(k);
                 if (!valid.has(s) || seen.has(s)) return;
                 seen.add(s);
@@ -1028,6 +1198,8 @@ export default {
                 }
               });
               this.columnOrder = next;
+            } else {
+              this.columnOrder = insertMissingInventoryColumnKeys(this.columnOrder);
             }
             this.refreshTableColumns();
           } catch (e) {
@@ -1067,7 +1239,7 @@ export default {
         }
       });
     },
-    /** 初始化：恢复系统默认列设置，并清除本账号已保存的个性化配置 */
+    /** 初始化：恢复系统默认列宽/对齐/顺序（当前列间距配置），并清除本账号已保存的个性化配置；弹窗保持打开便于核对 */
     initColumnConfig() {
       this.columns = createDefaultInventoryColumns();
       this.columnOrder = createDefaultColumnOrder();
@@ -1077,11 +1249,9 @@ export default {
         configKey: this.columnConfigKey,
         configValue: ''
       }).then(() => {
-        this.$modal.msgSuccess('已初始化为系统默认');
-        this.columnDialogVisible = false;
+        this.$modal.msgSuccess('已初始化为当前列间距默认配置');
       }).catch(() => {
-        this.$modal.msgSuccess('已初始化为系统默认（本地）');
-        this.columnDialogVisible = false;
+        this.$modal.msgSuccess('已初始化为当前列间距默认配置（本地）');
       });
     },
     /** 表头排序：字符串列 */
@@ -1115,12 +1285,9 @@ export default {
     sortByUnitPrice(a, b) { return this.sortByNum(a, b, 'unitPrice'); },
     sortByQty(a, b) { return this.sortByNum(a, b, 'qty'); },
     sortByAmt(a, b) { return this.sortByNum(a, b, 'amt'); },
-    materialUseDictLabel(isUse) {
-      if (isUse === undefined || isUse === null || isUse === '') return '--';
-      const v = this.selectDictLabel && this.dict && this.dict.type && this.dict.type.is_use_status
-        ? this.selectDictLabel(this.dict.type.is_use_status, String(isUse))
-        : '';
-      return v || '--';
+    /** 与耗材产品档案一致：是否/启用类字段为「是」（值为 1） */
+    isMaterialYesValue(val) {
+      return val === '1' || val === 1;
     },
     querySearchAsync(queryString, cb) {
       const res = this.restaurants;
@@ -1568,6 +1735,86 @@ export default {
 .first-inventory-page .pagination-wrapper .pagination-summary .summary-label {
   font-weight: 700;
 }
+.first-inventory-page .pagination-wrapper .pagination-summary .summary-num {
+  color: #2C569A;
+  font-weight: 600;
+}
+
+/* 单价/单位/库存数量/金额/批号 表头色（需压过通用表头色） */
+.first-inventory-page .inv-detail-main-table th.col-header-accent > .cell,
+.first-inventory-page .inv-detail-main-table .el-table__header-wrapper th.col-header-accent .cell,
+.first-inventory-page .inv-detail-main-table .el-table__fixed-header-wrapper th.col-header-accent .cell {
+  color: #513AEF !important;
+}
+
+/* 主列表：收紧单元格左右间距 */
+.first-inventory-page .inv-detail-main-table .el-table__header-wrapper th .cell,
+.first-inventory-page .inv-detail-main-table .el-table__fixed-header-wrapper th .cell,
+.first-inventory-page .inv-detail-main-table .el-table__body td.el-table__cell > .cell,
+.first-inventory-page .inv-detail-main-table .el-table__fixed-body-wrapper td.el-table__cell > .cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+/* 勾选/序号列 sticky（对齐耗材档案）：横滑钉左，底部滚动条仍铺满整表并可滑过这两列 */
+.first-inventory-page .inv-detail-main-table.el-table {
+  position: relative;
+}
+.first-inventory-page .inv-detail-main-table th.inv-select-col,
+.first-inventory-page .inv-detail-main-table td.inv-select-col,
+.first-inventory-page .inv-detail-main-table th.el-table-column--selection,
+.first-inventory-page .inv-detail-main-table td.el-table-column--selection {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+  border-right: 1px solid #e2e8f0;
+}
+.first-inventory-page .inv-detail-main-table th.inv-index-col,
+.first-inventory-page .inv-detail-main-table td.inv-index-col {
+  position: sticky !important;
+  left: 48px !important;
+  z-index: 3;
+  box-sizing: border-box !important;
+  border-right: 1px solid #e2e8f0;
+}
+.first-inventory-page .inv-detail-main-table th.inv-select-col,
+.first-inventory-page .inv-detail-main-table th.el-table-column--selection,
+.first-inventory-page .inv-detail-main-table th.inv-index-col {
+  z-index: 4;
+  background-color: #f1f5f9 !important;
+}
+/* sticky 列默认底：仅未悬停/未选中时钉白/斑马，悬停时交给整行同色规则，避免左右色差 */
+.first-inventory-page .inv-detail-main-table .el-table__body tr:not(.inv-row-selected):not(:hover) > td.inv-select-col,
+.first-inventory-page .inv-detail-main-table .el-table__body tr:not(.inv-row-selected):not(:hover) > td.el-table-column--selection,
+.first-inventory-page .inv-detail-main-table .el-table__body tr:not(.inv-row-selected):not(:hover) > td.inv-index-col {
+  background-color: #fff !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body tr.el-table__row--striped:not(.inv-row-selected):not(:hover) > td.inv-select-col,
+.first-inventory-page .inv-detail-main-table .el-table__body tr.el-table__row--striped:not(.inv-row-selected):not(:hover) > td.el-table-column--selection,
+.first-inventory-page .inv-detail-main-table .el-table__body tr.el-table__row--striped:not(.inv-row-selected):not(:hover) > td.inv-index-col {
+  background-color: #fafafa !important;
+}
+/* sticky 列 .cell 透底，颜色只画在 td 上，避免与右侧 .cell 叠色产生色差 */
+.first-inventory-page .inv-detail-main-table td.inv-select-col .cell,
+.first-inventory-page .inv-detail-main-table td.el-table-column--selection .cell,
+.first-inventory-page .inv-detail-main-table td.inv-index-col .cell,
+.first-inventory-page .inv-detail-main-table th.inv-select-col .cell,
+.first-inventory-page .inv-detail-main-table th.el-table-column--selection .cell,
+.first-inventory-page .inv-detail-main-table th.inv-index-col .cell {
+  background-color: transparent !important;
+}
+/* 取消 ruoyi 全局行悬停位移/阴影/过渡，否则 sticky 列与右侧不同步出现色差 */
+.first-inventory-page .inv-detail-main-table .el-table__body tr.el-table__row,
+.first-inventory-page .inv-detail-main-table .el-table__body tr.el-table__row:hover {
+  transition: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body tr > td,
+.first-inventory-page .inv-detail-main-table .el-table__body tr > td .cell {
+  transition: none !important;
+}
 .first-inventory-page .pagination-wrapper .pagination-container {
   position: relative !important;
   height: auto !important;
@@ -1627,19 +1874,79 @@ export default {
   white-space: nowrap;
 }
 
-/* 库存明细表：表头对齐出/退库明细 */
+/* 表头行高对齐耗材产品档案明细框（42px）；caret 仍用原组件，靠 flex 与序号齐平 */
 .first-inventory-page .inv-detail-main-table .el-table__header-wrapper th,
 .first-inventory-page .inv-detail-main-table .el-table__header-wrapper th.el-table__cell {
   background-color: #f1f5f9 !important;
   color: #334155 !important;
   font-size: 13px !important;
   font-weight: 600 !important;
+  letter-spacing: 0.02em;
   border-right-color: #e2e8f0 !important;
   border-bottom-color: #e2e8f0 !important;
-  height: 34px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 42px !important;
+  vertical-align: middle !important;
 }
 .first-inventory-page .inv-detail-main-table .el-table__header th.gutter {
   background-color: #f1f5f9 !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__header-wrapper th .cell {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #334155 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  height: 42px !important;
+  line-height: 20px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+.first-inventory-page .inv-detail-main-table .caret-wrapper {
+  height: 34px !important;
+  width: 24px !important;
+  flex-shrink: 0;
+  vertical-align: middle !important;
+}
+.first-inventory-page .inv-detail-main-table .sort-caret {
+  left: 7px !important;
+}
+.first-inventory-page .inv-detail-main-table .sort-caret.ascending {
+  border-bottom-color: rgba(48, 49, 51, 0.35);
+  top: 5px !important;
+}
+.first-inventory-page .inv-detail-main-table .sort-caret.descending {
+  border-top-color: rgba(48, 49, 51, 0.35);
+  bottom: 7px !important;
+}
+.first-inventory-page .inv-detail-main-table .ascending .sort-caret.ascending {
+  border-bottom-color: #2563EB;
+}
+.first-inventory-page .inv-detail-main-table .descending .sort-caret.descending {
+  border-top-color: #2563EB;
+}
+
+/* 明细行高与表头一致（42px；表头因升/降序 caret 占高，数据行同步同高） */
+.first-inventory-page .inv-detail-main-table .el-table__body td.el-table__cell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 42px !important;
+  box-sizing: border-box !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body td.el-table__cell > .cell {
+  height: 42px !important;
+  line-height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+.first-inventory-page .inv-detail-main-table .el-table__body td.el-table__cell > .cell .batch-no-text {
+  line-height: 16px;
 }
 
 /* 本页「更多检索」多选：调短（覆盖 list-page 190px） */
@@ -1664,15 +1971,68 @@ export default {
   min-width: 160px !important;
 }
 
-/* 勾选/双击选中行高亮，与出/退库明细一致 */
-.first-inventory-page .inv-detail-main-table .el-table__body tr:hover > td {
+/* 整行悬停/选中同色（含 sticky 勾选/序号），压过 ruoyi #F5F7FA，消除左右色差 */
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td.inv-select-col,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td.el-table-column--selection,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td.inv-index-col,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td.inv-select-col .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td.el-table-column--selection .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr:hover > td.inv-index-col .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
   background-color: #D6EBFF !important;
+  background: #D6EBFF !important;
 }
-.first-inventory-page .inv-detail-main-table .el-table__body tr.inv-row-selected > td {
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td.inv-select-col,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td.el-table-column--selection,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td.inv-index-col,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td.inv-select-col .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td.el-table-column--selection .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected > td.inv-index-col .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.el-table__row--striped.inv-row-selected > td,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.el-table__row--striped.inv-row-selected > td .cell {
   background-color: #B8DAFF !important;
+  background: #B8DAFF !important;
 }
-.first-inventory-page .inv-detail-main-table .el-table__body tr.inv-row-selected:hover > td {
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td.inv-select-col,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td.el-table-column--selection,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td.inv-index-col,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td.inv-select-col .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td.el-table-column--selection .cell,
+.app-container.first-inventory-page .inv-detail-main-table.el-table .el-table__body tr.inv-row-selected:hover > td.inv-index-col .cell {
   background-color: #A0CBFF !important;
+  background: #A0CBFF !important;
+}
+
+/* 计费/启用：与耗材产品档案同款是/否胶囊 */
+.first-inventory-page .material-yn-btn {
+  display: inline-block;
+  min-width: 36px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  cursor: default;
+  user-select: none;
+  box-sizing: border-box;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.first-inventory-page .material-yn-btn--yes {
+  color: #1d4ed8;
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+}
+.first-inventory-page .material-yn-btn--no {
+  color: #64748b;
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
 }
 </style>
 
@@ -2007,26 +2367,27 @@ export default {
   background: #707070 !important;
 }
 
-/* 优化表格列间距（与出/退库明细表头高度一致） */
-.table-container ::v-deep .el-table th.el-table__cell {
-  padding: 4px 6px !important;
+/* 优化表格列间距；表头高度由上方 40px 规则控制，避免 th padding 把文字顶偏 */
+.table-container ::v-deep .inv-detail-main-table th.el-table__cell {
+  padding: 0 6px !important;
 }
 
-.table-container ::v-deep .el-table td.el-table__cell {
-  padding: 10px 6px !important;
+.table-container ::v-deep .inv-detail-main-table td.el-table__cell {
+  padding-left: 6px !important;
+  padding-right: 6px !important;
 }
 
-.table-container ::v-deep .el-table thead th.el-table__cell > .cell,
-.table-container ::v-deep .el-table tbody td.el-table__cell > .cell {
+.table-container ::v-deep .inv-detail-main-table thead th.el-table__cell > .cell,
+.table-container ::v-deep .inv-detail-main-table tbody td.el-table__cell > .cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 23px;
   word-break: normal;
 }
 
-.table-container ::v-deep .el-table .cell {
-  padding: 0 4px;
+.table-container ::v-deep .inv-detail-main-table .cell {
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 .table-container ::v-deep .el-table th.col-serial-center .cell {

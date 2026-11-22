@@ -110,23 +110,23 @@
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
       <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="入库单号" align="center" prop="billNo" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="入库单号" align="center" prop="billNo" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="180" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"/>
-      <el-table-column label="仓库" align="center" prop="warehouse.name" width="200" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')"/>
-      <el-table-column label="金额" align="center" prop="totalAmount" width="150" show-overflow-tooltip resizable sortable>
+      <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"/>
+      <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')"/>
+      <el-table-column label="金额" align="center" prop="totalAmount" width="110" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.totalAmount">{{ scope.row.totalAmount | formatCurrency}}</span>
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="制单人" align="center" prop="creater.nickName" show-overflow-tooltip resizable />
-      <el-table-column label="制单日期" align="center" prop="billDate" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="制单人" align="center" prop="creater.nickName" width="90" show-overflow-tooltip resizable />
+      <el-table-column label="制单日期" align="center" prop="billDate" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <!-- 使用 createTime 显示实际创建时间，包含时分秒 -->
           <span v-if="scope.row.createTime">{{ parseTime(scope.row.createTime, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
@@ -134,13 +134,13 @@
           <span v-else>--</span>
         </template>
       </el-table-column>
-      <el-table-column label="单据状态" align="center" prop="billStatus" width="120" min-width="120" show-overflow-tooltip resizable>
+      <el-table-column label="单据状态" align="center" prop="billStatus" width="100" min-width="90" show-overflow-tooltip resizable>
         <template slot-scope="scope">
           <dict-tag :options="dict.type.biz_status" :value="scope.row.billStatus"/>
         </template>
       </el-table-column>
-      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="120" show-overflow-tooltip resizable/>
-      <el-table-column label="审核日期" align="center" prop="auditDate" width="180" show-overflow-tooltip resizable sortable>
+      <el-table-column label="审核人" align="center" prop="auditPerson.nickName" width="90" show-overflow-tooltip resizable/>
+      <el-table-column label="审核日期" align="center" prop="auditDate" width="160" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
           <span v-if="scope.row.auditDate">{{ parseTime(scope.row.auditDate, '{y}-{m}-{d} {h}:{i}:{s}') }}</span>
           <span v-else>--</span>
@@ -183,7 +183,7 @@
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip resizable />
-      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="200">
+      <el-table-column label="操作" align="center" header-align="center" class-name="apply-action-col small-padding fixed-width" width="180">
         <template slot-scope="scope">
           <span style="white-space: nowrap; display: inline-block;">
             <el-button
@@ -218,6 +218,7 @@
               icon="el-icon-document"
               @click="handleShowEntryChangeLog(scope.row)"
               v-hasPermi="['inWarehouse:apply:query']"
+              v-if="scope.row.billStatus == 2"
               style="padding: 0 5px; margin: 0;"
             >变更记录</el-button>
           </span>
@@ -374,6 +375,8 @@ export default {
       stkIoBillEntryList: [],
       /** 保存中：防连点并发 PUT 导致明细翻倍 */
       submitLoading: false,
+      /** 弹窗内审核中：防重复点击 */
+      auditSubmitting: false,
       /** 仅用于触发 el-table 合计行随明细 qty/amt 等变更重新渲染（summary-method 对嵌套变更有时不重算） */
       detailSummaryTick: 0,
       // 扫描条码输入框（与引用配送单同一行，表头区）
@@ -1668,8 +1671,11 @@ export default {
             });
           });
     },
-    /** 枣强：弹窗内审核当前入库单（逻辑与入库审核页 handleAudit 一致） */
+    /** 弹窗内审核当前入库单（逻辑与入库审核页一致） */
     handleModalAudit() {
+      if (this.submitLoading || this.auditSubmitting) {
+        return;
+      }
       const id = this.form.id;
       if (!id) {
         this.$modal.msgWarning('请先保存后再审核');
@@ -1719,8 +1725,11 @@ export default {
             if (!cont) {
               return;
             }
-            const billNo = res.data.billNo || id;
-            this.$modal.confirm('确定要审核"' + billNo + '"的数据项？').then(() => {
+            const billNo = res.data.billNo || this.form.billNo || id;
+            this.$modal.confirm(
+              '确定审核选中的【' + billNo + '】待审核入库单？审核通过后单据生效，将更新库存。'
+            ).then(() => {
+              this.auditSubmitting = true;
               return auditWarehouse({ id: id, auditBy: auditBy });
             }).then(() => {
               this.$modal.msgSuccess('审核入库成功！');
@@ -1736,12 +1745,14 @@ export default {
               this.action = false;
               this.title = '查看入库';
               this.$nextTick(() => this.refreshDetailSummary());
-            }).catch(() => {});
+            }).catch(() => {}).finally(() => {
+              this.auditSubmitting = false;
+            });
           });
         }).catch(() => {});
       });
     },
-    /** 枣强：弹窗内打印（仅已审核单据） */
+    /** 弹窗内打印（仅已审核单据） */
     handleModalPrint() {
       if (!this.form || !this.form.id) {
         this.$modal.msgWarning('缺少单据信息，无法打印');
@@ -3471,9 +3482,14 @@ export default {
 /* 名称、规格、型号、生产厂家：左上对齐，最多两行；列可拖拽加宽 */
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell {
   padding: 4px 0 !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td {
   vertical-align: middle;
+}
+.app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table tbody td.el-table__cell > .cell {
+  line-height: 20px !important;
 }
 .app-container.inWarehouse-apply-page .local-modal-content .modal-detail-section .el-table td.detail-col-text-wrap .cell {
   vertical-align: top;
@@ -3800,6 +3816,41 @@ html body .app-container.inWarehouse-apply-page .local-modal-content .modal-deta
 /* 单据状态列表头不换行 */
 .app-container.inWarehouse-apply-page .apply-main-table thead th:nth-child(9) .cell {
   white-space: nowrap !important;
+}
+
+/* 主列表：表头与数据行同高，收紧单元格内边距 */
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
+}
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.el-table__cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  height: 34px !important;
+  box-sizing: border-box !important;
+}
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.el-table__cell > .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell > .cell,
+.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell > .cell {
+  line-height: 20px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
 }
 
 /* 序号列表头不换行 */
