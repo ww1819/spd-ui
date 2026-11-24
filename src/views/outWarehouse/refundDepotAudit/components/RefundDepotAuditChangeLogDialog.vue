@@ -15,7 +15,7 @@
           size="small"
         >
           <el-table-column label="变更时间" prop="changeTime" width="170" />
-          <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
+          <el-table-column label="操作人" prop="operatorName" width="120" show-overflow-tooltip />
           <el-table-column label="动作" prop="actionType" width="80" align="center" />
           <el-table-column label="变更前" min-width="200">
             <template slot-scope="scope">

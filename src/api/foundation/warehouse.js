@@ -75,3 +75,12 @@ export function getOptionselect() {
     method: 'get'
   })
 }
+
+// Warehouse字段变更记录
+export function listWarehouseChangeLog(id) {
+  return request({
+    url: '/foundation/warehouse/changeLog/' + id,
+    method: 'get'
+  })
+}
+

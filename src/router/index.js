@@ -362,8 +362,34 @@ Router.prototype.replace = function push(location) {
   return routerReplace.call(this, location).catch(err => err)
 }
 
-export default new Router({
+const router = new Router({
   mode: 'history', // 去掉url中的#
   scrollBehavior: () => ({ y: 0 }),
   routes: constantRoutes
 })
+
+/**
+ * 懒加载 chunk 失败（前端发版后旧页仍开着，点打印等路由会白屏）。
+ * 整页刷新一次拉新 index/chunk；10s 内不重复刷，避免死循环。
+ */
+router.onError((error) => {
+  const msg = (error && error.message) || String(error || '')
+  const isChunkFail =
+    /Loading chunk [\d]+ failed/i.test(msg) ||
+    /Loading CSS chunk [\d]+ failed/i.test(msg) ||
+    /Failed to fetch dynamically imported module/i.test(msg) ||
+    /error loading dynamically imported module/i.test(msg)
+  if (!isChunkFail) {
+    return
+  }
+  const key = 'spd_chunk_reload'
+  const last = Number(sessionStorage.getItem(key) || 0)
+  const now = Date.now()
+  if (now - last < 10000) {
+    return
+  }
+  sessionStorage.setItem(key, String(now))
+  window.location.reload()
+})
+
+export default router

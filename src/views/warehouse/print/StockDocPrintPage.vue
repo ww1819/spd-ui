@@ -148,6 +148,15 @@ export default {
       return base
     }
   },
+  errorCaptured(err) {
+    const msg = (err && err.message) || '打印组件渲染失败'
+    this.loading = false
+    this.printRow = null
+    this.loadError = msg
+    // eslint-disable-next-line no-console
+    console.error('[StockDocPrintPage]', err)
+    return false
+  },
   mounted() {
     this.loadPage()
   },

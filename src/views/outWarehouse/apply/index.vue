@@ -1731,6 +1731,9 @@ export default {
           const userName = this.$store.state.user && this.$store.state.user.name
           row.printPerson = nick || userName || row.printPerson
         }).catch(() => {})
+        // 先关弹窗再进打印页，避免长会话下遮罩/抽屉残留盖住打印页呈「白屏」
+        this.open = false
+        this.modalObj.show = false
         this.$router.push({
           path: '/print/outbound',
           query: {

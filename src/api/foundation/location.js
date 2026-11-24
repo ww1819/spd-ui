@@ -60,3 +60,11 @@ export function delLocation(locationId) {
   })
 }
 
+// Location字段变更记录
+export function listLocationChangeLog(id) {
+  return request({
+    url: '/foundation/location/changeLog/' + id,
+    method: 'get'
+  })
+}
+

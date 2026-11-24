@@ -1067,6 +1067,7 @@ export default {
         this.$modal.msgWarning('缺少单据信息，无法打印')
         return
       }
+      this.open = false
       this.$router.push({
         path: '/print/refund-depot',
         query: {

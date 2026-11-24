@@ -51,3 +51,12 @@ export function delUnit(unitId) {
     method: 'delete'
   })
 }
+
+// Unit字段变更记录
+export function listUnitChangeLog(id) {
+  return request({
+    url: '/foundation/unit/changeLog/' + id,
+    method: 'get'
+  })
+}
+

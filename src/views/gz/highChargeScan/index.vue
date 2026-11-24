@@ -311,7 +311,8 @@ import {
   scanHighChargeBarcode,
   applyHighChargeConsume,
   listHighChargeWriteOffStatus,
-  writeOffHighChargeScan
+  writeOffHighChargeScan,
+  reportHighChargePageAccess
 } from '@/api/gz/highChargeScan'
 
 function buildDefaultChargeDateRange() {
@@ -434,8 +435,7 @@ export default {
     }
   },
   created() {
-    this.loadDeptOptions()
-    this.loadDetailList()
+    this.bootstrapEnterAccessLog()
   },
   mounted() {
     this.$nextTick(() => {
@@ -446,7 +446,7 @@ export default {
     window.addEventListener('resize', this.updateMainTableHeight)
   },
   activated() {
-    // keep-alive 切回：仅重算表格高度，不重新拉数，保留查询条件与列表
+    // keep-alive 切回：仅重算表格高度，不重新拉数，也不再上报进页日志
     this.$nextTick(() => this.updateMainTableHeight())
   },
   beforeDestroy() {
@@ -519,17 +519,72 @@ export default {
       const selected = !!(rid && this.selectedRows.some(r => String(r.id) === rid))
       table.toggleRowSelection(row, !selected)
     },
+    /** 进页一次：分段计时后上报访问日志（失败静默） */
+    bootstrapEnterAccessLog() {
+      const t0 = Date.now()
+      let deptMs = 0
+      let listMs = 0
+      let statusMs = 0
+      const deptStart = Date.now()
+      const deptP = this.loadDeptOptions().finally(() => {
+        deptMs = Date.now() - deptStart
+      })
+      const listStart = Date.now()
+      this.fetchDetailListOnly()
+        .then(() => {
+          listMs = Date.now() - listStart
+          const statusStart = Date.now()
+          return Promise.resolve(this.loadHighStatus()).then(() => {
+            statusMs = Date.now() - statusStart
+          })
+        })
+        .catch(() => {
+          listMs = Date.now() - listStart
+        })
+        .then(() => deptP.catch(() => {}))
+        .then(() => {
+          this.reportEnterPageAccess({
+            deptMs,
+            listMs,
+            statusMs,
+            totalMs: Date.now() - t0
+          })
+        })
+    },
+    reportEnterPageAccess(timing) {
+      const q = this.detailQuery || {}
+      let listApi = 'all'
+      if (this.detailVisitType === 'IN') listApi = 'inpatient'
+      else if (this.detailVisitType === 'OUT') listApi = 'outpatient'
+      const payload = {
+        event: 'ENTER',
+        visitType: this.detailVisitType || 'ALL',
+        beginChargeDate: q.beginChargeDate,
+        endChargeDate: q.endChargeDate,
+        pageNum: q.pageNum,
+        pageSize: q.pageSize,
+        total: this.detailTotal || 0,
+        deptMs: timing.deptMs,
+        listMs: timing.listMs,
+        statusMs: timing.statusMs,
+        totalMs: timing.totalMs,
+        listApi,
+        hitFetch: false
+      }
+      reportHighChargePageAccess(payload).catch(() => {})
+    },
     loadDeptOptions() {
-      listDepartTenantOptionselect().then(res => {
+      const p1 = listDepartTenantOptionselect().then(res => {
         const list = normalizeDepartPickResponse(res).filter(d => d.hisId != null && String(d.hisId).trim() !== '')
         this.allDeptOptions = list
         this.deptOptions = list
       })
-      listDepartOptionselect().then(res => {
+      const p2 = listDepartOptionselect().then(res => {
         const list = normalizeDepartPickResponse(res)
         this.allConsumeDeptOptions = list
         this.consumeDeptOptions = list
       })
+      return Promise.all([p1, p2])
     },
     filterDeptMethod(query) {
       this.deptOptions = filterDepartPickList(this.allDeptOptions, query)
@@ -930,48 +985,54 @@ export default {
       }
       this.loadDetailList()
     },
-    loadDetailList() {
+    /** 仅拉列表（不含 writeOffStatus），返回 Promise */
+    fetchDetailListOnly() {
       this.detailLoading = true
       const q = { ...this.detailQuery }
       q.beginChargeDate = this.toQueryDayStart(q.beginChargeDate)
       q.endChargeDate = this.toQueryDayEnd(q.endChargeDate)
-      const done = () => {
-        this.detailLoading = false
-        this.loadHighStatus()
-        this.$nextTick(() => this.updateMainTableHeight())
-      }
+      let req
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
         q.hisInpatientChargeId = q.hisChargeId
         delete q.visitNo
         delete q.hisChargeId
-        listHighChargeInpatientMirror(q).then(res => {
+        req = listHighChargeInpatientMirror(q).then(res => {
           this.detailList = (res.rows || []).map(r => ({
             ...r,
             visitType: 'INPATIENT',
             hisChargeId: r.hisInpatientChargeId
           }))
           this.detailTotal = res.total || 0
-        }).finally(done)
+        })
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
         q.hisOutpatientChargeId = q.hisChargeId
         delete q.visitNo
         delete q.hisChargeId
-        listHighChargeOutpatientMirror(q).then(res => {
+        req = listHighChargeOutpatientMirror(q).then(res => {
           this.detailList = (res.rows || []).map(r => ({
             ...r,
             visitType: 'OUTPATIENT',
             hisChargeId: r.hisOutpatientChargeId
           }))
           this.detailTotal = res.total || 0
-        }).finally(done)
+        })
       } else {
-        listHighChargeAllMirror(q).then(res => {
+        req = listHighChargeAllMirror(q).then(res => {
           this.detailList = res.rows || []
           this.detailTotal = res.total || 0
-        }).finally(done)
+        })
       }
+      return req.finally(() => {
+        this.detailLoading = false
+        this.$nextTick(() => this.updateMainTableHeight())
+      })
+    },
+    loadDetailList() {
+      this.fetchDetailListOnly().finally(() => {
+        this.loadHighStatus()
+      })
     },
     hcStatusKey(row) {
       if (!row || row.id == null) return ''
@@ -996,9 +1057,9 @@ export default {
       })
       if (!inIds.length && !outIds.length) {
         this.highStatusMap = {}
-        return
+        return Promise.resolve()
       }
-      listHighChargeWriteOffStatus({ inpatientRowIds: inIds, outpatientRowIds: outIds }).then(res => {
+      return listHighChargeWriteOffStatus({ inpatientRowIds: inIds, outpatientRowIds: outIds }).then(res => {
         this.highStatusMap = res.data || {}
       }).catch(() => {
         this.highStatusMap = {}

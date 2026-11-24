@@ -1379,6 +1379,8 @@ export default {
         this.$modal.msgWarning('缺少单据信息，无法打印')
         return
       }
+      // 先关弹窗再进打印页，避免遮罩残留盖住打印页
+      this.open = false
       this.$router.push({
         path: '/print/outbound',
         query: {

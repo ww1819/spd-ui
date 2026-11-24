@@ -4,7 +4,7 @@
         <div style="font-size:18px;font-weight:bold;margin-bottom:16px;">科室变更记录 — {{ changeLog.deptName }}</div>
         <el-table v-loading="changeLog.loading" :data="changeLog.rows" max-height="420" size="small">
           <el-table-column label="时间" prop="changeTime" width="160" />
-          <el-table-column label="操作人" prop="operator" width="100" show-overflow-tooltip />
+          <el-table-column label="操作人" prop="operatorName" width="120" show-overflow-tooltip />
           <el-table-column label="字段" prop="fieldLabel" width="100" show-overflow-tooltip />
           <el-table-column label="原值" prop="oldValue" min-width="120" show-overflow-tooltip />
           <el-table-column label="新值" prop="newValue" min-width="120" show-overflow-tooltip />

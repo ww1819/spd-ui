@@ -144,7 +144,14 @@
               </el-table-column>
               <el-table-column label="操作" align="center" class-name="apply-action-col" width="140">
                 <template slot-scope="scope">
-                  <el-button
+                                    <el-button
+                    size="small"
+                    type="text"
+                    icon="el-icon-document"
+                    @click="openChangeLog(scope.row)"
+                    v-hasPermi="['foundation:location:list']"
+                  >变更记录</el-button>
+<el-button
                     size="small"
                     type="text"
                     @click="handleUpdate(scope.row)"
@@ -176,20 +183,23 @@
 
     <!-- 添加或修改货位对话框 -->
     <LocationEditDialog v-if="open" />
+      <LocationChangeLogDialog v-if="changeLog.open" />
   </div>
 </template>
 
 <script>
-import { listLocation, getLocation, delLocation, addLocation, updateLocation, treeselect } from "@/api/foundation/location";
+import { listLocation, getLocation, delLocation, addLocation, updateLocation, treeselect, listLocationChangeLog} from "@/api/foundation/location";
 import { mapGetters } from "vuex";
 
 export default {
   name: "Location",
   components: {
+    LocationChangeLogDialog: () => import('./components/LocationChangeLogDialog'),
     LocationEditDialog: () => import('./components/LocationEditDialog')
   },
   data() {
     return {
+      changeLog: { open: false, loading: false, rows: [], locationName: '' },
       treeData: [],
       treeProps: {
         label: 'locationName',
@@ -260,6 +270,21 @@ export default {
     window.removeEventListener('resize', this.updateMainTableHeight);
   },
   methods: {
+    openChangeLog(row) {
+      if (!row || row.locationId == null) return
+      this.changeLog.open = true
+      this.changeLog.locationName = row.locationName || ''
+      this.changeLog.rows = []
+      this.changeLog.loading = true
+      listLocationChangeLog(row.locationId).then(res => {
+        this.changeLog.rows = res.data || []
+        this.changeLog.loading = false
+      }).catch(() => { this.changeLog.loading = false })
+    },
+    closeChangeLog() {
+      this.changeLog.open = false
+    },
+
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
       if (!panel || !panel.getBoundingClientRect) return;
