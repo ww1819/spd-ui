@@ -144,7 +144,14 @@
               </el-table-column>
               <el-table-column label="操作" align="center" class-name="apply-action-col" width="140">
                 <template slot-scope="scope">
-                  <el-button
+                                    <el-button
+                    size="small"
+                    type="text"
+                    icon="el-icon-document"
+                    @click="openChangeLog(scope.row)"
+                    v-hasPermi="['foundation:financeCategory:list']"
+                  >变更记录</el-button>
+<el-button
                     size="small"
                     type="text"
                     @click="handleUpdate(scope.row)"
@@ -177,11 +184,12 @@
     <FinanceCategoryUploadDialog v-if="upload.open" />
     <FinanceCategoryPreviewDialog v-if="importPreview.visible" />
     <FinanceCategoryEditDialog v-if="open" />
+      <FinanceCategoryChangeLogDialog v-if="changeLog.open" />
   </div>
 </template>
 
 <script>
-import { listFinanceCategory, listFinanceCategoryAll, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred, validateFinanceCategoryImportAdd, validateFinanceCategoryImportUpdate, importFinanceCategoryAddData, importFinanceCategoryUpdateData } from "@/api/foundation/financeCategory";
+import { listFinanceCategory, listFinanceCategoryAll, getFinanceCategory, delFinanceCategory, addFinanceCategory, updateFinanceCategory, updateFinanceCategoryReferred, validateFinanceCategoryImportAdd, validateFinanceCategoryImportUpdate, importFinanceCategoryAddData, importFinanceCategoryUpdateData, listFinanceCategoryChangeLog} from "@/api/foundation/financeCategory";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { mapGetters } from "vuex";
 
@@ -189,6 +197,7 @@ export default {
   name: "FinanceCategory",
   dicts: ['is_use_status'],
   components: {
+    FinanceCategoryChangeLogDialog: () => import('./components/FinanceCategoryChangeLogDialog'),
     FinanceCategoryUploadDialog: () => import('./components/FinanceCategoryUploadDialog'),
     FinanceCategoryPreviewDialog: () => import('./components/FinanceCategoryPreviewDialog'),
     FinanceCategoryEditDialog: () => import('./components/FinanceCategoryEditDialog')
@@ -201,6 +210,7 @@ export default {
   },
   data() {
     return {
+      changeLog: { open: false, loading: false, rows: [], categoryName: '' },
       treeData: [],
       treeProps: {
         label: 'financeCategoryName',
@@ -286,6 +296,21 @@ export default {
     window.removeEventListener('resize', this.updateMainTableHeight);
   },
   methods: {
+    openChangeLog(row) {
+      if (!row || row.financeCategoryId == null) return
+      this.changeLog.open = true
+      this.changeLog.categoryName = row.financeCategoryName || ''
+      this.changeLog.rows = []
+      this.changeLog.loading = true
+      listFinanceCategoryChangeLog(row.financeCategoryId).then(res => {
+        this.changeLog.rows = res.data || []
+        this.changeLog.loading = false
+      }).catch(() => { this.changeLog.loading = false })
+    },
+    closeChangeLog() {
+      this.changeLog.open = false
+    },
+
     /** 明细框高度：底边对齐左侧分类面板 */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;

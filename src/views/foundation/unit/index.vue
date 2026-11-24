@@ -79,7 +79,14 @@
           </el-table-column>
           <el-table-column label="操作" align="center" class-name="apply-action-col" width="140">
             <template slot-scope="scope">
-              <el-button
+                                <el-button
+                    size="small"
+                    type="text"
+                    icon="el-icon-document"
+                    @click="openChangeLog(scope.row)"
+                    v-hasPermi="['foundation:unit:list']"
+                  >变更记录</el-button>
+<el-button
                 size="small"
                 type="text"
                 @click="handleUpdate(scope.row)"
@@ -108,16 +115,18 @@
     </div>
 
     <UnitEditDialog v-if="open" />
+      <UnitChangeLogDialog v-if="changeLog.open" />
   </div>
 </template>
 
 <script>
 import { mapGetters } from "vuex";
-import { listUnit, getUnit, delUnit, addUnit, updateUnit } from "@/api/foundation/unit";
+import { listUnit, getUnit, delUnit, addUnit, updateUnit, listUnitChangeLog} from "@/api/foundation/unit";
 
 export default {
   name: "Unit",
   components: {
+    UnitChangeLogDialog: () => import('./components/UnitChangeLogDialog'),
     UnitEditDialog: () => import('./components/UnitEditDialog')
   },
   computed: {
@@ -125,6 +134,7 @@ export default {
   },
   data() {
     return {
+      changeLog: { open: false, loading: false, rows: [], unitName: '' },
       loading: true,
       ids: [],
       rowHighlightTick: 0,
@@ -172,6 +182,21 @@ export default {
     window.removeEventListener('resize', this.updateMainTableHeight);
   },
   methods: {
+    openChangeLog(row) {
+      if (!row || row.unitId == null) return
+      this.changeLog.open = true
+      this.changeLog.unitName = row.unitName || ''
+      this.changeLog.rows = []
+      this.changeLog.loading = true
+      listUnitChangeLog(row.unitId).then(res => {
+        this.changeLog.rows = res.data || []
+        this.changeLog.loading = false
+      }).catch(() => { this.changeLog.loading = false })
+    },
+    closeChangeLog() {
+      this.changeLog.open = false
+    },
+
     /** 明细框高度：底边对齐页面内容区底部 */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;

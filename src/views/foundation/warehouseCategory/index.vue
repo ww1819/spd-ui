@@ -153,7 +153,14 @@
               </el-table-column>
               <el-table-column label="操作" align="center" class-name="apply-action-col" width="120">
                 <template slot-scope="scope">
-                  <el-button
+                                    <el-button
+                    size="small"
+                    type="text"
+                    icon="el-icon-document"
+                    @click="openChangeLog(scope.row)"
+                    v-hasPermi="['foundation:warehouseCategory:list']"
+                  >变更记录</el-button>
+<el-button
                     size="small"
                     type="text"
                     @click="handleUpdate(scope.row)"
@@ -187,11 +194,12 @@
     <WarehouseCategoryEditDialog v-if="open" />
     <WarehouseCategoryUploadDialog v-if="upload.open" />
     <WarehouseCategoryPreviewDialog v-if="importPreview.visible" />
+      <WarehouseCategoryChangeLogDialog v-if="changeLog.open" />
   </div>
 </template>
 
 <script>
-import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect, updateWarehouseCategoryReferred, validateWarehouseCategoryImportAdd, validateWarehouseCategoryImportUpdate, importWarehouseCategoryAddData, importWarehouseCategoryUpdateData } from "@/api/foundation/warehouseCategory";
+import { listWarehouseCategory, getWarehouseCategory, delWarehouseCategory, addWarehouseCategory, updateWarehouseCategory, treeselect, updateWarehouseCategoryReferred, validateWarehouseCategoryImportAdd, validateWarehouseCategoryImportUpdate, importWarehouseCategoryAddData, importWarehouseCategoryUpdateData, listWarehouseCategoryChangeLog} from "@/api/foundation/warehouseCategory";
 import { exportPreviewRowsToXlsx } from "@/utils/importPreviewExport";
 import { mapGetters } from "vuex";
 import MsunHisSyncButton from '@/components/MsunHisSyncButton';
@@ -199,6 +207,7 @@ import MsunHisSyncButton from '@/components/MsunHisSyncButton';
 export default {
   name: "WarehouseCategory",
   components: {
+    WarehouseCategoryChangeLogDialog: () => import('./components/WarehouseCategoryChangeLogDialog'),
     MsunHisSyncButton,
     WarehouseCategoryEditDialog: () => import('./components/WarehouseCategoryEditDialog'),
     WarehouseCategoryUploadDialog: () => import('./components/WarehouseCategoryUploadDialog'),
@@ -212,6 +221,7 @@ export default {
   },
   data() {
     return {
+      changeLog: { open: false, loading: false, rows: [], categoryName: '' },
       treeData: [],
       treeProps: {
         label: 'warehouseCategoryName',
@@ -298,6 +308,21 @@ export default {
     window.removeEventListener('resize', this.updateMainTableHeight);
   },
   methods: {
+    openChangeLog(row) {
+      if (!row || row.warehouseCategoryId == null) return
+      this.changeLog.open = true
+      this.changeLog.categoryName = row.warehouseCategoryName || ''
+      this.changeLog.rows = []
+      this.changeLog.loading = true
+      listWarehouseCategoryChangeLog(row.warehouseCategoryId).then(res => {
+        this.changeLog.rows = res.data || []
+        this.changeLog.loading = false
+      }).catch(() => { this.changeLog.loading = false })
+    },
+    closeChangeLog() {
+      this.changeLog.open = false
+    },
+
     /** 明细框高度：底边对齐左侧分类面板 */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;

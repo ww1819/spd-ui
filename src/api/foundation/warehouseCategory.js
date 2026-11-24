@@ -136,3 +136,12 @@ export function importWarehouseCategoryUpdateData(file, confirm) {
 }
 export function downloadWarehouseCategoryImportAddTemplate(){return request({url:'/foundation/warehouseCategory/importAddTemplate',method:'post',responseType:'blob'})}
 export function downloadWarehouseCategoryImportUpdateTemplate(){return request({url:'/foundation/warehouseCategory/importUpdateTemplate',method:'post',responseType:'blob'})}
+
+// WarehouseCategory字段变更记录
+export function listWarehouseCategoryChangeLog(id) {
+  return request({
+    url: '/foundation/warehouseCategory/changeLog/' + id,
+    method: 'get'
+  })
+}
+

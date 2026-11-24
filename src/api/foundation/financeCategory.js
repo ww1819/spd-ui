@@ -128,3 +128,12 @@ export function importFinanceCategoryUpdateData(file, confirm) {
 }
 export function downloadFinanceCategoryImportAddTemplate(){return request({url:'/foundation/financeCategory/importAddTemplate',method:'post',responseType:'blob'})}
 export function downloadFinanceCategoryImportUpdateTemplate(){return request({url:'/foundation/financeCategory/importUpdateTemplate',method:'post',responseType:'blob'})}
+
+// FinanceCategory字段变更记录
+export function listFinanceCategoryChangeLog(id) {
+  return request({
+    url: '/foundation/financeCategory/changeLog/' + id,
+    method: 'get'
+  })
+}
+

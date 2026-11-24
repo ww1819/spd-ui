@@ -137,7 +137,14 @@
               <el-table-column label="备注" align="center" prop="remark" min-width="160" show-overflow-tooltip />
               <el-table-column label="操作" align="center" class-name="apply-action-col" width="90">
                 <template slot-scope="scope">
-                  <el-button
+                                    <el-button
+                    size="small"
+                    type="text"
+                    icon="el-icon-document"
+                    @click="openChangeLog(scope.row)"
+                    v-hasPermi="['foundation:warehouse:list']"
+                  >变更记录</el-button>
+<el-button
                     size="small"
                     type="text"
                     icon="el-icon-edit"
@@ -164,20 +171,23 @@
 
     <!-- 页面内容区内右侧抽屉（不挂到 body，避免盖住顶栏/侧栏） -->
     <WarehouseEditDialog v-if="open" />
+      <WarehouseChangeLogDialog v-if="changeLog.open" />
   </div>
 </template>
 
 <script>
-import { listWarehouse, getWarehouse, delWarehouse, addWarehouse, updateWarehouse } from "@/api/foundation/warehouse";
+import { listWarehouse, getWarehouse, delWarehouse, addWarehouse, updateWarehouse, listWarehouseChangeLog} from "@/api/foundation/warehouse";
 
 export default {
   name: "Warehouse",
   dicts: ['is_use_status'],
   components: {
+    WarehouseChangeLogDialog: () => import('./components/WarehouseChangeLogDialog'),
     WarehouseEditDialog: () => import('./components/WarehouseEditDialog')
   },
   data() {
     return {
+      changeLog: { open: false, loading: false, rows: [], warehouseName: '' },
       loading: true,
       ids: [],
       rowHighlightTick: 0,
@@ -258,6 +268,21 @@ export default {
     window.removeEventListener('resize', this.updateMainTableHeight);
   },
   methods: {
+    openChangeLog(row) {
+      if (!row || row.id == null) return
+      this.changeLog.open = true
+      this.changeLog.warehouseName = row.name || ''
+      this.changeLog.rows = []
+      this.changeLog.loading = true
+      listWarehouseChangeLog(row.id).then(res => {
+        this.changeLog.rows = res.data || []
+        this.changeLog.loading = false
+      }).catch(() => { this.changeLog.loading = false })
+    },
+    closeChangeLog() {
+      this.changeLog.open = false
+    },
+
     /** 明细框高度：底边对齐左侧仓库列表 */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
