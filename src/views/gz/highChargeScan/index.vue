@@ -317,8 +317,8 @@ import {
 function buildDefaultChargeDateRange() {
   const today = new Date()
   const endChargeDate = parseTime(today, '{y}-{m}-{d}')
-  // 默认本月1日～今天，避免无起日扫全历史导致 list+count 超 2s
-  const beginDate = new Date(today.getFullYear(), today.getMonth(), 1)
+  // 默认近 7 天（含今天）；生产全月 count 易超 60s 转圈，缩小默认范围
+  const beginDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6)
   const beginChargeDate = parseTime(beginDate, '{y}-{m}-{d}')
   return { beginChargeDate, endChargeDate }
 }
