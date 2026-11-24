@@ -841,7 +841,7 @@
                   </template>
                 </el-table-column>
                 <el-table-column prop="actionTime" label="操作时间" width="160" align="center" show-overflow-tooltip />
-                <el-table-column prop="operator" label="操作人" width="100" align="center" show-overflow-tooltip />
+                <el-table-column prop="operatorName" label="操作人" width="120" align="center" show-overflow-tooltip />
                 <el-table-column prop="reason" label="原因" min-width="200" show-overflow-tooltip />
               </el-table>
               <div v-if="statusLogList.length === 0" class="empty-log-tip">暂无启用停用记录</div>
@@ -889,7 +889,7 @@
                     <div class="timeline-title">变更明细</div>
                     <el-table :data="changeLogList" border size="small" max-height="360">
                       <el-table-column prop="changeTime" label="变更时间" width="160" align="center" show-overflow-tooltip />
-                      <el-table-column prop="operator" label="操作人" width="100" align="center" show-overflow-tooltip />
+                      <el-table-column prop="operatorName" label="操作人" width="120" align="center" show-overflow-tooltip />
                       <el-table-column prop="fieldLabel" label="字段" width="100" align="center" show-overflow-tooltip />
                       <el-table-column prop="oldValue" label="原值" min-width="120" show-overflow-tooltip />
                       <el-table-column prop="newValue" label="新值" min-width="120" show-overflow-tooltip />
