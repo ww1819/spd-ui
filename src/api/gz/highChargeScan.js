@@ -85,3 +85,13 @@ export function writeOffHighChargeScan(data) {
     data
   })
 }
+
+/** 进页访问日志（分段耗时），落 sys_oper_log，失败可静默 */
+export function reportHighChargePageAccess(data) {
+  return request({
+    url: '/gz/highChargeMirror/mirror/pageAccess',
+    method: 'post',
+    timeout: 10000,
+    data
+  })
+}
