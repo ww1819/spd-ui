@@ -1469,6 +1469,7 @@ export default {
         this.$modal.msgWarning('当前单据缺少ID，无法进入打印预览')
         return
       }
+      this.open = false
       const target = {
         path: '/print/inbound',
         query: {
