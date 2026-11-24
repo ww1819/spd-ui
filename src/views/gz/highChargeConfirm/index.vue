@@ -246,7 +246,12 @@
 
 <script>
 import { listDepartTenantOptionselect, listDepartOptionselect } from '@/api/foundation/depart'
-import { listHighChargeConfirm, confirmHighChargeConsume, writeOffHighChargeConfirm } from '@/api/gz/highChargeConfirm'
+import {
+  listHighChargeConfirm,
+  confirmHighChargeConsume,
+  writeOffHighChargeConfirm,
+  reportHighChargeConfirmPageAccess
+} from '@/api/gz/highChargeConfirm'
 import { normalizeDepartPickResponse, filterDepartPickList } from '@/utils/deptPick'
 
 function pad2(n) {
@@ -257,11 +262,11 @@ function formatDate(d) {
   return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate())
 }
 
+/** 默认近 7 天（含今天），降低生产进页 list/sum 扫描窗；仍可手选整月 */
 function defaultMonthRange() {
   const now = new Date()
-  const start = new Date(now.getFullYear(), now.getMonth(), 1)
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  return { begin: formatDate(start), end: formatDate(end) }
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)
+  return { begin: formatDate(start), end: formatDate(now) }
 }
 
 const MSG_NO_WRITE_OFF_DEPT_PERM =
@@ -345,8 +350,7 @@ export default {
     }
   },
   created() {
-    this.loadDeptOptions()
-    this.loadList()
+    this.bootstrapEnterAccessLog()
   },
   mounted() {
     this.$nextTick(() => {
@@ -360,6 +364,35 @@ export default {
     window.removeEventListener('resize', this.updateMainTableHeight)
   },
   methods: {
+    /** 进页一次：科室选项 + 列表计时后上报（失败静默） */
+    bootstrapEnterAccessLog() {
+      const t0 = Date.now()
+      let deptMs = 0
+      let listMs = 0
+      const deptStart = Date.now()
+      const deptP = Promise.resolve(this.loadDeptOptions()).finally(() => {
+        deptMs = Date.now() - deptStart
+      })
+      const listStart = Date.now()
+      this.loadList()
+        .then(() => { listMs = Date.now() - listStart })
+        .catch(() => { listMs = Date.now() - listStart })
+        .then(() => deptP.catch(() => {}))
+        .then(() => {
+          const q = this.query || {}
+          reportHighChargeConfirmPageAccess({
+            event: 'ENTER',
+            beginConsumeAuditTime: q.beginConsumeAuditTime,
+            endConsumeAuditTime: q.endConsumeAuditTime,
+            pageNum: q.pageNum,
+            pageSize: q.pageSize,
+            total: this.total || 0,
+            deptMs,
+            listMs,
+            totalMs: Date.now() - t0
+          }).catch(() => {})
+        })
+    },
     /** 明细框高度：底边对齐页面内容区底部（全宽无左侧栏） */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel
@@ -414,16 +447,17 @@ export default {
       return this.parseTime(v, '{y}-{m}-{d} {h}:{i}:{s}')
     },
     loadDeptOptions() {
-      listDepartTenantOptionselect().then(res => {
+      const p1 = listDepartTenantOptionselect().then(res => {
         const list = normalizeDepartPickResponse(res)
         this.allDeptOptions = list
         this.deptOptions = list
         this.orderingDeptOptions = list
         this.execDeptOptions = list
       })
-      listDepartOptionselect().then(res => {
+      const p2 = listDepartOptionselect().then(res => {
         this.permDeptOptions = normalizeDepartPickResponse(res)
       })
+      return Promise.all([p1, p2])
     },
     resolveDeptDisplayName(deptId) {
       if (deptId == null || deptId === '') return ''
@@ -524,7 +558,7 @@ export default {
       const q = { ...this.query }
       q.beginConsumeAuditTime = this.toQueryDayStart(q.beginConsumeAuditTime)
       q.endConsumeAuditTime = this.toQueryDayEnd(q.endConsumeAuditTime)
-      listHighChargeConfirm(q).then(res => {
+      return listHighChargeConfirm(q).then(res => {
         this.list = res.rows || []
         this.total = res.total || 0
         const ti = res.totalInfo || {}

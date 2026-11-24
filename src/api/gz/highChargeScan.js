@@ -67,11 +67,12 @@ export function applyHighChargeConsume(data) {
   })
 }
 
-/** 计费行的确认/冲销状态，key 为 INPATIENT|id、OUTPATIENT|id */
+/** 计费行的确认/冲销状态，key 为 INPATIENT|id、OUTPATIENT|id；失败不挡列表 */
 export function listHighChargeWriteOffStatus(data) {
   return request({
     url: '/gz/highChargeMirror/mirror/writeOffStatus',
     method: 'post',
+    headers: { hideError: true },
     data
   })
 }
@@ -86,12 +87,13 @@ export function writeOffHighChargeScan(data) {
   })
 }
 
-/** 进页访问日志（分段耗时），落 sys_oper_log，失败可静默 */
+/** 进页访问日志（分段耗时），落 sys_oper_log；失败静默，不弹「系统接口404」 */
 export function reportHighChargePageAccess(data) {
   return request({
     url: '/gz/highChargeMirror/mirror/pageAccess',
     method: 'post',
     timeout: 10000,
+    headers: { hideError: true },
     data
   })
 }

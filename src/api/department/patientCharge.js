@@ -172,3 +172,13 @@ export function writeOffMirrorLowValue(data) {
     data
   })
 }
+
+/** 进页访问日志（分段耗时），落 sys_oper_log */
+export function reportPatientChargePageAccess(data) {
+  return request({
+    url: '/his/patientCharge/mirror/pageAccess',
+    method: 'post',
+    timeout: 10000,
+    data
+  })
+}

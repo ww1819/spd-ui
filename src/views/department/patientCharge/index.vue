@@ -354,15 +354,16 @@ import {
   listMirrorConsumeRecords,
   listMirrorProcessLogs,
   listFetchBatchesForMirror,
-  writeOffMirrorLowValue
+  writeOffMirrorLowValue,
+  reportPatientChargePageAccess
 } from '@/api/department/patientCharge'
 import { fetchFinancePickDepartments } from '@/api/finance/settlementSummary'
 
 function buildDefaultChargeDateRange() {
   const today = new Date()
   const endChargeDate = parseTime(today, '{y}-{m}-{d}')
-  const beginDate = new Date(today)
-  beginDate.setDate(beginDate.getDate() - 5)
+  // 默认近 7 天（含今天），与高值扫描核销一致，降低生产进页 list+count 扫描窗
+  const beginDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 6)
   const beginChargeDate = parseTime(beginDate, '{y}-{m}-{d}')
   return { beginChargeDate, endChargeDate }
 }
@@ -520,14 +521,14 @@ export default {
     }
   },
   created() {
-    this.loadDetailList()
+    this.bootstrapEnterAccessLog()
   },
   mounted() {
     window.addEventListener('resize', this.onApplyWindowResize)
     this.scheduleApplyLayoutRefresh()
   },
   activated() {
-    // keep-alive 切回：仅重算表格高度，不重新拉数，保留查询条件与列表
+    // keep-alive 切回：仅重算表格高度，不重新拉数，也不再上报进页日志
     this.scheduleApplyLayoutRefresh()
   },
   beforeDestroy() {
@@ -912,11 +913,40 @@ export default {
       }
       return q
     },
+    /** 进页一次：分段计时后上报访问日志（失败静默） */
+    bootstrapEnterAccessLog() {
+      const t0 = Date.now()
+      const listStart = Date.now()
+      let listMs = 0
+      this.loadDetailList()
+        .then(() => { listMs = Date.now() - listStart })
+        .catch(() => { listMs = Date.now() - listStart })
+        .then(() => {
+          const q = this.detailQuery || {}
+          let listApi = 'all'
+          if (this.detailVisitType === 'IN') listApi = 'inpatient'
+          else if (this.detailVisitType === 'OUT') listApi = 'outpatient'
+          reportPatientChargePageAccess({
+            event: 'ENTER',
+            visitType: this.detailVisitType || 'ALL',
+            beginChargeDate: q.beginChargeDate,
+            endChargeDate: q.endChargeDate,
+            pageNum: q.pageNum,
+            pageSize: q.pageSize,
+            total: this.detailTotal || 0,
+            listMs,
+            totalMs: Date.now() - t0,
+            listApi,
+            hitFetch: false
+          }).catch(() => {})
+        })
+    },
     loadDetailList() {
       // 换页换数前先锁住 selection 回调，避免 data 替换瞬间的 [] 误清跨页 cache
       this.detailSelectionSyncing = true
       this.detailLoading = true
       const q = this.buildDetailQueryParams()
+      let req
       if (this.detailVisitType === 'IN') {
         q.inpatientNo = q.visitNo
         q.hisInpatientChargeId = q.hisChargeId
@@ -924,7 +954,7 @@ export default {
         delete q.visitNo
         delete q.hisChargeId
         delete q.chargeIdTf
-        listInpatientMirror(q).then(res => {
+        req = listInpatientMirror(q).then(res => {
           this.detailList = (res.rows || []).map(r => ({
             ...r,
             visitType: 'INPATIENT',
@@ -932,12 +962,6 @@ export default {
             chargeIdTf: r.hisInpatientChargeIdTf
           }))
           this.detailTotal = res.total || 0
-        }).finally(() => {
-          this.detailLoading = false
-          this.$nextTick(() => {
-            this.restoreDetailSelection()
-            this.scheduleApplyLayoutRefresh()
-          })
         })
       } else if (this.detailVisitType === 'OUT') {
         q.outpatientNo = q.visitNo
@@ -946,7 +970,7 @@ export default {
         delete q.visitNo
         delete q.hisChargeId
         delete q.chargeIdTf
-        listOutpatientMirror(q).then(res => {
+        req = listOutpatientMirror(q).then(res => {
           this.detailList = (res.rows || []).map(r => ({
             ...r,
             visitType: 'OUTPATIENT',
@@ -954,25 +978,20 @@ export default {
             chargeIdTf: r.hisOutpatientChargeIdTf
           }))
           this.detailTotal = res.total || 0
-        }).finally(() => {
-          this.detailLoading = false
-          this.$nextTick(() => {
-            this.restoreDetailSelection()
-            this.scheduleApplyLayoutRefresh()
-          })
         })
       } else {
-        listAllMirror(q).then(res => {
+        req = listAllMirror(q).then(res => {
           this.detailList = res.rows || []
           this.detailTotal = res.total || 0
-        }).finally(() => {
-          this.detailLoading = false
-          this.$nextTick(() => {
-            this.restoreDetailSelection()
-            this.scheduleApplyLayoutRefresh()
-          })
         })
       }
+      return req.finally(() => {
+        this.detailLoading = false
+        this.$nextTick(() => {
+          this.restoreDetailSelection()
+          this.scheduleApplyLayoutRefresh()
+        })
+      })
     },
     handleSummaryQuery() {
       if (!this.summaryQuery.beginChargeDate || !this.summaryQuery.endChargeDate) {

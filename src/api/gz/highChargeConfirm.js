@@ -31,3 +31,13 @@ export function writeOffHighChargeConfirm(data) {
     data
   })
 }
+
+/** 进页访问日志（分段耗时），落 sys_oper_log */
+export function reportHighChargeConfirmPageAccess(data) {
+  return request({
+    url: '/gz/highChargeConfirm/pageAccess',
+    method: 'post',
+    timeout: 10000,
+    data
+  })
+}
