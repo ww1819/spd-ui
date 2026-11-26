@@ -88,7 +88,7 @@
                   <template v-if="action">
                     <el-button type="primary" icon="el-icon-plus" size="small" class="spd-btn spd-btn--primary" :disabled="!form.departmentId" @click="nameBtn">添加</el-button>
                     <el-button type="danger" size="small" icon="el-icon-delete" @click="handleDeleteConsumeEntry">删除</el-button>
-                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" @click="submitForm">保 存</el-button>
+                    <el-button type="primary" icon="el-icon-check" size="small" class="spd-btn spd-btn--primary" :loading="submitLoading" :disabled="submitLoading" @click="submitForm">保 存</el-button>
                   </template>
                 </div>
               </el-row>

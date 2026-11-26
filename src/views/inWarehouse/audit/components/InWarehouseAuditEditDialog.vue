@@ -255,7 +255,7 @@
               <span>{{ (scope.row.material && scope.row.material.fdUnit && scope.row.material.fdUnit.unitName) || '--' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="数量" align="center" prop="qty" width="90" show-overflow-tooltip resizable sortable label-class-name="detail-th-accent">
+          <el-table-column label="数量" align="center" prop="qty" width="118" show-overflow-tooltip resizable sortable label-class-name="detail-th-accent">
             <template slot-scope="scope">
               <div class="detail-cell-focus-wrap" :data-detail-row="scope.$index" data-detail-col="qty" v-detail-cell-nav>
                 <el-input

@@ -76,11 +76,12 @@ export function getOptionselect() {
   })
 }
 
-// Warehouse字段变更记录
+// Warehouse字段变更记录（无记录/旧后端缺接口时不弹系统404）
 export function listWarehouseChangeLog(id) {
   return request({
     url: '/foundation/warehouse/changeLog/' + id,
-    method: 'get'
+    method: 'get',
+    headers: { hideError: true }
   })
 }
 
