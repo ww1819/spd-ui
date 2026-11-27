@@ -220,6 +220,7 @@
 import { listApply, getApply, delApply, addApply, updateApply,auditApply } from "@/api/department/apply";
 import { listPurchase, getPurchase, delPurchase, updatePurchase, auditPurchase } from "@/api/department/purchase";
 import { assertBillEntriesReadyForAudit } from "@/utils/billEntryValidate";
+import { mapSerial } from '@/utils/serialTasks';
 import { listDepartmentTransfer, getDepartmentTransfer, delDepartmentTransfer, updateDepartmentTransfer, auditDepartmentTransfer } from "@/api/department/departmentTransfer";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
@@ -993,35 +994,27 @@ export default {
         }).catch(() => {});
       }
     },
-    /** 执行批量审核 */
+    /** 执行批量审核（串行） */
     doBatchAudit(ids) {
       const auditBy = this.$store.state.user.userId;
-      const promises = [];
-      
+      let runner;
       if (this.currentBillType === '1') {
-        // 申领单批量审核
-        ids.forEach(id => {
-          promises.push(auditApply({id: id, auditBy: auditBy}));
-        });
+        runner = mapSerial(ids, id => auditApply({id: id, auditBy: auditBy}));
       } else if (this.currentBillType === '2') {
-        ids.forEach(id => {
-          promises.push(
-            getPurchase(id).then(resp => {
-              if (!assertBillEntriesReadyForAudit(resp.data.depPurchaseApplyEntryList, this, '科室申购单')) {
-                return Promise.reject(new Error('audit_validate_failed'));
-              }
-              return auditPurchase({ id: id, auditBy: auditBy });
-            })
-          );
-        });
+        runner = mapSerial(ids, id =>
+          getPurchase(id).then(resp => {
+            if (!assertBillEntriesReadyForAudit(resp.data.depPurchaseApplyEntryList, this, '科室申购单')) {
+              return Promise.reject(new Error('audit_validate_failed'));
+            }
+            return auditPurchase({ id: id, auditBy: auditBy });
+          })
+        );
       } else if (this.currentBillType === '3') {
-        // 转科申请单批量审核
-        ids.forEach(id => {
-          promises.push(auditDepartmentTransfer({id: id, auditBy: auditBy}));
-        });
+        runner = mapSerial(ids, id => auditDepartmentTransfer({id: id, auditBy: auditBy}));
+      } else {
+        return;
       }
-      
-      Promise.all(promises).then(() => {
+      runner.then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");
         this.ids = [];

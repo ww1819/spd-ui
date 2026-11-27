@@ -292,7 +292,7 @@
 
 <script>
 import { listOutWarehouse, getOutWarehouse,
-  delOutWarehouse, updateOutWarehouse,auditOutWarehouse, listEntryChangeLog } from "@/api/warehouse/outWarehouse";
+  delOutWarehouse, updateOutWarehouse, auditOutWarehouse, auditOutWarehouseBatch, listEntryChangeLog } from "@/api/warehouse/outWarehouse";
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
 import { assertBillEntriesForAudit, assertBillMaterialLinesQtyNotZero } from '@/utils/billEntryValidate';
 import { DOC_REF_STATUS_OPTIONS } from '@/utils/docRefStatus'
@@ -1264,7 +1264,7 @@ export default {
         }).catch(() => {})
       }).catch(() => {})
     },
-    /** 批量审核按钮操作 */
+    /** 批量审核按钮操作（走服务端串行接口，避免 N 次并发审核超时） */
     handleBatchAudit() {
       const selected = this.warehouseList.filter(r => this.ids.includes(r.id) && r.billStatus != 2)
       const ids = selected.map(r => r.id)
@@ -1272,29 +1272,20 @@ export default {
         this.$modal.msgWarning("请先选择未审核的出库单");
         return;
       }
-      const auditBy = this.$store.state.user.userId;
       this.$modal.confirm('确定要审核选中的"' + ids.length + '"条数据项？').then(() => {
-        const validatePromises = ids.map(id =>
-          getOutWarehouse(id).then(res => {
-            const data = res.data
-            const docLabel = data.billType == 301 ? '退货单' : '出库单'
-            if (!assertBillEntriesForAudit(data.stkIoBillEntryList, this, docLabel)) {
-              return Promise.reject(new Error('audit_validate_failed'))
-            }
-          })
-        )
-        return Promise.all(validatePromises)
-      }).then(() => {
-        const promises = ids.map(id => auditOutWarehouse({id: id, auditBy: auditBy}));
-        return Promise.all(promises);
-      }).then(() => {
+        return auditOutWarehouseBatch(ids)
+      }).then(res => {
         this.getList();
-        this.$modal.msgSuccess("批量审核成功！");
-      }).catch(err => {
-        if (err && err.message !== 'audit_validate_failed') {
-          const msg = (err && err.response && err.response.data && err.response.data.msg) || (err && err.message) || '批量审核失败'
-          this.$modal.msgError(msg)
+        const data = (res && res.data) || {}
+        const fail = data.failCount || 0
+        if (fail > 0) {
+          this.$modal.msgWarning(res.msg || ('批量审核部分失败：成功 ' + (data.okCount || 0) + '，失败 ' + fail))
+        } else {
+          this.$modal.msgSuccess(res.msg || "批量审核成功！");
         }
+      }).catch(err => {
+        const msg = (err && err.response && err.response.data && err.response.data.msg) || (err && err.message) || '批量审核失败'
+        this.$modal.msgError(msg)
       });
     },
     /** 修改按钮操作 */

@@ -72,6 +72,16 @@ export function auditOutWarehouse(data) {
   })
 }
 
+/** 批量审核出库（服务端串行，避免前端并发打满连接池超时） */
+export function auditOutWarehouseBatch(ids) {
+  return request({
+    url: '/warehouse/outWarehouse/auditOutWarehouse/batch',
+    method: 'put',
+    timeout: 120000,
+    data: { ids }
+  })
+}
+
 // 查询出退库列表
 export function listCTKWarehouse(query) {
   return request({

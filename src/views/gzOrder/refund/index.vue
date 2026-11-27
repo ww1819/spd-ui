@@ -226,6 +226,7 @@
 <script>
 import { listGoods, getGoods, delGoods, addGoods, updateGoods, auditGoods } from "@/api/gz/refundStock";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
+import { mapSerial } from '@/utils/serialTasks';
 import { listAuditedShipment, listShipmentLinesForTk } from "@/api/gz/refDoc";
 import { listGzDepInventoryPick } from "@/api/gzDepartment/gzDepInventory";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -1262,7 +1263,7 @@ export default {
       );
       Promise.all(validations).then(() => {
         this.$modal.confirm('确定要审核选中的' + this.ids.length + '条数据项？').then(() => {
-          return this.runAuditSubmit(() => Promise.all(this.ids.map(id => auditGoods({id: id}))));
+          return this.runAuditSubmit(() => mapSerial(this.ids, id => auditGoods({id: id})));
         }).then(() => {
           this.getList();
           this.$modal.msgSuccess("批量审核退库成功！");

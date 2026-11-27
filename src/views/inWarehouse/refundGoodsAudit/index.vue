@@ -231,6 +231,7 @@
 <script>
 import { listThInventory, getThInventory, delThInventory, addThInventory, updateThInventory,auditThInventory } from "@/api/warehouse/thInventory";
 import { listEntryChangeLog } from "@/api/warehouse/warehouse";
+import { mapSerial } from '@/utils/serialTasks';
 import { collectCkThScopeErrors } from '@/utils/auditBillScopeValidate';
 import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
 import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
@@ -932,8 +933,7 @@ export default {
       const auditBy = this.$store.state.user.userId;
       this.$modal.confirm('确定要审核选中的"' + ids.length + '"条数据项？').then(() => {
         // 批量审核：循环调用审核接口
-        const promises = ids.map(id => auditThInventory({id: id, auditBy: auditBy}));
-        return Promise.all(promises);
+        return mapSerial(ids, id => auditThInventory({id: id, auditBy: auditBy}));
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");

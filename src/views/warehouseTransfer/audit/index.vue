@@ -185,6 +185,7 @@
 
 <script>
 import { listWarehouseTransfer, getWarehouseTransfer, auditWarehouseTransfer } from '@/api/warehouse/warehouseTransfer';
+import { mapSerial } from '@/utils/serialTasks';
 import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import TransferOrderPrint from './transferOrderPrint';
@@ -650,8 +651,7 @@ export default {
       const auditBy = this.$store.state.user.userId;
       const skipTip = pending.length < rows.length ? "（已跳过" + (rows.length - pending.length) + "条已审核单据）" : "";
       this.$modal.confirm('确定要审核选中的"' + pending.length + '"条待审核数据？' + skipTip).then(() => {
-        const promises = ids.map(id => auditWarehouseTransfer({id: id, auditBy: auditBy}));
-        return Promise.all(promises);
+        return mapSerial(ids, id => auditWarehouseTransfer({id: id, auditBy: auditBy}));
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");
