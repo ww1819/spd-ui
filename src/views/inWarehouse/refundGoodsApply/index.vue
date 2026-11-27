@@ -379,6 +379,14 @@ export default {
       if (this.form && this.form.supplier && this.form.supplier.name) {
         return this.form.supplier.name;
       }
+      // 兜底：明细行上偶发带有供应商名
+      const list = this.stkIoBillEntryList || [];
+      for (let i = 0; i < list.length; i++) {
+        const e = list[i];
+        if (e && e.supplier && e.supplier.name) {
+          return e.supplier.name;
+        }
+      }
       return '';
     }
   },
@@ -1111,6 +1119,13 @@ export default {
           if (!this.form.createBy && keepCreateBy) {
             this.form.createBy = keepCreateBy;
           }
+          // 接口未嵌套 supplier 时，用弹窗所选入库单行兜底，避免只读供应商空白
+          if ((!this.form.supplier || !this.form.supplier.name) && first && first.supplier) {
+            this.$set(this.form, 'supplier', first.supplier);
+            if (!this.form.supplerId && (first.supplerId != null && first.supplerId !== '')) {
+              this.form.supplerId = first.supplerId;
+            }
+          }
           this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
           this.form.billStatus = '1';
           this.form.billType = '301';
@@ -1147,6 +1162,13 @@ export default {
           }
           if (!this.form.createBy && keepCreateBy) {
             this.form.createBy = keepCreateBy;
+          }
+          const tkFirst = Array.isArray(val) ? val[0] : val;
+          if ((!this.form.supplier || !this.form.supplier.name) && tkFirst && tkFirst.supplier) {
+            this.$set(this.form, 'supplier', tkFirst.supplier);
+            if (!this.form.supplerId && (tkFirst.supplerId != null && tkFirst.supplerId !== '')) {
+              this.form.supplerId = tkFirst.supplerId;
+            }
           }
           this.stkIoBillEntryList = response.data.stkIoBillEntryList || [];
           this.form.billStatus = '1';
