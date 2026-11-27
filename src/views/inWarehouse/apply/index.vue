@@ -3819,24 +3819,47 @@ html body .app-container.inWarehouse-apply-page .local-modal-content .modal-deta
   white-space: nowrap !important;
 }
 
-/* 主列表：表头与数据行同高，收紧单元格内边距 */
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
+/* 主列表：表头与数据行同高；有无排序标题同一水平线（不改 caret 组件结构） */
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th.el-table__cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   height: 34px !important;
+  vertical-align: middle !important;
   box-sizing: border-box !important;
 }
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th .cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th .cell {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 34px !important;
   line-height: 20px !important;
   padding-left: 6px !important;
   padding-right: 6px !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table .caret-wrapper {
+  height: 34px !important;
+  width: 24px !important;
+  flex-shrink: 0;
+  vertical-align: middle !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table .sort-caret {
+  left: 7px !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table .sort-caret.ascending {
+  top: 5px !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table .sort-caret.descending {
+  bottom: 7px !important;
 }
 .app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.el-table__cell,
 .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell,

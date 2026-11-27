@@ -71,8 +71,10 @@ Print.prototype = {
         str += links[j].outerHTML;
       }
     }
-    /* 兜底：外链未就绪时仍保证黑字白底表格可见 */
-    str += "<style type=\"text/css\">html,body{margin:0!important;padding:0!important;min-height:0!important;background:#fff!important;color:#000!important}html,body,div{height:auto!important}.no-print{display:none!important}table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;color:#000;padding:2px 4px;font-size:12px}.browser-print-root,.receipt-print,.print-copy-block,.print-page{color:#000;background:#fff}</style>";
+    /* 兜底：外链未就绪时仍保证黑字白底可见。
+       注意：禁止再写全局 div{height:auto}——会冲掉 .print-page 的 140mm 页高，
+       在 Letter/A4 或 Microsoft Print to PDF 上易出现「整页白板、末页底边露出一截表格」。 */
+    str += "<style type=\"text/css\">html,body{margin:0!important;padding:0!important;min-height:0!important;height:auto!important;background:#fff!important;color:#000!important}.no-print{display:none!important}.browser-print-root,.receipt-print,.print-copy-block,.print-page,.order-print{color:#000!important;background:#fff!important}.print-page,.print-copy-block{min-height:140mm!important}.detail-table{border-collapse:collapse;width:100%}.detail-table th,.detail-table td{border:1px solid #000;color:#000}</style>";
     str += "<style>" + (this.options.noPrint ? this.options.noPrint : '.no-print') + "{display:none;}</style>";
 
     str = str.replace('size: A5', `size: ${pageSize}`);
@@ -192,11 +194,11 @@ Print.prototype = {
         if (parts && parts[0]) iframeW = parts[0].replace(/\s+/g, '');
       }
     } catch (e) {}
-    /* 禁止 0×0：Chrome 对零尺寸 iframe 打印预览偶发全白 */
+    /* 禁止 0×0；也禁止 left:-10000px（部分 Chromium 会把离屏位移带进预览，表现为大片白板、底边才露字） */
     iframe.id = 'print-iframe-' + String(Date.now()) + '-' + String(Math.random()).slice(2, 8);
     iframe.setAttribute(
       'style',
-      'position:fixed;left:-10000px;top:0;width:' + iframeW + ';min-height:140mm;border:0;opacity:0;pointer-events:none;z-index:-1;'
+      'position:fixed;left:0;top:0;width:' + iframeW + ';min-height:140mm;border:0;opacity:0;pointer-events:none;z-index:-1;'
     );
     document.body.appendChild(iframe);
     var w = iframe.contentWindow || iframe.contentDocument;
