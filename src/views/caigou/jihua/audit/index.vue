@@ -215,6 +215,7 @@
 <script>
 import { listPurchasePlan, getPurchasePlan, auditPurchasePlan, getApplyBillNoList, getApplyDetails } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
+import { mapSerial } from '@/utils/serialTasks';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import { resolvePlanEntrySource, resolvePlanEntrySupplierName } from '../utils/planEntryUtils';
@@ -877,8 +878,7 @@ handleQuery() {
         const validateSupplier = this.ids.map(id => this.validatePlanEntriesSupplier(id));
         const validateQty = this.ids.map(id => this.validatePlanEntriesQty(id));
         Promise.all([...validateActive, ...validateSupplier, ...validateQty]).then(() => {
-          const auditPromises = this.ids.map(id => auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}));
-          return Promise.all(auditPromises);
+          return mapSerial(this.ids, id => auditPurchasePlan({id: id, auditBy: auditBy, auditOpinion: auditOpinion}));
         }).then(() => {
           this.auditDialogVisible = false;
           this.getList();

@@ -215,6 +215,7 @@
 <script>
 import { listStocktakingAudit, getStocktakingAudit, auditStocktaking, rejectStocktaking } from "@/api/department/stocktakingAudit";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
+import { mapSerial } from '@/utils/serialTasks';
 import { listInventoryPick } from "@/api/department/depInventory";
 import { listStocktakingExportRows } from "@/api/department/stocktaking";
 import { exportDeptStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
@@ -809,10 +810,9 @@ export default {
       );
       Promise.all(validations).then(() => {
         this.$modal.confirm('是否确认审核选中的' + unAuditedIds.length + '条数据项？').then(() => {
-          const auditTasks = unAuditedRows.map((row) =>
+          return mapSerial(unAuditedRows, row =>
             auditStocktaking({ id: row.id, expectedUpdateTime: row.updateTime || row.createTime })
           );
-          return Promise.all(auditTasks);
         }).then(() => {
           this.getList();
           this.$modal.msgSuccess("批量审核成功");

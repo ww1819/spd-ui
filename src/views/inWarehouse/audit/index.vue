@@ -248,6 +248,7 @@ import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 import { getWarehouse } from '@/api/foundation/warehouse';
 import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
+import { mapSerial } from '@/utils/serialTasks';
 import {
   assertBillHasEntries,
   assertBillHasActiveEntriesForAudit,
@@ -1366,7 +1367,7 @@ export default {
             type: 'warning'
           }).then(() => true).catch(() => Promise.reject(new Error('audit_entry_validate_failed')));
         }).then(() =>
-          Promise.all(ids.map(id => auditWarehouse({ id: id, auditBy: auditBy })))
+          mapSerial(ids, id => auditWarehouse({ id: id, auditBy: auditBy }))
         );
       }).then(() => {
         this.getList();

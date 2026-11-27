@@ -235,6 +235,7 @@ import { listConsume, getConsume, delConsume, addConsume, updateConsume, auditCo
 import { listDepartTenantOptionselect } from '@/api/foundation/depart';
 import SelectDepartment from '@/components/SelectModel/SelectDepartment';
 import { parseTime } from '@/utils/ruoyi';
+import { mapSerial } from '@/utils/serialTasks';
 
 function buildListDefaultDateRange() {
   const today = new Date();
@@ -1185,22 +1186,18 @@ export default {
         }).catch(() => {});
       }
     },
-    /** 执行批量审核 */
+    /** 执行批量审核（串行，避免并发打满连接池） */
     doBatchAudit(ids) {
       const auditBy = this.$store.state.user.userName || this.$store.state.user.nickName || 'admin';
       let successCount = 0;
       let failCount = 0;
-      
-      // 循环调用审核接口
-      const auditPromises = ids.map(id => {
-        return auditConsume({ id: id.toString(), auditBy: auditBy }).then(() => {
+      mapSerial(ids, id =>
+        auditConsume({ id: id.toString(), auditBy: auditBy }).then(() => {
           successCount++;
         }).catch(() => {
           failCount++;
-        });
-      });
-      
-      Promise.all(auditPromises).then(() => {
+        })
+      ).then(() => {
         if (successCount > 0) {
           this.$modal.msgSuccess(`成功审核 ${successCount} 条数据${failCount > 0 ? '，失败 ' + failCount + ' 条' : ''}`);
           this.getList();

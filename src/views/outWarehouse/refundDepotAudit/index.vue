@@ -269,6 +269,7 @@
 <script>
 import { listTkInventory, getTkInventory, delTkInventory, addTkInventory, updateTkInventory,auditTkInventory } from "@/api/warehouse/tkInventory";
 import { listEntryChangeLog } from "@/api/warehouse/outWarehouse";
+import { mapSerial } from '@/utils/serialTasks';
 import { collectTkScopeErrors } from '@/utils/auditBillScopeValidate';
 import { assertBillEntriesForAudit } from '@/utils/billEntryValidate';
 import { assertBillEditableBeforeEdit } from '@/utils/billEditGuard';
@@ -1091,8 +1092,7 @@ export default {
       const auditBy = this.$store.state.user.userId;
       this.$modal.confirm('确定要审核选中的"' + ids.length + '"条数据项？').then(() => {
         // 批量审核：循环调用审核接口
-        const promises = ids.map(id => auditTkInventory({id: id, auditBy: auditBy}));
-        return Promise.all(promises);
+        return mapSerial(ids, id => auditTkInventory({id: id, auditBy: auditBy}));
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！");

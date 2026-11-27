@@ -232,6 +232,7 @@
 <script>
 import { listOrder, getOrder, delOrder, addOrder, updateOrder, auditOrder, checkInHospitalCode, getDepotByInHospitalCodeForOutbound, listEntryChangeLog } from "@/api/gz/shipment";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
+import { mapSerial } from '@/utils/serialTasks';
 import { listDepotInventory } from "@/api/gz/depotInventory";
 import { listAuditedAcceptance, previewAcceptanceRef } from "@/api/gz/refDoc";
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
@@ -1586,7 +1587,7 @@ export default {
       );
       Promise.all(validations).then(() => {
         this.$modal.confirm('确定要审核选中的' + this.ids.length + '条数据项？').then(() => {
-          return this.runAuditSubmit(() => Promise.all(this.ids.map(id => auditOrder({id: id, orderType: orderType}))));
+          return this.runAuditSubmit(() => mapSerial(this.ids, id => auditOrder({id: id, orderType: orderType})));
         }).then(() => {
         this.getList();
         if (isOutbound) {

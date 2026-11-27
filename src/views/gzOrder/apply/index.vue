@@ -234,6 +234,7 @@ import SelectSupplier from "@/components/SelectModel/SelectSupplier";
 import SelectGZMaterialFilter from '@/components/SelectModel/SelectGZMaterialFilter';
 import { GZ_BARCODE_SESSION_KEY } from '@/views/gzOrder/apply/GzBarcodePrintPage'
 import { assertBillHasEntries } from '@/utils/billEntryValidate'
+import { mapSerial } from '@/utils/serialTasks'
 import { assertWarehouseStockInboundEnabled } from '@/utils/warehouseInboundGuard'
 import { checkWarehouseInboundEnabled } from '@/api/foundation/warehouse'
 import RMBConverter from "@/utils/tools";
@@ -2422,7 +2423,7 @@ export default {
       
       const orderNos = selectedOrders.map(item => item.orderNo).join('、');
       this.$modal.confirm('确定要审核选中的 ' + ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
-        return this.runAuditSubmit(() => Promise.all(ids.map(id => auditOrder({ id: id }))));
+        return this.runAuditSubmit(() => mapSerial(ids, id => auditOrder({ id: id })));
       }).then(() => {
         this.getList();
         this.$modal.msgSuccess("批量审核成功！共审核 " + ids.length + " 个订单");

@@ -253,6 +253,7 @@
 import { listStocktaking, getStocktaking, delStocktaking, addStocktaking, updateStocktaking, patchSaveStocktaking, appendStocktakingEntries, auditStocktaking, checkStocktakingQty, previewWhStocktakingProfitImport, confirmWhStocktakingProfitImport, downloadWhStocktakingProfitImportTemplate, listWhStocktakingExportRows } from "@/api/warehouse/stocktaking";
 import { exportWhStocktakingDetailStyledXlsx } from "@/utils/departmentOutSummaryExport";
 import { assertBillHasActiveEntriesForAudit } from '@/utils/billEntryValidate';
+import { mapSerial } from '@/utils/serialTasks';
 import { listPDFilter } from "@/api/warehouse/inventory";
 import SelectWarehouse from "@/components/SelectModel/SelectWarehouse";
 import SelectInventory from "@/components/SelectModel/SelectInventory";
@@ -1312,10 +1313,8 @@ export default {
             this.$modal.msgWarning('所选单据均存在需逐条确认的数量差异，请改用单条审核处理。');
             return null;
           }
-          return Promise.all(
-            canAuditIds.map((id) =>
-              auditStocktaking({ id, expectedUpdateTime: (rowById.get(id) || {}).updateTime || (rowById.get(id) || {}).createTime })
-            )
+          return mapSerial(canAuditIds, id =>
+            auditStocktaking({ id, expectedUpdateTime: (rowById.get(id) || {}).updateTime || (rowById.get(id) || {}).createTime })
           ).then(() => ({
             blockedIds,
             auditedCount: canAuditIds.length

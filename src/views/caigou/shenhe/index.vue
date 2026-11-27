@@ -190,6 +190,7 @@
 import { listDingdan, getDingdan, auditDingdan } from "@/api/caigou/dingdan";
 import { getApplyDetails, getApplyBillNoList, getApplyBillHeaderList, getPurchasePlan } from "@/api/caigou/purchasePlan";
 import { listUserAll } from "@/api/system/user";
+import { mapSerial } from '@/utils/serialTasks';
 import SelectSupplier from '@/components/SelectModel/SelectSupplier';
 import SelectWarehouse from '@/components/SelectModel/SelectWarehouse';
 
@@ -727,8 +728,7 @@ export default {
       const orderNos = selectedOrders.map(item => item.orderNo).join('、');
 
       this.$modal.confirm('确定要审核选中的 ' + this.ids.length + ' 个订单吗？\n订单编号：' + orderNos).then(() => {
-        const auditPromises = this.ids.map(id => auditDingdan({id: id, auditBy: auditBy, auditOpinion: ''}));
-        Promise.all(auditPromises).then(() => {
+        return mapSerial(this.ids, id => auditDingdan({id: id, auditBy: auditBy, auditOpinion: ''})).then(() => {
           this.getList();
           this.$modal.msgSuccess("批量审核成功！共审核 " + this.ids.length + " 个订单");
         }).catch(() => {
