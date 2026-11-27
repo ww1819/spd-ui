@@ -21,6 +21,7 @@
         class="toolbar-rows-input"
       />
       <el-button type="default" size="small" :loading="savingRows" @click="handleConfirmRows">确定</el-button>
+      <span class="toolbar-paper-tip">打印请选纸张 210×140mm、纵向；勿用自定义「2222」或横向，以免预览白板</span>
     </div>
     <div v-if="loadError" class="inbound-print-error no-print">{{ loadError }}</div>
     <div v-loading="loading" class="inbound-print-body">
@@ -201,6 +202,12 @@ export default {
 }
 .toolbar-rows-input {
   width: 120px;
+}
+.toolbar-paper-tip {
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-left: 4px;
 }
 .inbound-print-body {
   background: #fff;

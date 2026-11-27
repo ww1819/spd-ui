@@ -13,11 +13,13 @@ const Print = function (dom, options, pageSize) {
     /** 打印前等待资源渲染稳定（图片/字体） */
     'waitForAssets': true,
     /** 打印前额外等待时间，默认给驱动和浏览器排版缓冲 */
-    'beforePrintDelay': 260,
+    'beforePrintDelay': 360,
     /** afterprint 兜底超时，避免 iframe 遗留 */
     'cleanupDelay': 15000,
     /** 追加到 iframe head 末尾的 CSS（后写入，可覆盖其它页 @media print） */
-    'extraStyle': ''
+    'extraStyle': '',
+    /** 正文未出现时短重试，降低偶发白板 */
+    'emptyContentRetry': true
   }, options);
 
   if ((typeof dom) === "string") {
@@ -27,6 +29,7 @@ const Print = function (dom, options, pageSize) {
     this.dom = this.isDOM(dom) ? dom : dom.$el;
   }
 
+  this.pageSize = pageSize;
   this.init(pageSize);
 };
 Print.prototype = {
@@ -44,16 +47,33 @@ Print.prototype = {
     return obj;
   },
 
+  /** 仅同源 stylesheet；跨域/CDN link 易导致样式未就绪预览全白 */
+  isSameOriginStylesheet: function (link) {
+    if (!link || !link.href) return false;
+    try {
+      var u = new URL(link.href, window.location.href);
+      return u.origin === window.location.origin;
+    } catch (e) {
+      return false;
+    }
+  },
+
   getStyle: function (pageSize) {
-    var str = "",
-      styles = document.querySelectorAll('style,link');
+    var str = "";
+    /* 先拷内联 style（含 Vue scoped）；再只拷同源 link，避免外链失败白板 */
+    var styles = document.querySelectorAll('style');
     for (var i = 0; i < styles.length; i++) {
       str += styles[i].outerHTML;
     }
+    var links = document.querySelectorAll('link[rel="stylesheet"]');
+    for (var j = 0; j < links.length; j++) {
+      if (this.isSameOriginStylesheet(links[j])) {
+        str += links[j].outerHTML;
+      }
+    }
+    /* 兜底：外链未就绪时仍保证黑字白底表格可见 */
+    str += "<style type=\"text/css\">html,body{margin:0!important;padding:0!important;min-height:0!important;background:#fff!important;color:#000!important}html,body,div{height:auto!important}.no-print{display:none!important}table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;color:#000;padding:2px 4px;font-size:12px}.browser-print-root,.receipt-print,.print-copy-block,.print-page{color:#000;background:#fff}</style>";
     str += "<style>" + (this.options.noPrint ? this.options.noPrint : '.no-print') + "{display:none;}</style>";
-    str += "<style>html,body,div{height: auto!important;}</style>";
-    /* 避免 body 默认 8px 边距、或布局里 min-height:100vh 等在打印 iframe 里撑出多一页空白 */
-    str += "<style>html,body{margin:0!important;padding:0!important;min-height:0!important;}</style>";
 
     str = str.replace('size: A5', `size: ${pageSize}`);
     // 自定义纸张（如 210mm×140mm）：注入 @page，避免仅依赖页面内 style 的替换
@@ -149,42 +169,85 @@ Print.prototype = {
     return content;
   },
 
+  removeStalePrintIframes: function () {
+    try {
+      var nodes = document.querySelectorAll('iframe[id^="print-iframe-"]');
+      for (var i = 0; i < nodes.length; i++) {
+        try {
+          if (nodes[i] && nodes[i].parentNode) nodes[i].parentNode.removeChild(nodes[i]);
+        } catch (e) {}
+      }
+    } catch (e2) {}
+  },
+
   writeIframe: function (content) {
     var _this = this;
+    this.removeStalePrintIframes();
     var iframe = document.createElement('iframe');
-    document.body.appendChild(iframe);
+    var iframeW = '210mm';
+    try {
+      var ps = this.pageSize && String(this.pageSize);
+      if (ps && /mm/i.test(ps)) {
+        var parts = ps.match(/(\d+(?:\.\d+)?)\s*mm/gi);
+        if (parts && parts[0]) iframeW = parts[0].replace(/\s+/g, '');
+      }
+    } catch (e) {}
+    /* 禁止 0×0：Chrome 对零尺寸 iframe 打印预览偶发全白 */
     iframe.id = 'print-iframe-' + String(Date.now()) + '-' + String(Math.random()).slice(2, 8);
-    iframe.setAttribute('style', 'position:absolute;width:0;height:0;top:-10px;left:-10px;');
+    iframe.setAttribute(
+      'style',
+      'position:fixed;left:-10000px;top:0;width:' + iframeW + ';min-height:140mm;border:0;opacity:0;pointer-events:none;z-index:-1;'
+    );
+    document.body.appendChild(iframe);
     var w = iframe.contentWindow || iframe.contentDocument;
     var doc = iframe.contentDocument || iframe.contentWindow.document;
 
-    var printDone = false;
+    var printStarted = false;
     var cleanupDone = false;
     function cleanup() {
       if (cleanupDone) return;
       cleanupDone = true;
       try {
-        if (iframe && iframe.parentNode) {
-          document.body.removeChild(iframe);
-        }
+        if (iframe && iframe.parentNode) document.body.removeChild(iframe);
       } catch (e) {}
     }
-    function finishAndPrint() {
-      if (printDone) return;
-      printDone = true;
+    function startPrintPipeline() {
+      if (printStarted) return;
+      printStarted = true;
       iframe.onload = null;
       _this.prepareAndPrint(w, _this.options).finally(function () {
         setTimeout(cleanup, _this.options.cleanupDelay || 15000);
       });
     }
-    // 必须先绑定 onload 再 write/close；部分环境下 load 不触发，需定时兜底否则打印对话框永不出现
-    iframe.onload = function () {
-      finishAndPrint();
-    };
+    function afterDocumentSettled() {
+      try {
+        if (typeof window.requestAnimationFrame === 'function') {
+          window.requestAnimationFrame(function () {
+            window.requestAnimationFrame(function () {
+              setTimeout(startPrintPipeline, 80);
+            });
+          });
+          return;
+        }
+      } catch (e) {}
+      setTimeout(startPrintPipeline, 200);
+    }
+    /*
+      单一就绪路径：不再 onload 与 300ms 竞态（谁先谁打易白板）。
+      load 仅加速；500ms 兜底保证一定开打。
+    */
     doc.open();
     doc.write(content);
     doc.close();
-    setTimeout(finishAndPrint, 300);
+    var loadBoosted = false;
+    iframe.onload = function () {
+      if (loadBoosted) return;
+      loadBoosted = true;
+      afterDocumentSettled();
+    };
+    setTimeout(function () {
+      if (!printStarted) afterDocumentSettled();
+    }, 500);
   },
 
   /** 等待打印 iframe 内外链样式表就绪，避免偶发「预览全白」（样式未加载完就 print，清缓存后易复现） */
@@ -219,7 +282,7 @@ Print.prototype = {
               }
               link.addEventListener('load', fin, { once: true });
               link.addEventListener('error', fin, { once: true });
-              setTimeout(fin, 4000);
+              setTimeout(fin, 2500);
             }));
           })(links[i]);
         }
@@ -233,30 +296,68 @@ Print.prototype = {
       }
     });
   },
+  hasPrintableContent: function (frameWindow) {
+    try {
+      var doc = frameWindow && frameWindow.document;
+      if (!doc || !doc.body) return false;
+      if (doc.body.querySelector('table, .detail-table, .print-copy-block, .receipt-print, .browser-print-root')) {
+        var text = (doc.body.innerText || doc.body.textContent || '').replace(/\s+/g, '');
+        return text.length >= 4;
+      }
+      var t = (doc.body.innerText || doc.body.textContent || '').replace(/\s+/g, '');
+      return t.length >= 8;
+    } catch (e) {
+      return true;
+    }
+  },
+  waitUntilContentReady: function (frameWindow, options) {
+    var _this = this;
+    if (options.emptyContentRetry === false) return Promise.resolve();
+    return new Promise(function (resolve) {
+      if (_this.hasPrintableContent(frameWindow)) {
+        resolve();
+        return;
+      }
+      var tries = 0;
+      function tick() {
+        tries++;
+        if (_this.hasPrintableContent(frameWindow) || tries >= 8) {
+          resolve();
+          return;
+        }
+        setTimeout(tick, 80);
+      }
+      setTimeout(tick, 80);
+    });
+  },
   prepareAndPrint: function (frameWindow, options) {
     var _this = this;
     if (options.waitForAssets === false) {
       return new Promise(function (resolve) {
         setTimeout(function () {
           _this.toPrint(frameWindow, options, resolve);
-        }, options.beforePrintDelay || 260);
+        }, options.beforePrintDelay || 360);
       });
     }
-    /* 先等外链 CSS，再等字体/图，避免 fonts.ready 早于样式表导致排版仍空白 */
+    /* 先等同源 CSS，再等字体/图/正文，避免排版空白就 print */
     return this.waitStylesheetsInFrame(frameWindow)
       .catch(function () {})
       .then(function () {
         return Promise.all([
           _this.waitFontsReady(frameWindow),
-          _this.waitImagesReady(frameWindow)
+          _this.waitImagesReady(frameWindow),
+          _this.waitUntilContentReady(frameWindow, options)
         ]);
       })
       .catch(function () {})
       .then(function () {
         return new Promise(function (resolve) {
           setTimeout(function () {
+            if (!_this.hasPrintableContent(frameWindow)) {
+              console.warn('[vuePlugsPrint] 打印内容似乎为空，仍尝试打开打印预览');
+            }
             _this.toPrint(frameWindow, options, resolve);
-          }, options.beforePrintDelay || 260);
+          }, options.beforePrintDelay || 360);
         });
       });
   },

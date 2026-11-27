@@ -39,7 +39,8 @@ export function browserPrintOptions(extra) {
       injectPageSize: true,
       pageMargin: '0 4mm',
       waitForAssets: true,
-      beforePrintDelay: 320,
+      beforePrintDelay: 360,
+      emptyContentRetry: true,
       extraStyle: PRINT_FONT_EXTRA_STYLE
     },
     extra || {}
