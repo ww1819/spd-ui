@@ -109,15 +109,36 @@
               @row-dblclick="handleMainRowDblclick"
               :height="mainTableHeight" border stripe>
       <el-table-column type="selection" width="55" align="center" :reserve-selection="true" class-name="apply-select-col" />
-      <el-table-column label="序号" align="center" prop="index" show-overflow-tooltip resizable />
-      <el-table-column label="入库单号" align="center" prop="billNo" width="160" show-overflow-tooltip resizable sortable>
+      <el-table-column label="序号" align="center" prop="index" width="55" show-overflow-tooltip resizable class-name="apply-index-col" />
+      <el-table-column
+        label="入库单号"
+        align="left"
+        header-align="center"
+        prop="billNo"
+        width="160"
+        show-overflow-tooltip
+        resizable
+        sortable
+        class-name="apply-col-billno"
+      >
         <template slot-scope="scope">
           <el-button type="text" @click="handleView(scope.row)">
             <span>{{ scope.row.billNo }}</span>
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column label="供应商" align="center" prop="supplier.name" width="140" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"/>
+      <el-table-column
+        label="供应商"
+        align="left"
+        header-align="center"
+        prop="supplier.name"
+        width="160"
+        show-overflow-tooltip
+        resizable
+        sortable
+        class-name="apply-col-supplier"
+        :sort-method="(a,b)=>sortByNested(a,b,'supplier.name')"
+      />
       <el-table-column label="仓库" align="center" prop="warehouse.name" width="120" show-overflow-tooltip resizable sortable :sort-method="(a,b)=>sortByNested(a,b,'warehouse.name')"/>
       <el-table-column label="金额" align="center" prop="totalAmount" width="110" show-overflow-tooltip resizable sortable>
         <template slot-scope="scope">
@@ -226,7 +247,11 @@
       </el-table-column>
     </el-table>
 
-    <div class="apply-pagination-wrap apply-pager-bar" ref="paginationWrap">
+    <div
+      class="apply-pagination-wrap apply-pager-bar"
+      ref="paginationWrap"
+      style="padding: 6px 14px; margin: 0; box-sizing: border-box;"
+    >
       <div class="pagination-summary">
         <span class="summary-label">合计：</span>总金额: {{ listTotalAmtFormatted }}，当前页金额: {{ pageTotalAmtFormatted }}
       </div>
@@ -532,16 +557,15 @@ export default {
         });
       });
     },
-    /** 按表格卡片剩余高度计算主表高度，保证翻页完整可见 */
+    /** 按表格卡片剩余高度计算主表高度（对齐耗材档案：预留翻页真实高度，至少 48） */
     updateMainTableHeight() {
       const panel = this.$refs.tablePanel;
       const pagWrap = this.$refs.paginationWrap;
       if (!panel || !panel.getBoundingClientRect) return;
       const panelH = panel.clientHeight || panel.getBoundingClientRect().height;
       if (!panelH) return;
-      const pagH = Math.max((pagWrap && pagWrap.offsetHeight) || 0, 56) + 8;
-      const next = Math.floor(panelH - pagH);
-      const height = Math.max(200, next);
+      const pagH = Math.max((pagWrap && (pagWrap.offsetHeight || pagWrap.getBoundingClientRect().height)) || 0, 48);
+      const height = Math.max(200, Math.floor(panelH - pagH));
       if (Math.abs(this.mainTableHeight - height) >= 2) {
         this.mainTableHeight = height;
       }
@@ -2126,9 +2150,9 @@ export default {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  min-height: 40px;
-  padding: 4px 0;
+  gap: 4px 12px;
+  min-height: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 .apply-pager-bar .pagination-summary {
@@ -2149,7 +2173,7 @@ export default {
   margin-left: auto;
 }
 .apply-pagination-wrap.apply-pager-bar {
-  margin-top: 4px;
+  margin-top: 0;
 }
 
 .el-table td {
@@ -3819,7 +3843,7 @@ html body .app-container.inWarehouse-apply-page .local-modal-content .modal-deta
   white-space: nowrap !important;
 }
 
-/* 主列表：表头与数据行同高；有无排序标题同一水平线（不改 caret 组件结构） */
+/* 主列表：表头/行高对齐耗材产品档案 material-main-table（42px；有无排序同一水平线） */
 html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th,
 html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__header-wrapper th.el-table__cell,
 html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-header-wrapper th,
@@ -3828,7 +3852,7 @@ html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fix
 html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right-header-wrapper th.el-table__cell {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  height: 34px !important;
+  height: 42px !important;
   vertical-align: middle !important;
   box-sizing: border-box !important;
 }
@@ -3838,7 +3862,7 @@ html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fix
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  height: 34px !important;
+  height: 42px !important;
   line-height: 20px !important;
   padding-left: 6px !important;
   padding-right: 6px !important;
@@ -3846,6 +3870,7 @@ html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fix
   vertical-align: middle !important;
   white-space: nowrap !important;
 }
+/* 排序图标保持 Element 默认尺寸，靠 flex 与「序号」齐平（同耗材档案） */
 html body .app-container.inWarehouse-apply-page .apply-main-table .caret-wrapper {
   height: 34px !important;
   width: 24px !important;
@@ -3861,20 +3886,159 @@ html body .app-container.inWarehouse-apply-page .apply-main-table .sort-caret.as
 html body .app-container.inWarehouse-apply-page .apply-main-table .sort-caret.descending {
   bottom: 7px !important;
 }
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.el-table__cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell {
-  padding-top: 4px !important;
-  padding-bottom: 4px !important;
-  height: 34px !important;
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.el-table__cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 42px !important;
   box-sizing: border-box !important;
+  vertical-align: middle !important;
 }
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.el-table__cell > .cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell > .cell,
-.app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell > .cell {
-  line-height: 20px !important;
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.el-table__cell > .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.el-table__cell > .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right .el-table__body td.el-table__cell > .cell {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 42px !important;
+  line-height: 22px !important;
   padding-left: 6px !important;
   padding-right: 6px !important;
+  box-sizing: border-box !important;
+}
+/* 序号列宽与勾选列一致 */
+html body .app-container.inWarehouse-apply-page .apply-main-table th.apply-index-col,
+html body .app-container.inWarehouse-apply-page .apply-main-table td.apply-index-col {
+  width: 55px !important;
+  min-width: 55px !important;
+  max-width: 55px !important;
+}
+/* 入库单号 / 供应商：表头居中，明细左对齐（覆盖 body .cell 的 justify-content:center） */
+html body .app-container.inWarehouse-apply-page .apply-main-table td.apply-col-billno.el-table__cell > .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.apply-col-billno > .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.apply-col-billno > .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table td.apply-col-supplier.el-table__cell > .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__body td.apply-col-supplier > .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper td.apply-col-supplier > .cell {
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table th.apply-col-billno .cell,
+html body .app-container.inWarehouse-apply-page .apply-main-table th.apply-col-supplier .cell {
+  justify-content: center !important;
+  text-align: center !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table td.apply-col-billno .el-button--text {
+  justify-content: flex-start !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+/* 明细框底部：对齐耗材档案——滚动条可见，分页在条下方留约 8px */
+html body .app-container.inWarehouse-apply-page .apply-table-panel > .apply-main-table {
+  margin-bottom: 0 !important;
+  overflow: visible !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table::before,
+html body .app-container.inWarehouse-apply-page .apply-main-table::after {
+  display: none !important;
+  content: none !important;
+  height: 0 !important;
+  border: none !important;
+}
+/* 表体（含横向滚动条）必须压过分页白底，否则 -margin 会把滚动条盖没 */
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper {
+  z-index: 5 !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  position: relative !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar {
+  width: 8px !important;
+  height: 12px !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__body-wrapper::-webkit-scrollbar:horizontal,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-body-wrapper::-webkit-scrollbar:horizontal,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed-right::-webkit-scrollbar:horizontal,
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-table__fixed::-webkit-scrollbar:horizontal {
+  height: 12px !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-main-table .el-scrollbar__bar.is-horizontal {
+  height: 12px !important;
+  z-index: 6 !important;
+  display: block !important;
+}
+/* 页容器顶/底留白与搜索区上方一致（8px），明细框随 flex 增高 */
+html body .app-container.inWarehouse-apply-page {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-pagination-wrap,
+html body .app-container.inWarehouse-apply-page .apply-pagination-wrap.apply-pager-bar {
+  flex: 0 0 auto !important;
+  /* 「共 xx 条」在明细框内上下留白一致，勿用负 margin 吃掉上侧空隙 */
+  margin: 0 !important;
+  padding: 6px 14px !important;
+  position: relative !important;
+  top: auto !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  background: #fff !important;
+  border: none !important;
+  border-top: none !important;
+  border-radius: 0 0 10px 10px;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 0 12px !important;
+  min-height: 0 !important;
+  z-index: 2 !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-pagination-wrap .pagination-summary {
+  margin: 0 !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+  line-height: 28px !important;
+  flex: 1 1 auto !important;
+}
+/* 内层清零，避免 ruoyi/共享的 10px/14px、min-height:52 把下侧撑高 */
+html body .app-container.inWarehouse-apply-page .apply-pagination-wrap .pagination-container {
+  position: relative !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+}
+html body .app-container.inWarehouse-apply-page .apply-pagination-wrap .pagination-container .el-pagination {
+  position: static !important;
+  float: none !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 28px !important;
+  line-height: 28px !important;
 }
 
 /* 序号列表头不换行 */
